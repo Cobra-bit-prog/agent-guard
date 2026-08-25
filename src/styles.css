@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+
+  --color-bg: #07090f;
+  --color-surface: #10141c;
+  --color-elevated: #161c27;
+  --color-fg: #e8eef8;
+  --color-muted: #8b96ab;
+  --color-subtle: #667085;
+  --color-border: #1e2633;
+  --color-primary: #3b82f6;
+  --color-primary-fg: #f8fbff;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-ring: #3b82f6;
+
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  --shadow-panel: 0 18px 40px -24px rgb(0 0 0 / 0.7);
+}
+
+@layer base {
+  html,
+  body,
+  #app {
+    min-height: 100%;
+    background: var(--color-bg);
+    color: var(--color-fg);
+  }
+
+  body {
+    font-family: var(--font-sans);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  * {
+    border-color: var(--color-border);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+
+  .landing-hero {
+    background:
+      radial-gradient(720px 380px at 12% -10%, rgb(59 130 246 / 0.16), transparent 58%),
+      radial-gradient(520px 280px at 90% 10%, rgb(16 185 129 / 0.08), transparent 50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
