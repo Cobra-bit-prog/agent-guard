@@ -31,8 +31,14 @@ export function AppShell({ children }: { children: ReactNode }) {
     return (
       <div className="flex min-h-screen bg-bg">
         <aside className="hidden w-60 border-r border-border bg-surface md:block" />
-        <div className="flex-1 p-8">
+        <div className="flex-1 space-y-4 p-8">
           <div className="h-8 w-48 animate-pulse rounded bg-elevated" />
+          <div className="grid gap-3 md:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-24 animate-pulse rounded-[16px] bg-elevated" />
+            ))}
+          </div>
+          <div className="h-72 animate-pulse rounded-[16px] bg-elevated" />
         </div>
       </div>
     );
@@ -52,12 +58,15 @@ export function AppShell({ children }: { children: ReactNode }) {
                 key={item.to}
                 to={item.to}
                 className={cn(
-                  "flex h-10 items-center gap-3 rounded-[10px] px-3 text-sm font-medium",
+                  "relative flex h-10 items-center gap-3 rounded-[10px] px-3 text-sm font-medium",
                   active
                     ? "bg-elevated text-fg"
                     : "text-muted hover:bg-elevated/60 hover:text-fg",
                 )}
               >
+                {active && (
+                  <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-primary" />
+                )}
                 <Icon className="size-4" />
                 {item.label}
               </Link>
@@ -66,7 +75,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </nav>
         <div className="hidden border-t border-border pt-4 text-xs text-subtle md:block">
           <p className="flex items-center gap-2">
-            <span className="size-1.5 rounded-full bg-success" />
+            <span className="size-1.5 animate-pulse rounded-full bg-success" />
             All systems operational
           </p>
         </div>
@@ -76,7 +85,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
       <div className="flex min-w-0 flex-col">
         <header className="flex h-14 items-center justify-between border-b border-border px-4 md:px-8">
-          <p className="text-sm text-muted">AI agent security monitoring</p>
+          <p className="text-sm text-muted">Agent wallets · pre-sign checks</p>
           <div className="hidden md:block">
             <UserButton />
           </div>
