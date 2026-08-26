@@ -138,6 +138,12 @@ function Login() {
                       onChange={(e) => setPassword(e.target.value)}
                     />
                   </div>
+                  {mode === "signup" && (
+                    <p className="text-xs text-muted">
+                      No confirmation email. Your account is ready as soon as you
+                      create it.
+                    </p>
+                  )}
                   {error && <p className="text-sm text-danger">{error}</p>}
                   <Button className="w-full" disabled={busy}>
                     {busy ? "Please wait…" : mode === "signup" ? "Create account" : "Sign in"}
