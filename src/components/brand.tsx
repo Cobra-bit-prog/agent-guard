@@ -18,12 +18,26 @@ export function ShieldMark({ className }: { className?: string }) {
   );
 }
 
-export function Logo({ compact = false }: { compact?: boolean }) {
+export function Logo({
+  compact = false,
+  size = "md",
+}: {
+  compact?: boolean;
+  size?: "md" | "lg";
+}) {
+  const large = size === "lg";
   return (
-    <div className="flex items-center gap-2.5">
-      <ShieldMark className="size-7 shrink-0" />
+    <div className={cn("flex items-center", large ? "gap-3" : "gap-2.5")}>
+      <ShieldMark className={cn("shrink-0", large ? "size-10" : "size-7")} />
       {!compact && (
-        <span className="text-sm font-semibold tracking-tight">Agent Guard</span>
+        <span
+          className={cn(
+            "font-semibold tracking-tight",
+            large ? "text-xl md:text-2xl" : "text-sm",
+          )}
+        >
+          Agent Guard
+        </span>
       )}
     </div>
   );
