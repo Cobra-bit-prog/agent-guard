@@ -23,6 +23,14 @@ function Login() {
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Google/X federate through Grok's preview OAuth client, which is not a
+  // customer-facing login on Vercel. Public hosts use email/password.
+  const host = typeof window === "undefined" ? "" : window.location.hostname;
+  const showBrokerSignIn =
+    host.endsWith("grok-sandbox.com") ||
+    host.endsWith(".grok.me") ||
+    host === "localhost" ||
+    host === "127.0.0.1";
 
   if (!isPending && user) return <Navigate to="/dashboard" />;
 
@@ -70,21 +78,25 @@ function Login() {
 
         {authEnabled ? (
           <>
-            <div className="mt-6 space-y-2">
-              {GROK_PROVIDERS.map((p) => (
-                <Button
-                  key={p.providerId}
-                  type="button"
-                  variant="secondary"
-                  className="w-full"
-                  onClick={() => signIn(p.providerId, { callbackURL: "/dashboard" })}
-                >
-                  Continue with {p.label}
-                </Button>
-              ))}
-            </div>
-            <p className="my-5 text-center text-xs text-subtle">or email</p>
-            <Tabs value={mode} onValueChange={(v) => setMode(v as typeof mode)}>
+            {showBrokerSignIn && (
+              <>
+                <div className="mt-6 space-y-2">
+                  {GROK_PROVIDERS.map((p) => (
+                    <Button
+                      key={p.providerId}
+                      type="button"
+                      variant="secondary"
+                      className="w-full"
+                      onClick={() => signIn(p.providerId, { callbackURL: "/dashboard" })}
+                    >
+                      Continue with {p.label}
+                    </Button>
+                  ))}
+                </div>
+                <p className="my-5 text-center text-xs text-subtle">or email</p>
+              </>
+            )}
+            <Tabs className={showBrokerSignIn ? undefined : "mt-6"} value={mode} onValueChange={(v) => setMode(v as typeof mode)}>
               <TabsList className="w-full">
                 <TabsTrigger className="flex-1" value="signin">
                   Sign in
