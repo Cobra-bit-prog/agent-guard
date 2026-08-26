@@ -1,4 +1,4 @@
-export const FREE_TRIAL_DAYS = 3;
+export const FREE_TRIAL_DAYS = 1;
 
 export const PLANS = {
   free: {
@@ -8,7 +8,7 @@ export const PLANS = {
     agents: 2,
     historyDays: 7,
     durationDays: FREE_TRIAL_DAYS,
-    blurb: "Full console for 3 days. Then a paid plan is required to keep monitoring.",
+    blurb: "Full console for 1 day. Then a paid plan is required to keep monitoring.",
   },
   starter: {
     id: "starter" as const,
