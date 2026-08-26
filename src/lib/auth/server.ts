@@ -86,9 +86,14 @@ export const authConfigured =
   !authDisabled && Boolean(grokClientId && grokClientSecret);
 
 function vercelOrigins(): string[] {
-  const hosts = [env("VERCEL_PROJECT_PRODUCTION_URL"), env("VERCEL_URL")].filter(
-    (v): v is string => Boolean(v),
-  );
+  // VERCEL_URL is the unique deployment host. VERCEL_BRANCH_URL is the git
+  // alias (e.g. agent-guard-git-<branch>-….vercel.app). Signing in on the
+  // alias with only VERCEL_URL trusted surfaces Better Auth "Invalid origin".
+  const hosts = [
+    env("VERCEL_PROJECT_PRODUCTION_URL"),
+    env("VERCEL_URL"),
+    env("VERCEL_BRANCH_URL"),
+  ].filter((v): v is string => Boolean(v));
   const out: string[] = [];
   for (const host of hosts) {
     const origin = host.startsWith("http") ? host.replace(/\/$/, "") : `https://${host}`;
@@ -140,7 +145,15 @@ const baseURL = explicitBaseURL ?? {
 // Origins Better Auth accepts on credentialed POSTs (sign-up/sign-in, etc.).
 // Missing entries here surface as FORBIDDEN "Invalid origin".
 const trustedOrigins: string[] = explicitBaseURL
-  ? Array.from(new Set([explicitBaseURL, ...vercel, ...LOCAL_DEV_ORIGINS]))
+  ? Array.from(
+      new Set([
+        explicitBaseURL,
+        ...vercel,
+        ...LOCAL_DEV_ORIGINS,
+        // Cover git aliases and per-deployment hosts the env vars can miss.
+        ...(env("VERCEL") ? ["https://*.vercel.app"] : []),
+      ]),
+    )
   : [
       // Host wildcards (matched against Origin's host)
       ...previewAllowedHosts,
