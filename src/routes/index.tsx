@@ -66,7 +66,7 @@ function Home() {
                   <Link to="/login">Sign in</Link>
                 </Button>
                 <Button asChild>
-                  <Link to="/login">Start 3-day trial</Link>
+                  <Link to="/login">Start 1-day trial</Link>
                 </Button>
               </SignedOut>
               <SignedIn>
@@ -148,7 +148,7 @@ function Home() {
           style={{ animationDelay: "160ms" }}
         >
           <Button size="lg" asChild>
-            <Link to="/login">Start 3-day trial</Link>
+            <Link to="/login">Start 1-day trial</Link>
           </Button>
           <Button size="lg" variant="secondary" asChild>
             <a href="#learn">Watch the tutorial</a>
@@ -258,7 +258,7 @@ function Home() {
             Pricing
           </h2>
           <p className="mt-2 text-muted">
-            3-day full console. No card required to start. Paid plans unlock after
+            1-day full console. No card required to start. Paid plans unlock after
             the trial.
           </p>
           <div className="mt-8 grid gap-4 md:grid-cols-4">
@@ -281,7 +281,7 @@ function Home() {
                 </p>
                 {p.id === "free" && (
                   <p className="mt-1 text-xs font-medium text-primary">
-                    3 days · no card
+                    1 day · no card
                   </p>
                 )}
                 <p className="mt-2 text-sm text-muted">{p.blurb}</p>
@@ -305,7 +305,7 @@ function Home() {
                   asChild
                 >
                   <Link to="/login">
-                    {p.price === 0 ? "Start 3-day trial" : "Create account"}
+                    {p.price === 0 ? "Start 1-day trial" : "Create account"}
                   </Link>
                 </Button>
               </div>
