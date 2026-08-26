@@ -22,6 +22,7 @@ function Login() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   // Google/X federate through Grok's preview OAuth client, which is not a
   // customer-facing login on Vercel. Public hosts use email/password.
@@ -38,22 +39,42 @@ function Login() {
     e.preventDefault();
     setBusy(true);
     setError(null);
+    setNotice(null);
     try {
       if (mode === "signup") {
-        const { error: err } = await authClient.signUp.email({
+        const { data, error: err } = await authClient.signUp.email({
           email,
           password,
           name: name || email.split("@")[0],
           callbackURL: "/dashboard",
         });
         if (err) throw new Error(err.message);
+        if (!data?.token) {
+          setNotice("Check your inbox for a confirmation link. It expires in one hour.");
+          return;
+        }
       } else {
         const { error: err } = await authClient.signIn.email({
           email,
           password,
           callbackURL: "/dashboard",
         });
-        if (err) throw new Error(err.message);
+        if (err) {
+          const code = (err as { code?: string }).code ?? "";
+          const message = err.message ?? "";
+          if (
+            code === "EMAIL_NOT_VERIFIED" ||
+            /not verified/i.test(message)
+          ) {
+            await authClient.sendVerificationEmail({
+              email,
+              callbackURL: "/dashboard",
+            });
+            setNotice("This account is not confirmed yet. We sent a new link to your inbox.");
+            return;
+          }
+          throw new Error(err.message);
+        }
       }
       window.location.href = "/dashboard";
     } catch (err) {
@@ -140,10 +161,11 @@ function Login() {
                   </div>
                   {mode === "signup" && (
                     <p className="text-xs text-muted">
-                      No confirmation email. Your account is ready as soon as you
-                      create it.
+                      We send a confirmation link to this address. Click it to
+                      open the dashboard.
                     </p>
                   )}
+                  {notice && <p className="text-sm text-success">{notice}</p>}
                   {error && <p className="text-sm text-danger">{error}</p>}
                   <Button className="w-full" disabled={busy}>
                     {busy ? "Please wait…" : mode === "signup" ? "Create account" : "Sign in"}
