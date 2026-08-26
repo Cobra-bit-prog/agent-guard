@@ -111,7 +111,7 @@ export function LandingTutorial() {
               ))}
             </div>
             <Button size="sm" asChild className="sm:ml-2">
-              <Link to="/login">Start 3-day trial</Link>
+              <Link to="/login">Start 1-day trial</Link>
             </Button>
           </div>
         </div>
