@@ -1,8 +1,7 @@
 import { useId } from "react";
-import { CHAINS, type ChainId } from "@/lib/chains";
+import { CHAINS, DISPLAY_CHAIN_ORDER, type ChainId } from "@/lib/chains";
 import { cn } from "@/lib/utils";
 
-const LANDING_CHAIN_ORDER: ChainId[] = ["solana", "ethereum", "base"];
 
 /** Original geometric marks used only to label supported networks. */
 export function EthereumMark({ className }: { className?: string }) {
@@ -63,7 +62,7 @@ export function ChainMark({
 export function SupportedChains({ className }: { className?: string }) {
   return (
     <ul className={cn("flex flex-wrap items-center gap-3", className)}>
-      {LANDING_CHAIN_ORDER.map((id) => {
+      {DISPLAY_CHAIN_ORDER.map((id) => {
         const c = CHAINS[id];
         return (
           <li
