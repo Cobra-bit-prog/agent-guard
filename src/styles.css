@@ -144,6 +144,59 @@
   animation: landing-scan 1.5s ease-in-out infinite alternate;
 }
 
+
+@keyframes dashboard-stat-in {
+  from {
+    opacity: 0.35;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dashboard-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dashboard-bar {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.dashboard-stat-in {
+  animation: dashboard-stat-in 0.45s ease-out;
+}
+
+.dashboard-row-in {
+  animation: dashboard-row-in 0.4s ease-out both;
+}
+
+.dashboard-score-bar > div > div {
+  transform-origin: left;
+  animation: dashboard-bar 0.9s ease-out;
+}
+
+.dashboard-block-row {
+  border-radius: 12px;
+  background: rgb(239 68 68 / 0.08);
+  box-shadow: inset 0 0 0 1px rgb(239 68 68 / 0.3);
+  padding: 8px 10px;
+  margin: 0 -10px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
