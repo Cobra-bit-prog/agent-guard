@@ -12,7 +12,7 @@ export function TrialBanner() {
   if (p.expired) {
     return (
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-danger/30 bg-danger/10 px-4 py-2 text-sm md:px-8">
-        <p>Your 3-day free trial has ended. Monitoring is paused until you upgrade.</p>
+        <p>Your 1-day free trial has ended. Monitoring is paused until you upgrade.</p>
         <Link to="/billing" className="font-medium text-primary hover:underline">
           Upgrade now
         </Link>
