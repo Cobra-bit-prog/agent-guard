@@ -10,7 +10,6 @@ const AGENTS = [
     status: "healthy" as const,
     vol: "$4,210",
     pct: 14,
-    last: "12s",
   },
   {
     name: "Treasury Bot",
@@ -19,7 +18,6 @@ const AGENTS = [
     status: "warning" as const,
     vol: "$8,140",
     pct: 68,
-    last: "1m",
   },
   {
     name: "Solana Router",
@@ -28,26 +26,26 @@ const AGENTS = [
     status: "healthy" as const,
     vol: "$1,080",
     pct: 13,
-    last: "4m",
   },
 ];
 
 const FEED = [
-  { t: "12s", agent: "Trade Agent Alpha", ev: "Swap", amt: "$640", tone: "ok" as const },
-  { t: "1m", agent: "Treasury Bot", ev: "Policy block", amt: "$2,400", tone: "bad" as const },
-  { t: "4m", agent: "Solana Router", ev: "Transfer", amt: "$180", tone: "ok" as const },
-  { t: "9m", agent: "Treasury Bot", ev: "Pre-sign allow", amt: "$420", tone: "ok" as const },
-  { t: "18m", agent: "Trade Agent Alpha", ev: "Oracle update", amt: "$0", tone: "ok" as const },
+  { t: "now", agent: "Treasury Bot", ev: "Pre-sign blocked", amt: "$2,400", tone: "bad" as const },
+  { t: "12s", agent: "Trade Agent Alpha", ev: "Swap allowed", amt: "$640", tone: "ok" as const },
+  { t: "4m", agent: "Solana Router", ev: "Transfer allowed", amt: "$180", tone: "ok" as const },
+  { t: "9m", agent: "Treasury Bot", ev: "Pre-sign allowed", amt: "$420", tone: "ok" as const },
 ];
 
 export function LandingConsole() {
   return (
-    <div className="mt-14 overflow-hidden rounded-[28px] border border-border bg-surface shadow-[var(--shadow-panel)]">
+    <div className="mt-12 overflow-hidden rounded-[28px] border border-border bg-surface shadow-[var(--shadow-panel)] landing-rise">
       <div className="flex items-center gap-2 border-b border-border bg-elevated/60 px-4 py-2.5">
         <span className="size-2.5 rounded-full bg-danger/80" />
         <span className="size-2.5 rounded-full bg-warning/80" />
         <span className="size-2.5 rounded-full bg-success/80" />
-        <p className="ml-3 font-mono text-[11px] text-subtle">app.agentguard · live console</p>
+        <p className="ml-3 font-mono text-[11px] text-subtle">
+          agent-guard · live console
+        </p>
         <span className="ml-auto hidden items-center gap-2 text-[11px] text-success sm:flex">
           <span className="size-1.5 animate-pulse rounded-full bg-success" />
           Syncing
@@ -56,24 +54,8 @@ export function LandingConsole() {
           <ChainMark chain="solana" className="size-3.5" />
         </span>
       </div>
-      <div className="grid lg:grid-cols-[210px_1fr]">
-        <aside className="hidden border-r border-border p-4 lg:block">
-          <p className="text-xs font-medium text-subtle">Workspace</p>
-          <ul className="mt-3 space-y-1 text-sm">
-            {["Overview", "Agents", "Policies", "Alerts"].map((l, i) => (
-              <li
-                key={l}
-                className={
-                  i === 0
-                    ? "rounded-[10px] bg-elevated px-3 py-2 font-medium"
-                    : "rounded-[10px] px-3 py-2 text-muted"
-                }
-              >
-                {l}
-              </li>
-            ))}
-          </ul>
-        </aside>
+
+      <div className="grid lg:grid-cols-[minmax(0,1fr)_280px]">
         <div className="p-4 md:p-5">
           <div className="grid gap-3 sm:grid-cols-3">
             {[
@@ -116,7 +98,9 @@ export function LandingConsole() {
                     <td className="w-44">
                       <div className="flex items-center gap-2">
                         <Progress value={a.pct} tone={a.pct > 60 ? "warning" : "success"} />
-                        <span className="w-8 text-right font-mono text-xs text-muted">{a.pct}%</span>
+                        <span className="w-8 text-right font-mono text-xs text-muted">
+                          {a.pct}%
+                        </span>
                       </div>
                     </td>
                   </tr>
@@ -151,6 +135,31 @@ export function LandingConsole() {
             </ul>
           </div>
         </div>
+
+        <aside className="border-t border-border p-4 lg:border-l lg:border-t-0">
+          <p className="text-xs font-medium uppercase tracking-[0.14em] text-subtle">
+            Pre-sign check
+          </p>
+          <div className="landing-block-card relative mt-3 overflow-hidden rounded-[18px] border border-border bg-elevated p-4">
+            <p className="font-mono text-[11px] text-subtle">Treasury Bot · Ethereum</p>
+            <p className="mt-2 text-sm text-muted">to 0x91c4…a2e1</p>
+            <p className="mt-1 font-mono text-2xl font-medium tabular-nums">$2,400</p>
+            <div className="relative mt-4 h-9">
+              <div className="landing-check-pending absolute inset-0 flex flex-col justify-center">
+                <p className="text-xs text-warning">Checking policy…</p>
+                <span className="landing-scan-bar mt-2 h-1 rounded-full bg-warning/80" />
+              </div>
+              <div className="landing-check-blocked absolute inset-0 flex flex-col justify-center">
+                <p className="text-xs font-medium text-danger">must_abort · over daily cap</p>
+                <p className="mt-1 text-[11px] text-muted">Signature never left the agent.</p>
+              </div>
+            </div>
+          </div>
+          <p className="mt-3 text-[12px] leading-relaxed text-muted">
+            The agent called <span className="font-mono text-fg">/api/v1/check</span> before
+            signing. Policy said no, so the send never broadcast.
+          </p>
+        </aside>
       </div>
     </div>
   );
