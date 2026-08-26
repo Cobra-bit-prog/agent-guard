@@ -392,7 +392,7 @@ async function loadEntitlement(userId: string): Promise<Entitlement> {
   if (ent.expired && rows[0]?.status !== "expired") {
     await sql`update subscriptions set status = ${"expired"}, updated_at = ${new Date().toISOString()} where user_id = ${userId}`;
     await sql`update agents set is_paused = true where user_id = ${userId}`;
-    await logAudit(userId, "trial_expired", "3-day free trial ended. Agents paused.");
+    await logAudit(userId, "trial_expired", "1-day free trial ended. Agents paused.");
   }
   return ent;
 }
@@ -400,7 +400,7 @@ async function loadEntitlement(userId: string): Promise<Entitlement> {
 async function requireWritable(userId: string) {
   const ent = await loadEntitlement(userId);
   if (!ent.writable) {
-    throw new Error("Your 3-day free trial has ended. Upgrade to resume monitoring.");
+    throw new Error("Your 1-day free trial has ended. Upgrade to resume monitoring.");
   }
   return ent;
 }
