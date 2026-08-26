@@ -129,10 +129,18 @@ const CUSTOM_PRODUCTION_ORIGINS: string[] = [
 // it derives the origin per-request from the (proxied) host, validated against the
 // preview allowlist, which makes the OAuth `redirect_uri` the concrete preview URL
 // the broker's preview client accepts.
-const explicitBaseURL =
-  env("BETTER_AUTH_URL") ??
-  (env("VERCEL_ENV") === "production" ? CUSTOM_PRODUCTION_ORIGINS[0] : undefined) ??
-  vercel[0];
+function productionAuthOrigin(): string | undefined {
+  const set = env("BETTER_AUTH_URL");
+  // A leftover *.vercel.app BETTER_AUTH_URL (from first Neon/Vercel setup)
+  // must not win over the custom production domain — cookies and Origin
+  // checks would stay on the alias.
+  if (set && !/\.vercel\.app$/i.test(set.replace(/^https?:\/\//, "").split("/")[0])) {
+    return set.replace(/\/$/, "");
+  }
+  if (env("VERCEL_ENV") === "production") return CUSTOM_PRODUCTION_ORIGINS[0];
+  return set?.replace(/\/$/, "") ?? vercel[0];
+}
+const explicitBaseURL = productionAuthOrigin();
 // Explicit `string[]` (not a readonly tuple) — Better Auth's DynamicBaseURLConfig
 // requires a mutable `allowedHosts: string[]`.
 const previewAllowedHosts: string[] = [...PREVIEW_ALLOWED_HOSTS];
