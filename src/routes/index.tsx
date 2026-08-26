@@ -1,11 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
 import {
   Activity,
   Bell,
   Check,
-  Lock,
-  Shield,
+  Github,
   KeyRound,
+  Lock,
+  Menu,
+  Shield,
+  X,
 } from "lucide-react";
 import { Logo } from "@/components/brand";
 import { SupportedChains } from "@/components/chain-icons";
@@ -18,21 +22,34 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({ component: Home });
 
+const NAV = [
+  { href: "#product", label: "Product" },
+  { href: "#how", label: "How it works" },
+  { href: "#pricing", label: "Pricing" },
+];
+
 function Home() {
   const { isPending } = useCurrentUserState();
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-bg">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5">
         <Logo />
         <nav className="hidden items-center gap-6 text-sm text-muted md:flex">
-          <a href="#product" className="hover:text-fg">
-            Product
-          </a>
-          <a href="#how" className="hover:text-fg">
-            How it works
-          </a>
-          <a href="#pricing" className="hover:text-fg">
-            Pricing
+          {NAV.map((item) => (
+            <a key={item.href} href={item.href} className="hover:text-fg">
+              {item.label}
+            </a>
+          ))}
+          <a
+            href="https://github.com/Cobra-bit-prog/agent-guard"
+            className="inline-flex items-center gap-1.5 hover:text-fg"
+            target="_blank"
+            rel="noreferrer"
+          >
+            <Github className="size-3.5" />
+            GitHub
           </a>
         </nav>
         <div className="flex items-center gap-2">
@@ -41,7 +58,7 @@ function Home() {
           ) : (
             <>
               <SignedOut>
-                <Button variant="ghost" asChild>
+                <Button variant="ghost" asChild className="hidden sm:inline-flex">
                   <Link to="/login">Sign in</Link>
                 </Button>
                 <Button asChild>
@@ -55,29 +72,96 @@ function Home() {
               </SignedIn>
             </>
           )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            onClick={() => setMenuOpen((v) => !v)}
+          >
+            {menuOpen ? <X /> : <Menu />}
+          </Button>
         </div>
       </header>
+      {menuOpen && (
+        <div className="border-b border-border px-5 py-3 md:hidden">
+          <div className="flex flex-col gap-3 text-sm text-muted">
+            {NAV.map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                className="hover:text-fg"
+                onClick={() => setMenuOpen(false)}
+              >
+                {item.label}
+              </a>
+            ))}
+            <a
+              href="https://github.com/Cobra-bit-prog/agent-guard"
+              className="inline-flex items-center gap-1.5 hover:text-fg"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Github className="size-3.5" />
+              GitHub
+            </a>
+          </div>
+        </div>
+      )}
 
-      <section className="landing-hero mx-auto max-w-6xl px-5 pb-16 pt-8 md:pt-12">
-        <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary">
-          Network coverage
+      <section className="landing-hero mx-auto max-w-6xl px-5 pb-16 pt-8 md:pt-14">
+        <p className="landing-rise text-xs font-medium uppercase tracking-[0.18em] text-warning">
+          Pre-sign policy for agent wallets
         </p>
-        <SupportedChains className="mt-4" />
-        <h1 className="mt-4 max-w-3xl text-4xl font-semibold leading-[1.1] tracking-[-0.03em] md:text-6xl">
+        <h1 className="landing-rise mt-4 max-w-3xl text-4xl font-semibold leading-[1.1] tracking-[-0.03em] md:text-6xl">
           See every agent wallet. Stop a bad send before it signs.
         </h1>
-        <p className="mt-5 max-w-xl text-base text-muted md:text-lg">
-          Agent Guard watches live chain activity, scores spend against policy,
-          and exposes a pre-sign hook your agent must call before it broadcasts.
+        <p
+          className="landing-rise mt-5 max-w-xl text-base text-muted md:text-lg"
+          style={{ animationDelay: "80ms" }}
+        >
+          Your agents can move money. Agent Guard sits in front of the signature,
+          scores the send against your policy, and answers a check the agent must
+          call before it broadcasts. You still hold the keys.
         </p>
-        <div className="mt-8 flex flex-wrap gap-3">
+        <div
+          className="landing-rise mt-5 flex flex-wrap gap-2 text-xs text-muted"
+          style={{ animationDelay: "120ms" }}
+        >
+          {["Not a custodian", "You hold the keys", "Base · Ethereum · Solana"].map(
+            (item) => (
+              <span
+                key={item}
+                className="rounded-full border border-border bg-surface/70 px-3 py-1.5"
+              >
+                {item}
+              </span>
+            ),
+          )}
+        </div>
+        <div
+          className="landing-rise mt-8 flex flex-wrap gap-3"
+          style={{ animationDelay: "160ms" }}
+        >
           <Button size="lg" asChild>
             <Link to="/login">Start 3-day trial</Link>
           </Button>
           <Button size="lg" variant="secondary" asChild>
-            <a href="#product">How the hook works</a>
+            <a href="#product">See the pre-sign hook</a>
           </Button>
         </div>
+        <pre
+          className="landing-rise mt-8 max-w-xl overflow-x-auto rounded-[18px] border border-border bg-surface/90 p-4 font-mono text-[12px] leading-relaxed text-muted shadow-[var(--shadow-panel)]"
+          style={{ animationDelay: "200ms" }}
+        >
+          <span className="text-subtle">POST /api/v1/check</span>
+          {"\n"}
+          <span className="text-fg">{`{ "to": "0x91c4…a2e1", "value_usd": 2400 }`}</span>
+          {"\n\n"}
+          <span className="text-danger">{`← { "must_abort": true }`}</span>
+          <span className="text-subtle"> · over daily cap</span>
+        </pre>
+        <SupportedChains className="landing-rise mt-8" />
         <LandingConsole />
       </section>
 
@@ -122,14 +206,37 @@ function Home() {
           <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">
             How it works
           </h2>
+          <p className="mt-2 max-w-2xl text-muted">
+            Four steps. No custody. The agent cannot skip the check if you wire it
+            in front of sign-and-broadcast.
+          </p>
           <ol className="mt-8 grid gap-4 md:grid-cols-4">
             {[
-              { n: "01", t: "Enroll a wallet", d: "Paste a live address. We pull native balance and recent on-chain transfers." },
-              { n: "02", t: "Set policy", d: "Cap daily spend, restrict destinations, set hourly velocity." },
-              { n: "03", t: "Wire the hook", d: "Give the agent its API key. It MUST POST /api/v1/check before every send." },
-              { n: "04", t: "Watch + pause", d: "On-chain sync and pre-sign decisions land in one feed. Pause from the console." },
+              {
+                n: "01",
+                t: "Enroll a wallet",
+                d: "Paste a live address. We pull native balance and recent on-chain transfers.",
+              },
+              {
+                n: "02",
+                t: "Set policy",
+                d: "Cap daily spend, restrict destinations, set hourly velocity.",
+              },
+              {
+                n: "03",
+                t: "Wire the hook",
+                d: "Give the agent its API key. It MUST POST /api/v1/check before every send.",
+              },
+              {
+                n: "04",
+                t: "Watch + pause",
+                d: "On-chain sync and pre-sign decisions land in one feed. Pause from the console.",
+              },
             ].map((s) => (
-              <li key={s.n} className="rounded-[var(--radius-lg)] bg-surface p-5 ring-1 ring-border">
+              <li
+                key={s.n}
+                className="rounded-[var(--radius-lg)] bg-surface p-5 ring-1 ring-border"
+              >
                 <p className="font-mono text-xs text-primary">{s.n}</p>
                 <h3 className="mt-3 font-medium">{s.t}</h3>
                 <p className="mt-1 text-sm text-muted">{s.d}</p>
@@ -145,7 +252,8 @@ function Home() {
             Pricing
           </h2>
           <p className="mt-2 text-muted">
-            3-day free trial. After that, monitoring requires a paid plan.
+            3-day full console. No card required to start. Paid plans unlock after
+            the trial.
           </p>
           <div className="mt-8 grid gap-4 md:grid-cols-4">
             {Object.values(PLANS).map((p) => (
@@ -166,7 +274,9 @@ function Home() {
                   )}
                 </p>
                 {p.id === "free" && (
-                  <p className="mt-1 text-xs font-medium text-primary">3 days maximum</p>
+                  <p className="mt-1 text-xs font-medium text-primary">
+                    3 days · no card
+                  </p>
                 )}
                 <p className="mt-2 text-sm text-muted">{p.blurb}</p>
                 <ul className="mt-4 flex-1 space-y-2 text-sm text-muted">
@@ -183,8 +293,14 @@ function Home() {
                     Policy + pre-sign hook
                   </li>
                 </ul>
-                <Button className="mt-6" variant={p.id === "pro" ? "default" : "secondary"} asChild>
-                  <Link to="/login">{p.price === 0 ? "Start 3-day trial" : "Choose plan"}</Link>
+                <Button
+                  className="mt-6"
+                  variant={p.id === "pro" ? "default" : "secondary"}
+                  asChild
+                >
+                  <Link to="/login">
+                    {p.price === 0 ? "Start 3-day trial" : "Create account"}
+                  </Link>
                 </Button>
               </div>
             ))}
