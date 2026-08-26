@@ -17,9 +17,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CHAINS } from "@/lib/chains";
+import { CHAINS, chainRank } from "@/lib/chains";
 import { acknowledgeAlert, getDashboard, scanAgents, updateAgent } from "@/lib/server/guard";
-import { formatUsd, shortAddress, timeAgo } from "@/lib/utils";
+import { cn, formatUsd, shortAddress, timeAgo } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/dashboard")({
   component: DashboardPage,
@@ -58,14 +58,24 @@ function DashboardPage() {
 
   if (q.isLoading) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-40" />
-        <div className="grid gap-3 md:grid-cols-4">
+      <div className="space-y-6">
+        <div className="flex items-end justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-36" />
+            <Skeleton className="h-4 w-56" />
+          </div>
+          <Skeleton className="h-10 w-28" />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-24" />
+            <Skeleton key={i} className="h-24 rounded-[16px]" />
           ))}
         </div>
-        <Skeleton className="h-72" />
+        <Skeleton className="h-28 rounded-[16px]" />
+        <div className="grid gap-4 xl:grid-cols-[1.4fr_0.9fr]">
+          <Skeleton className="h-72 rounded-[16px]" />
+          <Skeleton className="h-72 rounded-[16px]" />
+        </div>
       </div>
     );
   }
@@ -75,15 +85,16 @@ function DashboardPage() {
 
   const d = q.data;
   const open = d.alerts.filter((a) => !a.acknowledged);
+  const agents = [...d.agents].sort(
+    (a, b) => chainRank(a.chain) - chainRank(b.chain) || a.name.localeCompare(b.name),
+  );
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
-          <p className="text-sm text-muted">
-            Real-time security monitoring for your AI agents.
-          </p>
+          <p className="text-sm text-muted">Live wallets, policy, and pre-sign checks.</p>
         </div>
         <Button
           variant="secondary"
@@ -111,35 +122,35 @@ function DashboardPage() {
           value={formatUsd(d.onchainUsd ?? 0)}
           hint="Native balance of live wallets"
         />
-        <Stat label="Open alerts" value={String(d.openAlerts)} hint="Needs attention" />
+        <Stat
+          label="Open alerts"
+          value={String(d.openAlerts)}
+          hint={d.openAlerts ? "Needs attention" : "All clear"}
+          tone={d.openAlerts ? "danger" : "success"}
+        />
       </div>
 
       <Card>
-        <CardContent className="space-y-3 p-5">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <p className="text-xs text-muted">Protection score</p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums">
-                {d.protection.score}
-                <span className="text-sm font-normal text-muted"> / 100 · {d.protection.label}</span>
-              </p>
-            </div>
-            <p className="max-w-md text-xs text-subtle">
-              Score from allowlists, spend caps, open incidents, and plan status.
-              This is readiness — not an insurance policy.
+        <CardContent className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-xs text-muted">Protection score</p>
+            <p className="dashboard-stat-in mt-1 text-4xl font-semibold tabular-nums tracking-tight">
+              {d.protection.score}
+              <span className="ml-2 text-sm font-normal text-muted">{d.protection.label}</span>
             </p>
           </div>
-          <Progress
-            value={d.protection.score}
-            tone={
-              d.protection.score >= 80 ? "success" : d.protection.score >= 55 ? "warning" : "danger"
-            }
-          />
-          <ul className="grid gap-1 text-sm text-muted md:grid-cols-2">
-            {d.protection.notes.map((n) => (
-              <li key={n}>· {n}</li>
-            ))}
-          </ul>
+          <div className="dashboard-score-bar w-full max-w-sm">
+            <Progress
+              value={d.protection.score}
+              tone={
+                d.protection.score >= 80
+                  ? "success"
+                  : d.protection.score >= 55
+                    ? "warning"
+                    : "danger"
+              }
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -163,18 +174,22 @@ function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {d.agents.map((a) => {
+                {agents.map((a, i) => {
                   const last = d.txs.find((t) => t.agent_id === a.id);
                   const limit = d.policies[a.id]?.daily_limit_usd ?? 1;
                   const vol = d.volume[a.id] ?? 0;
                   const pct = (vol / limit) * 100;
                   return (
-                    <tr key={a.id} className="border-t border-border">
+                    <tr
+                      key={a.id}
+                      className="dashboard-row-in border-t border-border"
+                      style={{ animationDelay: `${i * 60}ms` }}
+                    >
                       <td className="py-3">
                         <Link to="/agents/$id" params={{ id: a.id }} className="block hover:text-primary">
                           <p className="font-medium">{a.name}</p>
-                          <p className="flex items-center gap-1.5 font-mono text-xs text-subtle">
-                            <ChainMark chain={a.chain} className="size-3.5" />
+                          <p className="mt-0.5 flex items-center gap-2 font-mono text-xs text-subtle">
+                            <ChainMark chain={a.chain} className="size-5" />
                             {CHAINS[a.chain].name}
                             {a.is_demo ? " · demo" : " · live"} · {shortAddress(a.address)}
                           </p>
@@ -205,16 +220,24 @@ function DashboardPage() {
           <CardHeader className="flex-row items-center justify-between">
             <CardTitle>Live activity</CardTitle>
             <span className="flex items-center gap-1.5 text-xs text-success">
-              <span className="size-1.5 rounded-full bg-success" />
+              <span className="size-1.5 animate-pulse rounded-full bg-success" />
               Live
             </span>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {d.txs.slice(0, 8).map((t) => {
+          <CardContent className="space-y-2">
+            {d.txs.slice(0, 8).map((t, i) => {
               const agent = d.agents.find((a) => a.id === t.agent_id);
               const failed = t.status === "failed" || t.is_violation;
+              const presign = t.source === "presign";
               return (
-                <div key={t.id} className="flex items-start gap-3">
+                <div
+                  key={t.id}
+                  className={cn(
+                    "dashboard-row-in flex items-start gap-3",
+                    failed && "dashboard-block-row",
+                  )}
+                  style={{ animationDelay: `${80 + i * 50}ms` }}
+                >
                   <span
                     className={
                       failed
@@ -230,9 +253,10 @@ function DashboardPage() {
                       {agent?.name} · {formatUsd(t.value_usd)}
                       {t.source === "onchain"
                         ? " · on-chain"
-                        : t.source === "presign"
+                        : presign
                           ? " · pre-sign"
                           : " · demo"}
+                      {failed ? " · blocked" : ""}
                     </p>
                   </div>
                   <span className="shrink-0 text-xs text-subtle">{timeAgo(t.timestamp)}</span>
@@ -249,7 +273,7 @@ function DashboardPage() {
             <CardTitle>Spend over 24h</CardTitle>
           </CardHeader>
           <CardContent className="h-48">
-            <Chart data={d.spendSeries} color="#3b82f6" />
+            <Chart data={d.spendSeries} color="#3b82f6" empty="Scan chain to see spend" />
           </CardContent>
         </Card>
         <Card>
@@ -257,7 +281,7 @@ function DashboardPage() {
             <CardTitle>Transaction velocity</CardTitle>
           </CardHeader>
           <CardContent className="h-48">
-            <Chart data={d.velocity} color="#10b981" />
+            <Chart data={d.velocity} color="#10b981" empty="Scan chain to see velocity" />
           </CardContent>
         </Card>
       </div>
@@ -273,7 +297,7 @@ function DashboardPage() {
           {open.map((a) => (
             <div
               key={a.id}
-              className="flex flex-col gap-3 rounded-[var(--radius-lg)] bg-elevated p-4 md:flex-row md:items-center"
+              className="dashboard-block-row flex flex-col gap-3 p-4 md:flex-row md:items-center"
             >
               <AlertTriangle
                 className={
@@ -340,12 +364,15 @@ function Stat({
       <CardContent className="p-4">
         <p className="text-xs text-muted">{label}</p>
         <p
+          key={value}
           className={
             tone === "danger"
-              ? "mt-1 text-2xl font-semibold tabular-nums text-danger"
+              ? "dashboard-stat-in mt-1 text-2xl font-semibold tabular-nums text-danger"
               : tone === "warning"
-                ? "mt-1 text-2xl font-semibold tabular-nums text-warning"
-                : "mt-1 text-2xl font-semibold tabular-nums"
+                ? "dashboard-stat-in mt-1 text-2xl font-semibold tabular-nums text-warning"
+                : tone === "success"
+                  ? "dashboard-stat-in mt-1 text-2xl font-semibold tabular-nums text-success"
+                  : "dashboard-stat-in mt-1 text-2xl font-semibold tabular-nums"
           }
         >
           {value}
@@ -356,13 +383,28 @@ function Stat({
   );
 }
 
-function Chart({ data, color }: { data: { t: string; v: number }[]; color: string }) {
+function Chart({
+  data,
+  color,
+  empty,
+}: {
+  data: { t: string; v: number }[];
+  color: string;
+  empty: string;
+}) {
   if (!data.length) {
-    return <p className="grid h-full place-items-center text-sm text-muted">No activity yet</p>;
+    return <p className="grid h-full place-items-center text-sm text-muted">{empty}</p>;
   }
+  const gid = `dash-${color.replace("#", "")}`;
   return (
     <ResponsiveContainer width="100%" height="100%">
       <AreaChart data={data}>
+        <defs>
+          <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity={0.32} />
+            <stop offset="100%" stopColor={color} stopOpacity={0} />
+          </linearGradient>
+        </defs>
         <XAxis dataKey="t" hide />
         <YAxis hide />
         <Tooltip
@@ -373,7 +415,15 @@ function Chart({ data, color }: { data: { t: string; v: number }[]; color: strin
             fontSize: 12,
           }}
         />
-        <Area type="monotone" dataKey="v" stroke={color} fill={color} fillOpacity={0.18} />
+        <Area
+          type="monotone"
+          dataKey="v"
+          stroke={color}
+          fill={`url(#${gid})`}
+          fillOpacity={1}
+          isAnimationActive
+          animationDuration={800}
+        />
       </AreaChart>
     </ResponsiveContainer>
   );
