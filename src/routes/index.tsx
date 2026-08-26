@@ -114,7 +114,7 @@ function Home() {
           Pre-sign policy for agent wallets
         </p>
         <h1 className="landing-rise mt-4 max-w-3xl text-4xl font-semibold leading-[1.1] tracking-[-0.03em] md:text-6xl">
-          See every agent wallet. Stop a bad send before it signs.
+          Your agents can spend. You set the limits.
         </h1>
         <p
           className="landing-rise mt-5 max-w-xl text-base text-muted md:text-lg"
@@ -128,7 +128,7 @@ function Home() {
           className="landing-rise mt-5 flex flex-wrap gap-2 text-xs text-muted"
           style={{ animationDelay: "120ms" }}
         >
-          {["Not a custodian", "You hold the keys", "Base · Ethereum · Solana"].map(
+          {["Not a custodian", "You hold the keys", "Solana · Ethereum · Base"].map(
             (item) => (
               <span
                 key={item}
@@ -171,7 +171,7 @@ function Home() {
             {
               icon: Activity,
               title: "Live ingestion",
-              body: "Real wallets sync from Base, Ethereum, and Solana. Demo wallets stay labeled so you can tour the console.",
+              body: "Real wallets sync from Solana, Ethereum, and Base. Demo wallets stay labeled so you can tour the console.",
             },
             {
               icon: Shield,
@@ -314,7 +314,7 @@ function Home() {
           <p>Monitoring and policy checks. Not a custodian. Not insurance.</p>
           <p className="text-xs">
             Chain marks identify supported networks. Agent Guard is not affiliated
-            with Base, Ethereum, or Solana.
+            with Solana, Ethereum, or Base.
           </p>
         </div>
       </footer>
