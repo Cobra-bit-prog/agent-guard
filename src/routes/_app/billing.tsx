@@ -36,7 +36,7 @@ function BillingPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Billing</h1>
         <p className="text-sm text-muted">
           {current === "free" && !expired && trialing
-            ? `Free 3-day trial — ${formatTrialLeft(q.data?.msLeft ?? 0)}.`
+            ? `Free 1-day trial — ${formatTrialLeft(q.data?.msLeft ?? 0)}.`
             : expired
               ? "Trial ended. Choose a plan to resume monitoring."
               : `Current plan: ${PLANS[current]?.name ?? current}`}
