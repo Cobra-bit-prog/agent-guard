@@ -4,12 +4,12 @@ import { Progress } from "@/components/ui/progress";
 
 const AGENTS = [
   {
-    name: "Trade Agent Alpha",
-    chain: "base" as const,
-    tag: "Demo",
+    name: "Solana Router",
+    chain: "solana" as const,
+    tag: "Live",
     status: "healthy" as const,
-    vol: "$4,210",
-    pct: 14,
+    vol: "$1,080",
+    pct: 13,
   },
   {
     name: "Treasury Bot",
@@ -20,19 +20,19 @@ const AGENTS = [
     pct: 68,
   },
   {
-    name: "Solana Router",
-    chain: "solana" as const,
-    tag: "Live",
+    name: "Trade Agent Alpha",
+    chain: "base" as const,
+    tag: "Demo",
     status: "healthy" as const,
-    vol: "$1,080",
-    pct: 13,
+    vol: "$4,210",
+    pct: 14,
   },
 ];
 
 const FEED = [
   { t: "now", agent: "Treasury Bot", ev: "Pre-sign blocked", amt: "$2,400", tone: "bad" as const },
-  { t: "12s", agent: "Trade Agent Alpha", ev: "Swap allowed", amt: "$640", tone: "ok" as const },
-  { t: "4m", agent: "Solana Router", ev: "Transfer allowed", amt: "$180", tone: "ok" as const },
+  { t: "12s", agent: "Solana Router", ev: "Transfer allowed", amt: "$180", tone: "ok" as const },
+  { t: "4m", agent: "Trade Agent Alpha", ev: "Swap allowed", amt: "$640", tone: "ok" as const },
   { t: "9m", agent: "Treasury Bot", ev: "Pre-sign allowed", amt: "$420", tone: "ok" as const },
 ];
 
@@ -49,9 +49,9 @@ export function LandingConsole() {
         <span className="ml-auto hidden items-center gap-2 text-[11px] text-success sm:flex">
           <span className="size-1.5 animate-pulse rounded-full bg-success" />
           Syncing
-          <ChainMark chain="base" className="size-3.5" />
-          <ChainMark chain="ethereum" className="size-3.5" />
-          <ChainMark chain="solana" className="size-3.5" />
+          <ChainMark chain="solana" className="size-5" />
+          <ChainMark chain="ethereum" className="size-5" />
+          <ChainMark chain="base" className="size-5" />
         </span>
       </div>
 
