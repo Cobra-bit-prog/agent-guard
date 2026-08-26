@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 const FAQS = [
   {
     q: "Why didn’t I get an email when I signed up?",
-    a: "Agent Guard does not send mail yet. There is no confirmation, welcome, or reset message. Creating an account writes your user in the database and starts a session immediately. If the dashboard opened, the account worked.",
+    a: "New accounts get a confirmation link from Resend. Click it within an hour to verify. If nothing arrives, check spam, then sign in again — we resend the link when the address is not confirmed yet. Older accounts created before this was on will not have an email until you sign in once more.",
   },
   {
     q: "Do you hold my keys?",
