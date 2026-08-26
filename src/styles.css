@@ -58,9 +58,143 @@
 
   .landing-hero {
     background:
-      radial-gradient(720px 380px at 12% -10%, rgb(59 130 246 / 0.16), transparent 58%),
-      radial-gradient(520px 280px at 90% 10%, rgb(16 185 129 / 0.08), transparent 50%);
+      radial-gradient(920px 460px at 6% -16%, rgb(245 158 11 / 0.11), transparent 56%),
+      radial-gradient(720px 380px at 14% -10%, rgb(59 130 246 / 0.18), transparent 58%),
+      radial-gradient(520px 280px at 90% 10%, rgb(16 185 129 / 0.09), transparent 50%);
   }
+}
+
+@keyframes landing-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes landing-check {
+  0%,
+  28% {
+    opacity: 1;
+  }
+  34%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes landing-block {
+  0%,
+  28% {
+    opacity: 0;
+  }
+  38%,
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes landing-glow {
+  0%,
+  30% {
+    box-shadow: none;
+    border-color: var(--color-border);
+  }
+  42%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgb(239 68 68 / 0.32),
+      0 14px 36px -20px rgb(239 68 68 / 0.6);
+    border-color: rgb(239 68 68 / 0.42);
+  }
+}
+
+@keyframes landing-scan {
+  from {
+    transform: scaleX(0.12);
+    opacity: 0.35;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+.landing-rise {
+  animation: landing-fade-up 0.75s ease-out both;
+}
+
+.landing-check-pending {
+  animation: landing-check 5.6s ease-in-out infinite;
+}
+
+.landing-check-blocked {
+  animation: landing-block 5.6s ease-in-out infinite;
+}
+
+.landing-block-card {
+  animation: landing-glow 5.6s ease-in-out infinite;
+}
+
+.landing-scan-bar {
+  transform-origin: left;
+  animation: landing-scan 1.5s ease-in-out infinite alternate;
+}
+
+
+@keyframes dashboard-stat-in {
+  from {
+    opacity: 0.35;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dashboard-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dashboard-bar {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.dashboard-stat-in {
+  animation: dashboard-stat-in 0.45s ease-out;
+}
+
+.dashboard-row-in {
+  animation: dashboard-row-in 0.4s ease-out both;
+}
+
+.dashboard-score-bar > div > div {
+  transform-origin: left;
+  animation: dashboard-bar 0.9s ease-out;
+}
+
+.dashboard-block-row {
+  border-radius: 12px;
+  background: rgb(239 68 68 / 0.08);
+  box-shadow: inset 0 0 0 1px rgb(239 68 68 / 0.3);
+  padding: 8px 10px;
+  margin: 0 -10px;
 }
 
 @media (prefers-reduced-motion: reduce) {

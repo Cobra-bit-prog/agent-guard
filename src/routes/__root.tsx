@@ -4,19 +4,24 @@ import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import { AppProviders } from "@/components/providers";
 import appCss from "../styles.css?url";
 
-const APP_NAME = "Agent Guard";
-
 export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: APP_NAME },
+      { title: "Agent Guard — Your agents can spend. You set the limits." },
       {
         name: "description",
-        content: "Always-on security, monitoring, and policy controls for AI agent wallets on Base, Ethereum, and Solana.",
+        content:
+          "Pre-sign policy for autonomous wallets on Solana, Ethereum, and Base. Agents call /api/v1/check before they sign. You hold the keys.",
       },
       { name: "theme-color", content: "#07090f" },
+      { property: "og:title", content: "Agent Guard — Your agents can spend. You set the limits." },
+      {
+        property: "og:description",
+        content:
+          "Always-on policy and pre-sign checks for autonomous wallets. Not a custodian.",
+      },
     ],
     links: [
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },

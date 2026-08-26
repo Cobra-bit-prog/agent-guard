@@ -29,6 +29,13 @@ export type ChainId = keyof typeof CHAINS;
 
 export const CHAIN_LIST = Object.values(CHAINS);
 
+export const DISPLAY_CHAIN_ORDER: ChainId[] = ["solana", "ethereum", "base"];
+
+export function chainRank(id: ChainId) {
+  const i = DISPLAY_CHAIN_ORDER.indexOf(id);
+  return i < 0 ? 99 : i;
+}
+
 export function isEvmAddress(value: string) {
   return /^0x[a-fA-F0-9]{40}$/.test(value.trim());
 }
