@@ -4,7 +4,6 @@ import {
   Activity,
   Bell,
   Check,
-  Github,
   KeyRound,
   Lock,
   Menu,
@@ -46,15 +45,6 @@ function Home() {
               {item.label}
             </a>
           ))}
-          <a
-            href="https://github.com/Cobra-bit-prog/agent-guard"
-            className="inline-flex items-center gap-1.5 hover:text-fg"
-            target="_blank"
-            rel="noreferrer"
-          >
-            <Github className="size-3.5" />
-            GitHub
-          </a>
         </nav>
         <div className="flex items-center gap-2">
           {isPending ? (
@@ -100,15 +90,6 @@ function Home() {
                 {item.label}
               </a>
             ))}
-            <a
-              href="https://github.com/Cobra-bit-prog/agent-guard"
-              className="inline-flex items-center gap-1.5 hover:text-fg"
-              target="_blank"
-              rel="noreferrer"
-            >
-              <Github className="size-3.5" />
-              GitHub
-            </a>
           </div>
         </div>
       )}
