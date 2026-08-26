@@ -121,7 +121,7 @@ export function protectionScore(input: {
     score += 15;
     notes.push("Paid plan — monitoring stays on.");
   } else {
-    notes.push("On a 3-day trial. Upgrade before coverage can be considered.");
+    notes.push("On a 1-day trial. Upgrade before coverage can be considered.");
   }
 
   score = Math.max(0, Math.min(100, score));
