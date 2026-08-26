@@ -14,6 +14,8 @@ import {
 import { Logo } from "@/components/brand";
 import { SupportedChains } from "@/components/chain-icons";
 import { LandingConsole } from "@/components/landing-console";
+import { LandingFaq } from "@/components/landing-faq";
+import { LandingTutorial } from "@/components/landing-tutorial";
 import { Button } from "@/components/ui/button";
 import { SignedIn, SignedOut } from "@/lib/auth/gates";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
@@ -24,8 +26,10 @@ export const Route = createFileRoute("/")({ component: Home });
 
 const NAV = [
   { href: "#product", label: "Product" },
+  { href: "#learn", label: "Tutorial" },
   { href: "#how", label: "How it works" },
   { href: "#pricing", label: "Pricing" },
+  { href: "#faq", label: "FAQ" },
 ];
 
 function Home() {
@@ -147,7 +151,7 @@ function Home() {
             <Link to="/login">Start 3-day trial</Link>
           </Button>
           <Button size="lg" variant="secondary" asChild>
-            <a href="#product">See the pre-sign hook</a>
+            <a href="#learn">Watch the tutorial</a>
           </Button>
         </div>
         <pre
@@ -246,6 +250,8 @@ function Home() {
         </div>
       </section>
 
+      <LandingTutorial />
+
       <section id="pricing" className="border-t border-border">
         <div className="mx-auto max-w-6xl px-5 py-16">
           <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">
@@ -307,6 +313,8 @@ function Home() {
           </div>
         </div>
       </section>
+
+      <LandingFaq />
 
       <footer className="border-t border-border">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-8 text-sm text-subtle md:flex-row md:items-center md:justify-between">
