@@ -118,13 +118,21 @@ function authSecret(): string {
 
 const vercel = vercelOrigins();
 
+const CUSTOM_PRODUCTION_ORIGINS: string[] = [
+  "https://agent-control.net",
+  "https://www.agent-control.net",
+];
+
 // This app's own Better Auth origin. When deployed the deployer injects the
 // public URL. In the sandbox live preview there's no fixed URL (each preview gets
 // a dynamic `*.grok-sandbox.com` host), so we hand Better Auth a dynamic baseURL:
 // it derives the origin per-request from the (proxied) host, validated against the
 // preview allowlist, which makes the OAuth `redirect_uri` the concrete preview URL
 // the broker's preview client accepts.
-const explicitBaseURL = env("BETTER_AUTH_URL") ?? vercel[0];
+const explicitBaseURL =
+  env("BETTER_AUTH_URL") ??
+  (env("VERCEL_ENV") === "production" ? CUSTOM_PRODUCTION_ORIGINS[0] : undefined) ??
+  vercel[0];
 // Explicit `string[]` (not a readonly tuple) — Better Auth's DynamicBaseURLConfig
 // requires a mutable `allowedHosts: string[]`.
 const previewAllowedHosts: string[] = [...PREVIEW_ALLOWED_HOSTS];
@@ -154,6 +162,7 @@ const trustedOrigins: string[] = explicitBaseURL
         explicitBaseURL,
         ...vercel,
         ...LOCAL_DEV_ORIGINS,
+        ...CUSTOM_PRODUCTION_ORIGINS,
         // Cover git aliases and per-deployment hosts the env vars can miss.
         ...(env("VERCEL") ? ["https://*.vercel.app"] : []),
       ]),
