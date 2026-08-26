@@ -9,7 +9,7 @@ const SCENES = [
     id: "signup",
     title: "Create an account",
     ms: 5200,
-    caption: "Email and a password. No confirmation mail. You land in the dashboard immediately.",
+    caption: "Email and a password. We send a confirmation link. Click it, then you land in the dashboard.",
   },
   {
     id: "wallet",
@@ -157,7 +157,7 @@ function SceneFrame({ id }: { id: SceneId }) {
             <div className="rounded-lg bg-primary px-3 py-2 text-center font-medium text-black">
               Create account
             </div>
-            <p>No confirmation email. Session starts now.</p>
+            <p>Confirmation link sent. Click it to continue.</p>
           </div>
         </div>
       </div>
