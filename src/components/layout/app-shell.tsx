@@ -1,4 +1,4 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, Navigate, useRouterState } from "@tanstack/react-router";
 import {
   Bell,
   CreditCard,
@@ -44,6 +44,9 @@ export function AppShell({ children }: { children: ReactNode }) {
     );
   }
   if (!user) return <RedirectToSignIn />;
+  if (!user.isDevFallback && !user.emailVerified) {
+    return <Navigate to="/verify-email" />;
+  }
 
   return (
     <div className="min-h-screen bg-bg md:grid md:grid-cols-[240px_1fr]">
