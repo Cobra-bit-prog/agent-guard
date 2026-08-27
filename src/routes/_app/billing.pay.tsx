@@ -1,15 +1,15 @@
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Copy, Info } from "lucide-react";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { Info } from "lucide-react";
+import { useEffect } from "react";
+import { PayPanel } from "@/components/pay-panel";
+import { ChainMark } from "@/components/chain-icons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getPayRequest, watchPayRequest } from "@/lib/server/solana-billing";
 import { PLANS, type PlanId } from "@/lib/plans";
-import { ChainMark } from "@/components/chain-icons";
-import { PAY_CHAIN_LABEL, phantomBrowseUrl, type PayChain } from "@/lib/solana-pay";
+import { PAY_CHAIN_LABEL, type PayChain } from "@/lib/solana-pay";
 import { shortAddress } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/billing/pay")({
@@ -19,32 +19,18 @@ export const Route = createFileRoute("/_app/billing/pay")({
   component: PayRequestPage,
 });
 
-function NetworkLabel({ chain, className }: { chain: PayChain; className?: string }) {
+function NetworkLabel({ chain }: { chain: PayChain }) {
   return (
-    <span className={className ?? "inline-flex items-center gap-1.5"}>
+    <span className="inline-flex items-center gap-1.5">
       <ChainMark chain={chain} className="size-4" />
       {PAY_CHAIN_LABEL[chain]}
     </span>
   );
 }
 
-function PayQr({ value, alt }: { value: string; alt: string }) {
-  const src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&ecc=M&margin=10&data=${encodeURIComponent(value)}`;
-  return (
-    <img
-      src={src}
-      alt={alt}
-      width={220}
-      height={220}
-      className="rounded-lg bg-white p-2"
-    />
-  );
-}
-
 function PayRequestPage() {
   const { id } = Route.useSearch();
   const qc = useQueryClient();
-  const [copied, setCopied] = useState<"amount" | "address" | "both" | null>(null);
 
   const q = useQuery({
     queryKey: ["pay-request", id],
@@ -87,7 +73,6 @@ function PayRequestPage() {
   const req = q.data!;
   const plan = PLANS[(req.plan as PlanId) in PLANS ? (req.plan as PlanId) : "starter"];
   const chain = (req.chain ?? "solana") as PayChain;
-  const chainName = PAY_CHAIN_LABEL[chain] ?? "Solana";
   const evm = chain === "ethereum" || chain === "base";
   const displayAmount = evm ? req.exactAmountUsdc : String(req.amountUsdc);
 
@@ -97,23 +82,6 @@ function PayRequestPage() {
 
   const watching = Boolean(req.signature) || req.status === "underpaid";
 
-  async function copy(kind: "amount" | "address" | "both", value: string) {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(kind);
-      setTimeout(() => setCopied(null), 2000);
-      toast.success(
-        kind === "both"
-          ? "Amount and address copied. Paste them in the Phantom or MetaMask app."
-          : kind === "amount"
-            ? "Amount copied"
-            : "Address copied",
-      );
-    } catch {
-      toast.error("Could not copy. Select the amount and address on this page.");
-    }
-  }
-
   if (watching && req.status !== "expired") {
     return (
       <div className="mx-auto max-w-lg space-y-6">
@@ -121,7 +89,9 @@ function PayRequestPage() {
           <Link to="/billing" className="text-sm text-muted hover:text-fg">
             ← Billing
           </Link>
-          <h1 className="mt-3 inline-flex items-center gap-2 text-2xl font-semibold tracking-tight">Watching <NetworkLabel chain={chain} /></h1>
+          <h1 className="mt-3 inline-flex items-center gap-2 text-2xl font-semibold tracking-tight">
+            Watching <NetworkLabel chain={chain} />
+          </h1>
           <p className="mt-1 text-sm text-muted">
             Waiting for {displayAmount} USDC to confirm. This usually takes a few seconds.
           </p>
@@ -129,7 +99,9 @@ function PayRequestPage() {
         <Card>
           <CardContent className="space-y-4 p-6 text-center">
             <div className="mx-auto size-16 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            <p className="inline-flex items-center justify-center gap-2 text-lg font-semibold">Watching <NetworkLabel chain={chain} /></p>
+            <p className="inline-flex items-center justify-center gap-2 text-lg font-semibold">
+              Watching <NetworkLabel chain={chain} />
+            </p>
             {req.status === "underpaid" && (
               <p className="text-sm text-warning">
                 Received {req.paidAmountUsdc} USDC. Send the rest to reach {displayAmount} USDC.
@@ -168,6 +140,18 @@ function PayRequestPage() {
     );
   }
 
+  if (!req.payUrl) {
+    return (
+      <div className="mx-auto max-w-lg space-y-4">
+        <h1 className="text-2xl font-semibold">Payment QR is missing</h1>
+        <p className="text-sm text-danger">This pay request has no QR payload. Go back and tap Pay again.</p>
+        <Button asChild>
+          <Link to="/billing">Back to billing</Link>
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
@@ -180,84 +164,8 @@ function PayRequestPage() {
         <p className="mt-1 text-sm text-muted">Complete your payment to activate your plan.</p>
       </div>
       <Card>
-        <CardContent className="grid gap-6 p-6 md:grid-cols-[220px_1fr]">
-          <PayQr
-            value={req.payUrl}
-            alt={evm ? `${chainName} USDC payment QR` : "Solana Pay QR"}
-          />
-          <div className="space-y-3 text-sm">
-            <p className="text-xs text-muted">
-              You don't need a wallet in Safari. Open the Phantom or MetaMask app, or copy
-              amount and address.
-            </p>
-            <div className="flex items-center justify-between gap-3 rounded-[12px] border border-border bg-elevated/50 px-3 py-2.5">
-              <div>
-                <p className="text-xs text-muted">Amount</p>
-                <p className="font-medium">{displayAmount} USDC</p>
-              </div>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => void copy("amount", displayAmount)}
-              >
-                <Copy />
-                {copied === "amount" ? "Copied" : "Copy amount"}
-              </Button>
-            </div>
-            <div className="flex justify-between gap-3">
-              <span className="text-muted">Network</span>
-              <NetworkLabel chain={chain} />
-            </div>
-            <div className="flex justify-between gap-3">
-              <span className="text-muted">Token</span>
-              <span>USDC</span>
-            </div>
-            <div className="flex items-center justify-between gap-3 rounded-[12px] border border-border bg-elevated/50 px-3 py-2.5">
-              <div className="min-w-0">
-                <p className="text-xs text-muted">To</p>
-                <p className="truncate font-mono text-xs">{shortAddress(req.recipient, 4)}</p>
-              </div>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => void copy("address", req.recipient)}
-              >
-                <Copy />
-                {copied === "address" ? "Copied" : "Copy address"}
-              </Button>
-            </div>
-            <Button
-              type="button"
-              variant="secondary"
-              className="w-full"
-              onClick={() => void copy("both", `${displayAmount} USDC\n${req.recipient}`)}
-            >
-              <Copy />
-              {copied === "both" ? "Copied amount and address" : "Copy amount and address"}
-            </Button>
-            {evm ? (
-              <>
-                <Button className="w-full" asChild>
-                  <a href={req.metamaskUrl ?? "https://link.metamask.io"}>Open in MetaMask</a>
-                </Button>
-                <p className="text-center text-xs text-subtle">
-                  Opens the MetaMask app. USDC only. You pay network gas. Or scan the QR from a
-                  second device.
-                </p>
-              </>
-            ) : (
-              <>
-                <Button className="w-full" asChild>
-                  <a href={phantomBrowseUrl(req.payUrl)}>Open in Phantom</a>
-                </Button>
-                <p className="text-center text-xs text-subtle">
-                  Opens the Phantom app. Or scan the QR from a second device.
-                </p>
-              </>
-            )}
-          </div>
+        <CardContent className="p-6">
+          <PayPanel req={req} />
         </CardContent>
       </Card>
       <p className="flex items-start gap-2 text-xs text-muted">
