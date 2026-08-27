@@ -33,7 +33,10 @@ function Login() {
     host === "localhost" ||
     host === "127.0.0.1";
 
-  if (!isPending && user) return <Navigate to="/dashboard" />;
+  if (!isPending && user) {
+    if (user.emailVerified || user.isDevFallback) return <Navigate to="/dashboard" />;
+    return <Navigate to="/verify-email" />;
+  }
 
   async function onEmail(e: React.FormEvent) {
     e.preventDefault();
@@ -49,10 +52,8 @@ function Login() {
           callbackURL: "/dashboard",
         });
         if (err) throw new Error(err.message);
-        if (!data?.token) {
-          setNotice("Check your inbox for a confirmation link. It expires in one hour.");
-          return;
-        }
+        window.location.href = "/verify-email";
+        return;
       } else {
         const { error: err } = await authClient.signIn.email({
           email,
@@ -70,7 +71,7 @@ function Login() {
               email,
               callbackURL: "/dashboard",
             });
-            setNotice("This account is not confirmed yet. We sent a new link to your inbox.");
+            window.location.href = `/verify-email?email=${encodeURIComponent(email)}`;
             return;
           }
           throw new Error(err.message);
@@ -161,8 +162,9 @@ function Login() {
                   </div>
                   {mode === "signup" && (
                     <p className="text-xs text-muted">
-                      We send a confirmation link to this address. Click it to
-                      open the dashboard.
+                      We send a confirmation link to this address. You stay on
+                      a waiting screen until you click it. Then the dashboard
+                      opens.
                     </p>
                   )}
                   {notice && <p className="text-sm text-success">{notice}</p>}

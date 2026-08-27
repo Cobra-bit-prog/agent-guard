@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 const FAQS = [
   {
     q: "Why didn’t I get an email when I signed up?",
-    a: "New accounts get a confirmation link from Resend. Click it within an hour to verify. If nothing arrives, check spam, then sign in again — we resend the link when the address is not confirmed yet. Older accounts created before this was on will not have an email until you sign in once more.",
+    a: "You must confirm your email before the dashboard. After signup we keep you on a waiting screen until you click the link (one hour). If nothing arrives, check spam, then resend from that screen. Sign-in of an unconfirmed account sends a new link and returns you there.",
   },
   {
     q: "Do you hold my keys?",
