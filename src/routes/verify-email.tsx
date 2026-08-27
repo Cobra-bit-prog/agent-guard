@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Logo } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,9 @@ function VerifyEmail() {
   const { email: emailFromQuery } = Route.useSearch();
   const knownEmail = user?.primaryEmail ?? emailFromQuery ?? "";
   const [email, setEmail] = useState(knownEmail);
+  useEffect(() => {
+    if (knownEmail) setEmail(knownEmail);
+  }, [knownEmail]);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
