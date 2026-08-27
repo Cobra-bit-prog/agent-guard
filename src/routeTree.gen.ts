@@ -16,6 +16,7 @@ import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as LogosRouteImport } from './routes/logos'
 import { Route as AppAlertsRouteImport } from './routes/_app/alerts'
 import { Route as AppBillingRouteImport } from './routes/_app/billing'
+import { Route as AppBillingPayRouteImport } from './routes/_app/billing.pay'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppPoliciesRouteImport } from './routes/_app/policies'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
@@ -57,6 +58,11 @@ const AppAlertsRoute = AppAlertsRouteImport.update({
 const AppBillingRoute = AppBillingRouteImport.update({
   id: '/billing',
   path: '/billing',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppBillingPayRoute = AppBillingPayRouteImport.update({
+  id: '/billing/pay',
+  path: '/billing/pay',
   getParentRoute: () => AppRoute,
 } as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
@@ -107,6 +113,7 @@ export interface FileRoutesByFullPath {
   '/logos': typeof LogosRoute
   '/alerts': typeof AppAlertsRoute
   '/billing': typeof AppBillingRoute
+  '/billing/pay': typeof AppBillingPayRoute
   '/dashboard': typeof AppDashboardRoute
   '/policies': typeof AppPoliciesRoute
   '/settings': typeof AppSettingsRoute
@@ -123,6 +130,7 @@ export interface FileRoutesByTo {
   '/logos': typeof LogosRoute
   '/alerts': typeof AppAlertsRoute
   '/billing': typeof AppBillingRoute
+  '/billing/pay': typeof AppBillingPayRoute
   '/dashboard': typeof AppDashboardRoute
   '/policies': typeof AppPoliciesRoute
   '/settings': typeof AppSettingsRoute
@@ -141,6 +149,7 @@ export interface FileRoutesById {
   '/logos': typeof LogosRoute
   '/_app/alerts': typeof AppAlertsRoute
   '/_app/billing': typeof AppBillingRoute
+  '/_app/billing/pay': typeof AppBillingPayRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/policies': typeof AppPoliciesRoute
   '/_app/settings': typeof AppSettingsRoute
@@ -159,6 +168,7 @@ export interface FileRouteTypes {
     | '/logos'
     | '/alerts'
     | '/billing'
+    | '/billing/pay'
     | '/dashboard'
     | '/policies'
     | '/settings'
@@ -175,6 +185,7 @@ export interface FileRouteTypes {
     | '/logos'
     | '/alerts'
     | '/billing'
+    | '/billing/pay'
     | '/dashboard'
     | '/policies'
     | '/settings'
@@ -192,6 +203,7 @@ export interface FileRouteTypes {
     | '/logos'
     | '/_app/alerts'
     | '/_app/billing'
+    | '/_app/billing/pay'
     | '/_app/dashboard'
     | '/_app/policies'
     | '/_app/settings'
@@ -264,6 +276,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppBillingRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/billing/pay': {
+      id: '/_app/billing/pay'
+      path: '/billing/pay'
+      fullPath: '/billing/pay'
+      preLoaderRoute: typeof AppBillingPayRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/dashboard': {
       id: '/_app/dashboard'
       path: '/dashboard'
@@ -326,6 +345,7 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppAlertsRoute: typeof AppAlertsRoute
   AppBillingRoute: typeof AppBillingRoute
+  AppBillingPayRoute: typeof AppBillingPayRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppPoliciesRoute: typeof AppPoliciesRoute
   AppSettingsRoute: typeof AppSettingsRoute
@@ -336,6 +356,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppAlertsRoute: AppAlertsRoute,
   AppBillingRoute: AppBillingRoute,
+  AppBillingPayRoute: AppBillingPayRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppPoliciesRoute: AppPoliciesRoute,
   AppSettingsRoute: AppSettingsRoute,
