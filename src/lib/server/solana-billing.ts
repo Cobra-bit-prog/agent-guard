@@ -25,7 +25,7 @@ import {
   findMatchingEvmUsdcPayment,
 } from "@/lib/evm-pay.server";
 import { buildEip681TransferUrl, buildMetamaskSendUrl, type EvmPayChain } from "@/lib/evm-pay";
-import { sendPaidInvoiceEmail } from "@/lib/auth/send-email.server";
+import { sendInvoiceEmail } from "@/lib/auth/send-email.server";
 import { ensureSchema } from "@/lib/server/guard";
 
 const PaidPlan = z.enum(["starter", "pro", "team"]);
@@ -130,17 +130,6 @@ async function applyPaidPlan(userId: string, plan: "starter" | "pro" | "team", c
 }
 
 
-function formatInvoiceDate(value: string | null | undefined): string {
-  const t = value ? Date.parse(value) : Date.now();
-  const d = new Date(Number.isFinite(t) ? t : Date.now());
-  return d.toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    timeZone: "UTC",
-  });
-}
-
 async function lookupUserEmail(userId: string): Promise<string | null> {
   try {
     const sql = await getSql();
@@ -165,15 +154,15 @@ async function sendInvoiceIfNeeded(userId: string, row: PayRow): Promise<void> {
     const chain = asPayChain(row.chain);
     const planName = PLANS[(row.plan as PlanId) in PLANS ? (row.plan as PlanId) : "starter"].name;
     const amountUsdc = formatUsdcExact(String(row.amount_base_units ?? usdcBaseUnits(Number(row.amount_usdc))));
-    const result = await sendPaidInvoiceEmail({
+    const sent = await sendInvoiceEmail({
       to,
       invoiceId: row.id,
-      date: formatInvoiceDate(row.paid_at),
+      date: row.paid_at || new Date().toISOString(),
       planName,
       amountUsdc,
       chain: CHAIN_LABEL[chain],
     });
-    if (result !== "sent") return;
+    if (!sent) return;
     const sql = await getSql();
     const now = new Date().toISOString();
     await sql`
