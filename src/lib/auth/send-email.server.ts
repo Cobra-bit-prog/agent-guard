@@ -49,20 +49,27 @@ export async function sendConfirmationEmail(opts: {
       to: [opts.to],
       subject: "Confirm your Agent Guard account",
       html: `<div style="font-family:ui-sans-serif,system-ui,sans-serif;max-width:480px;margin:0 auto;padding:32px 20px;color:#111">
-  <p>hello world</p>
-  <p>Confirm your Agent Guard account. This link expires in one hour.</p>
-  <p><a href="${safeUrl}">Confirm email</a></p>
-  <p>Or copy this link:</p>
-  <p><a href="${safeUrl}">${safeUrl}</a></p>
-  <p>If you did not create an Agent Guard account, ignore this email.</p>
+  <p style="font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#b45309;font-weight:600">Agent-Control.net</p>
+  <h1 style="font-size:22px;line-height:1.3;margin:12px 0 16px">Confirm your email</h1>
+  <p style="font-size:15px;line-height:1.55;color:#444">Thanks for creating an account. Click the link below to confirm this address and open the console. The link expires in one hour.</p>
+  <p style="margin:24px 0"><a href="${safeUrl}">Confirm email</a></p>
+  <p style="font-size:14px;line-height:1.5;color:#444">Or copy this link:</p>
+  <p style="font-size:13px;line-height:1.5;word-break:break-all"><a href="${safeUrl}">${safeUrl}</a></p>
+  <p style="font-size:12px;line-height:1.5;color:#888">If you did not create an Agent Guard account on agent-control.net, ignore this email.</p>
 </div>`,
-      text: `hello world
+      text: `Agent-Control.net
 
-Confirm your Agent Guard account. This link expires in one hour.
+Confirm your email
 
+Thanks for creating an account. Click the link below to confirm this address and open the console. The link expires in one hour.
+
+Confirm email:
 ${url}
 
-If you did not create an Agent Guard account, ignore this email.`,
+Or copy this link:
+${url}
+
+If you did not create an Agent Guard account on agent-control.net, ignore this email.`,
     }),
   });
   if (!response.ok) {
