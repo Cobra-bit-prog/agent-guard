@@ -30,7 +30,7 @@ export const Route = createFileRoute("/api/v1/mcp")({
       OPTIONS: () => new Response(null, { status: 204, headers: CORS }),
       GET: () =>
         json({
-          name: "Agent Guard",
+          name: "Agent Control",
           protocol: "mcp",
           tools: TOOLS,
           auth: "Bearer agent API key",
@@ -59,7 +59,7 @@ export const Route = createFileRoute("/api/v1/mcp")({
             id,
             result: {
               protocolVersion: "2024-11-05",
-              serverInfo: { name: "Agent Guard", version: "1.0.0" },
+              serverInfo: { name: "Agent Control", version: "1.0.0" },
               capabilities: { tools: {} },
             },
           });
