@@ -21,7 +21,9 @@ export function PayPanel({ req }: { req: PayRequestView }) {
   const chain = (req.chain ?? "solana") as PayChain;
   const chainName = PAY_CHAIN_LABEL[chain] ?? "Solana";
   const evm = chain === "ethereum" || chain === "base";
-  const displayAmount = evm ? req.exactAmountUsdc : String(req.amountUsdc);
+  const sticker = String(req.amountUsdc);
+  const displayAmount = evm ? req.exactAmountUsdc : sticker;
+  const sendExact = evm && displayAmount !== sticker;
   const payUrl = (req.payUrl ?? "").trim();
   const walletHref = evm
     ? req.metamaskUrl || "https://link.metamask.io"
@@ -66,7 +68,10 @@ export function PayPanel({ req }: { req: PayRequestView }) {
         <div className="flex items-center justify-between gap-3 rounded-[12px] border border-border bg-elevated/50 px-3 py-2.5">
           <div>
             <p className="text-xs text-muted">Amount</p>
-            <p className="font-medium">{displayAmount} USDC</p>
+            <p className="font-medium">{sticker} USDC</p>
+            {sendExact ? (
+              <p className="mt-0.5 text-xs text-muted">Send exactly {displayAmount} USDC</p>
+            ) : null}
           </div>
           <Button
             type="button"

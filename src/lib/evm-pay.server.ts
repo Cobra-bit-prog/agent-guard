@@ -44,10 +44,10 @@ function parseHexBigInt(hex: string | undefined): bigint {
 function randomExtraMicros(): number {
   const buf = new Uint32Array(1);
   crypto.getRandomValues(buf);
-  return 1 + (buf[0] % 999_999);
+  return 1 + (buf[0] % 9_999);
 }
 
-/** planPrice * 1e6 + unique extra micros in 1..999999 that is free on this chain. */
+/** planPrice * 1e6 + unique extra micros in 1..9999 (e.g. 29.000123, never 29.9). */
 export async function allocateUniqueUsdcAmount(
   usedBaseUnits: Iterable<string>,
   planPriceUsdc: number,

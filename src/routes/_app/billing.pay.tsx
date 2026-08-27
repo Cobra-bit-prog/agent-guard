@@ -159,7 +159,7 @@ function PayRequestPage() {
           ← Billing
         </Link>
         <h1 className="mt-3 text-2xl font-semibold tracking-tight">
-          {plan.name} · {displayAmount} USDC
+          {plan.name} · {req.amountUsdc} USDC
         </h1>
         <p className="mt-1 text-sm text-muted">Complete your payment to activate your plan.</p>
       </div>

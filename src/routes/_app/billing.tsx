@@ -256,7 +256,7 @@ function BillingPage() {
         <DialogContent className="left-0 top-auto bottom-0 flex max-h-[94dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col overflow-y-auto rounded-b-none sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:w-[calc(100%-2rem)] sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[var(--radius-xl)]">
           <DialogTitle>
             {payReq
-              ? `Pay ${payReq.chain === "solana" ? payReq.amountUsdc : payReq.exactAmountUsdc} USDC`
+              ? `Pay ${payReq.amountUsdc} USDC`
               : "Pay USDC"}
           </DialogTitle>
           <DialogDescription>
