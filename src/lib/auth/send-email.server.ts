@@ -1,6 +1,7 @@
 /**
  * Transactional mail via Resend. Used by Better Auth for signup confirmation.
  * Set RESEND_API_KEY (and optional EMAIL_FROM) on the Vercel project.
+ * EMAIL_FROM on Vercel is Agent Control <noreply@agent-control.net>.
  */
 const env = (key: string): string | undefined => {
   const value = process.env[key]?.trim();
