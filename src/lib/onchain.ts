@@ -11,6 +11,13 @@ const BLOCKSCOUT: Record<"base" | "ethereum", string> = {
   ethereum: "https://eth.blockscout.com/api",
 };
 
+
+/** Override with SOLANA_RPC_URL. Default is public mainnet. */
+export function solanaRpcUrl(): string {
+  const custom = typeof process !== "undefined" ? process.env.SOLANA_RPC_URL?.trim() : "";
+  return custom || RPC.solana;
+}
+
 export const USD_PRICE = { ETH: 3200, SOL: 140 };
 
 export type OnchainBalance = {
@@ -31,12 +38,12 @@ export type ChainTransfer = {
   kind: string;
 };
 
-async function rpc<T>(url: string, method: string, params: unknown[]): Promise<T> {
+export async function rpc<T>(url: string, method: string, params: unknown[]): Promise<T> {
   const res = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
-    signal: AbortSignal.timeout(4000),
+    signal: AbortSignal.timeout(8000),
   });
   const j = (await res.json()) as { result?: T; error?: { message?: string } };
   if (j.error) throw new Error(j.error.message ?? "RPC error");
@@ -54,7 +61,7 @@ export async function readNativeBalance(
       const eth = Number(BigInt(hex ?? "0x0")) / 1e18;
       return { native: eth.toFixed(5), usd: eth * USD_PRICE.ETH, ok: true, symbol };
     }
-    const lamports = await rpc<number>(RPC.solana, "getBalance", [address]).then(
+    const lamports = await rpc<number>(solanaRpcUrl(), "getBalance", [address]).then(
       (r) => (typeof r === "number" ? r : Number((r as { value?: number })?.value ?? 0)),
     );
     const sol = Number(lamports) / 1e9;
@@ -126,7 +133,7 @@ type SolTx = {
 };
 
 async function readSolanaTransfers(address: string): Promise<ChainTransfer[]> {
-  const sigs = await rpc<SolSig[]>(RPC.solana, "getSignaturesForAddress", [
+  const sigs = await rpc<SolSig[]>(solanaRpcUrl(), "getSignaturesForAddress", [
     address,
     { limit: 8 },
   ]);
