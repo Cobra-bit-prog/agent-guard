@@ -30,6 +30,21 @@ const FAQS = [
     q: "Is this insurance?",
     a: "No. Monitoring and policy checks only. A blocked check is a decision, not a guarantee that funds cannot move.",
   },
+  {
+    q: "How do I reach support?",
+    a: (
+      <>
+        Problems or billing questions: email{" "}
+        <a
+          href="mailto:agent-guard@agentmail.to"
+          className="text-fg underline underline-offset-4"
+        >
+          agent-guard@agentmail.to
+        </a>
+        .
+      </>
+    ),
+  },
 ];
 
 export function LandingFaq() {
