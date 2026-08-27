@@ -207,7 +207,7 @@ export function LandingTutorial() {
                 {CHECK_CURL}
               </pre>
               <p className="mt-3 font-mono text-[11px] text-muted">
-                {`← { "must_abort": true, "decision": "block", "reasons": ["…"] }`}
+                {`← { "decision": "block", "reasons": ["…"] }`}
               </p>
             </div>
             <div className="rounded-[18px] border border-border bg-surface p-5">
@@ -313,7 +313,7 @@ function SceneFrame({ id }: { id: SceneId }) {
         </p>
         <p className="mt-2 text-lg font-medium text-white">Treasury Bot · $2,400</p>
         <pre className="mt-4 whitespace-pre-wrap font-mono text-xs text-red-200">
-          {`← { "must_abort": true, "decision": "block" }
+          {`← { "decision": "block" }
    over daily cap of $2000`}
         </pre>
       </div>
