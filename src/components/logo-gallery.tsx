@@ -39,7 +39,7 @@ export function LogoGallery() {
           Brand proposals
         </p>
         <h2 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">
-          Five Agent Guard marks
+          Five Agent Control marks
         </h2>
         <p className="mt-3 max-w-2xl text-muted">
           Same navy and electric-blue palette as the product. Pick a number and

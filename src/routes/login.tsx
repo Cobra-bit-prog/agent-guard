@@ -92,7 +92,7 @@ function Login() {
           <Logo />
         </Link>
         <h1 className="mt-6 text-2xl font-semibold tracking-tight">
-          Sign in to Agent Guard
+          Sign in to Agent Control
         </h1>
         <p className="mt-1 text-sm text-muted">
           Protect the wallets your agents control.

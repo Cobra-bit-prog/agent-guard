@@ -1,4 +1,4 @@
-# Agent Guard
+# Agent Control
 
 Always-on policy and pre-sign checks for autonomous wallets on Base, Ethereum, and Solana.
 
@@ -6,7 +6,7 @@ The app already uses **Neon Postgres** when `DATABASE_URL` is set (local preview
 
 ## Try it
 
-1. Open [https://agent-guard.vercel.app](https://agent-guard.vercel.app)
+1. Open [https://agent-control.net](https://agent-control.net)
 2. Create an account (email + password)
 3. Enroll a live wallet or use the demo agents
 4. Call `POST /api/v1/check` before your agent signs
@@ -24,7 +24,7 @@ In the Vercel project **agent-guard**:
 | Name | Value |
 |---|---|
 | `BETTER_AUTH_SECRET` | long random string (do not commit) |
-| `BETTER_AUTH_URL` | `https://agent-guard.vercel.app` |
+| `BETTER_AUTH_URL` | `https://agent-control.net` |
 | `VITE_AUTH_ENABLED` | `true` |
 | `SOLANA_PAYOUT_ADDRESS` | Operator Phantom receive address (base58). Required for Billing. |
 | `SOLANA_RPC_URL` | Optional. Defaults to https://api.mainnet-beta.solana.com |

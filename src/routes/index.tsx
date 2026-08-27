@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({ component: Home });
 
-const SUPPORT_MAIL = "mailto:agent-guard@agentmail.to";
+const SUPPORT_MAIL = "mailto:support@agent-control.net";
 
 const NAV = [
   { href: "#product", label: "Product" },
@@ -108,7 +108,7 @@ function Home() {
           className="landing-rise mt-5 max-w-xl text-base text-muted md:text-lg"
           style={{ animationDelay: "80ms" }}
         >
-          Your agents can move money. Agent Guard sits in front of the signature,
+          Your agents can move money. Agent Control sits in front of the signature,
           scores the send against your policy, and answers a check the agent must
           call before it broadcasts. You still hold the keys.
         </p>
@@ -306,10 +306,10 @@ function Home() {
           <p>Monitoring and policy checks. Not a custodian. Not insurance.</p>
           <p className="flex flex-col gap-1 text-xs md:items-end">
             <a href={SUPPORT_MAIL} className="text-muted hover:text-fg">
-              Contact · agent-guard@agentmail.to
+              Contact · support@agent-control.net
             </a>
             <span>
-              Chain marks identify supported networks. Agent Guard is not affiliated
+              Chain marks identify supported networks. Agent Control is not affiliated
               with Solana, Ethereum, or Base.
             </span>
           </p>

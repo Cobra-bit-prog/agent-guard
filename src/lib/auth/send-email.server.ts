@@ -37,7 +37,7 @@ export async function sendConfirmationEmail(opts: {
     return;
   }
   const safeUrl = escapeHtml(url);
-  const from = env("EMAIL_FROM") ?? "Agent Guard <beth.t@example.com>";
+  const from = env("EMAIL_FROM") ?? "Agent Control <noreply@agent-control.net>";
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -47,7 +47,7 @@ export async function sendConfirmationEmail(opts: {
     body: JSON.stringify({
       from,
       to: [opts.to],
-      subject: "Confirm your Agent Guard account",
+      subject: "Confirm your Agent Control account",
       html: `<div style="font-family:ui-sans-serif,system-ui,sans-serif;max-width:480px;margin:0 auto;padding:32px 20px;color:#111">
   <p style="font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#b45309;font-weight:600">Agent-Control.net</p>
   <h1 style="font-size:22px;line-height:1.3;margin:12px 0 16px">Confirm your email</h1>
@@ -55,7 +55,7 @@ export async function sendConfirmationEmail(opts: {
   <p style="margin:24px 0"><a href="${safeUrl}">Confirm email</a></p>
   <p style="font-size:14px;line-height:1.5;color:#444">Or copy this link:</p>
   <p style="font-size:13px;line-height:1.5;word-break:break-all"><a href="${safeUrl}">${safeUrl}</a></p>
-  <p style="font-size:12px;line-height:1.5;color:#888">If you did not create an Agent Guard account on agent-control.net, ignore this email.</p>
+  <p style="font-size:12px;line-height:1.5;color:#888">If you did not create an Agent Control account on agent-control.net, ignore this email.</p>
 </div>`,
       text: `Agent-Control.net
 
@@ -69,7 +69,7 @@ ${url}
 Or copy this link:
 ${url}
 
-If you did not create an Agent Guard account on agent-control.net, ignore this email.`,
+If you did not create an Agent Control account on agent-control.net, ignore this email.`,
     }),
   });
   if (!response.ok) {

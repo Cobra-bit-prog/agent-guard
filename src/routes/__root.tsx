@@ -9,14 +9,14 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Agent Guard — Your agents can spend. You set the limits." },
+      { title: "Agent Control — Your agents can spend. You set the limits." },
       {
         name: "description",
         content:
           "Pre-sign policy for autonomous wallets on Solana, Ethereum, and Base. Agents call /api/v1/check before they sign. You hold the keys.",
       },
       { name: "theme-color", content: "#07090f" },
-      { property: "og:title", content: "Agent Guard — Your agents can spend. You set the limits." },
+      { property: "og:title", content: "Agent Control — Your agents can spend. You set the limits." },
       {
         property: "og:description",
         content:

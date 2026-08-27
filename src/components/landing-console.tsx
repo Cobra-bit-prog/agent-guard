@@ -44,7 +44,7 @@ export function LandingConsole() {
         <span className="size-2.5 rounded-full bg-warning/80" />
         <span className="size-2.5 rounded-full bg-success/80" />
         <p className="ml-3 font-mono text-[11px] text-subtle">
-          agent-guard · live console
+          agent-control · live console
         </p>
         <span className="ml-auto hidden items-center gap-2 text-[11px] text-success sm:flex">
           <span className="size-1.5 animate-pulse rounded-full bg-success" />

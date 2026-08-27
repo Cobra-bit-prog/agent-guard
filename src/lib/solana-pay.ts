@@ -18,7 +18,7 @@ export function buildSolanaPayUrl(opts: {
     amount: String(opts.amountUsdc),
     "spl-token": USDC_MINT,
     reference: opts.reference,
-    label: "Agent Guard",
+    label: "Agent Control",
     message: `${opts.planName} on agent-control.net`,
   });
   return `solana:${opts.recipient}?${q.toString()}`;

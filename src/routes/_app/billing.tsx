@@ -160,7 +160,7 @@ function BillingPage() {
         </Link>
         <span className="text-subtle"> · </span>
         <a
-          href="mailto:agent-guard@agentmail.to"
+          href="mailto:support@agent-control.net"
           className="text-primary underline-offset-4 hover:underline"
         >
           Need help? Contact

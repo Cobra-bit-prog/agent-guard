@@ -36,7 +36,7 @@ export function Logo({
             large ? "text-xl md:text-2xl" : "text-sm",
           )}
         >
-          Agent Guard
+          Agent Control
         </span>
       )}
     </div>
