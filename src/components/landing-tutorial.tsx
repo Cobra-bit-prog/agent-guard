@@ -1,13 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Pause, Play } from "lucide-react";
+import { Copy, Pause, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-const CHECK_CURL = `curl -s https://agent-control.net/api/v1/check \\
-  -H "Authorization: Bearer <agent api key>" \\
-  -H "Content-Type: application/json" \\
-  -d '{"to":"DESTINATION","value_usd":250}'`;
 
 const SCENES = [
   {
@@ -22,28 +17,28 @@ const SCENES = [
     title: "Enroll a wallet",
     ms: 6400,
     caption:
-      "Paste a live Solana, Ethereum, or Base address. We sync native balance and recent transfers. Demo wallets stay labeled so you can tour first.",
+      "Name the agent, pick Solana, Ethereum, or Base, paste the address, then add the wallet. Live wallets sync. Demo wallets stay labeled so you can tour first.",
   },
   {
     id: "policy",
     title: "Set the limits",
     ms: 7200,
     caption:
-      "Daily cap, max send, hourly velocity, alert threshold, allowlist, denylist. An allowlist means anything else is blocked. Pause holds every send.",
+      "Fill the policy: daily cap, max send, hourly velocity, and an allowlist if you want only those destinations. Pause holds every send.",
   },
   {
     id: "hook",
     title: "Wire the pre-sign hook",
     ms: 8000,
     caption:
-      "Copy the agent API key. Before every sign, POST /api/v1/check with Bearer auth, destination, and value_usd. If must_abort is true, do not broadcast.",
+      "Open the agent, copy the API key, paste destination and amount, then run Check before the agent signs.",
   },
   {
     id: "block",
     title: "Watch a bad send stop",
     ms: 6400,
     caption:
-      "Treasury Bot tries $2,400 against a $2,000 daily cap. Check returns must_abort: true and the reason. If the agent can skip the check, pause it in the console.",
+      "Treasury Bot tries $2,400 against a $2,000 daily cap. The feed shows Blocked. If the agent can skip the check, pause it in the console.",
   },
 ] as const;
 
@@ -66,7 +61,7 @@ const GUIDE = [
   {
     n: "04",
     title: "Call check before you sign",
-    body: "Open the agent, copy its API key, and put this call in front of sign-and-broadcast. REST and MCP use the same Bearer key. If the JSON has must_abort: true, abort. We cannot stop a send the agent never checks. pause from the console for a hard stop on your side.",
+    body: "Open the agent, copy its API key, and run Simulate a send with the destination and amount before the agent signs. The same key works on REST and MCP. We cannot stop a send the agent never checks. Pause from the console for a hard stop on your side.",
   },
   {
     n: "05",
@@ -106,8 +101,8 @@ export function LandingTutorial() {
           From signup to a blocked send
         </h2>
         <p className="mt-2 max-w-2xl text-muted">
-          Account, wallet, policy, then the pre-sign check your agent must call.
-          The hook only works if you wire it in front of the signature.
+          Account, wallet, policy, then the check your agent runs in the console
+          before it signs.
         </p>
 
         <div className="mt-8 overflow-hidden rounded-[22px] border border-border bg-[#0c1118] shadow-[var(--shadow-panel)]">
@@ -195,21 +190,7 @@ export function LandingTutorial() {
           </ol>
 
           <div className="space-y-4 lg:sticky lg:top-6 lg:self-start">
-            <div className="rounded-[18px] border border-border bg-surface p-5">
-              <p className="text-xs font-medium uppercase tracking-[0.16em] text-warning">
-                Pre-sign check
-              </p>
-              <p className="mt-2 text-sm text-muted">
-                Call this before the agent signs. Same key on REST and MCP
-                (`check_transfer`).
-              </p>
-              <pre className="mt-4 overflow-x-auto rounded-[14px] bg-bg p-4 font-mono text-[11px] leading-relaxed text-muted">
-                {CHECK_CURL}
-              </pre>
-              <p className="mt-3 font-mono text-[11px] text-muted">
-                {`← { "decision": "block", "reasons": ["…"] }`}
-              </p>
-            </div>
+            <SimulateSendMock />
             <div className="rounded-[18px] border border-border bg-surface p-5">
               <p className="text-sm font-medium">Policy that actually runs</p>
               <ul className="mt-3 space-y-2 text-sm text-muted">
@@ -226,10 +207,82 @@ export function LandingTutorial() {
   );
 }
 
+function Field({
+  label,
+  value,
+  mono,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+}) {
+  return (
+    <div className="space-y-1">
+      <p className="text-[11px] text-white/45">{label}</p>
+      <div
+        className={cn(
+          "rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs text-white/85",
+          mono && "font-mono",
+        )}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function SimulateSendMock({ dark }: { dark?: boolean }) {
+  const box = dark
+    ? "rounded-2xl border border-white/10 bg-white/[0.04] p-5"
+    : "rounded-[18px] border border-border bg-surface p-5";
+  const label = dark ? "text-[11px] text-white/45" : "text-[11px] text-muted";
+  const input = dark
+    ? "rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs text-white/85"
+    : "rounded-lg border border-border bg-bg px-3 py-2 text-xs text-fg";
+  const title = dark ? "text-sm font-medium text-white" : "text-sm font-medium";
+  const muted = dark ? "text-xs text-white/50" : "text-sm text-muted";
+  const btn = dark
+    ? "rounded-lg bg-primary px-3 py-2 text-center text-xs font-medium text-black"
+    : "rounded-lg bg-primary px-3 py-2 text-center text-xs font-medium text-bg";
+
+  return (
+    <div className={box}>
+      <p className={dark ? "text-xs font-medium uppercase tracking-[0.16em] text-warning" : "text-xs font-medium uppercase tracking-[0.16em] text-warning"}>
+        Agent page
+      </p>
+      <div className="mt-3 space-y-1">
+        <p className={label}>API key</p>
+        <div className={cn(input, "flex items-center justify-between gap-2 font-mono")}>
+          <span>ag_live_••••••••••••3kP9</span>
+          <span className={cn("inline-flex items-center gap-1", dark ? "text-white/50" : "text-muted")}>
+            <Copy className="size-3" />
+            Copy
+          </span>
+        </div>
+      </div>
+      <p className={cn("mt-4", title)}>Simulate a send</p>
+      <p className={cn("mt-1", muted)}>
+        Your agent uses this check before it signs.
+      </p>
+      <div className="mt-3 space-y-2">
+        <div className="space-y-1">
+          <p className={label}>To</p>
+          <div className={cn(input, "font-mono")}>0x91c4…a2e1</div>
+        </div>
+        <div className="space-y-1">
+          <p className={label}>Amount USD</p>
+          <div className={input}>2400</div>
+        </div>
+        <div className={btn}>Check</div>
+      </div>
+    </div>
+  );
+}
+
 function SceneFrame({ id }: { id: SceneId }) {
   if (id === "signup") {
     return (
-      <div className="grid h-full place-items-center px-6">
+      <div className="grid h-full place-items-center px-6 pb-24 pt-6">
         <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-white/[0.04] p-5">
           <p className="text-sm font-medium text-white">Create account</p>
           <div className="mt-4 space-y-3 text-xs text-white/50">
@@ -246,76 +299,85 @@ function SceneFrame({ id }: { id: SceneId }) {
   }
   if (id === "wallet") {
     return (
-      <div className="grid h-full place-items-center px-6">
+      <div className="grid h-full place-items-center px-6 pb-24 pt-6">
         <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-          <p className="text-sm font-medium text-white">Enroll agent wallet</p>
-          <p className="mt-3 font-mono text-xs text-white/70">Solana · 7nYq…kP3d</p>
-          <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
-            <div className="rounded-xl bg-white/[0.05] p-3">
-              <p className="text-white/40">Native balance</p>
-              <p className="mt-1 text-lg text-white">$12,400</p>
+          <p className="text-sm font-medium text-white">Add wallet</p>
+          <div className="mt-4 space-y-3">
+            <Field label="Agent name" value="Treasury Bot" />
+            <div className="space-y-1">
+              <p className="text-[11px] text-white/45">Chain</p>
+              <div className="flex gap-2 text-[11px] font-medium">
+                {["Solana", "Ethereum", "Base"].map((c, i) => (
+                  <span
+                    key={c}
+                    className={cn(
+                      "rounded-full border px-3 py-1.5",
+                      i === 0
+                        ? "border-primary/50 bg-primary/15 text-white"
+                        : "border-white/10 text-white/50",
+                    )}
+                  >
+                    {c}
+                  </span>
+                ))}
+              </div>
             </div>
-            <div className="rounded-xl bg-white/[0.05] p-3">
-              <p className="text-white/40">Last 24h</p>
-              <p className="mt-1 text-lg text-white">$1,080</p>
+            <Field label="Address" value="7nYqKs2mR8pQ…kP3d" mono />
+            <div className="rounded-lg bg-primary px-3 py-2 text-center text-xs font-medium text-black">
+              Add wallet
             </div>
           </div>
-          <p className="mt-3 text-[11px] text-white/40">Also Ethereum and Base. Demo wallets stay labeled.</p>
         </div>
       </div>
     );
   }
   if (id === "policy") {
     return (
-      <div className="grid h-full place-items-center px-6">
+      <div className="grid h-full place-items-center px-6 pb-24 pt-6">
         <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-white/[0.04] p-5">
           <p className="text-sm font-medium text-white">Treasury Bot policy</p>
-          <dl className="mt-4 space-y-2 text-sm text-white/80">
-            <div className="flex justify-between">
-              <dt className="text-white/40">Daily cap</dt>
-              <dd>$2,000</dd>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <Field label="Daily cap" value="$2,000" />
+            <Field label="Max send" value="$500" />
+            <Field label="Hourly velocity" value="4" />
+            <div className="space-y-1">
+              <p className="text-[11px] text-white/45">Allowlist</p>
+              <div className="flex flex-wrap gap-1.5 rounded-lg border border-white/10 bg-black/30 px-2 py-2">
+                <span className="rounded-full bg-white/10 px-2 py-0.5 font-mono text-[10px] text-white/80">
+                  0x91c4…a2e1
+                </span>
+                <span className="rounded-full bg-white/10 px-2 py-0.5 font-mono text-[10px] text-white/80">
+                  7nYq…kP3d
+                </span>
+              </div>
             </div>
-            <div className="flex justify-between">
-              <dt className="text-white/40">Max send</dt>
-              <dd>$500</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-white/40">Hourly velocity</dt>
-              <dd>4</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-white/40">Allowlist</dt>
-              <dd className="font-mono text-xs">2 addresses</dd>
-            </div>
-          </dl>
+          </div>
         </div>
       </div>
     );
   }
   if (id === "hook") {
     return (
-      <div className="grid h-full place-items-center px-6">
-        <pre className="w-full max-w-xl overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.04] p-5 font-mono text-[11px] leading-relaxed text-white/70">
-          <span className="text-white/40">POST /api/v1/check</span>
-          {"\n"}
-          {`Authorization: Bearer ag_live_…`}
-          {"\n\n"}
-          {`{ "to": "0x91c4…a2e1", "value_usd": 2400 }`}
-        </pre>
+      <div className="grid h-full place-items-center px-6 pb-24 pt-6">
+        <div className="w-full max-w-lg">
+          <SimulateSendMock dark />
+        </div>
       </div>
     );
   }
   return (
-    <div className="grid h-full place-items-center px-6">
-      <div className="w-full max-w-lg rounded-2xl border border-red-500/30 bg-red-500/10 p-5">
-        <p className="text-xs font-medium uppercase tracking-[0.16em] text-red-300">
-          Blocked
-        </p>
-        <p className="mt-2 text-lg font-medium text-white">Treasury Bot · $2,400</p>
-        <pre className="mt-4 whitespace-pre-wrap font-mono text-xs text-red-200">
-          {`← { "decision": "block" }
-   over daily cap of $2000`}
-        </pre>
+    <div className="grid h-full place-items-center px-6 pb-24 pt-6">
+      <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+        <p className="text-[11px] uppercase tracking-[0.14em] text-white/40">Activity</p>
+        <div className="mt-3 flex items-start gap-3 rounded-xl border border-red-500/35 bg-red-500/10 px-4 py-3">
+          <span className="mt-0.5 rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+            Blocked
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-white">Treasury Bot · $2,400</p>
+            <p className="mt-1 text-xs text-red-200">Over daily cap of $2,000</p>
+          </div>
+        </div>
       </div>
     </div>
   );
