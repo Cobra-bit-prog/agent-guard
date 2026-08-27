@@ -11,6 +11,14 @@ export function confirmationEmailEnabled(): boolean {
   return Boolean(env("RESEND_API_KEY"));
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
 export async function sendConfirmationEmail(opts: {
   to: string;
   url: string;
@@ -20,6 +28,15 @@ export async function sendConfirmationEmail(opts: {
     console.error("[auth] RESEND_API_KEY is not set; confirmation email skipped");
     return;
   }
+  const url = opts.url?.trim() ?? "";
+  if (!url) {
+    console.error(
+      "[auth] confirmation email skipped: Better Auth url is empty",
+      { to: opts.to },
+    );
+    return;
+  }
+  const safeUrl = escapeHtml(url);
   const from = env("EMAIL_FROM") ?? "Agent Guard <beth.t@example.com>";
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -32,13 +49,20 @@ export async function sendConfirmationEmail(opts: {
       to: [opts.to],
       subject: "Confirm your Agent Guard account",
       html: `<div style="font-family:ui-sans-serif,system-ui,sans-serif;max-width:480px;margin:0 auto;padding:32px 20px;color:#111">
-  <p style="font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:#b45309;font-weight:600">Agent Guard</p>
-  <h1 style="font-size:22px;line-height:1.3;margin:12px 0 16px">Confirm your email</h1>
-  <p style="font-size:15px;line-height:1.55;color:#444">Click the button to confirm this account. The link expires in one hour.</p>
-  <p style="margin:28px 0"><a href="${opts.url}" style="display:inline-block;background:#111;color:#fff;text-decoration:none;padding:12px 18px;border-radius:10px;font-size:14px;font-weight:600">Confirm email</a></p>
-  <p style="font-size:12px;line-height:1.5;color:#888">If you did not create an Agent Guard account, ignore this email.</p>
+  <p>hello world</p>
+  <p>Confirm your Agent Guard account. This link expires in one hour.</p>
+  <p><a href="${safeUrl}">Confirm email</a></p>
+  <p>Or copy this link:</p>
+  <p><a href="${safeUrl}">${safeUrl}</a></p>
+  <p>If you did not create an Agent Guard account, ignore this email.</p>
 </div>`,
-      text: `Confirm your Agent Guard account:\n${opts.url}\n\nIf you did not create an account, ignore this email.`,
+      text: `hello world
+
+Confirm your Agent Guard account. This link expires in one hour.
+
+${url}
+
+If you did not create an Agent Guard account, ignore this email.`,
     }),
   });
   if (!response.ok) {
