@@ -275,6 +275,7 @@ export const getPayRequest = createServerFn({ method: "GET" })
       await sql`update pay_requests set status = ${"expired"} where id = ${row.id}`;
       row.status = "expired";
     }
+    if (row.status === "paid") await sendInvoiceIfNeeded(context.userId, row);
     return view(row);
   });
 

@@ -67,6 +67,14 @@ type EvmLog = {
   topics?: string[];
 };
 
+const LLAMA_ETH = "https://eth.llamarpc.com";
+
+async function getLogs(endpoint: string, filter: unknown): Promise<EvmLog[]> {
+  const logs = await rpc<EvmLog[]>(endpoint, "eth_getLogs", [filter]);
+  return Array.isArray(logs) ? logs : [];
+}
+
+/** Match a USDC Transfer to payout for the exact uint256 amount. Logs ~last 30 min. */
 export async function findMatchingEvmUsdcPayment(opts: {
   chain: EvmPayChain;
   recipient: string;
@@ -74,13 +82,13 @@ export async function findMatchingEvmUsdcPayment(opts: {
   createdAt?: string;
 }): Promise<EvmMatchResult> {
   const net = EVM_USDC[opts.chain];
-  const endpoint = evmRpcUrl(opts.chain);
   const expected = BigInt(opts.amountBaseUnits);
   if (expected <= 0n) return { kind: "none" };
 
+  const primary = evmRpcUrl(opts.chain);
   let latest = 0;
   try {
-    const latestHex = await rpc<string>(endpoint, "eth_blockNumber", []);
+    const latestHex = await rpc<string>(primary, "eth_blockNumber", []);
     latest = Number.parseInt(latestHex, 16);
   } catch (err) {
     console.error("[billing] eth_blockNumber failed", opts.chain, err);
@@ -89,28 +97,36 @@ export async function findMatchingEvmUsdcPayment(opts: {
   if (!Number.isFinite(latest) || latest <= 0) return { kind: "none" };
 
   const created = opts.createdAt ? new Date(opts.createdAt).getTime() : Date.now() - PAY_EXPIRY_MS;
-  const ageMs = Math.max(60_000, Date.now() - created) + 120_000;
-  const lookback = Math.min(
-    Math.ceil(ageMs / 1000 / net.blockSeconds) + 80,
-    opts.chain === "base" ? 2000 : 400,
-  );
+  const ageMs = Math.min(PAY_EXPIRY_MS, Math.max(60_000, Date.now() - created)) + 120_000;
+  const maxBlocks = Math.ceil((PAY_EXPIRY_MS + 120_000) / 1000 / net.blockSeconds);
+  const lookback = Math.min(Math.ceil(ageMs / 1000 / net.blockSeconds) + 40, maxBlocks);
   const fromBlock = Math.max(0, latest - lookback);
+
+  const filter = {
+    fromBlock: `0x${fromBlock.toString(16)}`,
+    toBlock: "latest",
+    address: net.usdc,
+    topics: [TRANSFER_TOPIC0, null, padTopicAddress(opts.recipient)],
+  };
 
   let logs: EvmLog[] = [];
   try {
-    logs = await rpc<EvmLog[]>(endpoint, "eth_getLogs", [
-      {
-        fromBlock: `0x${fromBlock.toString(16)}`,
-        toBlock: "latest",
-        address: net.usdc,
-        topics: [TRANSFER_TOPIC0, null, padTopicAddress(opts.recipient)],
-      },
-    ]);
+    logs = await getLogs(primary, filter);
   } catch (err) {
-    console.error("[billing] eth_getLogs failed", opts.chain, err);
-    return { kind: "none" };
+    const customEth = Boolean(process.env.ETH_RPC_URL?.trim());
+    if (opts.chain === "ethereum" && !customEth && primary !== LLAMA_ETH) {
+      try {
+        logs = await getLogs(LLAMA_ETH, filter);
+      } catch (err2) {
+        console.error("[billing] eth_getLogs failed", opts.chain, err2);
+        return { kind: "none" };
+      }
+    } else {
+      console.error("[billing] eth_getLogs failed", opts.chain, err);
+      return { kind: "none" };
+    }
   }
-  if (!Array.isArray(logs) || logs.length === 0) return { kind: "none" };
+  if (logs.length === 0) return { kind: "none" };
 
   let bestUnder: EvmMatchResult | null = null;
   for (const log of logs) {

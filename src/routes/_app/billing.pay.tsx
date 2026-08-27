@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getPayRequest, watchPayRequest } from "@/lib/server/solana-billing";
 import { PLANS, type PlanId } from "@/lib/plans";
-import type { PayChain } from "@/lib/solana-pay";
+import { PAY_CHAIN_LABEL, type PayChain } from "@/lib/solana-pay";
 import { shortAddress } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/billing/pay")({
@@ -18,18 +18,12 @@ export const Route = createFileRoute("/_app/billing/pay")({
   component: PayRequestPage,
 });
 
-const CHAIN_LABEL: Record<PayChain, string> = {
-  solana: "Solana",
-  ethereum: "Ethereum",
-  base: "Base",
-};
-
-function PayQr({ value, label }: { value: string; label: string }) {
+function PayQr({ value, alt }: { value: string; alt: string }) {
   const src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&ecc=M&margin=10&data=${encodeURIComponent(value)}`;
   return (
     <img
       src={src}
-      alt={label}
+      alt={alt}
       width={220}
       height={220}
       className="rounded-lg bg-white p-2"
@@ -40,7 +34,7 @@ function PayQr({ value, label }: { value: string; label: string }) {
 function PayRequestPage() {
   const { id } = Route.useSearch();
   const qc = useQueryClient();
-  const [copied, setCopied] = useState<"addr" | "amount" | null>(null);
+  const [copied, setCopied] = useState<"amount" | "address" | null>(null);
 
   const q = useQuery({
     queryKey: ["pay-request", id],
@@ -82,10 +76,10 @@ function PayRequestPage() {
   }
   const req = q.data!;
   const plan = PLANS[(req.plan as PlanId) in PLANS ? (req.plan as PlanId) : "starter"];
-  const chain: PayChain = req.chain ?? "solana";
-  const isEvm = chain === "ethereum" || chain === "base";
-  const network = CHAIN_LABEL[chain];
-  const exact = req.exactAmountUsdc ?? String(req.amountUsdc);
+  const chain = (req.chain ?? "solana") as PayChain;
+  const chainName = PAY_CHAIN_LABEL[chain] ?? "Solana";
+  const evm = chain === "ethereum" || chain === "base";
+  const displayAmount = evm ? req.exactAmountUsdc : String(req.amountUsdc);
 
   if (req.status === "paid") {
     return <Navigate to="/billing" />;
@@ -93,7 +87,7 @@ function PayRequestPage() {
 
   const watching = Boolean(req.signature) || req.status === "underpaid";
 
-  async function copyText(value: string, kind: "addr" | "amount") {
+  async function copy(kind: "amount" | "address", value: string) {
     try {
       await navigator.clipboard.writeText(value);
       setCopied(kind);
@@ -110,24 +104,24 @@ function PayRequestPage() {
           <Link to="/billing" className="text-sm text-muted hover:text-fg">
             ← Billing
           </Link>
-          <h1 className="mt-3 text-2xl font-semibold tracking-tight">Watching {network}</h1>
+          <h1 className="mt-3 text-2xl font-semibold tracking-tight">Watching {chainName}</h1>
           <p className="mt-1 text-sm text-muted">
-            Waiting for {exact} USDC to confirm. This usually takes a few seconds.
+            Waiting for {displayAmount} USDC to confirm. This usually takes a few seconds.
           </p>
         </div>
         <Card>
           <CardContent className="space-y-4 p-6 text-center">
             <div className="mx-auto size-16 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            <p className="text-lg font-semibold">Watching {network}</p>
+            <p className="text-lg font-semibold">Watching {chainName}</p>
             {req.status === "underpaid" && (
               <p className="text-sm text-warning">
-                Received {req.paidAmountUsdc} USDC. Send the rest to reach {exact} USDC.
+                Received {req.paidAmountUsdc} USDC. Send the rest to reach {displayAmount} USDC.
               </p>
             )}
             <div className="border-t border-border pt-4 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted">Amount</span>
-                <span>{exact} USDC</span>
+                <span>{displayAmount} USDC</span>
               </div>
               {req.signature && (
                 <div className="mt-2 flex justify-between gap-3">
@@ -164,7 +158,7 @@ function PayRequestPage() {
           ← Billing
         </Link>
         <h1 className="mt-3 text-2xl font-semibold tracking-tight">
-          {plan.name} · {exact} USDC
+          {plan.name} · {displayAmount} USDC
         </h1>
         <p className="mt-1 text-sm text-muted">Complete your payment to activate your plan.</p>
       </div>
@@ -172,7 +166,7 @@ function PayRequestPage() {
         <CardContent className="grid gap-6 p-6 md:grid-cols-[220px_1fr]">
           <PayQr
             value={req.payUrl}
-            label={isEvm ? `${network} USDC payment QR` : "Solana Pay QR"}
+            alt={evm ? `${chainName} USDC payment QR` : "Solana Pay QR"}
           />
           <div className="space-y-3 text-sm">
             <div className="flex items-center justify-between gap-3">
@@ -180,16 +174,16 @@ function PayRequestPage() {
               <button
                 type="button"
                 className="inline-flex items-center gap-1 font-medium hover:text-primary"
-                onClick={() => void copyText(exact, "amount")}
+                onClick={() => void copy("amount", displayAmount)}
               >
-                {exact} USDC
+                {displayAmount} USDC
                 <Copy className="size-3" />
                 {copied === "amount" ? "copied" : null}
               </button>
             </div>
             <div className="flex justify-between gap-3">
               <span className="text-muted">Network</span>
-              <span>{network}</span>
+              <span>{chainName}</span>
             </div>
             <div className="flex justify-between gap-3">
               <span className="text-muted">Token</span>
@@ -200,19 +194,21 @@ function PayRequestPage() {
               <button
                 type="button"
                 className="inline-flex items-center gap-1 font-mono text-xs hover:text-primary"
-                onClick={() => void copyText(req.recipient, "addr")}
+                onClick={() => void copy("address", req.recipient)}
               >
                 {shortAddress(req.recipient, 4)}
                 <Copy className="size-3" />
-                {copied === "addr" ? "copied" : null}
+                {copied === "address" ? "copied" : null}
               </button>
             </div>
-            {isEvm ? (
+            {evm ? (
               <>
                 <Button className="mt-4 w-full" asChild>
                   <a href={req.metamaskUrl ?? req.payUrl}>Open in MetaMask</a>
                 </Button>
-                <p className="text-center text-xs text-subtle">or scan the QR from any wallet</p>
+                <p className="text-center text-xs text-subtle">
+                  USDC only. You pay network gas. Or scan the QR from MetaMask.
+                </p>
               </>
             ) : (
               <>
@@ -227,8 +223,8 @@ function PayRequestPage() {
       </Card>
       <p className="flex items-start gap-2 text-xs text-muted">
         <Info className="mt-0.5 size-3.5 shrink-0" />
-        {isEvm
-          ? "Send this exact USDC amount. USDC only — you pay network gas. Do not send from an exchange."
+        {evm
+          ? "Send the exact USDC amount. We match the Transfer amount on-chain. Do not send from an exchange."
           : "We match this payment with a unique reference. Do not send from an exchange."}
       </p>
     </div>

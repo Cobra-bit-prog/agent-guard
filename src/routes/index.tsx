@@ -138,6 +138,17 @@ function Home() {
             <a href="#learn">Watch the tutorial</a>
           </Button>
         </div>
+        <pre
+          className="landing-rise mt-8 max-w-xl overflow-x-auto rounded-[18px] border border-border bg-surface/90 p-4 font-mono text-[12px] leading-relaxed text-muted shadow-[var(--shadow-panel)]"
+          style={{ animationDelay: "200ms" }}
+        >
+          <span className="text-subtle">POST /api/v1/check</span>
+          {"\n"}
+          <span className="text-fg">{`{ "to": "0x91c4…a2e1", "value_usd": 2400 }`}</span>
+          {"\n\n"}
+          <span className="text-danger">{`← { "decision": "block" }`}</span>
+          <span className="text-subtle"> · over daily cap</span>
+        </pre>
         <SupportedChains className="landing-rise mt-8" />
         <LandingConsole />
       </section>

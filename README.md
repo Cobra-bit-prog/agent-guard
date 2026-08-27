@@ -38,4 +38,4 @@ Until `DATABASE_URL` is set, sign-ups live only in a throwaway store and disappe
 
 ## Billing
 
-Paid plans are **USDC** on Solana, Ethereum, or Base. Solana uses Solana Pay + Phantom (`SOLANA_PAYOUT_ADDRESS`). Ethereum and Base use native USDC transfer (`EVM_PAYOUT_ADDRESS`, same 0x account on both chains). Customers pay their own gas on ETH/Base. No card, no silent autopay: each month starts a new pay request in the console.
+Paid plans are **USDC** on Solana, Ethereum, or Base. Solana uses Solana Pay + Phantom (`SOLANA_PAYOUT_ADDRESS`). Ethereum and Base use native USDC transfer (`EVM_PAYOUT_ADDRESS`, same 0x account on both chains). Customers pay their own gas on ETH/Base. No card, no silent autopay: each month starts a new pay request in the console. After a payment confirms, we email a thank-you invoice once (Resend).

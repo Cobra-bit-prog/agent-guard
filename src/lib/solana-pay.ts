@@ -6,6 +6,12 @@ export const PERIOD_DAYS = 30;
 
 export type PayChain = "solana" | "ethereum" | "base";
 
+export const PAY_CHAIN_LABEL: Record<PayChain, string> = {
+  solana: "Solana",
+  ethereum: "Ethereum",
+  base: "Base",
+};
+
 export function usdcBaseUnits(uiAmount: number): string {
   return String(BigInt(uiAmount) * 10n ** BigInt(USDC_DECIMALS));
 }
