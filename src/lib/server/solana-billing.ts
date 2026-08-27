@@ -150,7 +150,10 @@ async function sendInvoiceIfNeeded(userId: string, row: PayRow): Promise<void> {
   if (row.invoice_email_sent_at) return;
   try {
     const to = await lookupUserEmail(userId);
-    if (!to) return;
+    if (!to) {
+      console.error("[billing] invoice email skipped: no email for user");
+      return;
+    }
     const chain = asPayChain(row.chain);
     const planName = PLANS[(row.plan as PlanId) in PLANS ? (row.plan as PlanId) : "starter"].name;
     const amountUsdc = formatUsdcExact(String(row.amount_base_units ?? usdcBaseUnits(Number(row.amount_usdc))));
