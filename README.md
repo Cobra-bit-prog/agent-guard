@@ -26,6 +26,8 @@ In the Vercel project **agent-guard**:
 | `BETTER_AUTH_SECRET` | long random string (do not commit) |
 | `BETTER_AUTH_URL` | `https://agent-guard.vercel.app` |
 | `VITE_AUTH_ENABLED` | `true` |
+| `SOLANA_PAYOUT_ADDRESS` | Operator Phantom receive address (base58). Required for Billing. |
+| `SOLANA_RPC_URL` | Optional. Defaults to https://api.mainnet-beta.solana.com |
 
 6. **Redeploy** so `npm run build` runs migrations against Neon
 
@@ -33,4 +35,4 @@ Until `DATABASE_URL` is set, sign-ups live only in a throwaway store and disappe
 
 ## Billing
 
-Plans in the console currently **activate without charging a card**. Stripe is connected on the operator account for a different product. Agent Guard Checkout is not live.
+Paid plans are **USDC on Solana** via Solana Pay + Phantom. Set `SOLANA_PAYOUT_ADDRESS` (the operator Phantom receive pubkey) on Production and Preview. No card, no silent autopay: each month starts a new pay request in the console.
