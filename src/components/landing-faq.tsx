@@ -24,7 +24,7 @@ const FAQS = [
   },
   {
     q: "Is the trial free? Do I need a card?",
-    a: "Yes. One day of the full console, no card. After that a paid plan is required to keep monitoring. Checkout is not live yet, so you will not be charged from this site today.",
+    a: "Yes. One day of the full console, no card. After that pay Starter, Pro, or Team in USDC on Solana from Billing (Phantom). We never see your funds and we do not auto-charge next month.",
   },
   {
     q: "Is this insurance?",
