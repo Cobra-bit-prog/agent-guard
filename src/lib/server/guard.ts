@@ -295,6 +295,7 @@ export async function ensureSchema() {
       id text primary key,
       user_id text not null,
       plan text not null,
+      chain text not null default 'solana',
       amount_usdc integer not null,
       amount_base_units text not null,
       reference text not null unique,
@@ -309,6 +310,7 @@ export async function ensureSchema() {
   `);
   await sql.query(`create index if not exists pay_requests_user_idx on pay_requests (user_id, created_at desc)`);
   await sql.query(`create index if not exists pay_requests_reference_idx on pay_requests (reference)`);
+  await sql.query(`alter table pay_requests add column if not exists chain text not null default 'solana'`);
   const demoAddrs = DEMO_AGENTS.map((d) => d.address);
   for (const addr of demoAddrs) {
     await sql`update agents set is_demo = true where address = ${addr} and is_demo = false`;
@@ -1034,7 +1036,7 @@ export const changePlan = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator((d: unknown) => z.object({ plan: z.enum(["starter", "pro", "team"]) }).parse(d))
   .handler(async () => {
-    throw new Error("Plans are paid in USDC on Solana. Open Billing and pay with Phantom.");
+    throw new Error("Plans are paid in USDC on Solana, Ethereum, or Base. Open Billing.");
   });
 
 export const rotateApiKey = createServerFn({ method: "POST" })

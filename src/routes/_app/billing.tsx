@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Check, Lock } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getProfile } from "@/lib/server/guard";
 import { createPayRequest, getCheckoutConfig } from "@/lib/server/solana-billing";
 import { FREE_TRIAL_DAYS, PLANS, formatTrialLeft, type PlanId } from "@/lib/plans";
+import type { PayChain } from "@/lib/solana-pay";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/billing")({
@@ -16,12 +18,20 @@ export const Route = createFileRoute("/_app/billing")({
 
 const PAID = [PLANS.starter, PLANS.pro, PLANS.team] as const;
 
+const CHAINS: { id: PayChain; label: string; hint: string }[] = [
+  { id: "solana", label: "Solana", hint: "Phantom" },
+  { id: "ethereum", label: "Ethereum", hint: "MetaMask · you pay gas" },
+  { id: "base", label: "Base", hint: "MetaMask · you pay gas" },
+];
+
 function BillingPage() {
   const navigate = useNavigate();
+  const [chain, setChain] = useState<PayChain>("solana");
   const q = useQuery({ queryKey: ["profile"], queryFn: () => getProfile() });
   const cfg = useQuery({ queryKey: ["checkout-config"], queryFn: () => getCheckoutConfig() });
   const pay = useMutation({
-    mutationFn: (plan: "starter" | "pro" | "team") => createPayRequest({ data: { plan } }),
+    mutationFn: (plan: "starter" | "pro" | "team") =>
+      createPayRequest({ data: { plan, chain } }),
     onSuccess: (req) => {
       void navigate({ to: "/billing/pay", search: { id: req.id } });
     },
@@ -33,7 +43,14 @@ function BillingPage() {
   const expired = Boolean(q.data?.expired);
   const trialing = q.data?.planStatus === "trialing";
   const paidActive = current !== "free" && !expired;
-  const configured = Boolean(cfg.data?.configured);
+  const solanaOk = Boolean(cfg.data?.solana);
+  const ethereumOk = Boolean(cfg.data?.ethereum);
+  const baseOk = Boolean(cfg.data?.base);
+  const anyConfigured = solanaOk || ethereumOk || baseOk;
+  const chainOk =
+    chain === "solana" ? solanaOk : chain === "ethereum" ? ethereumOk : baseOk;
+  const chainMeta = CHAINS.find((c) => c.id === chain)!;
+  const cfgReady = cfg.isSuccess;
 
   return (
     <div className="space-y-6">
@@ -68,7 +85,7 @@ function BillingPage() {
             </span>
             <p className="mt-4 text-xl font-semibold">{PLANS[current].name} is active</p>
             <p className="mt-1 text-sm text-success">
-              {PLANS[current].price} USDC received on Solana
+              {PLANS[current].price} USDC received on-chain
             </p>
           </div>
           <div>
@@ -97,10 +114,44 @@ function BillingPage() {
         </div>
       )}
 
-      {!configured && (
+      <div>
+        <p className="mb-2 text-xs uppercase tracking-wider text-subtle">Pay on</p>
+        <div className="flex flex-wrap gap-2">
+          {CHAINS.map((c) => {
+            const ok =
+              c.id === "solana" ? solanaOk : c.id === "ethereum" ? ethereumOk : baseOk;
+            const selected = chain === c.id;
+            return (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setChain(c.id)}
+                className={cn(
+                  "rounded-full border px-3 py-1.5 text-sm",
+                  selected
+                    ? "border-primary bg-primary/15 text-fg"
+                    : "border-border bg-surface text-muted hover:text-fg",
+                )}
+              >
+                {c.label}
+                {cfgReady && !ok ? (
+                  <span className="ml-1 text-xs text-subtle">· off</span>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+        <p className="mt-2 text-xs text-subtle">{chainMeta.hint} · USDC only</p>
+      </div>
+
+      {cfgReady && !anyConfigured && (
         <p className="rounded-[16px] border border-warning/40 bg-warning/10 px-4 py-3 text-sm">
-          Checkout is not configured. Payments are USDC on Solana via Phantom. An operator must set{" "}
-          <code className="text-xs">SOLANA_PAYOUT_ADDRESS</code> on the project.
+          Checkout is not configured. Payments are USDC on Solana, Ethereum, or Base.
+        </p>
+      )}
+      {cfgReady && anyConfigured && !chainOk && (
+        <p className="rounded-[16px] border border-warning/40 bg-warning/10 px-4 py-3 text-sm">
+          Checkout is not configured for {chainMeta.label}. Choose another network.
         </p>
       )}
 
@@ -133,12 +184,16 @@ function BillingPage() {
                 <Button
                   className="mt-6"
                   variant={highlighted || isCurrent ? "default" : "secondary"}
-                  disabled={!configured || pay.isPending || isCurrent}
+                  disabled={!chainOk || pay.isPending || isCurrent}
                   onClick={() => pay.mutate(p.id)}
                 >
                   {isCurrent ? "Current plan" : `Pay ${p.price} USDC`}
                 </Button>
-                <p className="mt-2 text-center text-xs text-subtle">Solana · Phantom · no card</p>
+                <p className="mt-2 text-center text-xs text-subtle">
+                  {chain === "solana"
+                    ? "Solana · Phantom · USDC"
+                    : `${chainMeta.label} · MetaMask · USDC · you pay gas`}
+                </p>
               </CardContent>
             </Card>
           );
@@ -147,7 +202,7 @@ function BillingPage() {
 
       <p className="flex items-center justify-center gap-2 text-xs text-subtle">
         <Lock className="size-3" />
-        All payments are made on-chain. We never see your funds.
+        All payments are made on-chain. We never see your funds. USDC only.
       </p>
       {paidActive && (
         <p className="text-center text-xs text-subtle">
@@ -168,7 +223,8 @@ function BillingPage() {
       </p>
       <p className="text-xs text-subtle">
         Free is a one-time {FREE_TRIAL_DAYS}-day trial. After it ends, scans and new agents pause
-        until you pay in USDC on Solana. No silent autopay.
+        until you pay in USDC on Solana, Ethereum, or Base. On Ethereum and Base you pay your own
+        gas. No silent autopay.
       </p>
     </div>
   );

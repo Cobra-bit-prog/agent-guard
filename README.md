@@ -26,8 +26,11 @@ In the Vercel project **agent-guard**:
 | `BETTER_AUTH_SECRET` | long random string (do not commit) |
 | `BETTER_AUTH_URL` | `https://agent-control.net` |
 | `VITE_AUTH_ENABLED` | `true` |
-| `SOLANA_PAYOUT_ADDRESS` | Operator Phantom receive address (base58). Required for Billing. |
+| `SOLANA_PAYOUT_ADDRESS` | Operator Solana receive address (base58). Required for Solana Billing. |
 | `SOLANA_RPC_URL` | Optional. Defaults to https://api.mainnet-beta.solana.com |
+| `EVM_PAYOUT_ADDRESS` | Operator 0x receive address. Same account for Ethereum and Base. |
+| `ETH_RPC_URL` | Optional. Defaults to a public Ethereum RPC. |
+| `BASE_RPC_URL` | Optional. Defaults to https://mainnet.base.org |
 
 6. **Redeploy** so `npm run build` runs migrations against Neon
 
@@ -35,4 +38,4 @@ Until `DATABASE_URL` is set, sign-ups live only in a throwaway store and disappe
 
 ## Billing
 
-Paid plans are **USDC on Solana** via Solana Pay + Phantom. Set `SOLANA_PAYOUT_ADDRESS` (the operator Phantom receive pubkey) on Production and Preview. No card, no silent autopay: each month starts a new pay request in the console.
+Paid plans are **USDC** on Solana, Ethereum, or Base. Solana uses Solana Pay + Phantom (`SOLANA_PAYOUT_ADDRESS`). Ethereum and Base use native USDC transfer (`EVM_PAYOUT_ADDRESS`, same 0x account on both chains). Customers pay their own gas on ETH/Base. No card, no silent autopay: each month starts a new pay request in the console.

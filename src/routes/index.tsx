@@ -242,8 +242,8 @@ function Home() {
             Pricing
           </h2>
           <p className="mt-2 text-muted">
-            1-day full console. No card required to start. Paid plans unlock after
-            the trial.
+            1-day full console. No card required to start. Paid plans are USDC on
+            Solana, Ethereum, or Base. You pay gas on ETH/Base. No autopay.
           </p>
           <div className="mt-8 grid gap-4 md:grid-cols-4">
             {Object.values(PLANS).map((p) => (

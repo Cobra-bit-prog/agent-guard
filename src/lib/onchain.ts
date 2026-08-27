@@ -18,6 +18,13 @@ export function solanaRpcUrl(): string {
   return custom || RPC.solana;
 }
 
+/** Override with ETH_RPC_URL / BASE_RPC_URL. Public defaults are fine. */
+export function evmRpcUrl(chain: "ethereum" | "base"): string {
+  const envName = chain === "ethereum" ? "ETH_RPC_URL" : "BASE_RPC_URL";
+  const custom = typeof process !== "undefined" ? process.env[envName]?.trim() : "";
+  return custom || RPC[chain];
+}
+
 export const USD_PRICE = { ETH: 3200, SOL: 140 };
 
 export type OnchainBalance = {
@@ -56,8 +63,8 @@ export async function readNativeBalance(
 ): Promise<OnchainBalance> {
   const symbol = CHAINS[chain].native;
   try {
-    if (CHAINS[chain].kind === "evm") {
-      const hex = await rpc<string>(RPC[chain], "eth_getBalance", [address, "latest"]);
+    if (chain === "ethereum" || chain === "base") {
+      const hex = await rpc<string>(evmRpcUrl(chain), "eth_getBalance", [address, "latest"]);
       const eth = Number(BigInt(hex ?? "0x0")) / 1e18;
       return { native: eth.toFixed(5), usd: eth * USD_PRICE.ETH, ok: true, symbol };
     }

@@ -24,7 +24,7 @@ const FAQS = [
   },
   {
     q: "Is the trial free? Do I need a card?",
-    a: "Yes. One day of the full console, no card. After that pay Starter, Pro, or Team in USDC on Solana from Billing (Phantom). We never see your funds and we do not auto-charge next month.",
+    a: "Yes. One day of the full console, no card. After that pay Starter, Pro, or Team in USDC on Solana, Ethereum, or Base from Billing. Phantom for Solana; MetaMask or any wallet for Ethereum and Base. You pay your own gas on ETH/Base. We never see your funds and we do not auto-charge next month.",
   },
   {
     q: "Is this insurance?",

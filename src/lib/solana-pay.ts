@@ -1,11 +1,30 @@
-/** Native USDC-on-Solana billing. No card, no Stripe checkout. */
+/** Native USDC billing. No card, no Stripe checkout. */
 export const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 export const USDC_DECIMALS = 6;
 export const PAY_EXPIRY_MS = 30 * 60 * 1000;
 export const PERIOD_DAYS = 30;
 
+export type PayChain = "solana" | "ethereum" | "base";
+
 export function usdcBaseUnits(uiAmount: number): string {
   return String(BigInt(uiAmount) * 10n ** BigInt(USDC_DECIMALS));
+}
+
+/** Exact USDC amount from base units, up to 6 decimal places. */
+export function formatUsdcExact(baseUnits: string): string {
+  let n: bigint;
+  try {
+    n = BigInt(baseUnits);
+  } catch {
+    return "0";
+  }
+  const neg = n < 0n;
+  const abs = neg ? -n : n;
+  const whole = abs / 1_000_000n;
+  const frac = abs % 1_000_000n;
+  const fracStr = frac.toString().padStart(6, "0").replace(/0+$/, "");
+  const s = fracStr ? `${whole}.${fracStr}` : String(whole);
+  return neg ? `-${s}` : s;
 }
 
 export function buildSolanaPayUrl(opts: {
@@ -33,7 +52,10 @@ export type PayStatus = "pending" | "paid" | "expired" | "underpaid";
 export type PayRequestView = {
   id: string;
   plan: string;
+  chain: PayChain;
   amountUsdc: number;
+  amountBaseUnits: string;
+  exactAmountUsdc: string;
   reference: string;
   recipient: string;
   status: PayStatus;
@@ -41,5 +63,6 @@ export type PayRequestView = {
   paidAmountUsdc: number | null;
   expiresAt: string;
   payUrl: string;
+  metamaskUrl: string | null;
   checkoutConfigured: boolean;
 };
