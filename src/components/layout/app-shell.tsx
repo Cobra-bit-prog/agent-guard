@@ -12,6 +12,9 @@ import { RedirectToSignIn, UserButton } from "@/lib/auth/gates";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { Logo } from "@/components/brand";
 import { TrialBanner } from "@/components/trial-banner";
+import { useQuery } from "@tanstack/react-query";
+import { getProfile } from "@/lib/server/guard";
+import { PLANS, type PlanId } from "@/lib/plans";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -76,6 +79,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             );
           })}
         </nav>
+        <SidebarPlan />
         <div className="hidden border-t border-border pt-4 text-xs text-subtle md:block">
           <p className="flex items-center gap-2">
             <span className="size-1.5 animate-pulse rounded-full bg-success" />
@@ -116,3 +120,26 @@ export function AppShell({ children }: { children: ReactNode }) {
     </div>
   );
 }
+
+function SidebarPlan() {
+  const q = useQuery({ queryKey: ["profile"], queryFn: () => getProfile() });
+  const plan = (q.data?.plan ?? "free") as PlanId;
+  const expired = Boolean(q.data?.expired);
+  const label = expired && plan === "free" ? "Trial" : PLANS[plan]?.name ?? plan;
+  const sub =
+    expired && plan === "free"
+      ? "1-day trial ended"
+      : expired
+        ? "Ended — pay to continue"
+        : plan === "free"
+          ? "1-day trial"
+          : "USDC on Solana";
+  return (
+    <div className="mt-auto hidden rounded-[12px] border border-border bg-elevated/50 p-3 text-xs md:block">
+      <p className="text-[10px] uppercase tracking-wider text-subtle">Current plan</p>
+      <p className={expired ? "mt-1 font-semibold text-primary" : "mt-1 font-semibold"}>{label}</p>
+      <p className="text-muted">{sub}</p>
+    </div>
+  );
+}
+
