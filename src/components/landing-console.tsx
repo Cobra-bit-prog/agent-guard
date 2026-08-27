@@ -150,7 +150,7 @@ export function LandingConsole() {
                 <span className="landing-scan-bar mt-2 h-1 rounded-full bg-warning/80" />
               </div>
               <div className="landing-check-blocked absolute inset-0 flex flex-col justify-center">
-                <p className="text-xs font-medium text-danger">must_abort · over daily cap</p>
+                <p className="text-xs font-medium text-danger">blocked · over daily cap</p>
                 <p className="mt-1 text-[11px] text-muted">Signature never left the agent.</p>
               </div>
             </div>
