@@ -289,6 +289,26 @@ export async function ensureSchema() {
   await sql.query(
     `create unique index if not exists transactions_agent_hash_idx on transactions (agent_id, tx_hash)`,
   );
+  await sql.query(`alter table subscriptions add column if not exists period_ends_at timestamptz`);
+  await sql.query(`
+    create table if not exists pay_requests (
+      id text primary key,
+      user_id text not null,
+      plan text not null,
+      amount_usdc integer not null,
+      amount_base_units text not null,
+      reference text not null unique,
+      recipient text not null,
+      status text not null default 'pending',
+      signature text,
+      paid_amount_usdc numeric,
+      expires_at timestamptz not null,
+      created_at timestamptz not null default now(),
+      paid_at timestamptz
+    )
+  `);
+  await sql.query(`create index if not exists pay_requests_user_idx on pay_requests (user_id, created_at desc)`);
+  await sql.query(`create index if not exists pay_requests_reference_idx on pay_requests (reference)`);
   const demoAddrs = DEMO_AGENTS.map((d) => d.address);
   for (const addr of demoAddrs) {
     await sql`update agents set is_demo = true where address = ${addr} and is_demo = false`;
@@ -383,11 +403,16 @@ async function ensureWorkspace(userId: string) {
 
 async function loadEntitlement(userId: string): Promise<Entitlement> {
   const sql = await getSql();
-  const rows = await sql<{ plan: string; status: string; trial_ends_at: string | null }>`
-    select plan, status, trial_ends_at from subscriptions where user_id = ${userId}
+  const rows = await sql<{
+    plan: string;
+    status: string;
+    trial_ends_at: string | null;
+    period_ends_at: string | null;
+  }>`
+    select plan, status, trial_ends_at, period_ends_at from subscriptions where user_id = ${userId}
   `;
   const ent = evaluateEntitlement(
-    rows[0] ?? { plan: "free", status: "expired", trial_ends_at: null },
+    rows[0] ?? { plan: "free", status: "expired", trial_ends_at: null, period_ends_at: null },
   );
   if (ent.expired && rows[0]?.status !== "expired") {
     await sql`update subscriptions set status = ${"expired"}, updated_at = ${new Date().toISOString()} where user_id = ${userId}`;
@@ -968,6 +993,8 @@ export const getProfile = createServerFn({ method: "GET" })
       plan: ent.plan,
       planStatus: ent.status,
       trialEndsAt: ent.trialEndsAt,
+      periodEndsAt: ent.periodEndsAt,
+      agentLimit: ent.agentLimit,
       expired: ent.expired,
       writable: ent.writable,
       msLeft: ent.msLeft,
@@ -1006,20 +1033,8 @@ export const saveProfile = createServerFn({ method: "POST" })
 export const changePlan = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator((d: unknown) => z.object({ plan: z.enum(["starter", "pro", "team"]) }).parse(d))
-  .handler(async ({ context, data }) => {
-    const sql = await getSql();
-    await sql`
-      insert into subscriptions (user_id, plan, status, trial_ends_at, updated_at)
-      values (${context.userId}, ${data.plan}, ${"active"}, ${null}, ${new Date().toISOString()})
-      on conflict (user_id) do update
-        set plan = ${data.plan},
-            status = ${"active"},
-            trial_ends_at = ${null},
-            updated_at = ${new Date().toISOString()}
-    `;
-    await sql`update agents set is_paused = false where user_id = ${context.userId}`;
-    await logAudit(context.userId, "plan_upgraded", `Switched to ${PLANS[data.plan].name}.`);
-    return { plan: data.plan, name: PLANS[data.plan].name };
+  .handler(async () => {
+    throw new Error("Plans are paid in USDC on Solana. Open Billing and pay with Phantom.");
   });
 
 export const rotateApiKey = createServerFn({ method: "POST" })
