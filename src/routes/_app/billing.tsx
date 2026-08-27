@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getProfile } from "@/lib/server/guard";
 import { createPayRequest, getCheckoutConfig } from "@/lib/server/solana-billing";
 import { FREE_TRIAL_DAYS, PLANS, formatTrialLeft, type PlanId } from "@/lib/plans";
+import { ChainMark } from "@/components/chain-icons";
 import { PAY_CHAIN_LABEL, type PayChain } from "@/lib/solana-pay";
 import { cn } from "@/lib/utils";
 
@@ -115,13 +116,14 @@ function BillingPage() {
                 key={id}
                 type="button"
                 className={cn(
-                  "rounded-full border px-3 py-1.5 text-sm",
+                  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm",
                   chain === id
                     ? "border-primary bg-primary/15 text-fg"
                     : "border-border text-muted hover:text-fg",
                 )}
                 onClick={() => setChain(id)}
               >
+                <ChainMark chain={id} className="size-4" />
                 {PAY_CHAIN_LABEL[id]}
                 {cfg.data && !ready ? (
                   <span className="ml-1 text-xs text-subtle">off</span>

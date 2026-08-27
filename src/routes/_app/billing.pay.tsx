@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getPayRequest, watchPayRequest } from "@/lib/server/solana-billing";
 import { PLANS, type PlanId } from "@/lib/plans";
+import { ChainMark } from "@/components/chain-icons";
 import { PAY_CHAIN_LABEL, type PayChain } from "@/lib/solana-pay";
 import { shortAddress } from "@/lib/utils";
 
@@ -17,6 +18,15 @@ export const Route = createFileRoute("/_app/billing/pay")({
   }),
   component: PayRequestPage,
 });
+
+function NetworkLabel({ chain, className }: { chain: PayChain; className?: string }) {
+  return (
+    <span className={className ?? "inline-flex items-center gap-1.5"}>
+      <ChainMark chain={chain} className="size-4" />
+      {PAY_CHAIN_LABEL[chain]}
+    </span>
+  );
+}
 
 function PayQr({ value, alt }: { value: string; alt: string }) {
   const src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&ecc=M&margin=10&data=${encodeURIComponent(value)}`;
@@ -104,7 +114,7 @@ function PayRequestPage() {
           <Link to="/billing" className="text-sm text-muted hover:text-fg">
             ← Billing
           </Link>
-          <h1 className="mt-3 text-2xl font-semibold tracking-tight">Watching {chainName}</h1>
+          <h1 className="mt-3 inline-flex items-center gap-2 text-2xl font-semibold tracking-tight">Watching <NetworkLabel chain={chain} /></h1>
           <p className="mt-1 text-sm text-muted">
             Waiting for {displayAmount} USDC to confirm. This usually takes a few seconds.
           </p>
@@ -112,7 +122,7 @@ function PayRequestPage() {
         <Card>
           <CardContent className="space-y-4 p-6 text-center">
             <div className="mx-auto size-16 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            <p className="text-lg font-semibold">Watching {chainName}</p>
+            <p className="inline-flex items-center justify-center gap-2 text-lg font-semibold">Watching <NetworkLabel chain={chain} /></p>
             {req.status === "underpaid" && (
               <p className="text-sm text-warning">
                 Received {req.paidAmountUsdc} USDC. Send the rest to reach {displayAmount} USDC.
@@ -183,7 +193,7 @@ function PayRequestPage() {
             </div>
             <div className="flex justify-between gap-3">
               <span className="text-muted">Network</span>
-              <span>{chainName}</span>
+              <NetworkLabel chain={chain} />
             </div>
             <div className="flex justify-between gap-3">
               <span className="text-muted">Token</span>
