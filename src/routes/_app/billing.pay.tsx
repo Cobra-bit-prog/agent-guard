@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getPayRequest, watchPayRequest } from "@/lib/server/solana-billing";
 import { PLANS, type PlanId } from "@/lib/plans";
 import { ChainMark } from "@/components/chain-icons";
-import { PAY_CHAIN_LABEL, type PayChain } from "@/lib/solana-pay";
+import { PAY_CHAIN_LABEL, phantomBrowseUrl, type PayChain } from "@/lib/solana-pay";
 import { shortAddress } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/billing/pay")({
@@ -44,7 +44,7 @@ function PayQr({ value, alt }: { value: string; alt: string }) {
 function PayRequestPage() {
   const { id } = Route.useSearch();
   const qc = useQueryClient();
-  const [copied, setCopied] = useState<"amount" | "address" | null>(null);
+  const [copied, setCopied] = useState<"amount" | "address" | "both" | null>(null);
 
   const q = useQuery({
     queryKey: ["pay-request", id],
@@ -97,13 +97,20 @@ function PayRequestPage() {
 
   const watching = Boolean(req.signature) || req.status === "underpaid";
 
-  async function copy(kind: "amount" | "address", value: string) {
+  async function copy(kind: "amount" | "address" | "both", value: string) {
     try {
       await navigator.clipboard.writeText(value);
       setCopied(kind);
-      setTimeout(() => setCopied(null), 1500);
+      setTimeout(() => setCopied(null), 2000);
+      toast.success(
+        kind === "both"
+          ? "Amount and address copied. Paste them in the Phantom or MetaMask app."
+          : kind === "amount"
+            ? "Amount copied"
+            : "Address copied",
+      );
     } catch {
-      toast.error("Could not copy");
+      toast.error("Could not copy. Select the amount and address on this page.");
     }
   }
 
@@ -179,17 +186,24 @@ function PayRequestPage() {
             alt={evm ? `${chainName} USDC payment QR` : "Solana Pay QR"}
           />
           <div className="space-y-3 text-sm">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-muted">Amount</span>
-              <button
+            <p className="text-xs text-muted">
+              You don't need a wallet in Safari. Open the Phantom or MetaMask app, or copy
+              amount and address.
+            </p>
+            <div className="flex items-center justify-between gap-3 rounded-[12px] border border-border bg-elevated/50 px-3 py-2.5">
+              <div>
+                <p className="text-xs text-muted">Amount</p>
+                <p className="font-medium">{displayAmount} USDC</p>
+              </div>
+              <Button
                 type="button"
-                className="inline-flex items-center gap-1 font-medium hover:text-primary"
+                variant="secondary"
+                size="sm"
                 onClick={() => void copy("amount", displayAmount)}
               >
-                {displayAmount} USDC
-                <Copy className="size-3" />
-                {copied === "amount" ? "copied" : null}
-              </button>
+                <Copy />
+                {copied === "amount" ? "Copied" : "Copy amount"}
+              </Button>
             </div>
             <div className="flex justify-between gap-3">
               <span className="text-muted">Network</span>
@@ -199,33 +213,48 @@ function PayRequestPage() {
               <span className="text-muted">Token</span>
               <span>USDC</span>
             </div>
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-muted">To</span>
-              <button
+            <div className="flex items-center justify-between gap-3 rounded-[12px] border border-border bg-elevated/50 px-3 py-2.5">
+              <div className="min-w-0">
+                <p className="text-xs text-muted">To</p>
+                <p className="truncate font-mono text-xs">{shortAddress(req.recipient, 4)}</p>
+              </div>
+              <Button
                 type="button"
-                className="inline-flex items-center gap-1 font-mono text-xs hover:text-primary"
+                variant="secondary"
+                size="sm"
                 onClick={() => void copy("address", req.recipient)}
               >
-                {shortAddress(req.recipient, 4)}
-                <Copy className="size-3" />
-                {copied === "address" ? "copied" : null}
-              </button>
+                <Copy />
+                {copied === "address" ? "Copied" : "Copy address"}
+              </Button>
             </div>
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full"
+              onClick={() => void copy("both", `${displayAmount} USDC\n${req.recipient}`)}
+            >
+              <Copy />
+              {copied === "both" ? "Copied amount and address" : "Copy amount and address"}
+            </Button>
             {evm ? (
               <>
-                <Button className="mt-4 w-full" asChild>
-                  <a href={req.metamaskUrl ?? req.payUrl}>Open in MetaMask</a>
+                <Button className="w-full" asChild>
+                  <a href={req.metamaskUrl ?? "https://link.metamask.io"}>Open in MetaMask</a>
                 </Button>
                 <p className="text-center text-xs text-subtle">
-                  USDC only. You pay network gas. Or scan the QR from MetaMask.
+                  Opens the MetaMask app. USDC only. You pay network gas. Or scan the QR from a
+                  second device.
                 </p>
               </>
             ) : (
               <>
-                <Button className="mt-4 w-full" asChild>
-                  <a href={req.payUrl}>Open in Phantom</a>
+                <Button className="w-full" asChild>
+                  <a href={phantomBrowseUrl(req.payUrl)}>Open in Phantom</a>
                 </Button>
-                <p className="text-center text-xs text-subtle">or scan the QR from Phantom</p>
+                <p className="text-center text-xs text-subtle">
+                  Opens the Phantom app. Or scan the QR from a second device.
+                </p>
               </>
             )}
           </div>

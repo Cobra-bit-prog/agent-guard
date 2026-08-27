@@ -49,8 +49,9 @@ export function buildSolanaPayUrl(opts: {
   return `solana:${opts.recipient}?${q.toString()}`;
 }
 
+/** HTTPS universal link: opens the Phantom app, or the App Store / download page. */
 export function phantomBrowseUrl(solanaUrl: string): string {
-  return `https://phantom.app/ul/browse/${encodeURIComponent(solanaUrl)}?ref=https://agent-control.net`;
+  return `https://phantom.app/ul/browse/${encodeURIComponent(solanaUrl)}?ref=${encodeURIComponent("https://agent-control.net")}`;
 }
 
 export type PayStatus = "pending" | "paid" | "expired" | "underpaid";

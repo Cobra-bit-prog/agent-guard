@@ -43,5 +43,5 @@ export function buildMetamaskSendUrl(opts: {
   amountBaseUnits: string;
 }): string {
   const net = EVM_USDC[opts.chain];
-  return `https://metamask.app.link/send/${net.usdc}@${net.chainId}/transfer?address=${opts.recipient}&uint256=${opts.amountBaseUnits}`;
+  return `https://link.metamask.io/send/${net.usdc}@${net.chainId}/transfer?address=${opts.recipient}&uint256=${opts.amountBaseUnits}`;
 }
