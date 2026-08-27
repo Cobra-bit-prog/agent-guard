@@ -45,6 +45,7 @@ export type Entitlement = {
   plan: PlanId;
   status: "trialing" | "active" | "expired";
   trialEndsAt: string | null;
+  periodEndsAt: string | null;
   expired: boolean;
   writable: boolean;
   agentLimit: number;
@@ -59,17 +60,34 @@ export function evaluateEntitlement(row: {
   plan: string;
   status?: string;
   trial_ends_at?: string | null;
+  period_ends_at?: string | null;
 }): Entitlement {
   const plan: PlanId = row.plan in PLANS ? (row.plan as PlanId) : "free";
   if (plan !== "free") {
+    if (!row.period_ends_at) {
+      return {
+        plan,
+        status: "active",
+        trialEndsAt: null,
+        periodEndsAt: null,
+        expired: false,
+        writable: true,
+        agentLimit: planLimit(plan),
+        msLeft: 0,
+      };
+    }
+    const end = new Date(row.period_ends_at).getTime();
+    const msLeft = Math.max(0, end - Date.now());
+    const expired = Date.now() >= end;
     return {
       plan,
-      status: "active",
+      status: expired ? "expired" : "active",
       trialEndsAt: null,
-      expired: false,
-      writable: true,
+      periodEndsAt: row.period_ends_at ?? null,
+      expired,
+      writable: !expired,
       agentLimit: planLimit(plan),
-      msLeft: 0,
+      msLeft,
     };
   }
   const end = row.trial_ends_at ? new Date(row.trial_ends_at).getTime() : 0;
@@ -79,6 +97,7 @@ export function evaluateEntitlement(row: {
     plan: "free",
     status: expired ? "expired" : "trialing",
     trialEndsAt: row.trial_ends_at ?? null,
+    periodEndsAt: null,
     expired,
     writable: !expired,
     agentLimit: PLANS.free.agents,
