@@ -23,12 +23,15 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({ component: Home });
 
+const SUPPORT_MAIL = "mailto:agent-guard@agentmail.to";
+
 const NAV = [
   { href: "#product", label: "Product" },
   { href: "#learn", label: "Tutorial" },
   { href: "#how", label: "How it works" },
   { href: "#pricing", label: "Pricing" },
   { href: "#faq", label: "FAQ" },
+  { href: SUPPORT_MAIL, label: "Contact" },
 ];
 
 function Home() {
@@ -301,9 +304,14 @@ function Home() {
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-8 text-sm text-subtle md:flex-row md:items-center md:justify-between">
           <Logo size="lg" />
           <p>Monitoring and policy checks. Not a custodian. Not insurance.</p>
-          <p className="text-xs">
-            Chain marks identify supported networks. Agent Guard is not affiliated
-            with Solana, Ethereum, or Base.
+          <p className="flex flex-col gap-1 text-xs md:items-end">
+            <a href={SUPPORT_MAIL} className="text-muted hover:text-fg">
+              Contact · agent-guard@agentmail.to
+            </a>
+            <span>
+              Chain marks identify supported networks. Agent Guard is not affiliated
+              with Solana, Ethereum, or Base.
+            </span>
           </p>
         </div>
       </footer>
