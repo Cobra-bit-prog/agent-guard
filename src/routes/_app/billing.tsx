@@ -158,6 +158,13 @@ function BillingPage() {
         <Link to="/" hash="faq" className="text-primary underline-offset-4 hover:underline">
           Learn more about billing
         </Link>
+        <span className="text-subtle"> · </span>
+        <a
+          href="mailto:agent-guard@agentmail.to"
+          className="text-primary underline-offset-4 hover:underline"
+        >
+          Need help? Contact
+        </a>
       </p>
       <p className="text-xs text-subtle">
         Free is a one-time {FREE_TRIAL_DAYS}-day trial. After it ends, scans and new agents pause
