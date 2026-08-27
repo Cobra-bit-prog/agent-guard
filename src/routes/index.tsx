@@ -143,7 +143,7 @@ function Home() {
           {"\n"}
           <span className="text-fg">{`{ "to": "0x91c4…a2e1", "value_usd": 2400 }`}</span>
           {"\n\n"}
-          <span className="text-danger">{`← { "must_abort": true }`}</span>
+          <span className="text-danger">{`← { "decision": "block" }`}</span>
           <span className="text-subtle"> · over daily cap</span>
         </pre>
         <SupportedChains className="landing-rise mt-8" />
