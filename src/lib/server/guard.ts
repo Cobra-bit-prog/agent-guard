@@ -305,12 +305,16 @@ export async function ensureSchema() {
       paid_amount_usdc numeric,
       expires_at timestamptz not null,
       created_at timestamptz not null default now(),
-      paid_at timestamptz
+      paid_at timestamptz,
+      invoice_email_sent_at timestamptz
     )
   `);
   await sql.query(`create index if not exists pay_requests_user_idx on pay_requests (user_id, created_at desc)`);
   await sql.query(`create index if not exists pay_requests_reference_idx on pay_requests (reference)`);
   await sql.query(`alter table pay_requests add column if not exists chain text not null default 'solana'`);
+  await sql.query(
+    `alter table pay_requests add column if not exists invoice_email_sent_at timestamptz`,
+  );
   const demoAddrs = DEMO_AGENTS.map((d) => d.address);
   for (const addr of demoAddrs) {
     await sql`update agents set is_demo = true where address = ${addr} and is_demo = false`;

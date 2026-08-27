@@ -25,6 +25,7 @@ import {
   findMatchingEvmUsdcPayment,
 } from "@/lib/evm-pay.server";
 import { buildEip681TransferUrl, buildMetamaskSendUrl, type EvmPayChain } from "@/lib/evm-pay";
+import { sendPaidInvoiceEmail } from "@/lib/auth/send-email.server";
 import { ensureSchema } from "@/lib/server/guard";
 
 const PaidPlan = z.enum(["starter", "pro", "team"]);
@@ -49,6 +50,8 @@ type PayRow = {
   paid_amount_usdc: number | null;
   expires_at: string;
   created_at?: string;
+  paid_at?: string | null;
+  invoice_email_sent_at?: string | null;
 };
 
 function truncRecipient(value: string) {
@@ -126,6 +129,64 @@ async function applyPaidPlan(userId: string, plan: "starter" | "pro" | "team", c
   `;
 }
 
+
+function formatInvoiceDate(value: string | null | undefined): string {
+  const t = value ? Date.parse(value) : Date.now();
+  const d = new Date(Number.isFinite(t) ? t : Date.now());
+  return d.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+async function lookupUserEmail(userId: string): Promise<string | null> {
+  try {
+    const sql = await getSql();
+    const rows = await sql<{ email: string }>`
+      select email from "user" where id = ${userId} limit 1
+    `;
+    const email = rows[0]?.email?.trim();
+    return email || null;
+  } catch (err) {
+    console.error("[billing] user email lookup failed", err);
+    return null;
+  }
+}
+
+/** Paid only. Missing Resend key skips. Never throws — unlock already happened. */
+async function sendInvoiceIfNeeded(userId: string, row: PayRow): Promise<void> {
+  if (row.status !== "paid") return;
+  if (row.invoice_email_sent_at) return;
+  try {
+    const to = await lookupUserEmail(userId);
+    if (!to) return;
+    const chain = asPayChain(row.chain);
+    const planName = PLANS[(row.plan as PlanId) in PLANS ? (row.plan as PlanId) : "starter"].name;
+    const amountUsdc = formatUsdcExact(String(row.amount_base_units ?? usdcBaseUnits(Number(row.amount_usdc))));
+    const result = await sendPaidInvoiceEmail({
+      to,
+      invoiceId: row.id,
+      date: formatInvoiceDate(row.paid_at),
+      planName,
+      amountUsdc,
+      chain: CHAIN_LABEL[chain],
+    });
+    if (result !== "sent") return;
+    const sql = await getSql();
+    const now = new Date().toISOString();
+    await sql`
+      update pay_requests
+      set invoice_email_sent_at = ${now}
+      where id = ${row.id} and invoice_email_sent_at is null
+    `;
+    row.invoice_email_sent_at = now;
+  } catch (err) {
+    console.error("[billing] invoice email failed", err);
+  }
+}
+
 export const getCheckoutConfig = createServerFn({ method: "GET" })
   .middleware([authMiddleware])
   .handler(async () => {
@@ -200,7 +261,7 @@ export const createPayRequest = createServerFn({ method: "POST" })
       )
     `;
     const rows = await sql<PayRow>`
-      select id, plan, chain, amount_usdc, amount_base_units, reference, recipient, status, signature, paid_amount_usdc, expires_at, created_at
+      select id, plan, chain, amount_usdc, amount_base_units, reference, recipient, status, signature, paid_amount_usdc, expires_at, created_at, paid_at, invoice_email_sent_at
       from pay_requests where id = ${id} and user_id = ${context.userId}
     `;
     return view(rows[0]);
@@ -213,7 +274,7 @@ export const getPayRequest = createServerFn({ method: "GET" })
     await ensureSchema();
     const sql = await getSql();
     const rows = await sql<PayRow>`
-      select id, plan, chain, amount_usdc, amount_base_units, reference, recipient, status, signature, paid_amount_usdc, expires_at, created_at
+      select id, plan, chain, amount_usdc, amount_base_units, reference, recipient, status, signature, paid_amount_usdc, expires_at, created_at, paid_at, invoice_email_sent_at
       from pay_requests where id = ${data.id} and user_id = ${context.userId}
     `;
     const row = rows[0];
@@ -232,13 +293,16 @@ export const watchPayRequest = createServerFn({ method: "POST" })
     await ensureSchema();
     const sql = await getSql();
     const rows = await sql<PayRow>`
-      select id, plan, chain, amount_usdc, amount_base_units, reference, recipient, status, signature, paid_amount_usdc, expires_at, created_at
+      select id, plan, chain, amount_usdc, amount_base_units, reference, recipient, status, signature, paid_amount_usdc, expires_at, created_at, paid_at, invoice_email_sent_at
       from pay_requests where id = ${data.id} and user_id = ${context.userId}
     `;
     const row = rows[0];
     if (!row) throw new Error("Pay request not found.");
 
-    if (row.status === "paid") return view(row);
+    if (row.status === "paid") {
+      await sendInvoiceIfNeeded(context.userId, row);
+      return view(row);
+    }
     if (new Date(row.expires_at).getTime() <= Date.now()) {
       if (row.status === "pending" || row.status === "underpaid") {
         await sql`update pay_requests set status = ${"expired"} where id = ${row.id}`;
@@ -275,6 +339,8 @@ export const watchPayRequest = createServerFn({ method: "POST" })
       row.status = "paid";
       row.signature = match.signature;
       row.paid_amount_usdc = match.amountUsdc;
+      row.paid_at = new Date().toISOString();
+      await sendInvoiceIfNeeded(context.userId, row);
       return view(row);
     }
     if (match.kind === "underpaid") {
