@@ -5,7 +5,7 @@ import { getSql } from "@/lib/db";
 import { CHAINS, validateAddress, type ChainId } from "@/lib/chains";
 import { FREE_TRIAL_DAYS, PLANS, evaluateEntitlement, type Entitlement } from "@/lib/plans";
 import { evaluateTransfer, protectionScore } from "@/lib/policy";
-import { readNativeBalance, readRecentTransfers } from "@/lib/onchain";
+import { readNativeBalance, readRecentTransfers, USD_PRICE } from "@/lib/onchain";
 import { uid } from "@/lib/utils";
 
 function num(v: unknown) {
@@ -160,6 +160,93 @@ const KINDS = [
   "Spend Limit Reset",
   "Transfer",
 ];
+
+
+function demoSampleUsd(seed: string) {
+  return 2400 + (hashStr(seed) % 12600);
+}
+
+function demoNative(chain: ChainId, usd: number) {
+  if (chain === "solana") return (usd / USD_PRICE.SOL).toFixed(4);
+  return (usd / USD_PRICE.ETH).toFixed(5);
+}
+
+async function seedDemoHistory(
+  sql: Awaited<ReturnType<typeof getSql>>,
+  userId: string,
+  agent: { id: string; name: string; address: string; chain: ChainId; status: AgentRow["status"] },
+  salt: string,
+) {
+  const now = Date.now();
+  const count = 10 + (hashStr(agent.name + salt) % 8);
+  for (let i = 0; i < count; i++) {
+    const ts = new Date(now - i * 47 * 60 * 1000 - (hashStr(agent.name + i + salt) % 20) * 60000);
+    const value = 40 + (hashStr(agent.address + i + salt) % 1800);
+    const kind = KINDS[hashStr(agent.name + String(i) + salt) % KINDS.length];
+    const isV =
+      agent.status === "critical" && i < 2
+        ? true
+        : agent.status === "warning" && i === 0;
+    const txStatus =
+      isV && kind.includes("Failed")
+        ? "failed"
+        : i === 3 && agent.status === "critical"
+          ? "failed"
+          : "success";
+    await sql`
+      insert into transactions (
+        id, agent_id, user_id, chain, tx_hash, from_address, to_address,
+        value_usd, value_native, kind, is_violation, status, timestamp, source
+      ) values (
+        ${uid()}, ${agent.id}, ${userId}, ${agent.chain}, ${fakeHash(agent.address + i + salt, agent.chain)},
+        ${agent.address}, ${fakeAddr(agent.address + "to" + i + salt, agent.chain)},
+        ${value}, ${String((value / 3200).toFixed(4))}, ${kind}, ${isV}, ${txStatus}, ${ts.toISOString()}, ${"demo"}
+      )
+      on conflict do nothing
+    `;
+  }
+}
+
+async function hydrateDemoAgents(userId: string) {
+  const sql = await getSql();
+  const agents = (await sql`select * from agents where user_id = ${userId} and is_demo = true`).map(mapAgent);
+  const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+  for (const agent of agents) {
+    if (agent.balance_usd <= 0) {
+      const usd = demoSampleUsd(agent.address);
+      await sql`
+        update agents
+        set balance_usd = ${usd}, last_synced_at = ${new Date().toISOString()}
+        where id = ${agent.id} and user_id = ${userId}
+      `;
+    }
+    const txCount = await sql<{ c: number }>`
+      select count(*)::int as c from transactions
+      where agent_id = ${agent.id} and timestamp >= ${since}
+    `;
+    if (num(txCount[0]?.c) === 0) {
+      await seedDemoHistory(sql, userId, agent, "hydrate");
+    }
+    const pol = await sql<{ id: string }>`select id from policies where agent_id = ${agent.id} limit 1`;
+    if (!pol[0]) {
+      const daily = 12000;
+      const allow = JSON.stringify([
+        fakeAddr(agent.address + "ok1", agent.chain),
+        fakeAddr(agent.address + "ok2", agent.chain),
+      ]);
+      await sql`
+        insert into policies (
+          id, agent_id, user_id, daily_limit_usd, max_tx_amount_usd, alert_threshold_usd,
+          allowlist, denylist, max_hourly_txs
+        )
+        values (
+          ${uid()}, ${agent.id}, ${userId}, ${daily}, ${daily * 0.2}, ${daily * 0.15},
+          ${allow}::jsonb, ${"[]"}::jsonb, ${12}
+        )
+      `;
+    }
+  }
+}
 
 function asStrings(v: unknown): string[] {
   if (Array.isArray(v)) return v.map(String).filter(Boolean);
@@ -339,14 +426,13 @@ async function ensureWorkspace(userId: string) {
     on conflict (user_id) do nothing
   `;
   const existing = await sql<{ c: number }>`select count(*)::int as c from agents where user_id = ${userId}`;
-  if (num(existing[0]?.c) > 0) return;
-
-  const now = Date.now();
+  if (num(existing[0]?.c) === 0) {
   for (const demo of DEMO_AGENTS.slice(0, 2)) {
     const id = uid();
+    const sampleUsd = demoSampleUsd(demo.address);
     await sql`
-      insert into agents (id, user_id, name, address, chain, role, status, is_demo, api_key)
-      values (${id}, ${userId}, ${demo.name}, ${demo.address}, ${demo.chain}, ${demo.role}, ${demo.status}, ${true}, ${generateApiKey()})
+      insert into agents (id, user_id, name, address, chain, role, status, is_demo, api_key, balance_usd)
+      values (${id}, ${userId}, ${demo.name}, ${demo.address}, ${demo.chain}, ${demo.role}, ${demo.status}, ${true}, ${generateApiKey()}, ${sampleUsd})
     `;
     const allow = JSON.stringify([
       fakeAddr(demo.address + "ok1", demo.chain),
@@ -362,32 +448,12 @@ async function ensureWorkspace(userId: string) {
         ${allow}::jsonb, ${"[]"}::jsonb, ${12}
       )
     `;
-    const count = 10 + (hashStr(demo.name) % 8);
-    for (let i = 0; i < count; i++) {
-      const ts = new Date(now - i * 47 * 60 * 1000 - (hashStr(demo.name + i) % 20) * 60000);
-      const value = 40 + (hashStr(demo.address + i) % 1800);
-      const kind = KINDS[hashStr(demo.name + String(i)) % KINDS.length];
-      const isV =
-        demo.status === "critical" && i < 2
-          ? true
-          : demo.status === "warning" && i === 0;
-      const txStatus =
-        isV && kind.includes("Failed")
-          ? "failed"
-          : i === 3 && demo.status === "critical"
-            ? "failed"
-            : "success";
-      await sql`
-        insert into transactions (
-          id, agent_id, user_id, chain, tx_hash, from_address, to_address,
-          value_usd, value_native, kind, is_violation, status, timestamp, source
-        ) values (
-          ${uid()}, ${id}, ${userId}, ${demo.chain}, ${fakeHash(demo.address + i, demo.chain)},
-          ${demo.address}, ${fakeAddr(demo.address + "to" + i, demo.chain)},
-          ${value}, ${String((value / 3200).toFixed(4))}, ${kind}, ${isV}, ${txStatus}, ${ts.toISOString()}, ${"demo"}
-        )
-      `;
-    }
+    await seedDemoHistory(
+      sql,
+      userId,
+      { id, name: demo.name, address: demo.address, chain: demo.chain, status: demo.status },
+      "seed",
+    );
     if (demo.status !== "healthy") {
       await sql`
         insert into alerts (id, agent_id, user_id, type, severity, message)
@@ -405,6 +471,8 @@ async function ensureWorkspace(userId: string) {
     }
   }
   await logAudit(userId, "workspace_seeded", "Demo fleet enrolled with sample policy and history.");
+  }
+  await hydrateDemoAgents(userId);
 }
 
 async function loadEntitlement(userId: string): Promise<Entitlement> {
@@ -602,9 +670,21 @@ export const getDashboard = createServerFn({ method: "GET" })
 
     const entitlement = await loadEntitlement(context.userId);
     const volume24h = agents.reduce((s, a) => s + (volume[a.id] ?? 0), 0);
-    const onchainUsd = agents.filter((a) => !a.is_demo).reduce((s, a) => s + a.balance_usd, 0);
     const liveCount = agents.filter((a) => !a.is_demo).length;
     const demoCount = agents.filter((a) => a.is_demo).length;
+    const liveUsd = agents.filter((a) => !a.is_demo).reduce((s, a) => s + a.balance_usd, 0);
+    const demoUsd = agents.filter((a) => a.is_demo).reduce((s, a) => s + a.balance_usd, 0);
+    const onchainUsd = liveCount > 0 ? liveUsd : demoUsd;
+    const volumeHint =
+      liveCount === 0 && demoCount > 0
+        ? "Demo · sample volume"
+        : "Transfer volume — not treasury size";
+    const onchainHint =
+      liveCount > 0
+        ? "Native balance of live wallets"
+        : demoCount > 0
+          ? "Demo · sample balances"
+          : "Enroll a live wallet to fetch chain balance";
     const openAlerts = alerts.filter((a) => !a.acknowledged).length;
     const openCritical = alerts.filter((a) => !a.acknowledged && a.severity === "critical").length;
     const risk =
@@ -641,6 +721,8 @@ export const getDashboard = createServerFn({ method: "GET" })
       capital: volume24h,
       volume24h,
       onchainUsd,
+      volumeHint,
+      onchainHint,
       liveCount,
       demoCount,
       openAlerts,
@@ -964,10 +1046,19 @@ export const getOnchain = createServerFn({ method: "GET" })
     const agent = agents[0];
     if (!agent) throw new Error("Agent not found.");
     if (agent.is_demo) {
-      return { chain: agent.chain, address: agent.address, native: "—", usd: 0, ok: false, symbol: CHAINS[agent.chain].native };
+      const usd = agent.balance_usd > 0 ? agent.balance_usd : demoSampleUsd(agent.address);
+      return {
+        chain: agent.chain,
+        address: agent.address,
+        native: demoNative(agent.chain, usd),
+        usd,
+        ok: true,
+        demo: true,
+        symbol: CHAINS[agent.chain].native,
+      };
     }
     const balance = await readNativeBalance(agent.chain, agent.address);
-    return { chain: agent.chain, address: agent.address, ...balance };
+    return { chain: agent.chain, address: agent.address, ...balance, demo: false };
   });
 
 export const getProfile = createServerFn({ method: "GET" })

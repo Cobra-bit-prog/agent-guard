@@ -102,6 +102,7 @@ function AgentDetailPage() {
               <span className="font-mono tabular-nums text-fg">{chain.data.native}</span>
               {" · "}
               {formatUsd(chain.data.usd)}
+              {chain.data.demo ? " · demo sample" : ""}
             </>
           ) : (
             <span>not available for this address</span>

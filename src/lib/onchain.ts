@@ -115,7 +115,7 @@ export async function readNativeBalance(
   const symbol = CHAINS[chain].native;
   try {
     if (chain === "ethereum" || chain === "base") {
-      const hex = await rpc<string>(evmRpcUrl(chain), "eth_getBalance", [address, "latest"]);
+      const hex = await evmRpc<string>(chain, "eth_getBalance", [address, "latest"]);
       const eth = Number(BigInt(hex ?? "0x0")) / 1e18;
       return { native: eth.toFixed(5), usd: eth * USD_PRICE.ETH, ok: true, symbol };
     }
@@ -199,7 +199,7 @@ async function readSolanaTransfers(address: string): Promise<ChainTransfer[]> {
   const rows = await Promise.all(
     sigs.slice(0, 8).map(async (s) => {
       try {
-        const tx = await rpc<SolTx>(RPC.solana, "getTransaction", [
+        const tx = await rpc<SolTx>(solanaRpcUrl(), "getTransaction", [
           s.signature,
           { encoding: "jsonParsed", maxSupportedTransactionVersion: 0 },
         ]);

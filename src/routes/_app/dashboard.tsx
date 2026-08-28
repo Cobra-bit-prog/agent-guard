@@ -115,12 +115,12 @@ function DashboardPage() {
         <Stat
           label="Moved in last 24h"
           value={formatUsd(d.volume24h ?? d.capital)}
-          hint="Transfer volume — not treasury size"
+          hint={d.volumeHint ?? "Transfer volume — not treasury size"}
         />
         <Stat
           label="On-chain balance"
           value={formatUsd(d.onchainUsd ?? 0)}
-          hint="Native balance of live wallets"
+          hint={d.onchainHint ?? "Native balance of live wallets"}
         />
         <Stat
           label="Open alerts"
