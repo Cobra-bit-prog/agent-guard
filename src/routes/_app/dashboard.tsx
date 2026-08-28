@@ -273,7 +273,12 @@ function DashboardPage() {
             <CardTitle>Spend over 24h</CardTitle>
           </CardHeader>
           <CardContent className="h-48">
-            <Chart data={d.spendSeries} color="#3b82f6" empty="Scan chain to see spend" />
+            <Chart
+              data={d.spendSeries}
+              color="#3b82f6"
+              unit="usd"
+              empty={d.demoCount && !(d.volume24h ?? 0) ? "Demo · no spend yet" : "No spend in the last 24h"}
+            />
           </CardContent>
         </Card>
         <Card>
@@ -281,7 +286,12 @@ function DashboardPage() {
             <CardTitle>Transaction velocity</CardTitle>
           </CardHeader>
           <CardContent className="h-48">
-            <Chart data={d.velocity} color="#10b981" empty="Scan chain to see velocity" />
+            <Chart
+              data={d.velocity}
+              color="#10b981"
+              unit="count"
+              empty={d.demoCount && !(d.volume24h ?? 0) ? "Demo · no transactions yet" : "No transactions in the last 24h"}
+            />
           </CardContent>
         </Card>
       </div>
@@ -387,13 +397,22 @@ function Chart({
   data,
   color,
   empty,
+  unit,
 }: {
-  data: { t: string; v: number }[];
+  data: { t: string; v: number }[] | undefined;
   color: string;
   empty: string;
+  unit: "usd" | "count";
 }) {
-  if (!data.length) {
-    return <p className="grid h-full place-items-center text-sm text-muted">{empty}</p>;
+  const series = Array.isArray(data) ? data : [];
+  const allZero = series.length === 0 || series.every((pt) => !Number(pt.v));
+  if (allZero) {
+    return (
+      <div className="flex h-full min-h-[10rem] flex-col items-center justify-center gap-1 text-center">
+        <p className="text-2xl font-semibold tabular-nums">{unit === "usd" ? "$0" : "0"}</p>
+        <p className="text-sm text-muted">{empty}</p>
+      </div>
+    );
   }
   const gid = `dash-${color.replace("#", "")}`;
   return (
@@ -406,7 +425,7 @@ function Chart({
           </linearGradient>
         </defs>
         <XAxis dataKey="t" hide />
-        <YAxis hide />
+        <YAxis hide domain={[0, "auto"]} />
         <Tooltip
           contentStyle={{
             background: "#161c27",

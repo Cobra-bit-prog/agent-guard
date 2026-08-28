@@ -1,6 +1,7 @@
 import { Link, Navigate, useRouterState } from "@tanstack/react-router";
 import {
   Bell,
+  ChevronLeft,
   CreditCard,
   LayoutDashboard,
   Settings,
@@ -54,7 +55,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-bg md:grid md:grid-cols-[240px_1fr]">
       <aside className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border bg-surface px-4 py-3 md:h-screen md:flex-col md:items-stretch md:justify-start md:border-b-0 md:border-r md:px-4 md:py-6">
-        <Logo />
+        <Link
+          to="/dashboard"
+          aria-label="Overview"
+          className="inline-flex min-h-11 min-w-11 items-center"
+        >
+          <Logo />
+        </Link>
         <nav className="hidden flex-1 flex-col gap-1 pt-8 md:flex">
           {NAV.map((item) => {
             const Icon = item.icon;
@@ -92,7 +99,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
       <div className="flex min-w-0 flex-col">
         <header className="flex h-14 items-center justify-between border-b border-border px-4 md:px-8">
-          <p className="text-sm text-muted">Agent wallets · pre-sign checks</p>
+          <InAppBack pathname={pathname} />
           <div className="hidden md:block">
             <UserButton />
           </div>
@@ -118,6 +125,38 @@ export function AppShell({ children }: { children: ReactNode }) {
         <main className="min-w-0 flex-1 px-4 py-6 md:px-8">{children}</main>
       </div>
     </div>
+  );
+}
+
+function InAppBack({ pathname }: { pathname: string }) {
+  if (pathname === "/dashboard") {
+    return <p className="text-sm text-muted">Agent wallets · pre-sign checks</p>;
+  }
+  const linkClass = "inline-flex min-h-11 items-center gap-1 text-sm font-medium text-fg";
+  const inner = (
+    <>
+      <ChevronLeft className="size-4" />
+      Back
+    </>
+  );
+  if (pathname.startsWith("/agents/")) {
+    return (
+      <Link to="/agents" aria-label="Back" className={linkClass}>
+        {inner}
+      </Link>
+    );
+  }
+  if (pathname.startsWith("/billing/") && pathname !== "/billing") {
+    return (
+      <Link to="/billing" aria-label="Back" className={linkClass}>
+        {inner}
+      </Link>
+    );
+  }
+  return (
+    <Link to="/dashboard" aria-label="Back" className={linkClass}>
+      {inner}
+    </Link>
   );
 }
 
