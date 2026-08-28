@@ -13,6 +13,7 @@ import {
 import { Logo } from "@/components/brand";
 import { SupportedChains } from "@/components/chain-icons";
 import { LandingConsole } from "@/components/landing-console";
+import { LandingDemoDashboard } from "@/components/landing-demo-dashboard";
 import { LandingFaq } from "@/components/landing-faq";
 import { LandingTutorial } from "@/components/landing-tutorial";
 import { Button } from "@/components/ui/button";
@@ -21,13 +22,53 @@ import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { PLANS } from "@/lib/plans";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/")({ component: Home });
+const HOME_FAQ_LD = [{"@type": "Question", "name": "Why didn’t I get an email when I signed up?", "acceptedAnswer": {"@type": "Answer", "text": "You must confirm your email before the dashboard. After signup we keep you on a waiting screen until you click the link (one hour). If nothing arrives, check spam, then resend from that screen. Sign-in of an unconfirmed account sends a new link and returns you there."}}, {"@type": "Question", "name": "Do you hold my keys?", "acceptedAnswer": {"@type": "Answer", "text": "No. We are not a custodian. You keep the keys. Agent Control scores a send against your policy and answers a check the agent must call before it broadcasts."}}, {"@type": "Question", "name": "Which chains are supported?", "acceptedAnswer": {"@type": "Answer", "text": "Solana, Ethereum, and Base. Live wallets sync native balance and recent transfers. Demo wallets stay labeled so you can tour the console first."}}, {"@type": "Question", "name": "How does the pre-sign hook work?", "acceptedAnswer": {"@type": "Answer", "text": "Give the agent an API key. Before it signs, it POSTs /api/v1/check with the destination and value_usd. If the response has must_abort: true, the agent must not send."}}, {"@type": "Question", "name": "What if the agent skips the check?", "acceptedAnswer": {"@type": "Answer", "text": "The hook only works if you wire it in front of sign-and-broadcast. If the agent can send without calling check, Agent Control cannot stop that send. Pause the agent from the console if you need a hard stop on your side."}}, {"@type": "Question", "name": "Is the trial free? Do I need a card?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. One day of the full console, no card. After that pay Starter, Pro, or Team in USDC on Solana, Ethereum, or Base from Billing. Phantom for Solana; MetaMask or any wallet for Ethereum and Base. You pay your own gas on ETH/Base. We never see your funds and we do not auto-charge next month."}}, {"@type": "Question", "name": "Is this insurance?", "acceptedAnswer": {"@type": "Answer", "text": "No. Monitoring and policy checks only. A blocked check is a decision, not a guarantee that funds cannot move."}}, {"@type": "Question", "name": "How do I reach support?", "acceptedAnswer": {"@type": "Answer", "text": "Problems or billing questions: email support@agent-control.net."}}] as const;
+
+const HOME_JSON_LD = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "FAQPage",
+      mainEntity: HOME_FAQ_LD,
+    },
+    {
+      "@type": "SoftwareApplication",
+      name: "Agent Control",
+      url: "https://agent-control.net",
+      applicationCategory: "DeveloperApplication",
+      operatingSystem: "Web",
+      sameAs: ["https://github.com/Cobra-bit-prog/agent-guard"],
+      offers: {
+        "@type": "AggregateOffer",
+        lowPrice: "0",
+        highPrice: "149",
+        priceCurrency: "USD",
+        description:
+          "1-day free trial then 29/49/149 USDC on Solana, Ethereum, or Base",
+      },
+    },
+  ],
+};
+
+export const Route = createFileRoute("/")({
+  component: Home,
+  head: () => ({
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify(HOME_JSON_LD),
+      },
+    ],
+  }),
+});
+
 
 const SUPPORT_MAIL = "mailto:support@agent-control.net";
 
 const NAV = [
   { href: "#product", label: "Product" },
   { href: "#learn", label: "Tutorial" },
+  { href: "/docs", label: "Docs" },
   { href: "#how", label: "How it works" },
   { href: "#pricing", label: "Pricing" },
   { href: "#faq", label: "FAQ" },
@@ -182,6 +223,23 @@ function Home() {
         </div>
       </section>
 
+
+      <section id="console" className="border-t border-border">
+        <div className="mx-auto max-w-7xl px-6 py-16 md:px-10 lg:px-16">
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-warning">
+            Demo · sample
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">
+            The console
+          </h2>
+          <p className="mt-2 max-w-2xl text-muted">
+            Agent wallets, spend vs daily cap, and activity. Sample data so you
+            can see the layout before you sign in.
+          </p>
+          <LandingDemoDashboard />
+        </div>
+      </section>
+
       <section id="how" className="border-t border-border">
         <div className="mx-auto max-w-7xl px-6 py-16 md:px-10 lg:px-16">
           <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">
@@ -298,6 +356,9 @@ function Home() {
           <Logo size="lg" href="/" />
           <p>Monitoring and policy checks. Not a custodian. Not insurance.</p>
           <p className="flex flex-col gap-1 text-xs md:items-end">
+            <a href="/docs" className="text-muted hover:text-fg">
+              Docs
+            </a>
             <a href={SUPPORT_MAIL} className="text-muted hover:text-fg">
               Contact · support@agent-control.net
             </a>

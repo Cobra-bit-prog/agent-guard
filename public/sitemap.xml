@@ -8,4 +8,12 @@
     <loc>https://agent-control.net/login</loc>
     <changefreq>monthly</changefreq>
   </url>
+  <url>
+    <loc>https://agent-control.net/docs</loc>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
+    <loc>https://agent-control.net/llms.txt</loc>
+    <changefreq>monthly</changefreq>
+  </url>
 </urlset>
