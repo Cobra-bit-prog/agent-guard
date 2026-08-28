@@ -1,5 +1,5 @@
 import { isEvmAddress } from "@/lib/chains";
-import { evmRpcUrl, rpc } from "@/lib/onchain";
+import { evmRpc } from "@/lib/onchain";
 import { PAY_EXPIRY_MS } from "@/lib/solana-pay";
 import {
   EVM_USDC,
@@ -67,10 +67,8 @@ type EvmLog = {
   topics?: string[];
 };
 
-const LLAMA_ETH = "https://eth.llamarpc.com";
-
-async function getLogs(endpoint: string, filter: unknown): Promise<EvmLog[]> {
-  const logs = await rpc<EvmLog[]>(endpoint, "eth_getLogs", [filter]);
+async function getLogs(chain: EvmPayChain, filter: unknown): Promise<EvmLog[]> {
+  const logs = await evmRpc<EvmLog[]>(chain, "eth_getLogs", [filter]);
   return Array.isArray(logs) ? logs : [];
 }
 
@@ -81,66 +79,60 @@ export async function findMatchingEvmUsdcPayment(opts: {
   amountBaseUnits: string;
   createdAt?: string;
 }): Promise<EvmMatchResult> {
-  const net = EVM_USDC[opts.chain];
-  const expected = BigInt(opts.amountBaseUnits);
-  if (expected <= 0n) return { kind: "none" };
-
-  const primary = evmRpcUrl(opts.chain);
-  let latest = 0;
   try {
-    const latestHex = await rpc<string>(primary, "eth_blockNumber", []);
-    latest = Number.parseInt(latestHex, 16);
-  } catch (err) {
-    console.error("[billing] eth_blockNumber failed", opts.chain, err);
-    return { kind: "none" };
-  }
-  if (!Number.isFinite(latest) || latest <= 0) return { kind: "none" };
+    const net = EVM_USDC[opts.chain];
+    const expected = BigInt(opts.amountBaseUnits);
+    if (expected <= 0n) return { kind: "none" };
 
-  const created = opts.createdAt ? new Date(opts.createdAt).getTime() : Date.now() - PAY_EXPIRY_MS;
-  const ageMs = Math.min(PAY_EXPIRY_MS, Math.max(60_000, Date.now() - created)) + 120_000;
-  const maxBlocks = Math.ceil((PAY_EXPIRY_MS + 120_000) / 1000 / net.blockSeconds);
-  const lookback = Math.min(Math.ceil(ageMs / 1000 / net.blockSeconds) + 40, maxBlocks);
-  const fromBlock = Math.max(0, latest - lookback);
+    let latest = 0;
+    try {
+      const latestHex = await evmRpc<string>(opts.chain, "eth_blockNumber", []);
+      latest = Number.parseInt(latestHex, 16);
+    } catch (err) {
+      console.error("[billing] eth_blockNumber failed", opts.chain, err);
+      return { kind: "none" };
+    }
+    if (!Number.isFinite(latest) || latest <= 0) return { kind: "none" };
 
-  const filter = {
-    fromBlock: `0x${fromBlock.toString(16)}`,
-    toBlock: "latest",
-    address: net.usdc,
-    topics: [TRANSFER_TOPIC0, null, padTopicAddress(opts.recipient)],
-  };
+    const created = opts.createdAt ? new Date(opts.createdAt).getTime() : Date.now() - PAY_EXPIRY_MS;
+    const ageMs = Math.min(PAY_EXPIRY_MS, Math.max(60_000, Date.now() - created)) + 120_000;
+    const maxBlocks = Math.ceil((PAY_EXPIRY_MS + 120_000) / 1000 / net.blockSeconds);
+    const lookback = Math.min(Math.ceil(ageMs / 1000 / net.blockSeconds) + 40, maxBlocks);
+    const fromBlock = Math.max(0, latest - lookback);
 
-  let logs: EvmLog[] = [];
-  try {
-    logs = await getLogs(primary, filter);
-  } catch (err) {
-    const customEth = Boolean(process.env.ETH_RPC_URL?.trim());
-    if (opts.chain === "ethereum" && !customEth && primary !== LLAMA_ETH) {
-      try {
-        logs = await getLogs(LLAMA_ETH, filter);
-      } catch (err2) {
-        console.error("[billing] eth_getLogs failed", opts.chain, err2);
-        return { kind: "none" };
-      }
-    } else {
+    const filter = {
+      fromBlock: `0x${fromBlock.toString(16)}`,
+      toBlock: "latest",
+      address: net.usdc,
+      topics: [TRANSFER_TOPIC0, null, padTopicAddress(opts.recipient)],
+    };
+
+    let logs: EvmLog[] = [];
+    try {
+      logs = await getLogs(opts.chain, filter);
+    } catch (err) {
       console.error("[billing] eth_getLogs failed", opts.chain, err);
       return { kind: "none" };
     }
-  }
-  if (logs.length === 0) return { kind: "none" };
+    if (logs.length === 0) return { kind: "none" };
 
-  let bestUnder: EvmMatchResult | null = null;
-  for (const log of logs) {
-    const value = parseHexBigInt(log.data);
-    if (value <= 0n) continue;
-    const hash = log.transactionHash;
-    if (!hash) continue;
-    const amountUsdc = Number(value) / 1e6;
-    if (value === expected) {
-      return { kind: "paid", signature: hash, amountUsdc };
+    let bestUnder: EvmMatchResult | null = null;
+    for (const log of logs) {
+      const value = parseHexBigInt(log.data);
+      if (value <= 0n) continue;
+      const hash = log.transactionHash;
+      if (!hash) continue;
+      const amountUsdc = Number(value) / 1e6;
+      if (value === expected) {
+        return { kind: "paid", signature: hash, amountUsdc };
+      }
+      if (value < expected) {
+        bestUnder = { kind: "underpaid", signature: hash, amountUsdc };
+      }
     }
-    if (value < expected) {
-      bestUnder = { kind: "underpaid", signature: hash, amountUsdc };
-    }
+    return bestUnder ?? { kind: "none" };
+  } catch (err) {
+    console.error("[billing] evm match failed", opts.chain, err);
+    return { kind: "none" };
   }
-  return bestUnder ?? { kind: "none" };
 }

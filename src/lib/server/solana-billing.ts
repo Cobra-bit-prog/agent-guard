@@ -305,20 +305,25 @@ export const watchPayRequest = createServerFn({ method: "POST" })
     }
 
     const chain = asPayChain(row.chain);
-    const match =
-      chain === "solana"
-        ? await findMatchingUsdcPayment({
-            reference: row.reference,
-            recipient: row.recipient,
-            amountUsdc: Number(row.amount_usdc),
-          })
-        : await findMatchingEvmUsdcPayment({
-            chain: chain as EvmPayChain,
-            recipient: row.recipient,
-            amountBaseUnits: String(row.amount_base_units),
-            createdAt: row.created_at,
-          });
-
+    let match: { kind: "none" } | { kind: "paid"; signature: string; amountUsdc: number } | { kind: "underpaid"; signature: string; amountUsdc: number } = { kind: "none" };
+    try {
+      match =
+        chain === "solana"
+          ? await findMatchingUsdcPayment({
+              reference: row.reference,
+              recipient: row.recipient,
+              amountUsdc: Number(row.amount_usdc),
+            })
+          : await findMatchingEvmUsdcPayment({
+              chain: chain as EvmPayChain,
+              recipient: row.recipient,
+              amountBaseUnits: String(row.amount_base_units),
+              createdAt: row.created_at,
+            });
+    } catch (err) {
+      console.error("[billing] watch match failed", chain, err);
+      match = { kind: "none" };
+    }
     if (match.kind === "paid") {
       await sql`
         update pay_requests

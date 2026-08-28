@@ -1,4 +1,10 @@
 {
   "buildCommand": "npm run build",
-  "installCommand": "npm install"
+  "installCommand": "npm install",
+  "crons": [
+    {
+      "path": "/api/v1/internal/stats",
+      "schedule": "0 1 * * *"
+    }
+  ]
 }

@@ -45,16 +45,67 @@ export type ChainTransfer = {
   kind: string;
 };
 
+const EVM_FALLBACKS: Record<"ethereum" | "base", string[]> = {
+  ethereum: [
+    "https://eth.llamarpc.com",
+    "https://ethereum.publicnode.com",
+    "https://rpc.ankr.com/eth",
+    "https://1rpc.io/eth",
+  ],
+  base: [
+    "https://mainnet.base.org",
+    "https://base.llamarpc.com",
+    "https://base.publicnode.com",
+    "https://1rpc.io/base",
+  ],
+};
+
+export function evmRpcUrls(chain: "ethereum" | "base"): string[] {
+  const primary = evmRpcUrl(chain);
+  const rest = EVM_FALLBACKS[chain].filter((url) => url !== primary);
+  return [primary, ...rest];
+}
+
 export async function rpc<T>(url: string, method: string, params: unknown[]): Promise<T> {
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
-    signal: AbortSignal.timeout(8000),
-  });
-  const j = (await res.json()) as { result?: T; error?: { message?: string } };
-  if (j.error) throw new Error(j.error.message ?? "RPC error");
-  return j.result as T;
+  let last: unknown;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+        signal: AbortSignal.timeout(3500),
+      });
+      const text = await res.text();
+      let parsed: { result?: T; error?: { message?: string } };
+      try {
+        parsed = JSON.parse(text) as { result?: T; error?: { message?: string } };
+      } catch {
+        throw new Error(text.slice(0, 80) || "RPC error");
+      }
+      if (parsed.error) throw new Error(parsed.error.message ?? "RPC error");
+      return parsed.result as T;
+    } catch (err) {
+      last = err;
+    }
+  }
+  throw last instanceof Error ? last : new Error("RPC error");
+}
+
+export async function evmRpc<T>(
+  chain: "ethereum" | "base",
+  method: string,
+  params: unknown[],
+): Promise<T> {
+  let last: unknown;
+  for (const url of evmRpcUrls(chain)) {
+    try {
+      return await rpc<T>(url, method, params);
+    } catch (err) {
+      last = err;
+    }
+  }
+  throw last instanceof Error ? last : new Error("RPC error");
 }
 
 export async function readNativeBalance(
