@@ -5,6 +5,7 @@ import {
   authorizeInternalStats,
   collectAccountStats,
   emailAccountStats,
+  resendUnverifiedConfirmations,
 } from "@/lib/server/stats.server";
 
 export const Route = createFileRoute("/api/v1/internal/stats")({
@@ -25,6 +26,14 @@ export const Route = createFileRoute("/api/v1/internal/stats")({
           }
         }
         return json(stats);
+      },
+      POST: async ({ request }) => {
+        const gate = authorizeInternalStats(request);
+        if (gate === "missing") return json({ error: "Not found" }, 404);
+        if (gate !== "ok") return json({ error: "Unauthorized" }, 401);
+        const sql = await getSql();
+        const result = await resendUnverifiedConfirmations(sql);
+        return json(result);
       },
     },
   },

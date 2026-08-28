@@ -102,3 +102,35 @@ export async function emailAccountStats(stats: AccountStats): Promise<void> {
     console.error("[stats] Resend report failed", response.status, text);
   }
 }
+
+export type ResendVerificationResult = {
+  found: number;
+  sent: number;
+  failed: number;
+};
+
+export async function resendUnverifiedConfirmations(sql: Sql): Promise<ResendVerificationResult> {
+  const { auth } = await import("@/lib/auth/server");
+  const rows = await sql.query<{ email: string }>(
+    `select email from "user"
+     where "emailVerified" is not true
+       and email is not null
+       and btrim(email) <> ''`,
+  );
+  let sent = 0;
+  let failed = 0;
+  for (const row of rows) {
+    const email = row.email?.trim();
+    if (!email) continue;
+    try {
+      await auth.api.sendVerificationEmail({
+        body: { email, callbackURL: "/dashboard" },
+      });
+      sent += 1;
+    } catch (err) {
+      failed += 1;
+      console.error("[stats] resend verification failed");
+    }
+  }
+  return { found: rows.length, sent, failed };
+}
