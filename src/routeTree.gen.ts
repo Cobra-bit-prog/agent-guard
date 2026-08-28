@@ -12,16 +12,17 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as LogosRouteImport } from './routes/logos'
+import { Route as VerifyEmailRouteImport } from './routes/verify-email'
+import { Route as AppAgentsRouteImport } from './routes/_app/agents'
 import { Route as AppAlertsRouteImport } from './routes/_app/alerts'
 import { Route as AppBillingRouteImport } from './routes/_app/billing'
-import { Route as AppBillingPayRouteImport } from './routes/_app/billing.pay'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppPoliciesRouteImport } from './routes/_app/policies'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as AppAgentsIndexRouteImport } from './routes/_app/agents.index'
 import { Route as AppAgentsIdRouteImport } from './routes/_app/agents.$id'
+import { Route as AppBillingPayRouteImport } from './routes/_app/billing.pay'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiV1CheckRouteImport } from './routes/api/v1/check'
 import { Route as ApiV1McpRouteImport } from './routes/api/v1/mcp'
@@ -40,15 +41,20 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LogosRoute = LogosRouteImport.update({
+  id: '/logos',
+  path: '/logos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
   path: '/verify-email',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LogosRoute = LogosRouteImport.update({
-  id: '/logos',
-  path: '/logos',
-  getParentRoute: () => rootRouteImport,
+const AppAgentsRoute = AppAgentsRouteImport.update({
+  id: '/agents',
+  path: '/agents',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppAlertsRoute = AppAlertsRouteImport.update({
   id: '/alerts',
@@ -58,11 +64,6 @@ const AppAlertsRoute = AppAlertsRouteImport.update({
 const AppBillingRoute = AppBillingRouteImport.update({
   id: '/billing',
   path: '/billing',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppBillingPayRoute = AppBillingPayRouteImport.update({
-  id: '/billing/pay',
-  path: '/billing/pay',
   getParentRoute: () => AppRoute,
 } as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
@@ -81,14 +82,19 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
   getParentRoute: () => AppRoute,
 } as any)
 const AppAgentsIndexRoute = AppAgentsIndexRouteImport.update({
-  id: '/agents/',
-  path: '/agents/',
-  getParentRoute: () => AppRoute,
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppAgentsRoute,
 } as any)
 const AppAgentsIdRoute = AppAgentsIdRouteImport.update({
-  id: '/agents/$id',
-  path: '/agents/$id',
-  getParentRoute: () => AppRoute,
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppAgentsRoute,
+} as any)
+const AppBillingPayRoute = AppBillingPayRouteImport.update({
+  id: '/pay',
+  path: '/pay',
+  getParentRoute: () => AppBillingRoute,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
@@ -109,15 +115,16 @@ const ApiV1McpRoute = ApiV1McpRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/verify-email': typeof VerifyEmailRoute
   '/logos': typeof LogosRoute
+  '/verify-email': typeof VerifyEmailRoute
+  '/agents': typeof AppAgentsRouteWithChildren
   '/alerts': typeof AppAlertsRoute
-  '/billing': typeof AppBillingRoute
-  '/billing/pay': typeof AppBillingPayRoute
+  '/billing': typeof AppBillingRouteWithChildren
   '/dashboard': typeof AppDashboardRoute
   '/policies': typeof AppPoliciesRoute
   '/settings': typeof AppSettingsRoute
   '/agents/$id': typeof AppAgentsIdRoute
+  '/billing/pay': typeof AppBillingPayRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/v1/check': typeof ApiV1CheckRoute
   '/api/v1/mcp': typeof ApiV1McpRoute
@@ -126,15 +133,15 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/verify-email': typeof VerifyEmailRoute
   '/logos': typeof LogosRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/alerts': typeof AppAlertsRoute
-  '/billing': typeof AppBillingRoute
-  '/billing/pay': typeof AppBillingPayRoute
+  '/billing': typeof AppBillingRouteWithChildren
   '/dashboard': typeof AppDashboardRoute
   '/policies': typeof AppPoliciesRoute
   '/settings': typeof AppSettingsRoute
   '/agents/$id': typeof AppAgentsIdRoute
+  '/billing/pay': typeof AppBillingPayRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/v1/check': typeof ApiV1CheckRoute
   '/api/v1/mcp': typeof ApiV1McpRoute
@@ -145,15 +152,16 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
-  '/verify-email': typeof VerifyEmailRoute
   '/logos': typeof LogosRoute
+  '/verify-email': typeof VerifyEmailRoute
+  '/_app/agents': typeof AppAgentsRouteWithChildren
   '/_app/alerts': typeof AppAlertsRoute
-  '/_app/billing': typeof AppBillingRoute
-  '/_app/billing/pay': typeof AppBillingPayRoute
+  '/_app/billing': typeof AppBillingRouteWithChildren
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/policies': typeof AppPoliciesRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_app/agents/$id': typeof AppAgentsIdRoute
+  '/_app/billing/pay': typeof AppBillingPayRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/v1/check': typeof ApiV1CheckRoute
   '/api/v1/mcp': typeof ApiV1McpRoute
@@ -164,15 +172,16 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
-    | '/verify-email'
     | '/logos'
+    | '/verify-email'
+    | '/agents'
     | '/alerts'
     | '/billing'
-    | '/billing/pay'
     | '/dashboard'
     | '/policies'
     | '/settings'
     | '/agents/$id'
+    | '/billing/pay'
     | '/api/auth/$'
     | '/api/v1/check'
     | '/api/v1/mcp'
@@ -181,15 +190,15 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
-    | '/verify-email'
     | '/logos'
+    | '/verify-email'
     | '/alerts'
     | '/billing'
-    | '/billing/pay'
     | '/dashboard'
     | '/policies'
     | '/settings'
     | '/agents/$id'
+    | '/billing/pay'
     | '/api/auth/$'
     | '/api/v1/check'
     | '/api/v1/mcp'
@@ -199,15 +208,16 @@ export interface FileRouteTypes {
     | '/'
     | '/_app'
     | '/login'
-    | '/verify-email'
     | '/logos'
+    | '/verify-email'
+    | '/_app/agents'
     | '/_app/alerts'
     | '/_app/billing'
-    | '/_app/billing/pay'
     | '/_app/dashboard'
     | '/_app/policies'
     | '/_app/settings'
     | '/_app/agents/$id'
+    | '/_app/billing/pay'
     | '/api/auth/$'
     | '/api/v1/check'
     | '/api/v1/mcp'
@@ -218,8 +228,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
-  VerifyEmailRoute: typeof VerifyEmailRoute
   LogosRoute: typeof LogosRoute
+  VerifyEmailRoute: typeof VerifyEmailRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiV1CheckRoute: typeof ApiV1CheckRoute
   ApiV1McpRoute: typeof ApiV1McpRoute
@@ -248,6 +258,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/logos': {
+      id: '/logos'
+      path: '/logos'
+      fullPath: '/logos'
+      preLoaderRoute: typeof LogosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/verify-email': {
       id: '/verify-email'
       path: '/verify-email'
@@ -255,12 +272,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VerifyEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/logos': {
-      id: '/logos'
-      path: '/logos'
-      fullPath: '/logos'
-      preLoaderRoute: typeof LogosRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_app/agents': {
+      id: '/_app/agents'
+      path: '/agents'
+      fullPath: '/agents'
+      preLoaderRoute: typeof AppAgentsRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_app/alerts': {
       id: '/_app/alerts'
@@ -274,13 +291,6 @@ declare module '@tanstack/react-router' {
       path: '/billing'
       fullPath: '/billing'
       preLoaderRoute: typeof AppBillingRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/billing/pay': {
-      id: '/_app/billing/pay'
-      path: '/billing/pay'
-      fullPath: '/billing/pay'
-      preLoaderRoute: typeof AppBillingPayRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/dashboard': {
@@ -306,17 +316,24 @@ declare module '@tanstack/react-router' {
     }
     '/_app/agents/': {
       id: '/_app/agents/'
-      path: '/agents'
+      path: '/'
       fullPath: '/agents/'
       preLoaderRoute: typeof AppAgentsIndexRouteImport
-      parentRoute: typeof AppRoute
+      parentRoute: typeof AppAgentsRoute
     }
     '/_app/agents/$id': {
       id: '/_app/agents/$id'
-      path: '/agents/$id'
+      path: '/$id'
       fullPath: '/agents/$id'
       preLoaderRoute: typeof AppAgentsIdRouteImport
-      parentRoute: typeof AppRoute
+      parentRoute: typeof AppAgentsRoute
+    }
+    '/_app/billing/pay': {
+      id: '/_app/billing/pay'
+      path: '/pay'
+      fullPath: '/billing/pay'
+      preLoaderRoute: typeof AppBillingPayRouteImport
+      parentRoute: typeof AppBillingRoute
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -342,26 +359,48 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AppRouteChildren {
-  AppAlertsRoute: typeof AppAlertsRoute
-  AppBillingRoute: typeof AppBillingRoute
-  AppBillingPayRoute: typeof AppBillingPayRoute
-  AppDashboardRoute: typeof AppDashboardRoute
-  AppPoliciesRoute: typeof AppPoliciesRoute
-  AppSettingsRoute: typeof AppSettingsRoute
+interface AppAgentsRouteChildren {
   AppAgentsIdRoute: typeof AppAgentsIdRoute
   AppAgentsIndexRoute: typeof AppAgentsIndexRoute
 }
 
-const AppRouteChildren: AppRouteChildren = {
-  AppAlertsRoute: AppAlertsRoute,
-  AppBillingRoute: AppBillingRoute,
+const AppAgentsRouteChildren: AppAgentsRouteChildren = {
+  AppAgentsIdRoute: AppAgentsIdRoute,
+  AppAgentsIndexRoute: AppAgentsIndexRoute,
+}
+
+const AppAgentsRouteWithChildren = AppAgentsRoute._addFileChildren(
+  AppAgentsRouteChildren,
+)
+
+interface AppBillingRouteChildren {
+  AppBillingPayRoute: typeof AppBillingPayRoute
+}
+
+const AppBillingRouteChildren: AppBillingRouteChildren = {
   AppBillingPayRoute: AppBillingPayRoute,
+}
+
+const AppBillingRouteWithChildren = AppBillingRoute._addFileChildren(
+  AppBillingRouteChildren,
+)
+
+interface AppRouteChildren {
+  AppAgentsRoute: typeof AppAgentsRouteWithChildren
+  AppAlertsRoute: typeof AppAlertsRoute
+  AppBillingRoute: typeof AppBillingRouteWithChildren
+  AppDashboardRoute: typeof AppDashboardRoute
+  AppPoliciesRoute: typeof AppPoliciesRoute
+  AppSettingsRoute: typeof AppSettingsRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppAgentsRoute: AppAgentsRouteWithChildren,
+  AppAlertsRoute: AppAlertsRoute,
+  AppBillingRoute: AppBillingRouteWithChildren,
   AppDashboardRoute: AppDashboardRoute,
   AppPoliciesRoute: AppPoliciesRoute,
   AppSettingsRoute: AppSettingsRoute,
-  AppAgentsIdRoute: AppAgentsIdRoute,
-  AppAgentsIndexRoute: AppAgentsIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
@@ -370,8 +409,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
-  VerifyEmailRoute: VerifyEmailRoute,
   LogosRoute: LogosRoute,
+  VerifyEmailRoute: VerifyEmailRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiV1CheckRoute: ApiV1CheckRoute,
   ApiV1McpRoute: ApiV1McpRoute,

@@ -1,4 +1,5 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
+import { Analytics } from "@vercel/analytics/react";
 import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import { AppProviders } from "@/components/providers";
@@ -47,6 +48,7 @@ export const Route = createRootRoute({
           </AppProviders>
         </AuthProvider>
         <Scripts />
+        <Analytics />
       </body>
     </html>
   ),
