@@ -21,13 +21,15 @@ export function ShieldMark({ className }: { className?: string }) {
 export function Logo({
   compact = false,
   size = "md",
+  href,
 }: {
   compact?: boolean;
   size?: "md" | "lg";
+  href?: string;
 }) {
   const large = size === "lg";
-  return (
-    <div className={cn("flex items-center", large ? "gap-3" : "gap-2.5")}>
+  const inner = (
+    <>
       <ShieldMark className={cn("shrink-0", large ? "size-10" : "size-7")} />
       {!compact && (
         <span
@@ -39,6 +41,30 @@ export function Logo({
           Agent Control
         </span>
       )}
-    </div>
+    </>
   );
+  const cls = cn(
+    "flex items-center",
+    large ? "gap-3" : "gap-2.5",
+    href && "inline-flex min-h-11 items-center",
+  );
+  if (href) {
+    return (
+      <a
+        href={href}
+        aria-label="Agent Control home"
+        className={cls}
+        onClick={(e) => {
+          if (typeof window === "undefined" || href !== "/") return;
+          if (window.location.pathname !== "/") return;
+          e.preventDefault();
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          if (window.location.hash) window.history.replaceState(null, "", "/");
+        }}
+      >
+        {inner}
+      </a>
+    );
+  }
+  return <div className={cls}>{inner}</div>;
 }

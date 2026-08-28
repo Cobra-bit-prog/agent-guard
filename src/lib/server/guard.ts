@@ -669,22 +669,26 @@ export const getDashboard = createServerFn({ method: "GET" })
     })) as AuditRow[];
 
     const entitlement = await loadEntitlement(context.userId);
-    const volume24h = agents.reduce((s, a) => s + (volume[a.id] ?? 0), 0);
     const liveCount = agents.filter((a) => !a.is_demo).length;
     const demoCount = agents.filter((a) => a.is_demo).length;
+    const liveVolume = agents.filter((a) => !a.is_demo).reduce((s, a) => s + (volume[a.id] ?? 0), 0);
+    const demoVolume = agents.filter((a) => a.is_demo).reduce((s, a) => s + (volume[a.id] ?? 0), 0);
+    const volume24h = liveVolume + demoVolume;
     const liveUsd = agents.filter((a) => !a.is_demo).reduce((s, a) => s + a.balance_usd, 0);
     const demoUsd = agents.filter((a) => a.is_demo).reduce((s, a) => s + a.balance_usd, 0);
-    const onchainUsd = liveCount > 0 ? liveUsd : demoUsd;
+    const onchainUsd = liveUsd > 0 ? liveUsd : demoUsd;
     const volumeHint =
-      liveCount === 0 && demoCount > 0
+      liveVolume === 0 && demoVolume > 0
         ? "Demo · sample volume"
         : "Transfer volume — not treasury size";
     const onchainHint =
-      liveCount > 0
+      liveUsd > 0
         ? "Native balance of live wallets"
-        : demoCount > 0
+        : demoUsd > 0
           ? "Demo · sample balances"
-          : "Enroll a live wallet to fetch chain balance";
+          : liveCount > 0
+            ? "Live wallets returned $0 from chain"
+            : "Enroll a live wallet to fetch chain balance";
     const openAlerts = alerts.filter((a) => !a.acknowledged).length;
     const openCritical = alerts.filter((a) => !a.acknowledged && a.severity === "critical").length;
     const risk =
@@ -891,6 +895,7 @@ export const scanAgents = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .handler(async ({ context }) => {
     await requireWritable(context.userId);
+    await hydrateDemoAgents(context.userId);
     const sql = await getSql();
     const agents = (await sql`select * from agents where user_id = ${context.userId}`).map(mapAgent);
     const policiesRaw = await sql`select * from policies where user_id = ${context.userId}`;
@@ -917,6 +922,14 @@ export const scanAgents = createServerFn({ method: "POST" })
         continue;
       }
       if (agent.is_paused) continue;
+      if (agent.balance_usd <= 0) {
+        const usd = demoSampleUsd(agent.address);
+        await sql`
+          update agents
+          set balance_usd = ${usd}, last_synced_at = ${new Date().toISOString()}
+          where id = ${agent.id} and user_id = ${context.userId}
+        `;
+      }
       const volRows = await sql<{ vol: string }>`
         select coalesce(sum(value_usd),0)::text as vol from transactions
         where agent_id = ${agent.id} and timestamp >= ${since}

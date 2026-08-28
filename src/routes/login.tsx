@@ -88,9 +88,7 @@ function Login() {
   return (
     <main className="grid min-h-screen place-items-center bg-bg px-5 py-10">
       <div className="w-full max-w-md rounded-[28px] border border-border bg-surface p-8 shadow-[var(--shadow-panel)]">
-        <Link to="/" className="inline-flex">
-          <Logo />
-        </Link>
+        <Logo href="/" />
         <h1 className="mt-6 text-2xl font-semibold tracking-tight">
           Sign in to Agent Control
         </h1>
