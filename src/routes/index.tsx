@@ -108,9 +108,7 @@ function Home() {
           className="landing-rise mt-5 max-w-xl text-base text-muted md:text-lg"
           style={{ animationDelay: "80ms" }}
         >
-          Your agents can move money. Agent Control sits in front of the signature,
-          scores the send against your policy, and answers a check the agent must
-          call before it broadcasts. You still hold the keys.
+          Your agents can move money. Spend limits sit in front of the send.
         </p>
         <div
           className="landing-rise mt-5 flex flex-wrap gap-2 text-xs text-muted"
