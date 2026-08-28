@@ -107,10 +107,10 @@ function Home() {
               Your agents can spend. You set the limits.
             </h1>
             <p
-              className="landing-rise mt-5 max-w-2xl text-lg text-muted md:text-xl"
+              className="landing-rise mt-5 max-w-2xl text-base text-muted md:text-lg"
               style={{ animationDelay: "80ms" }}
             >
-              Your agents can move money. Spend limits sit in front of the send.
+              Agent Control is spend control for agent wallets on Solana, Ethereum, and Base. You set a daily cap and where they can send. Before an agent signs, it has to clear those rules. Over the limit, the send never goes out. You keep the keys.
             </p>
             <div
               className="landing-rise mt-5 flex flex-wrap gap-2 text-xs text-muted"
