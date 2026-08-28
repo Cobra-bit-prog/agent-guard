@@ -110,7 +110,7 @@ function Home() {
               className="landing-rise mt-5 max-w-2xl text-base text-muted md:text-lg"
               style={{ animationDelay: "80ms" }}
             >
-              Agent Control is spend control for agent wallets on Solana, Ethereum, and Base. You set a daily cap and where they can send. Before an agent signs, it has to clear those rules. Over the limit, the send never goes out. You keep the keys.
+              Keep control of your agents’ spending. You set the limits. Suspicious transactions show up as alerts.
             </p>
             <div
               className="landing-rise mt-5 flex flex-wrap gap-2 text-xs text-muted"
