@@ -6,5 +6,29 @@
       "path": "/api/v1/internal/stats",
       "schedule": "0 1 * * *"
     }
+  ],
+  "redirects": [
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "agent-guard-orpin.vercel.app"
+        }
+      ],
+      "destination": "https://agent-control.net/",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "agent-guard-orpin.vercel.app"
+        }
+      ],
+      "destination": "https://agent-control.net/:path*",
+      "permanent": true
+    }
   ]
 }
