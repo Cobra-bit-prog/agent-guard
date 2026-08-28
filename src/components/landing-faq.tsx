@@ -52,7 +52,7 @@ export function LandingFaq() {
 
   return (
     <section id="faq" className="border-t border-border">
-      <div className="mx-auto max-w-3xl px-5 py-16">
+      <div className="mx-auto max-w-3xl px-6 py-16 md:px-10">
         <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">FAQ</h2>
         <p className="mt-2 text-muted">
           Straight answers. Including the signup email.

@@ -93,7 +93,7 @@ export function LandingTutorial() {
 
   return (
     <section id="learn" className="border-t border-border">
-      <div className="mx-auto max-w-6xl px-5 py-16">
+      <div className="mx-auto max-w-7xl px-6 py-16 md:px-10 lg:px-16">
         <p className="text-xs font-medium uppercase tracking-[0.18em] text-warning">
           Tutorial
         </p>

@@ -40,7 +40,7 @@ function Home() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5">
+      <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 md:px-10 lg:px-16">
         <Logo size="lg" href="/" />
         <nav className="hidden items-center gap-6 text-sm text-muted md:flex">
           {NAV.map((item) => (
@@ -81,7 +81,7 @@ function Home() {
         </div>
       </header>
       {menuOpen && (
-        <div className="border-b border-border px-5 py-3 md:hidden">
+        <div className="border-b border-border px-6 py-3 md:hidden">
           <div className="flex flex-col gap-3 text-sm text-muted">
             {NAV.map((item) => (
               <a
@@ -97,51 +97,57 @@ function Home() {
         </div>
       )}
 
-      <section className="landing-hero mx-auto max-w-6xl px-5 pb-16 pt-8 md:pt-14">
-        <p className="landing-rise text-xs font-medium uppercase tracking-[0.18em] text-warning">
-          Pre-sign policy for agent wallets
-        </p>
-        <h1 className="landing-rise mt-4 max-w-3xl text-4xl font-semibold leading-[1.1] tracking-[-0.03em] md:text-6xl">
-          Your agents can spend. You set the limits.
-        </h1>
-        <p
-          className="landing-rise mt-5 max-w-xl text-base text-muted md:text-lg"
-          style={{ animationDelay: "80ms" }}
-        >
-          Your agents can move money. Spend limits sit in front of the send.
-        </p>
-        <div
-          className="landing-rise mt-5 flex flex-wrap gap-2 text-xs text-muted"
-          style={{ animationDelay: "120ms" }}
-        >
-          {["Not a custodian", "You hold the keys", "Solana · Ethereum · Base"].map(
-            (item) => (
-              <span
-                key={item}
-                className="rounded-full border border-border bg-surface/70 px-3 py-1.5"
-              >
-                {item}
-              </span>
-            ),
-          )}
+      <section className="landing-hero mx-auto max-w-7xl px-6 pb-16 pt-8 md:px-10 md:pt-14 lg:px-16">
+        <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
+          <div>
+            <p className="landing-rise text-xs font-medium uppercase tracking-[0.18em] text-warning">
+              Pre-sign policy for agent wallets
+            </p>
+            <h1 className="landing-rise mt-4 text-5xl font-semibold leading-[1.1] tracking-[-0.03em] md:text-7xl">
+              Your agents can spend. You set the limits.
+            </h1>
+            <p
+              className="landing-rise mt-5 max-w-2xl text-lg text-muted md:text-xl"
+              style={{ animationDelay: "80ms" }}
+            >
+              Your agents can move money. Spend limits sit in front of the send.
+            </p>
+            <div
+              className="landing-rise mt-5 flex flex-wrap gap-2 text-xs text-muted"
+              style={{ animationDelay: "120ms" }}
+            >
+              {["Not a custodian", "You hold the keys", "Solana · Ethereum · Base"].map(
+                (item) => (
+                  <span
+                    key={item}
+                    className="rounded-full border border-border bg-surface/70 px-3 py-1.5"
+                  >
+                    {item}
+                  </span>
+                ),
+              )}
+            </div>
+            <div
+              className="landing-rise mt-8 flex flex-wrap gap-3"
+              style={{ animationDelay: "160ms" }}
+            >
+              <Button size="lg" asChild>
+                <Link to="/login">Start 1-day trial</Link>
+              </Button>
+              <Button size="lg" variant="secondary" asChild>
+                <a href="#learn">Watch the tutorial</a>
+              </Button>
+            </div>
+            <SupportedChains className="landing-rise mt-8" />
+          </div>
+          <div className="min-w-0">
+            <LandingConsole />
+          </div>
         </div>
-        <div
-          className="landing-rise mt-8 flex flex-wrap gap-3"
-          style={{ animationDelay: "160ms" }}
-        >
-          <Button size="lg" asChild>
-            <Link to="/login">Start 1-day trial</Link>
-          </Button>
-          <Button size="lg" variant="secondary" asChild>
-            <a href="#learn">Watch the tutorial</a>
-          </Button>
-        </div>
-        <SupportedChains className="landing-rise mt-8" />
-        <LandingConsole />
       </section>
 
       <section id="product" className="border-t border-border">
-        <div className="mx-auto grid max-w-6xl gap-6 px-5 py-16 md:grid-cols-2 lg:grid-cols-4">
+        <div className="mx-auto grid max-w-7xl gap-6 px-6 py-16 md:grid-cols-2 md:px-10 lg:grid-cols-4 lg:px-16">
           {[
             {
               icon: Activity,
@@ -177,7 +183,7 @@ function Home() {
       </section>
 
       <section id="how" className="border-t border-border">
-        <div className="mx-auto max-w-6xl px-5 py-16">
+        <div className="mx-auto max-w-7xl px-6 py-16 md:px-10 lg:px-16">
           <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">
             How it works
           </h2>
@@ -224,7 +230,7 @@ function Home() {
       <LandingTutorial />
 
       <section id="pricing" className="border-t border-border">
-        <div className="mx-auto max-w-6xl px-5 py-16">
+        <div className="mx-auto max-w-7xl px-6 py-16 md:px-10 lg:px-16">
           <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">
             Pricing
           </h2>
@@ -288,7 +294,7 @@ function Home() {
       <LandingFaq />
 
       <footer className="border-t border-border">
-        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-8 text-sm text-subtle md:flex-row md:items-center md:justify-between">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-8 text-sm text-subtle md:flex-row md:items-center md:justify-between md:px-10 lg:px-16">
           <Logo size="lg" href="/" />
           <p>Monitoring and policy checks. Not a custodian. Not insurance.</p>
           <p className="flex flex-col gap-1 text-xs md:items-end">

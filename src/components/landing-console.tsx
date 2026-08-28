@@ -2,7 +2,7 @@ import { ChainMark } from "@/components/chain-icons";
 
 export function LandingConsole() {
   return (
-    <div className="mt-12 overflow-hidden rounded-[28px] border border-border bg-surface shadow-[var(--shadow-panel)] landing-rise">
+    <div className="mt-10 overflow-hidden rounded-[28px] border border-border bg-surface shadow-[var(--shadow-panel)] landing-rise lg:mt-0">
       <div className="flex items-center gap-2 border-b border-border bg-elevated/60 px-4 py-2.5">
         <span className="size-2.5 rounded-full bg-danger/80" />
         <span className="size-2.5 rounded-full bg-warning/80" />
@@ -11,8 +11,8 @@ export function LandingConsole() {
         <span className="ml-auto font-mono text-[11px] text-subtle">Demo · sample check</span>
       </div>
 
-      <div className="flex flex-col items-center px-5 py-10 md:px-10 md:py-14">
-        <div className="landing-block-card relative w-full max-w-md overflow-hidden rounded-[22px] border border-border bg-elevated p-6 md:p-8">
+      <div className="flex flex-col items-stretch px-6 py-12 md:px-10 md:py-16">
+        <div className="landing-block-card relative w-full overflow-hidden rounded-[22px] border border-border bg-elevated p-7 md:p-10">
           <p className="text-xs font-medium uppercase tracking-[0.14em] text-subtle">
             Pre-sign check
           </p>
@@ -21,7 +21,7 @@ export function LandingConsole() {
             <p className="font-mono text-xs text-subtle">Treasury Bot · Ethereum</p>
           </div>
           <p className="mt-5 text-sm text-muted">to 0x91c4…a2e1</p>
-          <p className="mt-1 font-mono text-4xl font-medium tabular-nums tracking-tight md:text-5xl">
+          <p className="mt-1 font-mono text-5xl font-medium tabular-nums tracking-tight md:text-6xl">
             $2,400
           </p>
           <div className="relative mt-6 min-h-[3.5rem]">
@@ -36,7 +36,7 @@ export function LandingConsole() {
           </div>
         </div>
 
-        <div className="mt-6 flex w-full max-w-md items-center gap-3 text-sm">
+        <div className="mt-6 flex w-full items-center gap-3 text-sm">
           <span className="size-2 shrink-0 rounded-full bg-danger" />
           <span className="min-w-0 flex-1 truncate">
             <span className="text-fg">Pre-sign blocked</span>
