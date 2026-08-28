@@ -2,7 +2,7 @@ import { CHAINS, type ChainId } from "@/lib/chains";
 
 const RPC: Record<ChainId, string> = {
   base: "https://mainnet.base.org",
-  ethereum: "https://cloudflare-eth.com",
+  ethereum: "https://ethereum.publicnode.com",
   solana: "https://api.mainnet-beta.solana.com",
 };
 
@@ -47,15 +47,18 @@ export type ChainTransfer = {
 
 const EVM_FALLBACKS: Record<"ethereum" | "base", string[]> = {
   ethereum: [
-    "https://eth.llamarpc.com",
     "https://ethereum.publicnode.com",
-    "https://rpc.ankr.com/eth",
-    "https://1rpc.io/eth",
+    "https://eth.drpc.org",
+    "https://eth-mainnet.public.blastapi.io",
+    "https://gateway.tenderly.co/public/mainnet",
+    "https://rpc.mevblocker.io",
+    "https://eth.llamarpc.com",
+    "https://cloudflare-eth.com",
   ],
   base: [
     "https://mainnet.base.org",
-    "https://base.llamarpc.com",
     "https://base.publicnode.com",
+    "https://base.llamarpc.com",
     "https://1rpc.io/base",
   ],
 };
