@@ -29,6 +29,50 @@
       ],
       "destination": "https://agent-control.net/:path*",
       "permanent": true
+    },
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "agent-guard-git-main-agent-guard-bf95d81d.vercel.app"
+        }
+      ],
+      "destination": "https://agent-control.net/",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "agent-guard-git-main-agent-guard-bf95d81d.vercel.app"
+        }
+      ],
+      "destination": "https://agent-control.net/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "agent-guard-agent-guard-bf95d81d.vercel.app"
+        }
+      ],
+      "destination": "https://agent-control.net/",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "agent-guard-agent-guard-bf95d81d.vercel.app"
+        }
+      ],
+      "destination": "https://agent-control.net/:path*",
+      "permanent": true
     }
   ]
 }
