@@ -101,10 +101,16 @@ export function PayPanel({ req }: { req: PayRequestView }) {
   }
 
   return (
-    <div className="grid gap-5 md:grid-cols-[minmax(0,280px)_1fr]">
-      <div className="mx-auto w-full max-w-[280px]">
+    <div className="grid gap-5 md:grid-cols-[minmax(240px,280px)_1fr]">
+      <div className="mx-auto flex w-full min-h-[240px] max-w-[280px] justify-center">
         <PayQr
-          value={payUrl}
+          value={
+            evm
+              ? (req.metamaskUrl ?? "")
+              : payUrl
+                ? phantomBrowseUrl(payUrl)
+                : ""
+          }
           alt={evm ? `${chainName} USDC payment QR` : "Solana Pay QR"}
         />
       </div>
