@@ -1,5 +1,17 @@
+import { Buffer } from "buffer";
 import { EVM_USDC, type EvmPayChain } from "@/lib/evm-pay";
 import { USDC_MINT, usdcBaseUnits } from "@/lib/solana-pay";
+
+function ensureNodeBuffer() {
+  const g = globalThis as typeof globalThis & {
+    Buffer?: typeof Buffer;
+    global?: typeof globalThis;
+  };
+  if (!g.Buffer) g.Buffer = Buffer;
+  if (!g.global) g.global = g;
+}
+
+ensureNodeBuffer();
 
 type PhantomProvider = {
   isPhantom?: boolean;
@@ -44,6 +56,7 @@ export async function payUsdcWithPhantomExtension(opts: {
   amountUsdc: number;
   reference: string;
 }): Promise<string> {
+  ensureNodeBuffer();
   const {
     Connection,
     PublicKey,
