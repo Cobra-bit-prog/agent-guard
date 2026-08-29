@@ -153,7 +153,7 @@ function PayRequestPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-lg space-y-6">
       <div>
         <Link to="/billing" className="text-sm text-muted hover:text-fg">
           ← Billing
@@ -161,7 +161,11 @@ function PayRequestPage() {
         <h1 className="mt-3 text-2xl font-semibold tracking-tight">
           {plan.name} · {req.amountUsdc} USDC
         </h1>
-        <p className="mt-1 text-sm text-muted">Complete your payment to activate your plan.</p>
+        <p className="mt-1 text-sm text-muted">
+          {evm
+            ? "Send this USDC from any Ethereum or Base wallet. Copy amount and address, or scan the QR."
+            : "Send this USDC from Phantom or any Solana wallet. Copy amount and address, or scan the QR."}
+        </p>
       </div>
       <Card>
         <CardContent className="p-6">
@@ -170,9 +174,7 @@ function PayRequestPage() {
       </Card>
       <p className="flex items-start gap-2 text-xs text-muted">
         <Info className="mt-0.5 size-3.5 shrink-0" />
-        {evm
-          ? "Send the exact USDC amount. We match the Transfer amount on-chain. Do not send from an exchange."
-          : "We match this payment with a unique reference. Do not send from an exchange."}
+        Do not send from an exchange.
       </p>
     </div>
   );

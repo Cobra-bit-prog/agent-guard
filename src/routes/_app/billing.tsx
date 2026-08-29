@@ -1,23 +1,15 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Check, Lock } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
-import { PayPanel } from "@/components/pay-panel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getProfile } from "@/lib/server/guard";
-import { createPayRequest, getCheckoutConfig, watchPayRequest } from "@/lib/server/solana-billing";
+import { createPayRequest, getCheckoutConfig } from "@/lib/server/solana-billing";
 import { FREE_TRIAL_DAYS, PLANS, formatTrialLeft, type PlanId } from "@/lib/plans";
-import { ChainMark } from "@/components/chain-icons";
-import { PAY_CHAIN_LABEL, type PayChain, type PayRequestView } from "@/lib/solana-pay";
+import { PAY_CHAIN_LABEL, type PayChain } from "@/lib/solana-pay";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/billing")({
@@ -25,16 +17,14 @@ export const Route = createFileRoute("/_app/billing")({
 });
 
 const PAID = [PLANS.starter, PLANS.pro, PLANS.team] as const;
-const CHAINS: PayChain[] = ["solana", "ethereum", "base"];
-
 function chainHint(chain: PayChain) {
-  if (chain === "solana") return "Solana · Phantom · USDC · no card";
-  return `${PAY_CHAIN_LABEL[chain]} · MetaMask · USDC only · you pay gas`;
+  if (chain === "solana") return "Solana · USDC · no card";
+  return `${PAY_CHAIN_LABEL[chain]} · USDC only · you pay gas`;
 }
 
 function BillingPage() {
+  const navigate = useNavigate();
   const [chain, setChain] = useState<PayChain>("solana");
-  const [payReq, setPayReq] = useState<PayRequestView | null>(null);
   const q = useQuery({ queryKey: ["profile"], queryFn: () => getProfile() });
   const cfg = useQuery({ queryKey: ["checkout-config"], queryFn: () => getCheckoutConfig() });
   const pay = useMutation({
@@ -45,29 +35,10 @@ function BillingPage() {
         toast.error("Payment QR is missing. Try Pay again.");
         return;
       }
-      setPayReq(req);
+      void navigate({ to: "/billing/pay", search: { id: req.id } });
     },
     onError: (e: Error) => toast.error(e.message),
   });
-  const watch = useMutation({
-    mutationFn: (id: string) => watchPayRequest({ data: { id } }),
-    onSuccess: (row) => {
-      setPayReq(row);
-      if (row.status === "paid") {
-        toast.success("USDC received. Plan is active.");
-        void q.refetch();
-      }
-    },
-  });
-
-  useEffect(() => {
-    if (!payReq || payReq.status === "paid" || payReq.status === "expired") return;
-    const tick = () => watch.mutate(payReq.id);
-    tick();
-    const t = setInterval(tick, 4000);
-    return () => clearInterval(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [payReq?.id, payReq?.status]);
 
   if (q.isLoading) return <Skeleton className="h-64" />;
   const current = (q.data?.plan ?? "free") as PlanId;
@@ -137,36 +108,43 @@ function BillingPage() {
       )}
 
       <div>
-        <p className="mb-2 text-xs uppercase tracking-wider text-subtle">Pay with USDC on</p>
-        <div className="flex flex-wrap gap-2">
-          {CHAINS.map((id) => {
-            const ready = Boolean(cfg.data?.[id]);
-            return (
+        <p className="text-sm text-muted">
+          {chain === "solana" ? (
+            <>Pay with USDC on Solana.</>
+          ) : (
+            <>
+              Paying with USDC on {PAY_CHAIN_LABEL[chain]}. You pay network gas.{" "}
               <button
-                key={id}
                 type="button"
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm",
-                  chain === id
-                    ? "border-primary bg-primary/15 text-fg"
-                    : "border-border text-muted hover:text-fg",
-                )}
-                onClick={() => setChain(id)}
+                className="text-primary underline-offset-4 hover:underline"
+                onClick={() => setChain("solana")}
               >
-                <ChainMark chain={id} className="size-4" />
-                {PAY_CHAIN_LABEL[id]}
-                {cfg.data && !ready ? (
-                  <span className="ml-1 text-xs text-subtle">off</span>
-                ) : null}
+                Back to Solana
               </button>
-            );
-          })}
-        </div>
-        <p className="mt-2 text-xs text-muted">
-          {chain === "solana"
-            ? "Pay USDC on Solana from Phantom."
-            : `USDC only on ${PAY_CHAIN_LABEL[chain]}. You pay network gas. Open in MetaMask.`}
+            </>
+          )}
         </p>
+        {chain === "solana" ? (
+          <p className="mt-2 text-xs text-subtle">
+            Pay on{" "}
+            <button
+              type="button"
+              className="text-primary underline-offset-4 hover:underline"
+              onClick={() => setChain("ethereum")}
+            >
+              Ethereum
+            </button>
+            {" / "}
+            <button
+              type="button"
+              className="text-primary underline-offset-4 hover:underline"
+              onClick={() => setChain("base")}
+            >
+              Base
+            </button>{" "}
+            instead
+          </p>
+        ) : null}
       </div>
 
       {!chainReady && cfg.data && (
@@ -247,35 +225,6 @@ function BillingPage() {
         until you pay in USDC on Solana, Ethereum, or Base. No silent autopay.
       </p>
 
-      <Dialog
-        open={Boolean(payReq) && payReq?.status !== "paid"}
-        onOpenChange={(open) => {
-          if (!open) setPayReq(null);
-        }}
-      >
-        <DialogContent className="left-0 top-auto bottom-0 flex max-h-[94dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col overflow-y-auto rounded-b-none sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:w-[calc(100%-2rem)] sm:max-w-xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[var(--radius-xl)]">
-          <DialogTitle>
-            {payReq
-              ? `Pay ${payReq.amountUsdc} USDC`
-              : "Pay USDC"}
-          </DialogTitle>
-          <DialogDescription>
-            Scan the QR from a second device, or copy amount and address into Phantom or MetaMask.
-          </DialogDescription>
-          <div className="mt-4">{payReq ? <PayPanel req={payReq} /> : null}</div>
-          {payReq ? (
-            <p className="mt-4 text-center text-xs">
-              <Link
-                to="/billing/pay"
-                search={{ id: payReq.id }}
-                className="text-primary underline-offset-4 hover:underline"
-              >
-                Open full pay page
-              </Link>
-            </p>
-          ) : null}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
