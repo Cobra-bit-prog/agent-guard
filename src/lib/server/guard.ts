@@ -399,6 +399,7 @@ export async function ensureSchema() {
   await sql.query(`create index if not exists pay_requests_user_idx on pay_requests (user_id, created_at desc)`);
   await sql.query(`create index if not exists pay_requests_reference_idx on pay_requests (reference)`);
   await sql.query(`alter table pay_requests add column if not exists chain text not null default 'solana'`);
+  await sql.query(`alter table pay_requests add column if not exists asset text not null default 'usdc'`);
   await sql.query(
     `alter table pay_requests add column if not exists invoice_email_sent_at timestamptz`,
   );

@@ -60,9 +60,12 @@ export type PayRequestView = {
   id: string;
   plan: string;
   chain: PayChain;
+  asset: "usdc" | "sol" | "eth";
+  symbol: string;
   amountUsdc: number;
   amountBaseUnits: string;
   exactAmountUsdc: string;
+  exactAmount: string;
   reference: string;
   recipient: string;
   status: PayStatus;
