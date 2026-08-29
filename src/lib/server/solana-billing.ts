@@ -27,6 +27,7 @@ import {
 import { buildEip681TransferUrl, buildMetamaskSendUrl, type EvmPayChain } from "@/lib/evm-pay";
 import { sendInvoiceEmail } from "@/lib/auth/send-email.server";
 import { ensureSchema } from "@/lib/server/guard";
+import { rpc, solanaRpcUrls } from "@/lib/onchain";
 
 const PaidPlan = z.enum(["starter", "pro", "team"]);
 const PayChainZ = z.enum(["solana", "ethereum", "base"]);
@@ -354,4 +355,22 @@ export const watchPayRequest = createServerFn({ method: "POST" })
       return view(row);
     }
     return view(row);
+  });
+
+export const getSolanaBlockhash = createServerFn({ method: "GET" })
+  .middleware([authMiddleware])
+  .handler(async () => {
+    let last: unknown;
+    for (const url of solanaRpcUrls()) {
+      try {
+        const result = await rpc<{ value?: { blockhash?: string } }>(url, "getLatestBlockhash", [
+          { commitment: "confirmed" },
+        ]);
+        const blockhash = result?.value?.blockhash;
+        if (blockhash) return { blockhash };
+      } catch (err) {
+        last = err;
+      }
+    }
+    throw last instanceof Error ? last : new Error("Could not fetch a Solana blockhash.");
   });

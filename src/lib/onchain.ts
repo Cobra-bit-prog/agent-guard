@@ -18,6 +18,19 @@ export function solanaRpcUrl(): string {
   return custom || RPC.solana;
 }
 
+const SOLANA_FALLBACKS = [
+  "https://solana-rpc.publicnode.com",
+  "https://solana.drpc.org",
+  "https://solana.publicnode.com",
+  "https://api.mainnet-beta.solana.com",
+];
+
+export function solanaRpcUrls(): string[] {
+  const primary = solanaRpcUrl();
+  const rest = SOLANA_FALLBACKS.filter((url) => url !== primary);
+  return [primary, ...rest];
+}
+
 /** Override with ETH_RPC_URL / BASE_RPC_URL. Public defaults are fine. */
 export function evmRpcUrl(chain: "ethereum" | "base"): string {
   const envName = chain === "ethereum" ? "ETH_RPC_URL" : "BASE_RPC_URL";

@@ -58,7 +58,6 @@ export async function payUsdcWithPhantomExtension(opts: {
 }): Promise<string> {
   ensureNodeBuffer();
   const {
-    Connection,
     PublicKey,
     Transaction,
   } = await import("@solana/web3.js");
@@ -95,16 +94,50 @@ export async function payUsdcWithPhantomExtension(opts: {
     transfer,
   );
   tx.feePayer = payer;
-
-  const conn = new Connection("https://api.mainnet-beta.solana.com", "confirmed");
-  tx.recentBlockhash = (await conn.getLatestBlockhash()).blockhash;
+  tx.recentBlockhash = await latestSolanaBlockhash();
 
   const sent = await phantom.signAndSendTransaction(tx);
   if (!sent?.signature) throw new Error("Phantom did not return a signature.");
   return sent.signature;
 }
 
+
+const BROWSER_SOLANA_RPCS = [
+  "https://solana-rpc.publicnode.com",
+  "https://solana.drpc.org",
+  "https://solana.publicnode.com",
+  "https://api.mainnet-beta.solana.com",
+];
+
+async function latestSolanaBlockhash(): Promise<string> {
+  for (const url of BROWSER_SOLANA_RPCS) {
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "getLatestBlockhash",
+          params: [{ commitment: "confirmed" }],
+        }),
+        signal: AbortSignal.timeout(4000),
+      });
+      const j = (await res.json()) as { result?: { value?: { blockhash?: string } } };
+      const hash = j.result?.value?.blockhash;
+      if (hash) return hash;
+    } catch {
+      // try the next public RPC, then our server
+    }
+  }
+  const { getSolanaBlockhash } = await import("@/lib/server/solana-billing");
+  const row = await getSolanaBlockhash();
+  if (!row?.blockhash) throw new Error("Could not get a recent Solana blockhash. Try Open in Phantom again.");
+  return row.blockhash;
+}
+
 function padAddress(addr: string): string {
+
   return addr.replace(/^0x/i, "").toLowerCase().padStart(64, "0");
 }
 
