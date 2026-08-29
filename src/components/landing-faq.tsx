@@ -3,12 +3,12 @@ import { cn } from "@/lib/utils";
 
 const FAQS = [
   {
-    q: "Why didn’t I get an email when I signed up?",
-    a: "You must confirm your email before the dashboard. After signup we keep you on a waiting screen until you click the link (one hour). If nothing arrives, check spam, then resend from that screen. Sign-in of an unconfirmed account sends a new link and returns you there.",
-  },
-  {
     q: "Do you hold my keys?",
     a: "No. We are not a custodian. You keep the keys. Agent Control scores a send against your policy and answers a check the agent must call before it broadcasts.",
+  },
+  {
+    q: "Why didn’t I get an email when I signed up?",
+    a: "You must confirm your email before the dashboard. After signup we keep you on a waiting screen until you click the link (one hour). If nothing arrives, check spam, then resend from that screen. Sign-in of an unconfirmed account sends a new link and returns you there.",
   },
   {
     q: "Which chains are supported?",
@@ -35,10 +35,7 @@ const FAQS = [
     a: (
       <>
         Problems or billing questions: email{" "}
-        <a
-          href="mailto:support@agent-control.net"
-          className="text-fg underline underline-offset-4"
-        >
+        <a href="mailto:support@agent-control.net" className="text-fg underline underline-offset-4">
           support@agent-control.net
         </a>
         .
@@ -55,7 +52,7 @@ export function LandingFaq() {
       <div className="mx-auto max-w-3xl px-6 py-16 md:px-10">
         <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">FAQ</h2>
         <p className="mt-2 text-muted">
-          Straight answers. Including the signup email.
+          Straight answers. Custody, chains, billing, and the signup email.
         </p>
         <div className="mt-8 divide-y divide-border rounded-[22px] border border-border bg-surface">
           {FAQS.map((item, i) => {

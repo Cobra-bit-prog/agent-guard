@@ -1,28 +1,83 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import {
-  Activity,
-  Bell,
-  Check,
-  KeyRound,
-  Lock,
-  Menu,
-  Shield,
-  X,
-} from "lucide-react";
+import { Check, Menu, X } from "lucide-react";
 import { Logo } from "@/components/brand";
 import { SupportedChains } from "@/components/chain-icons";
 import { LandingConsole } from "@/components/landing-console";
 import { LandingDemoDashboard } from "@/components/landing-demo-dashboard";
 import { LandingFaq } from "@/components/landing-faq";
-import { LandingTutorial } from "@/components/landing-tutorial";
 import { Button } from "@/components/ui/button";
 import { SignedIn, SignedOut } from "@/lib/auth/gates";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { PLANS } from "@/lib/plans";
 import { cn } from "@/lib/utils";
 
-const HOME_FAQ_LD = [{"@type": "Question", "name": "Why didn’t I get an email when I signed up?", "acceptedAnswer": {"@type": "Answer", "text": "You must confirm your email before the dashboard. After signup we keep you on a waiting screen until you click the link (one hour). If nothing arrives, check spam, then resend from that screen. Sign-in of an unconfirmed account sends a new link and returns you there."}}, {"@type": "Question", "name": "Do you hold my keys?", "acceptedAnswer": {"@type": "Answer", "text": "No. We are not a custodian. You keep the keys. Agent Control scores a send against your policy and answers a check the agent must call before it broadcasts."}}, {"@type": "Question", "name": "Which chains are supported?", "acceptedAnswer": {"@type": "Answer", "text": "Solana, Ethereum, and Base. Live wallets sync native balance and recent transfers. Demo wallets stay labeled so you can tour the console first."}}, {"@type": "Question", "name": "How does the pre-sign hook work?", "acceptedAnswer": {"@type": "Answer", "text": "Give the agent an API key. Before it signs, it POSTs /api/v1/check with the destination and value_usd. If the response has must_abort: true, the agent must not send."}}, {"@type": "Question", "name": "What if the agent skips the check?", "acceptedAnswer": {"@type": "Answer", "text": "The hook only works if you wire it in front of sign-and-broadcast. If the agent can send without calling check, Agent Control cannot stop that send. Pause the agent from the console if you need a hard stop on your side."}}, {"@type": "Question", "name": "Is the trial free? Do I need a card?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. One day of the full console, no card. After that pay Starter, Pro, or Team in USDC on Solana, Ethereum, or Base from Billing. Phantom for Solana; MetaMask or any wallet for Ethereum and Base. You pay your own gas on ETH/Base. We never see your funds and we do not auto-charge next month."}}, {"@type": "Question", "name": "Is this insurance?", "acceptedAnswer": {"@type": "Answer", "text": "No. Monitoring and policy checks only. A blocked check is a decision, not a guarantee that funds cannot move."}}, {"@type": "Question", "name": "How do I reach support?", "acceptedAnswer": {"@type": "Answer", "text": "Problems or billing questions: email support@agent-control.net."}}] as const;
+const HOME_FAQ_LD = [
+  {
+    "@type": "Question",
+    name: "Do you hold my keys?",
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: "No. We are not a custodian. You keep the keys. Agent Control scores a send against your policy and answers a check the agent must call before it broadcasts.",
+    },
+  },
+  {
+    "@type": "Question",
+    name: "Why didn’t I get an email when I signed up?",
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: "You must confirm your email before the dashboard. After signup we keep you on a waiting screen until you click the link (one hour). If nothing arrives, check spam, then resend from that screen. Sign-in of an unconfirmed account sends a new link and returns you there.",
+    },
+  },
+  {
+    "@type": "Question",
+    name: "Which chains are supported?",
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: "Solana, Ethereum, and Base. Live wallets sync native balance and recent transfers. Demo wallets stay labeled so you can tour the console first.",
+    },
+  },
+  {
+    "@type": "Question",
+    name: "How does the pre-sign hook work?",
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: "Give the agent an API key. Before it signs, it POSTs /api/v1/check with the destination and value_usd. If the response has must_abort: true, the agent must not send.",
+    },
+  },
+  {
+    "@type": "Question",
+    name: "What if the agent skips the check?",
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: "The hook only works if you wire it in front of sign-and-broadcast. If the agent can send without calling check, Agent Control cannot stop that send. Pause the agent from the console if you need a hard stop on your side.",
+    },
+  },
+  {
+    "@type": "Question",
+    name: "Is the trial free? Do I need a card?",
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: "Yes. One day of the full console, no card. After that pay Starter, Pro, or Team in USDC on Solana, Ethereum, or Base from Billing. Phantom for Solana; MetaMask or any wallet for Ethereum and Base. You pay your own gas on ETH/Base. We never see your funds and we do not auto-charge next month.",
+    },
+  },
+  {
+    "@type": "Question",
+    name: "Is this insurance?",
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: "No. Monitoring and policy checks only. A blocked check is a decision, not a guarantee that funds cannot move.",
+    },
+  },
+  {
+    "@type": "Question",
+    name: "How do I reach support?",
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: "Problems or billing questions: email support@agent-control.net.",
+    },
+  },
+] as const;
 
 const HOME_JSON_LD = {
   "@context": "https://schema.org",
@@ -43,8 +98,7 @@ const HOME_JSON_LD = {
         lowPrice: "0",
         highPrice: "149",
         priceCurrency: "USD",
-        description:
-          "1-day free trial then 29/49/149 USDC on Solana, Ethereum, or Base",
+        description: "1-day free trial then 29/49/149 USDC on Solana, Ethereum, or Base",
       },
     },
   ],
@@ -62,16 +116,11 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-
 const SUPPORT_MAIL = "mailto:support@agent-control.net";
 
 const NAV = [
-  { href: "#product", label: "Product" },
-  { href: "#learn", label: "Tutorial" },
   { href: "/docs", label: "Docs" },
-  { href: "#how", label: "How it works" },
   { href: "#pricing", label: "Pricing" },
-  { href: "#faq", label: "FAQ" },
   { href: SUPPORT_MAIL, label: "Contact" },
 ];
 
@@ -100,7 +149,7 @@ function Home() {
                   <Link to="/login">Sign in</Link>
                 </Button>
                 <Button asChild>
-                  <Link to="/login">Start 1-day trial</Link>
+                  <Link to="/signup">Start 1-day trial</Link>
                 </Button>
               </SignedOut>
               <SignedIn>
@@ -151,32 +200,30 @@ function Home() {
               className="landing-rise mt-5 max-w-2xl text-base text-muted md:text-lg"
               style={{ animationDelay: "80ms" }}
             >
-              Keep control of your agents’ spending. You set the limits. Suspicious transactions show up as alerts.
+              Suspicious sends show up as alerts. You still hold the keys.
             </p>
             <div
               className="landing-rise mt-5 flex flex-wrap gap-2 text-xs text-muted"
               style={{ animationDelay: "120ms" }}
             >
-              {["Not a custodian", "You hold the keys", "Solana · Ethereum · Base"].map(
-                (item) => (
-                  <span
-                    key={item}
-                    className="rounded-full border border-border bg-surface/70 px-3 py-1.5"
-                  >
-                    {item}
-                  </span>
-                ),
-              )}
+              {["Not a custodian", "You hold the keys", "Solana · Ethereum · Base"].map((item) => (
+                <span
+                  key={item}
+                  className="rounded-full border border-border bg-surface/70 px-3 py-1.5"
+                >
+                  {item}
+                </span>
+              ))}
             </div>
             <div
               className="landing-rise mt-8 flex flex-wrap gap-3"
               style={{ animationDelay: "160ms" }}
             >
               <Button size="lg" asChild>
-                <Link to="/login">Start 1-day trial</Link>
+                <Link to="/signup">Start 1-day trial</Link>
               </Button>
               <Button size="lg" variant="secondary" asChild>
-                <a href="#learn">Watch the tutorial</a>
+                <a href="#how">How it works</a>
               </Button>
             </div>
             <SupportedChains className="landing-rise mt-8" />
@@ -187,54 +234,15 @@ function Home() {
         </div>
       </section>
 
-      <section id="product" className="border-t border-border">
-        <div className="mx-auto grid max-w-7xl gap-6 px-6 py-16 md:grid-cols-2 md:px-10 lg:grid-cols-4 lg:px-16">
-          {[
-            {
-              icon: Activity,
-              title: "Live ingestion",
-              body: "Real wallets sync from Solana, Ethereum, and Base. Demo wallets stay labeled so you can tour the console.",
-            },
-            {
-              icon: Shield,
-              title: "Policy engine",
-              body: "Daily caps, max size, hourly velocity, allowlists and denylists — evaluated on every transfer and every check.",
-            },
-            {
-              icon: KeyRound,
-              title: "Pre-sign hook",
-              body: "REST + MCP. Your agent calls /api/v1/check before it signs. If must_abort is true, it must not send.",
-            },
-            {
-              icon: Bell,
-              title: "Alerts + audit",
-              body: "Blocks, pauses, and policy edits write an audit trail. Not a custodian — you still hold the keys.",
-            },
-          ].map((f) => (
-            <div
-              key={f.title}
-              className="rounded-[var(--radius-xl)] border border-border bg-surface p-6"
-            >
-              <f.icon className="size-5 text-primary" />
-              <h3 className="mt-4 text-lg font-medium">{f.title}</h3>
-              <p className="mt-2 text-sm text-muted">{f.body}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-
       <section id="console" className="border-t border-border">
         <div className="mx-auto max-w-7xl px-6 py-16 md:px-10 lg:px-16">
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-warning">
             Demo · sample
           </p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">
-            The console
-          </h2>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">The console</h2>
           <p className="mt-2 max-w-2xl text-muted">
-            Agent wallets, spend vs daily cap, and activity. Sample data so you
-            can see the layout before you sign in.
+            Agent wallets, spend vs daily cap, and activity. Sample data so you can see the layout
+            before you sign in.
           </p>
           <LandingDemoDashboard />
         </div>
@@ -242,12 +250,10 @@ function Home() {
 
       <section id="how" className="border-t border-border">
         <div className="mx-auto max-w-7xl px-6 py-16 md:px-10 lg:px-16">
-          <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">
-            How it works
-          </h2>
+          <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">How it works</h2>
           <p className="mt-2 max-w-2xl text-muted">
-            Four steps. No custody. The agent cannot skip the check if you wire it
-            in front of sign-and-broadcast.
+            Four steps. No custody. The agent cannot skip the check if you wire it in front of
+            sign-and-broadcast.
           </p>
           <ol className="mt-8 grid gap-4 md:grid-cols-4">
             {[
@@ -285,16 +291,12 @@ function Home() {
         </div>
       </section>
 
-      <LandingTutorial />
-
       <section id="pricing" className="border-t border-border">
         <div className="mx-auto max-w-7xl px-6 py-16 md:px-10 lg:px-16">
-          <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">
-            Pricing
-          </h2>
+          <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">Pricing</h2>
           <p className="mt-2 text-muted">
-            1-day full console. No card required to start. Paid plans are USDC on
-            Solana, Ethereum, or Base. You pay gas on ETH/Base. No autopay.
+            1-day full console. No card required to start. Paid plans are USDC on Solana, Ethereum,
+            or Base. You pay gas on ETH/Base. No autopay.
           </p>
           <div className="mt-8 grid gap-4 md:grid-cols-4">
             {Object.values(PLANS).map((p) => (
@@ -302,22 +304,16 @@ function Home() {
                 key={p.id}
                 className={cn(
                   "flex flex-col rounded-[var(--radius-xl)] border p-5",
-                  p.id === "pro"
-                    ? "border-primary/40 bg-surface"
-                    : "border-border bg-surface/70",
+                  p.id === "pro" ? "border-primary/40 bg-surface" : "border-border bg-surface/70",
                 )}
               >
                 <p className="text-sm text-muted">{p.name}</p>
                 <p className="mt-3 text-3xl font-semibold tracking-tight">
                   {p.price === 0 ? "Free" : `$${p.price}`}
-                  {p.price > 0 && (
-                    <span className="text-sm font-normal text-muted">/mo</span>
-                  )}
+                  {p.price > 0 && <span className="text-sm font-normal text-muted">/mo</span>}
                 </p>
                 {p.id === "free" && (
-                  <p className="mt-1 text-xs font-medium text-primary">
-                    1 day · no card
-                  </p>
+                  <p className="mt-1 text-xs font-medium text-primary">1 day · no card</p>
                 )}
                 <p className="mt-2 text-sm text-muted">{p.blurb}</p>
                 <ul className="mt-4 flex-1 space-y-2 text-sm text-muted">
@@ -330,17 +326,19 @@ function Home() {
                     {p.historyDays}-day history
                   </li>
                   <li className="flex gap-2">
-                    <Lock className="size-4 text-primary" />
+                    <Check className="size-4 text-success" />
                     Policy + pre-sign hook
                   </li>
                 </ul>
-                <Button
-                  className="mt-6"
-                  variant={p.id === "pro" ? "default" : "secondary"}
-                  asChild
-                >
-                  <Link to="/login">
-                    {p.price === 0 ? "Start 1-day trial" : "Create account"}
+                <Button className="mt-6" variant={p.id === "pro" ? "default" : "secondary"} asChild>
+                  <Link to="/signup">
+                    {p.price === 0
+                      ? "Start 1-day trial"
+                      : p.id === "starter"
+                        ? "Get Starter"
+                        : p.id === "pro"
+                          ? "Get Pro"
+                          : "Get Team"}
                   </Link>
                 </Button>
               </div>
@@ -363,8 +361,8 @@ function Home() {
               Contact · support@agent-control.net
             </a>
             <span>
-              Chain marks identify supported networks. Agent Control is not affiliated
-              with Solana, Ethereum, or Base.
+              Chain marks identify supported networks. Agent Control is not affiliated with Solana,
+              Ethereum, or Base.
             </span>
           </p>
         </div>

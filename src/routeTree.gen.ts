@@ -8,349 +8,362 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AppRouteImport } from './routes/_app'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as VerifyEmailRouteImport } from './routes/verify-email'
-import { Route as LogosRouteImport } from './routes/logos'
-import { Route as AppAlertsRouteImport } from './routes/_app/alerts'
-import { Route as AppBillingRouteImport } from './routes/_app/billing'
-import { Route as AppBillingPayRouteImport } from './routes/_app/billing.pay'
-import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
-import { Route as AppPoliciesRouteImport } from './routes/_app/policies'
-import { Route as AppSettingsRouteImport } from './routes/_app/settings'
-import { Route as AppAgentsIndexRouteImport } from './routes/_app/agents.index'
-import { Route as AppAgentsIdRouteImport } from './routes/_app/agents.$id'
-import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
-import { Route as ApiV1CheckRouteImport } from './routes/api/v1/check'
-import { Route as ApiV1McpRouteImport } from './routes/api/v1/mcp'
+import { Route as rootRouteImport } from "./routes/__root";
+import { Route as IndexRouteImport } from "./routes/index";
+import { Route as AppRouteImport } from "./routes/_app";
+import { Route as LoginRouteImport } from "./routes/login";
+import { Route as SignupRouteImport } from "./routes/signup";
+import { Route as VerifyEmailRouteImport } from "./routes/verify-email";
+import { Route as LogosRouteImport } from "./routes/logos";
+import { Route as AppAlertsRouteImport } from "./routes/_app/alerts";
+import { Route as AppBillingRouteImport } from "./routes/_app/billing";
+import { Route as AppBillingPayRouteImport } from "./routes/_app/billing.pay";
+import { Route as AppDashboardRouteImport } from "./routes/_app/dashboard";
+import { Route as AppPoliciesRouteImport } from "./routes/_app/policies";
+import { Route as AppSettingsRouteImport } from "./routes/_app/settings";
+import { Route as AppAgentsIndexRouteImport } from "./routes/_app/agents.index";
+import { Route as AppAgentsIdRouteImport } from "./routes/_app/agents.$id";
+import { Route as ApiAuthSplatRouteImport } from "./routes/api/auth/$";
+import { Route as ApiV1CheckRouteImport } from "./routes/api/v1/check";
+import { Route as ApiV1McpRouteImport } from "./routes/api/v1/mcp";
 
 const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+  id: "/",
+  path: "/",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const AppRoute = AppRouteImport.update({
-  id: '/_app',
+  id: "/_app",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+  id: "/login",
+  path: "/login",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
+const SignupRoute = SignupRouteImport.update({
+  id: "/signup",
+  path: "/signup",
+  getParentRoute: () => rootRouteImport,
+} as any);
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
-  id: '/verify-email',
-  path: '/verify-email',
+  id: "/verify-email",
+  path: "/verify-email",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const LogosRoute = LogosRouteImport.update({
-  id: '/logos',
-  path: '/logos',
+  id: "/logos",
+  path: "/logos",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const AppAlertsRoute = AppAlertsRouteImport.update({
-  id: '/alerts',
-  path: '/alerts',
+  id: "/alerts",
+  path: "/alerts",
   getParentRoute: () => AppRoute,
-} as any)
+} as any);
 const AppBillingRoute = AppBillingRouteImport.update({
-  id: '/billing',
-  path: '/billing',
+  id: "/billing",
+  path: "/billing",
   getParentRoute: () => AppRoute,
-} as any)
+} as any);
 const AppBillingPayRoute = AppBillingPayRouteImport.update({
-  id: '/billing/pay',
-  path: '/billing/pay',
+  id: "/billing/pay",
+  path: "/billing/pay",
   getParentRoute: () => AppRoute,
-} as any)
+} as any);
 const AppDashboardRoute = AppDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
+  id: "/dashboard",
+  path: "/dashboard",
   getParentRoute: () => AppRoute,
-} as any)
+} as any);
 const AppPoliciesRoute = AppPoliciesRouteImport.update({
-  id: '/policies',
-  path: '/policies',
+  id: "/policies",
+  path: "/policies",
   getParentRoute: () => AppRoute,
-} as any)
+} as any);
 const AppSettingsRoute = AppSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
+  id: "/settings",
+  path: "/settings",
   getParentRoute: () => AppRoute,
-} as any)
+} as any);
 const AppAgentsIndexRoute = AppAgentsIndexRouteImport.update({
-  id: '/agents/',
-  path: '/agents/',
+  id: "/agents/",
+  path: "/agents/",
   getParentRoute: () => AppRoute,
-} as any)
+} as any);
 const AppAgentsIdRoute = AppAgentsIdRouteImport.update({
-  id: '/agents/$id',
-  path: '/agents/$id',
+  id: "/agents/$id",
+  path: "/agents/$id",
   getParentRoute: () => AppRoute,
-} as any)
+} as any);
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
-  id: '/api/auth/$',
-  path: '/api/auth/$',
+  id: "/api/auth/$",
+  path: "/api/auth/$",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ApiV1CheckRoute = ApiV1CheckRouteImport.update({
-  id: '/api/v1/check',
-  path: '/api/v1/check',
+  id: "/api/v1/check",
+  path: "/api/v1/check",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ApiV1McpRoute = ApiV1McpRouteImport.update({
-  id: '/api/v1/mcp',
-  path: '/api/v1/mcp',
+  id: "/api/v1/mcp",
+  path: "/api/v1/mcp",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/login': typeof LoginRoute
-  '/verify-email': typeof VerifyEmailRoute
-  '/logos': typeof LogosRoute
-  '/alerts': typeof AppAlertsRoute
-  '/billing': typeof AppBillingRoute
-  '/billing/pay': typeof AppBillingPayRoute
-  '/dashboard': typeof AppDashboardRoute
-  '/policies': typeof AppPoliciesRoute
-  '/settings': typeof AppSettingsRoute
-  '/agents/$id': typeof AppAgentsIdRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/v1/check': typeof ApiV1CheckRoute
-  '/api/v1/mcp': typeof ApiV1McpRoute
-  '/agents/': typeof AppAgentsIndexRoute
+  "/": typeof IndexRoute;
+  "/login": typeof LoginRoute;
+  "/signup": typeof SignupRoute;
+  "/verify-email": typeof VerifyEmailRoute;
+  "/logos": typeof LogosRoute;
+  "/alerts": typeof AppAlertsRoute;
+  "/billing": typeof AppBillingRoute;
+  "/billing/pay": typeof AppBillingPayRoute;
+  "/dashboard": typeof AppDashboardRoute;
+  "/policies": typeof AppPoliciesRoute;
+  "/settings": typeof AppSettingsRoute;
+  "/agents/$id": typeof AppAgentsIdRoute;
+  "/api/auth/$": typeof ApiAuthSplatRoute;
+  "/api/v1/check": typeof ApiV1CheckRoute;
+  "/api/v1/mcp": typeof ApiV1McpRoute;
+  "/agents/": typeof AppAgentsIndexRoute;
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/login': typeof LoginRoute
-  '/verify-email': typeof VerifyEmailRoute
-  '/logos': typeof LogosRoute
-  '/alerts': typeof AppAlertsRoute
-  '/billing': typeof AppBillingRoute
-  '/billing/pay': typeof AppBillingPayRoute
-  '/dashboard': typeof AppDashboardRoute
-  '/policies': typeof AppPoliciesRoute
-  '/settings': typeof AppSettingsRoute
-  '/agents/$id': typeof AppAgentsIdRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/v1/check': typeof ApiV1CheckRoute
-  '/api/v1/mcp': typeof ApiV1McpRoute
-  '/agents': typeof AppAgentsIndexRoute
+  "/": typeof IndexRoute;
+  "/login": typeof LoginRoute;
+  "/signup": typeof SignupRoute;
+  "/verify-email": typeof VerifyEmailRoute;
+  "/logos": typeof LogosRoute;
+  "/alerts": typeof AppAlertsRoute;
+  "/billing": typeof AppBillingRoute;
+  "/billing/pay": typeof AppBillingPayRoute;
+  "/dashboard": typeof AppDashboardRoute;
+  "/policies": typeof AppPoliciesRoute;
+  "/settings": typeof AppSettingsRoute;
+  "/agents/$id": typeof AppAgentsIdRoute;
+  "/api/auth/$": typeof ApiAuthSplatRoute;
+  "/api/v1/check": typeof ApiV1CheckRoute;
+  "/api/v1/mcp": typeof ApiV1McpRoute;
+  "/agents": typeof AppAgentsIndexRoute;
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/_app': typeof AppRouteWithChildren
-  '/login': typeof LoginRoute
-  '/verify-email': typeof VerifyEmailRoute
-  '/logos': typeof LogosRoute
-  '/_app/alerts': typeof AppAlertsRoute
-  '/_app/billing': typeof AppBillingRoute
-  '/_app/billing/pay': typeof AppBillingPayRoute
-  '/_app/dashboard': typeof AppDashboardRoute
-  '/_app/policies': typeof AppPoliciesRoute
-  '/_app/settings': typeof AppSettingsRoute
-  '/_app/agents/$id': typeof AppAgentsIdRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/v1/check': typeof ApiV1CheckRoute
-  '/api/v1/mcp': typeof ApiV1McpRoute
-  '/_app/agents/': typeof AppAgentsIndexRoute
+  __root__: typeof rootRouteImport;
+  "/": typeof IndexRoute;
+  "/_app": typeof AppRouteWithChildren;
+  "/login": typeof LoginRoute;
+  "/signup": typeof SignupRoute;
+  "/verify-email": typeof VerifyEmailRoute;
+  "/logos": typeof LogosRoute;
+  "/_app/alerts": typeof AppAlertsRoute;
+  "/_app/billing": typeof AppBillingRoute;
+  "/_app/billing/pay": typeof AppBillingPayRoute;
+  "/_app/dashboard": typeof AppDashboardRoute;
+  "/_app/policies": typeof AppPoliciesRoute;
+  "/_app/settings": typeof AppSettingsRoute;
+  "/_app/agents/$id": typeof AppAgentsIdRoute;
+  "/api/auth/$": typeof ApiAuthSplatRoute;
+  "/api/v1/check": typeof ApiV1CheckRoute;
+  "/api/v1/mcp": typeof ApiV1McpRoute;
+  "/_app/agents/": typeof AppAgentsIndexRoute;
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
+  fileRoutesByFullPath: FileRoutesByFullPath;
   fullPaths:
-    | '/'
-    | '/login'
-    | '/verify-email'
-    | '/logos'
-    | '/alerts'
-    | '/billing'
-    | '/billing/pay'
-    | '/dashboard'
-    | '/policies'
-    | '/settings'
-    | '/agents/$id'
-    | '/api/auth/$'
-    | '/api/v1/check'
-    | '/api/v1/mcp'
-    | '/agents/'
-  fileRoutesByTo: FileRoutesByTo
+    | "/"
+    | "/login"
+    | "/signup"
+    | "/verify-email"
+    | "/logos"
+    | "/alerts"
+    | "/billing"
+    | "/billing/pay"
+    | "/dashboard"
+    | "/policies"
+    | "/settings"
+    | "/agents/$id"
+    | "/api/auth/$"
+    | "/api/v1/check"
+    | "/api/v1/mcp"
+    | "/agents/";
+  fileRoutesByTo: FileRoutesByTo;
   to:
-    | '/'
-    | '/login'
-    | '/verify-email'
-    | '/logos'
-    | '/alerts'
-    | '/billing'
-    | '/billing/pay'
-    | '/dashboard'
-    | '/policies'
-    | '/settings'
-    | '/agents/$id'
-    | '/api/auth/$'
-    | '/api/v1/check'
-    | '/api/v1/mcp'
-    | '/agents'
+    | "/"
+    | "/login"
+    | "/signup"
+    | "/verify-email"
+    | "/logos"
+    | "/alerts"
+    | "/billing"
+    | "/billing/pay"
+    | "/dashboard"
+    | "/policies"
+    | "/settings"
+    | "/agents/$id"
+    | "/api/auth/$"
+    | "/api/v1/check"
+    | "/api/v1/mcp"
+    | "/agents";
   id:
-    | '__root__'
-    | '/'
-    | '/_app'
-    | '/login'
-    | '/verify-email'
-    | '/logos'
-    | '/_app/alerts'
-    | '/_app/billing'
-    | '/_app/billing/pay'
-    | '/_app/dashboard'
-    | '/_app/policies'
-    | '/_app/settings'
-    | '/_app/agents/$id'
-    | '/api/auth/$'
-    | '/api/v1/check'
-    | '/api/v1/mcp'
-    | '/_app/agents/'
-  fileRoutesById: FileRoutesById
+    | "__root__"
+    | "/"
+    | "/_app"
+    | "/login"
+    | "/signup"
+    | "/verify-email"
+    | "/logos"
+    | "/_app/alerts"
+    | "/_app/billing"
+    | "/_app/billing/pay"
+    | "/_app/dashboard"
+    | "/_app/policies"
+    | "/_app/settings"
+    | "/_app/agents/$id"
+    | "/api/auth/$"
+    | "/api/v1/check"
+    | "/api/v1/mcp"
+    | "/_app/agents/";
+  fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  AppRoute: typeof AppRouteWithChildren
-  LoginRoute: typeof LoginRoute
-  VerifyEmailRoute: typeof VerifyEmailRoute
-  LogosRoute: typeof LogosRoute
-  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
-  ApiV1CheckRoute: typeof ApiV1CheckRoute
-  ApiV1McpRoute: typeof ApiV1McpRoute
+  IndexRoute: typeof IndexRoute;
+  AppRoute: typeof AppRouteWithChildren;
+  LoginRoute: typeof LoginRoute;
+  SignupRoute: typeof SignupRoute;
+  VerifyEmailRoute: typeof VerifyEmailRoute;
+  LogosRoute: typeof LogosRoute;
+  ApiAuthSplatRoute: typeof ApiAuthSplatRoute;
+  ApiV1CheckRoute: typeof ApiV1CheckRoute;
+  ApiV1McpRoute: typeof ApiV1McpRoute;
 }
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_app': {
-      id: '/_app'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AppRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/verify-email': {
-      id: '/verify-email'
-      path: '/verify-email'
-      fullPath: '/verify-email'
-      preLoaderRoute: typeof VerifyEmailRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/logos': {
-      id: '/logos'
-      path: '/logos'
-      fullPath: '/logos'
-      preLoaderRoute: typeof LogosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_app/alerts': {
-      id: '/_app/alerts'
-      path: '/alerts'
-      fullPath: '/alerts'
-      preLoaderRoute: typeof AppAlertsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/billing': {
-      id: '/_app/billing'
-      path: '/billing'
-      fullPath: '/billing'
-      preLoaderRoute: typeof AppBillingRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/billing/pay': {
-      id: '/_app/billing/pay'
-      path: '/billing/pay'
-      fullPath: '/billing/pay'
-      preLoaderRoute: typeof AppBillingPayRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/dashboard': {
-      id: '/_app/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AppDashboardRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/policies': {
-      id: '/_app/policies'
-      path: '/policies'
-      fullPath: '/policies'
-      preLoaderRoute: typeof AppPoliciesRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/settings': {
-      id: '/_app/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof AppSettingsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/agents/': {
-      id: '/_app/agents/'
-      path: '/agents'
-      fullPath: '/agents/'
-      preLoaderRoute: typeof AppAgentsIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/agents/$id': {
-      id: '/_app/agents/$id'
-      path: '/agents/$id'
-      fullPath: '/agents/$id'
-      preLoaderRoute: typeof AppAgentsIdRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/api/auth/$': {
-      id: '/api/auth/$'
-      path: '/api/auth/$'
-      fullPath: '/api/auth/$'
-      preLoaderRoute: typeof ApiAuthSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/v1/check': {
-      id: '/api/v1/check'
-      path: '/api/v1/check'
-      fullPath: '/api/v1/check'
-      preLoaderRoute: typeof ApiV1CheckRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/v1/mcp': {
-      id: '/api/v1/mcp'
-      path: '/api/v1/mcp'
-      fullPath: '/api/v1/mcp'
-      preLoaderRoute: typeof ApiV1McpRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+    "/": {
+      id: "/";
+      path: "/";
+      fullPath: "/";
+      preLoaderRoute: typeof IndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/_app": {
+      id: "/_app";
+      path: "";
+      fullPath: "/";
+      preLoaderRoute: typeof AppRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/login": {
+      id: "/login";
+      path: "/login";
+      fullPath: "/login";
+      preLoaderRoute: typeof LoginRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/verify-email": {
+      id: "/verify-email";
+      path: "/verify-email";
+      fullPath: "/verify-email";
+      preLoaderRoute: typeof VerifyEmailRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/logos": {
+      id: "/logos";
+      path: "/logos";
+      fullPath: "/logos";
+      preLoaderRoute: typeof LogosRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/_app/alerts": {
+      id: "/_app/alerts";
+      path: "/alerts";
+      fullPath: "/alerts";
+      preLoaderRoute: typeof AppAlertsRouteImport;
+      parentRoute: typeof AppRoute;
+    };
+    "/_app/billing": {
+      id: "/_app/billing";
+      path: "/billing";
+      fullPath: "/billing";
+      preLoaderRoute: typeof AppBillingRouteImport;
+      parentRoute: typeof AppRoute;
+    };
+    "/_app/billing/pay": {
+      id: "/_app/billing/pay";
+      path: "/billing/pay";
+      fullPath: "/billing/pay";
+      preLoaderRoute: typeof AppBillingPayRouteImport;
+      parentRoute: typeof AppRoute;
+    };
+    "/_app/dashboard": {
+      id: "/_app/dashboard";
+      path: "/dashboard";
+      fullPath: "/dashboard";
+      preLoaderRoute: typeof AppDashboardRouteImport;
+      parentRoute: typeof AppRoute;
+    };
+    "/_app/policies": {
+      id: "/_app/policies";
+      path: "/policies";
+      fullPath: "/policies";
+      preLoaderRoute: typeof AppPoliciesRouteImport;
+      parentRoute: typeof AppRoute;
+    };
+    "/_app/settings": {
+      id: "/_app/settings";
+      path: "/settings";
+      fullPath: "/settings";
+      preLoaderRoute: typeof AppSettingsRouteImport;
+      parentRoute: typeof AppRoute;
+    };
+    "/_app/agents/": {
+      id: "/_app/agents/";
+      path: "/agents";
+      fullPath: "/agents/";
+      preLoaderRoute: typeof AppAgentsIndexRouteImport;
+      parentRoute: typeof AppRoute;
+    };
+    "/_app/agents/$id": {
+      id: "/_app/agents/$id";
+      path: "/agents/$id";
+      fullPath: "/agents/$id";
+      preLoaderRoute: typeof AppAgentsIdRouteImport;
+      parentRoute: typeof AppRoute;
+    };
+    "/api/auth/$": {
+      id: "/api/auth/$";
+      path: "/api/auth/$";
+      fullPath: "/api/auth/$";
+      preLoaderRoute: typeof ApiAuthSplatRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/api/v1/check": {
+      id: "/api/v1/check";
+      path: "/api/v1/check";
+      fullPath: "/api/v1/check";
+      preLoaderRoute: typeof ApiV1CheckRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/api/v1/mcp": {
+      id: "/api/v1/mcp";
+      path: "/api/v1/mcp";
+      fullPath: "/api/v1/mcp";
+      preLoaderRoute: typeof ApiV1McpRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
   }
 }
 
 interface AppRouteChildren {
-  AppAlertsRoute: typeof AppAlertsRoute
-  AppBillingRoute: typeof AppBillingRoute
-  AppBillingPayRoute: typeof AppBillingPayRoute
-  AppDashboardRoute: typeof AppDashboardRoute
-  AppPoliciesRoute: typeof AppPoliciesRoute
-  AppSettingsRoute: typeof AppSettingsRoute
-  AppAgentsIdRoute: typeof AppAgentsIdRoute
-  AppAgentsIndexRoute: typeof AppAgentsIndexRoute
+  AppAlertsRoute: typeof AppAlertsRoute;
+  AppBillingRoute: typeof AppBillingRoute;
+  AppBillingPayRoute: typeof AppBillingPayRoute;
+  AppDashboardRoute: typeof AppDashboardRoute;
+  AppPoliciesRoute: typeof AppPoliciesRoute;
+  AppSettingsRoute: typeof AppSettingsRoute;
+  AppAgentsIdRoute: typeof AppAgentsIdRoute;
+  AppAgentsIndexRoute: typeof AppAgentsIndexRoute;
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -362,29 +375,30 @@ const AppRouteChildren: AppRouteChildren = {
   AppSettingsRoute: AppSettingsRoute,
   AppAgentsIdRoute: AppAgentsIdRoute,
   AppAgentsIndexRoute: AppAgentsIndexRoute,
-}
+};
 
-const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren);
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
+  SignupRoute: SignupRoute,
   VerifyEmailRoute: VerifyEmailRoute,
   LogosRoute: LogosRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiV1CheckRoute: ApiV1CheckRoute,
   ApiV1McpRoute: ApiV1McpRoute,
-}
+};
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+  ._addFileTypes<FileRouteTypes>();
 
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
+import type { getRouter } from "./router.tsx";
+import type { createStart } from "@tanstack/react-start";
+declare module "@tanstack/react-start" {
   interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
+    ssr: true;
+    router: Awaited<ReturnType<typeof getRouter>>;
   }
 }
