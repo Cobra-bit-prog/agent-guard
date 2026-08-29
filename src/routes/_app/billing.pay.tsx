@@ -13,9 +13,10 @@ import { PAY_CHAIN_LABEL, type PayChain } from "@/lib/solana-pay";
 import { shortAddress } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/billing/pay")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    id: typeof search.id === "string" ? search.id : "",
-  }),
+  validateSearch: (search: Record<string, unknown>): { id?: string } => {
+    const id = typeof search.id === "string" ? search.id.trim() : "";
+    return id ? { id } : {};
+  },
   component: PayRequestPage,
 });
 

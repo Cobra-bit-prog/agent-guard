@@ -74,5 +74,25 @@
       "destination": "https://agent-control.net/:path*",
       "permanent": true
     }
+  ],
+  "headers": [
+    {
+      "source": "/billing",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "private, no-store, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/billing/:path*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "private, no-store, must-revalidate"
+        }
+      ]
+    }
   ]
 }
