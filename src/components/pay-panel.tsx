@@ -1,10 +1,20 @@
 import { Copy } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ChainMark } from "@/components/chain-icons";
 import { PayQr } from "@/components/pay-qr";
 import { Button } from "@/components/ui/button";
-import { PAY_CHAIN_LABEL, phantomBrowseUrl, type PayChain, type PayRequestView } from "@/lib/solana-pay";
+import {
+  hasPhantomExtension,
+  payUsdcWithPhantomExtension,
+  walletUserRejected,
+} from "@/lib/pay-extension";
+import {
+  PAY_CHAIN_LABEL,
+  phantomBrowseUrl,
+  type PayChain,
+  type PayRequestView,
+} from "@/lib/solana-pay";
 
 async function copyText(value: string): Promise<boolean> {
   if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
@@ -39,6 +49,55 @@ async function copyText(value: string): Promise<boolean> {
   return next !== null;
 }
 
+function SolanaPayButton({ req }: { req: PayRequestView }) {
+  const [busy, setBusy] = useState(false);
+  const [hasWallet, setHasWallet] = useState(false);
+
+  useEffect(() => {
+    setHasWallet(hasPhantomExtension());
+  }, []);
+
+  async function pay() {
+    if (busy) return;
+    const payUrl = (req.payUrl ?? "").trim();
+    if (!hasPhantomExtension()) {
+      if (payUrl) {
+        window.location.assign(phantomBrowseUrl(payUrl));
+        return;
+      }
+      toast.error("Install Phantom, then tap Pay again.");
+      return;
+    }
+    setBusy(true);
+    try {
+      await payUsdcWithPhantomExtension({
+        recipient: req.recipient,
+        amountUsdc: req.amountUsdc,
+        reference: req.reference,
+      });
+      toast.success("Sent. Waiting for confirmation.");
+    } catch (err) {
+      if (walletUserRejected(err)) {
+        toast.message("Payment cancelled.");
+      } else {
+        toast.error(err instanceof Error ? err.message : "Could not send USDC.");
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Button type="button" className="w-full" size="lg" disabled={busy} onClick={() => void pay()}>
+      {busy
+        ? "Confirm in wallet…"
+        : hasWallet
+          ? `Pay ${req.amountUsdc} USDC`
+          : `Pay ${req.amountUsdc} USDC in Phantom`}
+    </Button>
+  );
+}
+
 export function PayPanel({ req }: { req: PayRequestView }) {
   const [copied, setCopied] = useState<"amount" | "address" | "both" | null>(null);
   const chain = (req.chain ?? "solana") as PayChain;
@@ -48,11 +107,7 @@ export function PayPanel({ req }: { req: PayRequestView }) {
   const displayAmount = evm ? req.exactAmountUsdc : sticker;
   const sendExact = evm && displayAmount !== sticker;
   const payUrl = (req.payUrl ?? "").trim();
-  const qrValue = evm
-    ? (req.metamaskUrl ?? "")
-    : payUrl
-      ? phantomBrowseUrl(payUrl)
-      : "";
+  const qrValue = evm ? (req.metamaskUrl ?? "") : payUrl ? phantomBrowseUrl(payUrl) : "";
 
   async function copy(kind: "amount" | "address" | "both", value: string) {
     const ok = await copyText(value);
@@ -63,30 +118,35 @@ export function PayPanel({ req }: { req: PayRequestView }) {
     setCopied(kind);
     setTimeout(() => setCopied(null), 2000);
     toast.success(
-      kind === "both" ? "Amount and address copied." : kind === "amount" ? "Amount copied" : "Address copied",
+      kind === "both"
+        ? "Amount and address copied."
+        : kind === "amount"
+          ? "Amount copied"
+          : "Address copied",
     );
   }
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
+      {!evm ? <SolanaPayButton req={req} /> : null}
+      <div className="rounded-[12px] border border-border bg-elevated/50 px-3 py-2.5 text-sm">
+        <p className="text-xs text-muted">Amount</p>
+        <p className="font-medium">{sticker} USDC</p>
+        {sendExact ? (
+          <p className="mt-0.5 text-xs text-muted">Send exactly {displayAmount} USDC</p>
+        ) : null}
+        <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-muted">
+          <ChainMark chain={chain} className="size-3.5" />
+          {chainName} · USDC
+        </p>
+      </div>
       <div className="mx-auto w-full max-w-[280px]">
-        <PayQr
-          value={qrValue}
-          alt={evm ? `${chainName} USDC payment QR` : "Solana Pay QR"}
-        />
+        <p className="mb-2 text-center text-xs text-subtle">
+          {evm ? "Scan with MetaMask" : "Or scan with Phantom"}
+        </p>
+        <PayQr value={qrValue} alt={evm ? `${chainName} USDC payment QR` : "Solana Pay QR"} />
       </div>
       <div className="space-y-3 text-sm">
-        <div className="rounded-[12px] border border-border bg-elevated/50 px-3 py-2.5">
-          <p className="text-xs text-muted">Amount</p>
-          <p className="font-medium">{sticker} USDC</p>
-          {sendExact ? (
-            <p className="mt-0.5 text-xs text-muted">Send exactly {displayAmount} USDC</p>
-          ) : null}
-          <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-muted">
-            <ChainMark chain={chain} className="size-3.5" />
-            {chainName} · USDC
-          </p>
-        </div>
         <button
           type="button"
           className="w-full rounded-[12px] border border-border bg-elevated/50 px-3 py-2.5 text-left"
@@ -97,6 +157,7 @@ export function PayPanel({ req }: { req: PayRequestView }) {
         </button>
         <Button
           type="button"
+          variant="secondary"
           className="w-full"
           onClick={() => void copy("amount", displayAmount)}
         >

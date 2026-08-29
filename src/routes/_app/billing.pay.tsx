@@ -155,7 +155,9 @@ function PayRequestPage() {
     return (
       <div className="mx-auto max-w-lg space-y-4">
         <h1 className="text-2xl font-semibold">Payment QR is missing</h1>
-        <p className="text-sm text-danger">This pay request has no QR payload. Go back and tap Pay again.</p>
+        <p className="text-sm text-danger">
+          This pay request has no QR payload. Go back and tap Pay again.
+        </p>
         <Button asChild>
           <Link to="/billing">Back to billing</Link>
         </Button>
@@ -169,13 +171,11 @@ function PayRequestPage() {
         <Link to="/billing" className="text-sm text-muted hover:text-fg">
           ← Billing
         </Link>
-        <h1 className="mt-3 text-2xl font-semibold tracking-tight">
-          Send {req.amountUsdc} USDC from {evm ? PAY_CHAIN_LABEL[chain] : "Phantom"}
-        </h1>
+        <h1 className="mt-3 text-2xl font-semibold tracking-tight">Pay {req.amountUsdc} USDC</h1>
         <p className="mt-1 text-sm text-muted">
           {evm
-            ? "Open your wallet and send a normal USDC transfer to the address below. Copy amount and address, or scan the QR."
-            : "Open Phantom and send a normal USDC transfer to the address below. Copy amount and address, or scan the QR."}
+            ? "Open your wallet and send a normal USDC transfer. Copy amount and address, or scan the QR."
+            : "Confirm in Phantom. On your phone, tap Pay to open the app, or scan the QR."}
         </p>
       </div>
       <Card>
