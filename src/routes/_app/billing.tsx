@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Check, Lock } from "lucide-react";
 import { useState } from "react";
@@ -23,7 +23,6 @@ function chainHint(chain: PayChain) {
 }
 
 function BillingPage() {
-  const navigate = useNavigate();
   const [chain, setChain] = useState<PayChain>("solana");
   const q = useQuery({ queryKey: ["profile"], queryFn: () => getProfile() });
   const cfg = useQuery({ queryKey: ["checkout-config"], queryFn: () => getCheckoutConfig() });
@@ -31,11 +30,11 @@ function BillingPage() {
     mutationFn: (plan: "starter" | "pro" | "team") =>
       createPayRequest({ data: { plan, chain } }),
     onSuccess: (req) => {
-      if (!req.payUrl) {
-        toast.error("Payment QR is missing. Try Pay again.");
+      if (!req?.id) {
+        toast.error("Could not start payment. Try Pay again.");
         return;
       }
-      void navigate({ to: "/billing/pay", search: { id: req.id } });
+      window.location.assign(`/billing/pay?id=${encodeURIComponent(req.id)}`);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -45,7 +44,7 @@ function BillingPage() {
   const expired = Boolean(q.data?.expired);
   const trialing = q.data?.planStatus === "trialing";
   const paidActive = current !== "free" && !expired;
-  const chainReady = Boolean(cfg.data?.[chain]);
+  const checkoutOff = cfg.isSuccess && !cfg.data?.[chain];
 
   return (
     <div className="space-y-6">
@@ -147,7 +146,13 @@ function BillingPage() {
         ) : null}
       </div>
 
-      {!chainReady && cfg.data && (
+      {cfg.isError ? (
+        <p className="rounded-[16px] border border-warning/40 bg-warning/10 px-4 py-3 text-sm">
+          Could not check checkout. Tap Pay anyway — you will see an error if it is not set up.
+        </p>
+      ) : null}
+
+      {checkoutOff && (
         <p className="rounded-[16px] border border-warning/40 bg-warning/10 px-4 py-3 text-sm">
           {PAY_CHAIN_LABEL[chain]} checkout is not configured. Pick another network or ask an
           operator to set{" "}
@@ -187,10 +192,10 @@ function BillingPage() {
                 <Button
                   className="mt-6"
                   variant={highlighted || isCurrent ? "default" : "secondary"}
-                  disabled={!chainReady || pay.isPending || isCurrent}
+                  disabled={pay.isPending || isCurrent || checkoutOff}
                   onClick={() => pay.mutate(p.id)}
                 >
-                  {isCurrent ? "Current plan" : `Pay ${p.price} USDC`}
+                  {isCurrent ? "Current plan" : pay.isPending ? "Starting…" : `Pay ${p.price} USDC`}
                 </Button>
                 <p className="mt-2 text-center text-xs text-subtle">{chainHint(chain)}</p>
               </CardContent>

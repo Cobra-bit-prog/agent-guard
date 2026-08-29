@@ -58,7 +58,17 @@ function PayRequestPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, q.data?.status]);
 
-  if (!id) return <Navigate to="/billing" />;
+  if (!id) {
+    return (
+      <div className="mx-auto max-w-lg space-y-4">
+        <h1 className="text-2xl font-semibold">Pay link is missing</h1>
+        <p className="text-sm text-muted">Go back to Billing and tap Pay again.</p>
+        <Button asChild>
+          <Link to="/billing">Back to billing</Link>
+        </Button>
+      </div>
+    );
+  }
   if (q.isLoading) return <Skeleton className="h-80" />;
   if (q.isError) {
     return (
@@ -159,12 +169,12 @@ function PayRequestPage() {
           ← Billing
         </Link>
         <h1 className="mt-3 text-2xl font-semibold tracking-tight">
-          {plan.name} · {req.amountUsdc} USDC
+          Send {req.amountUsdc} USDC from {evm ? PAY_CHAIN_LABEL[chain] : "Phantom"}
         </h1>
         <p className="mt-1 text-sm text-muted">
           {evm
-            ? "Send this USDC from any Ethereum or Base wallet. Copy amount and address, or scan the QR."
-            : "Send this USDC from Phantom or any Solana wallet. Copy amount and address, or scan the QR."}
+            ? "Open your wallet and send a normal USDC transfer to the address below. Copy amount and address, or scan the QR."
+            : "Open Phantom and send a normal USDC transfer to the address below. Copy amount and address, or scan the QR."}
         </p>
       </div>
       <Card>

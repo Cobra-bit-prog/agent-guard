@@ -6,6 +6,39 @@ import { PayQr } from "@/components/pay-qr";
 import { Button } from "@/components/ui/button";
 import { PAY_CHAIN_LABEL, phantomBrowseUrl, type PayChain, type PayRequestView } from "@/lib/solana-pay";
 
+async function copyText(value: string): Promise<boolean> {
+  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(value);
+      return true;
+    } catch {
+      /* iPhone Safari often throws; fall through */
+    }
+  }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = value;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.top = "0";
+    ta.style.left = "0";
+    ta.style.width = "1px";
+    ta.style.height = "1px";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0, value.length);
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    if (ok) return true;
+  } catch {
+    /* fall through to prompt */
+  }
+  const next = window.prompt("Copy this", value);
+  return next !== null;
+}
+
 export function PayPanel({ req }: { req: PayRequestView }) {
   const [copied, setCopied] = useState<"amount" | "address" | "both" | null>(null);
   const chain = (req.chain ?? "solana") as PayChain;
@@ -22,16 +55,16 @@ export function PayPanel({ req }: { req: PayRequestView }) {
       : "";
 
   async function copy(kind: "amount" | "address" | "both", value: string) {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(kind);
-      setTimeout(() => setCopied(null), 2000);
-      toast.success(
-        kind === "both" ? "Amount and address copied." : kind === "amount" ? "Amount copied" : "Address copied",
-      );
-    } catch {
+    const ok = await copyText(value);
+    if (!ok) {
       toast.error("Could not copy. Select the amount and address on this page.");
+      return;
     }
+    setCopied(kind);
+    setTimeout(() => setCopied(null), 2000);
+    toast.success(
+      kind === "both" ? "Amount and address copied." : kind === "amount" ? "Amount copied" : "Address copied",
+    );
   }
 
   return (
@@ -54,13 +87,16 @@ export function PayPanel({ req }: { req: PayRequestView }) {
             {chainName} · USDC
           </p>
         </div>
-        <div className="rounded-[12px] border border-border bg-elevated/50 px-3 py-2.5">
+        <button
+          type="button"
+          className="w-full rounded-[12px] border border-border bg-elevated/50 px-3 py-2.5 text-left"
+          onClick={() => void copy("address", req.recipient)}
+        >
           <p className="text-xs text-muted">To</p>
           <p className="break-all font-mono text-xs leading-relaxed">{req.recipient}</p>
-        </div>
+        </button>
         <Button
           type="button"
-          variant="secondary"
           className="w-full"
           onClick={() => void copy("amount", displayAmount)}
         >
