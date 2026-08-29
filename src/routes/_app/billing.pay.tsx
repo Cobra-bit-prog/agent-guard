@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getPayRequest, watchPayRequest } from "@/lib/server/solana-billing";
 import { PLANS, type PlanId } from "@/lib/plans";
 import { PAY_CHAIN_LABEL, type PayChain } from "@/lib/solana-pay";
+import { asPayAsset } from "@/lib/pay-asset";
 import { shortAddress } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/billing/pay")({
@@ -84,8 +85,10 @@ function PayRequestPage() {
   const req = q.data!;
   const plan = PLANS[(req.plan as PlanId) in PLANS ? (req.plan as PlanId) : "starter"];
   const chain = (req.chain ?? "solana") as PayChain;
-  const evm = chain === "ethereum" || chain === "base";
-  const displayAmount = evm ? req.exactAmountUsdc : String(req.amountUsdc);
+  const asset = asPayAsset(req.asset);
+  const symbol = req.symbol ?? "USDC";
+  const evm = asset === "eth" || chain === "ethereum" || chain === "base";
+  const displayAmount = req.exactAmount ?? req.exactAmountUsdc ?? String(req.amountUsdc);
 
   if (req.status === "paid") {
     return <Navigate to="/billing" />;
@@ -104,7 +107,7 @@ function PayRequestPage() {
             Watching <NetworkLabel chain={chain} />
           </h1>
           <p className="mt-1 text-sm text-muted">
-            Waiting for {displayAmount} USDC to confirm. This usually takes a few seconds.
+            Waiting for {displayAmount} {symbol} to confirm. This usually takes a few seconds.
           </p>
         </div>
         <Card>
@@ -115,13 +118,15 @@ function PayRequestPage() {
             </p>
             {req.status === "underpaid" && (
               <p className="text-sm text-warning">
-                Received {req.paidAmountUsdc} USDC. Send the rest to reach {displayAmount} USDC.
+                Received a partial payment. Send the rest to reach {displayAmount} {symbol}.
               </p>
             )}
             <div className="border-t border-border pt-4 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted">Amount</span>
-                <span>{displayAmount} USDC</span>
+                <span>
+                  {displayAmount} {symbol}
+                </span>
               </div>
               {req.signature && (
                 <div className="mt-2 flex justify-between gap-3">
@@ -155,7 +160,9 @@ function PayRequestPage() {
     return (
       <div className="mx-auto max-w-lg space-y-4">
         <h1 className="text-2xl font-semibold">Payment QR is missing</h1>
-        <p className="text-sm text-danger">This pay request has no QR payload. Go back and tap Pay again.</p>
+        <p className="text-sm text-danger">
+          This pay request has no QR payload. Go back and tap Pay again.
+        </p>
         <Button asChild>
           <Link to="/billing">Back to billing</Link>
         </Button>
@@ -170,12 +177,14 @@ function PayRequestPage() {
           ← Billing
         </Link>
         <h1 className="mt-3 text-2xl font-semibold tracking-tight">
-          Send {req.amountUsdc} USDC from {evm ? PAY_CHAIN_LABEL[chain] : "Phantom"}
+          Send {displayAmount} {symbol}
         </h1>
         <p className="mt-1 text-sm text-muted">
-          {evm
-            ? "Open your wallet and send a normal USDC transfer to the address below. Copy amount and address, or scan the QR."
-            : "Open Phantom and send a normal USDC transfer to the address below. Copy amount and address, or scan the QR."}
+          {asset === "usdc"
+            ? "Send USDC from your wallet. Copy the amount and address, or scan the QR."
+            : asset === "sol"
+              ? "Send SOL from your wallet. Copy the exact amount and address, or scan the QR. The rate is locked on this invoice."
+              : "Send ETH from your wallet. Copy the exact amount and address, or scan the QR. The rate is locked on this invoice."}
         </p>
       </div>
       <Card>

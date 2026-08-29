@@ -14,23 +14,37 @@ import {
   type PayRequestView,
   type PayStatus,
 } from "@/lib/solana-pay";
-import {
-  findMatchingUsdcPayment,
-  newPayReference,
-  payoutAddress,
-} from "@/lib/solana-pay.server";
+import { findMatchingUsdcPayment, newPayReference, payoutAddress } from "@/lib/solana-pay.server";
 import {
   allocateUniqueUsdcAmount,
   evmPayoutAddress,
   findMatchingEvmUsdcPayment,
 } from "@/lib/evm-pay.server";
 import { buildEip681TransferUrl, buildMetamaskSendUrl, type EvmPayChain } from "@/lib/evm-pay";
+import {
+  PAY_ASSET_CHAIN,
+  PAY_ASSET_DECIMALS,
+  PAY_ASSET_LABEL,
+  asPayAsset,
+  buildNativeEthMetamaskUrl,
+  buildNativeEthPayUrl,
+  buildNativeSolanaPayUrl,
+  formatExactAmount,
+  type PayAsset,
+} from "@/lib/pay-asset";
+import {
+  allocateUniqueNativeAmount,
+  findMatchingNativeEthPayment,
+  findMatchingNativeSolPayment,
+  quoteSolEthUsd,
+} from "@/lib/native-pay.server";
 import { sendInvoiceEmail } from "@/lib/auth/send-email.server";
 import { ensureSchema } from "@/lib/server/guard";
 import { rpc, solanaRpcUrls } from "@/lib/onchain";
 
 const PaidPlan = z.enum(["starter", "pro", "team"]);
 const PayChainZ = z.enum(["solana", "ethereum", "base"]);
+const PayAssetZ = z.enum(["usdc", "sol", "eth"]);
 
 const CHAIN_LABEL: Record<PayChain, string> = {
   solana: "Solana",
@@ -42,6 +56,7 @@ type PayRow = {
   id: string;
   plan: string;
   chain: string | null;
+  asset: string | null;
   amount_usdc: number;
   amount_base_units: string;
   reference: string;
@@ -68,41 +83,65 @@ function asPayChain(value: string | null | undefined): PayChain {
 function view(row: PayRow): PayRequestView {
   const planName = PLANS[(row.plan as PlanId) in PLANS ? (row.plan as PlanId) : "starter"].name;
   const chain = asPayChain(row.chain);
+  const asset = asPayAsset(row.asset);
   const amountBaseUnits = String(row.amount_base_units ?? usdcBaseUnits(Number(row.amount_usdc)));
   const amountUsdc = Number(row.amount_usdc);
-  const isEvm = chain === "ethereum" || chain === "base";
+  const symbol = PAY_ASSET_LABEL[asset];
+  const decimals = PAY_ASSET_DECIMALS[asset];
+  const exactAmount =
+    asset === "usdc"
+      ? formatUsdcExact(amountBaseUnits)
+      : formatExactAmount(amountBaseUnits, decimals);
+  const isEvmUsdc = asset === "usdc" && (chain === "ethereum" || chain === "base");
+  let payUrl = "";
+  let metamaskUrl: string | null = null;
+  if (asset === "sol") {
+    payUrl = buildNativeSolanaPayUrl({
+      recipient: row.recipient,
+      amountSol: exactAmount,
+      reference: row.reference,
+      planName,
+    });
+  } else if (asset === "eth") {
+    payUrl = buildNativeEthPayUrl(row.recipient, amountBaseUnits);
+    metamaskUrl = buildNativeEthMetamaskUrl(row.recipient, amountBaseUnits);
+  } else if (isEvmUsdc) {
+    payUrl = buildEip681TransferUrl({
+      chain,
+      recipient: row.recipient,
+      amountBaseUnits,
+    });
+    metamaskUrl = buildMetamaskSendUrl({
+      chain,
+      recipient: row.recipient,
+      amountBaseUnits,
+    });
+  } else {
+    payUrl = buildSolanaPayUrl({
+      recipient: row.recipient,
+      amountUsdc,
+      reference: row.reference,
+      planName,
+    });
+  }
   return {
     id: row.id,
     plan: row.plan,
     chain,
+    asset,
+    symbol,
     amountUsdc,
     amountBaseUnits,
-    exactAmountUsdc: formatUsdcExact(amountBaseUnits),
+    exactAmountUsdc: exactAmount,
+    exactAmount,
     reference: row.reference,
     recipient: row.recipient,
     status: row.status as PayStatus,
     signature: row.signature,
     paidAmountUsdc: row.paid_amount_usdc == null ? null : Number(row.paid_amount_usdc),
     expiresAt: row.expires_at,
-    payUrl: isEvm
-      ? buildEip681TransferUrl({
-          chain,
-          recipient: row.recipient,
-          amountBaseUnits,
-        })
-      : buildSolanaPayUrl({
-          recipient: row.recipient,
-          amountUsdc,
-          reference: row.reference,
-          planName,
-        }),
-    metamaskUrl: isEvm
-      ? buildMetamaskSendUrl({
-          chain,
-          recipient: row.recipient,
-          amountBaseUnits,
-        })
-      : null,
+    payUrl,
+    metamaskUrl,
     checkoutConfigured: true,
   };
 }
@@ -130,7 +169,6 @@ async function applyPaidPlan(userId: string, plan: "starter" | "pro" | "team", c
   `;
 }
 
-
 async function lookupUserEmail(userId: string): Promise<string | null> {
   try {
     const sql = await getSql();
@@ -157,7 +195,11 @@ async function sendInvoiceIfNeeded(userId: string, row: PayRow): Promise<void> {
     }
     const chain = asPayChain(row.chain);
     const planName = PLANS[(row.plan as PlanId) in PLANS ? (row.plan as PlanId) : "starter"].name;
-    const amountUsdc = formatUsdcExact(String(row.amount_base_units ?? usdcBaseUnits(Number(row.amount_usdc))));
+    const asset = asPayAsset(row.asset);
+    const amountUsdc = `${formatExactAmount(
+      String(row.amount_base_units ?? usdcBaseUnits(Number(row.amount_usdc))),
+      PAY_ASSET_DECIMALS[asset],
+    )} ${PAY_ASSET_LABEL[asset]}`;
     const sent = await sendInvoiceEmail({
       to,
       invoiceId: row.id,
@@ -191,6 +233,9 @@ export const getCheckoutConfig = createServerFn({ method: "GET" })
       solana,
       ethereum: evm,
       base: evm,
+      usdc: solana,
+      sol: solana,
+      eth: evm,
       configured: solana || evm,
       recipient: solanaRecipient ? truncRecipient(solanaRecipient) : null,
       evmRecipient: evmRecipient ? truncRecipient(evmRecipient) : null,
@@ -200,11 +245,14 @@ export const getCheckoutConfig = createServerFn({ method: "GET" })
 export const createPayRequest = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator((d: unknown) =>
-    z.object({ plan: PaidPlan, chain: PayChainZ.default("solana") }).parse(d),
+    z
+      .object({ plan: PaidPlan, asset: PayAssetZ.default("usdc"), chain: PayChainZ.optional() })
+      .parse(d),
   )
   .handler(async ({ context, data }) => {
     await ensureSchema();
-    const chain = data.chain as PayChain;
+    const asset = (data.asset ?? "usdc") as PayAsset;
+    const chain: PayChain = data.chain ?? PAY_ASSET_CHAIN[asset];
     const plan = PLANS[data.plan];
     const sql = await getSql();
     const id = uid();
@@ -214,7 +262,49 @@ export const createPayRequest = createServerFn({ method: "POST" })
     let reference: string;
     let amountBase: string;
 
-    if (chain === "solana") {
+    if (asset === "sol") {
+      const addr = payoutAddress();
+      if (!addr) throw new Error("Checkout is not configured for Solana.");
+      recipient = addr;
+      reference = newPayReference();
+      const quote = await quoteSolEthUsd();
+      const cutoff = new Date(Date.now() - PAY_EXPIRY_MS - 15 * 60 * 1000).toISOString();
+      const used = await sql<{ amount_base_units: string }>`
+        select amount_base_units from pay_requests
+        where asset = ${"sol"}
+          and (
+            (status in (${"pending"}, ${"underpaid"}) and expires_at > ${new Date().toISOString()})
+            or created_at > ${cutoff}
+          )
+      `;
+      amountBase = allocateUniqueNativeAmount(
+        used.map((r) => r.amount_base_units),
+        plan.price,
+        quote.sol,
+        9,
+      );
+    } else if (asset === "eth") {
+      const addr = evmPayoutAddress();
+      if (!addr) throw new Error("Checkout is not configured for Ethereum.");
+      recipient = addr;
+      reference = `eth:${uid()}`;
+      const quote = await quoteSolEthUsd();
+      const cutoff = new Date(Date.now() - PAY_EXPIRY_MS - 15 * 60 * 1000).toISOString();
+      const used = await sql<{ amount_base_units: string }>`
+        select amount_base_units from pay_requests
+        where asset = ${"eth"}
+          and (
+            (status in (${"pending"}, ${"underpaid"}) and expires_at > ${new Date().toISOString()})
+            or created_at > ${cutoff}
+          )
+      `;
+      amountBase = allocateUniqueNativeAmount(
+        used.map((r) => r.amount_base_units),
+        plan.price,
+        quote.eth,
+        18,
+      );
+    } else if (chain === "solana") {
       const addr = payoutAddress();
       if (!addr) {
         throw new Error("Checkout is not configured for Solana.");
@@ -246,15 +336,15 @@ export const createPayRequest = createServerFn({ method: "POST" })
 
     await sql`
       insert into pay_requests (
-        id, user_id, plan, chain, amount_usdc, amount_base_units, reference, recipient,
+        id, user_id, plan, chain, asset, amount_usdc, amount_base_units, reference, recipient,
         status, expires_at
       ) values (
-        ${id}, ${context.userId}, ${data.plan}, ${chain}, ${plan.price}, ${amountBase},
+        ${id}, ${context.userId}, ${data.plan}, ${chain}, ${asset}, ${plan.price}, ${amountBase},
         ${reference}, ${recipient}, ${"pending"}, ${expires}
       )
     `;
     const rows = await sql<PayRow>`
-      select id, plan, chain, amount_usdc, amount_base_units, reference, recipient, status, signature, paid_amount_usdc, expires_at, created_at, paid_at, invoice_email_sent_at
+      select id, plan, chain, asset, amount_usdc, amount_base_units, reference, recipient, status, signature, paid_amount_usdc, expires_at, created_at, paid_at, invoice_email_sent_at
       from pay_requests where id = ${id} and user_id = ${context.userId}
     `;
     return view(rows[0]);
@@ -267,7 +357,7 @@ export const getPayRequest = createServerFn({ method: "GET" })
     await ensureSchema();
     const sql = await getSql();
     const rows = await sql<PayRow>`
-      select id, plan, chain, amount_usdc, amount_base_units, reference, recipient, status, signature, paid_amount_usdc, expires_at, created_at, paid_at, invoice_email_sent_at
+      select id, plan, chain, asset, amount_usdc, amount_base_units, reference, recipient, status, signature, paid_amount_usdc, expires_at, created_at, paid_at, invoice_email_sent_at
       from pay_requests where id = ${data.id} and user_id = ${context.userId}
     `;
     const row = rows[0];
@@ -287,7 +377,7 @@ export const watchPayRequest = createServerFn({ method: "POST" })
     await ensureSchema();
     const sql = await getSql();
     const rows = await sql<PayRow>`
-      select id, plan, chain, amount_usdc, amount_base_units, reference, recipient, status, signature, paid_amount_usdc, expires_at, created_at, paid_at, invoice_email_sent_at
+      select id, plan, chain, asset, amount_usdc, amount_base_units, reference, recipient, status, signature, paid_amount_usdc, expires_at, created_at, paid_at, invoice_email_sent_at
       from pay_requests where id = ${data.id} and user_id = ${context.userId}
     `;
     const row = rows[0];
@@ -306,23 +396,41 @@ export const watchPayRequest = createServerFn({ method: "POST" })
     }
 
     const chain = asPayChain(row.chain);
-    let match: { kind: "none" } | { kind: "paid"; signature: string; amountUsdc: number } | { kind: "underpaid"; signature: string; amountUsdc: number } = { kind: "none" };
+    const asset = asPayAsset(row.asset);
+    let match:
+      | { kind: "none" }
+      | { kind: "paid"; signature: string; amountUsdc: number }
+      | { kind: "underpaid"; signature: string; amountUsdc: number } = { kind: "none" };
     try {
-      match =
-        chain === "solana"
-          ? await findMatchingUsdcPayment({
-              reference: row.reference,
-              recipient: row.recipient,
-              amountUsdc: Number(row.amount_usdc),
-            })
-          : await findMatchingEvmUsdcPayment({
-              chain: chain as EvmPayChain,
-              recipient: row.recipient,
-              amountBaseUnits: String(row.amount_base_units),
-              createdAt: row.created_at,
-            });
+      if (asset === "sol") {
+        match = await findMatchingNativeSolPayment({
+          recipient: row.recipient,
+          amountBaseUnits: String(row.amount_base_units),
+          reference: row.reference,
+          planPriceUsdc: Number(row.amount_usdc),
+        });
+      } else if (asset === "eth") {
+        match = await findMatchingNativeEthPayment({
+          recipient: row.recipient,
+          amountBaseUnits: String(row.amount_base_units),
+          planPriceUsdc: Number(row.amount_usdc),
+        });
+      } else if (chain === "solana") {
+        match = await findMatchingUsdcPayment({
+          reference: row.reference,
+          recipient: row.recipient,
+          amountUsdc: Number(row.amount_usdc),
+        });
+      } else {
+        match = await findMatchingEvmUsdcPayment({
+          chain: chain as EvmPayChain,
+          recipient: row.recipient,
+          amountBaseUnits: String(row.amount_base_units),
+          createdAt: row.created_at,
+        });
+      }
     } catch (err) {
-      console.error("[billing] watch match failed", chain, err);
+      console.error("[billing] watch match failed", asset, chain, err);
       match = { kind: "none" };
     }
     if (match.kind === "paid") {

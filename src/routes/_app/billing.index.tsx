@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getProfile } from "@/lib/server/guard";
 import { createPayRequest, getCheckoutConfig } from "@/lib/server/solana-billing";
 import { FREE_TRIAL_DAYS, PLANS, formatTrialLeft, type PlanId } from "@/lib/plans";
-import { PAY_CHAIN_LABEL, type PayChain } from "@/lib/solana-pay";
+import { PAY_ASSET_LABEL, type PayAsset } from "@/lib/pay-asset";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/billing/")({
@@ -17,18 +17,19 @@ export const Route = createFileRoute("/_app/billing/")({
 });
 
 const PAID = [PLANS.starter, PLANS.pro, PLANS.team] as const;
-function chainHint(chain: PayChain) {
-  if (chain === "solana") return "Solana · USDC · no card";
-  return `${PAY_CHAIN_LABEL[chain]} · USDC only · you pay gas`;
+const ASSETS: PayAsset[] = ["usdc", "sol", "eth"];
+function assetHint(asset: PayAsset) {
+  if (asset === "usdc") return "Solana · USDC · no card";
+  if (asset === "sol") return "Solana · SOL · rate locks on Pay";
+  return "Ethereum · ETH · rate locks on Pay";
 }
 
 function BillingPage() {
-  const [chain, setChain] = useState<PayChain>("solana");
+  const [asset, setAsset] = useState<PayAsset>("usdc");
   const q = useQuery({ queryKey: ["profile"], queryFn: () => getProfile() });
   const cfg = useQuery({ queryKey: ["checkout-config"], queryFn: () => getCheckoutConfig() });
   const pay = useMutation({
-    mutationFn: (plan: "starter" | "pro" | "team") =>
-      createPayRequest({ data: { plan, chain } }),
+    mutationFn: (plan: "starter" | "pro" | "team") => createPayRequest({ data: { plan, asset } }),
     onSuccess: (req) => {
       if (!req?.id) {
         toast.error("Could not start payment. Try Pay again.");
@@ -44,7 +45,7 @@ function BillingPage() {
   const expired = Boolean(q.data?.expired);
   const trialing = q.data?.planStatus === "trialing";
   const paidActive = current !== "free" && !expired;
-  const checkoutOff = cfg.isSuccess && !cfg.data?.[chain];
+  const checkoutOff = cfg.isSuccess && !cfg.data?.[asset];
 
   return (
     <div className="space-y-6">
@@ -107,43 +108,25 @@ function BillingPage() {
       )}
 
       <div>
-        <p className="text-sm text-muted">
-          {chain === "solana" ? (
-            <>Pay with USDC on Solana.</>
-          ) : (
-            <>
-              Paying with USDC on {PAY_CHAIN_LABEL[chain]}. You pay network gas.{" "}
-              <button
-                type="button"
-                className="text-primary underline-offset-4 hover:underline"
-                onClick={() => setChain("solana")}
-              >
-                Back to Solana
-              </button>
-            </>
-          )}
-        </p>
-        {chain === "solana" ? (
-          <p className="mt-2 text-xs text-subtle">
-            Pay on{" "}
+        <p className="text-sm text-muted">Pay with</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {ASSETS.map((a) => (
             <button
+              key={a}
               type="button"
-              className="text-primary underline-offset-4 hover:underline"
-              onClick={() => setChain("ethereum")}
+              className={cn(
+                "rounded-full border px-3 py-1.5 text-sm",
+                asset === a
+                  ? "border-primary bg-primary/10 text-fg"
+                  : "border-border text-muted hover:text-fg",
+              )}
+              onClick={() => setAsset(a)}
             >
-              Ethereum
+              {PAY_ASSET_LABEL[a]}
             </button>
-            {" / "}
-            <button
-              type="button"
-              className="text-primary underline-offset-4 hover:underline"
-              onClick={() => setChain("base")}
-            >
-              Base
-            </button>{" "}
-            instead
-          </p>
-        ) : null}
+          ))}
+        </div>
+        <p className="mt-2 text-xs text-subtle">{assetHint(asset)}</p>
       </div>
 
       {cfg.isError ? (
@@ -154,10 +137,10 @@ function BillingPage() {
 
       {checkoutOff && (
         <p className="rounded-[16px] border border-warning/40 bg-warning/10 px-4 py-3 text-sm">
-          {PAY_CHAIN_LABEL[chain]} checkout is not configured. Pick another network or ask an
-          operator to set{" "}
+          {PAY_ASSET_LABEL[asset]} checkout is not configured. Pick another token or ask an operator
+          to set{" "}
           <code className="text-xs">
-            {chain === "solana" ? "SOLANA_PAYOUT_ADDRESS" : "EVM_PAYOUT_ADDRESS"}
+            {asset === "eth" ? "EVM_PAYOUT_ADDRESS" : "SOLANA_PAYOUT_ADDRESS"}
           </code>
           .
         </p>
@@ -168,10 +151,7 @@ function BillingPage() {
           const isCurrent = p.id === current && !expired;
           const highlighted = i === 0 && !paidActive;
           return (
-            <Card
-              key={p.id}
-              className={cn((highlighted || isCurrent) && "ring-1 ring-primary/50")}
-            >
+            <Card key={p.id} className={cn((highlighted || isCurrent) && "ring-1 ring-primary/50")}>
               <CardContent className="flex h-full flex-col p-5">
                 <p className="text-lg font-semibold">{p.name}</p>
                 <p className="mt-1 text-sm text-muted">{p.blurb}</p>
@@ -195,9 +175,13 @@ function BillingPage() {
                   disabled={pay.isPending || isCurrent || checkoutOff}
                   onClick={() => pay.mutate(p.id)}
                 >
-                  {isCurrent ? "Current plan" : pay.isPending ? "Starting…" : `Pay ${p.price} USDC`}
+                  {isCurrent
+                    ? "Current plan"
+                    : pay.isPending
+                      ? "Starting…"
+                      : `Pay ${p.price} in ${PAY_ASSET_LABEL[asset]}`}
                 </Button>
-                <p className="mt-2 text-center text-xs text-subtle">{chainHint(chain)}</p>
+                <p className="mt-2 text-center text-xs text-subtle">{assetHint(asset)}</p>
               </CardContent>
             </Card>
           );
@@ -227,9 +211,8 @@ function BillingPage() {
       </p>
       <p className="text-xs text-subtle">
         Free is a one-time {FREE_TRIAL_DAYS}-day trial. After it ends, scans and new agents pause
-        until you pay in USDC on Solana, Ethereum, or Base. No silent autopay.
+        until you pay in USDC, SOL, or ETH. No silent autopay.
       </p>
-
     </div>
   );
 }
