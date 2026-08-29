@@ -74,6 +74,31 @@ function AgentDetailPage() {
   });
 
   if (q.isLoading) return <Skeleton className="h-64" />;
+  if (q.data?.expired) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <Link to="/agents" className="text-xs text-muted hover:text-fg">
+            Agents
+          </Link>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight">
+            {agent?.name ?? "Agent"}
+          </h1>
+          <p className="text-sm text-muted">This agent is locked until you pay in USDC.</p>
+        </div>
+        <Card>
+          <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted">
+              Policy edits, scan, and API key rotate are paused.
+            </p>
+            <Button asChild>
+              <Link to="/billing">Open billing</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
   if (!agent) {
     return (
       <p className="text-sm text-muted">

@@ -35,6 +35,28 @@ function AgentsPage() {
   if (q.isLoading) return <Skeleton className="h-64" />;
   if (!q.data) return null;
   const d = q.data;
+  if (d.expired) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Agents</h1>
+          <p className="text-sm text-muted">
+            {d.agents.length} wallet{d.agents.length === 1 ? "" : "s"} · monitoring paused
+          </p>
+        </div>
+        <Card>
+          <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted">
+              Add agent and live controls are locked until you pay in USDC.
+            </p>
+            <Button asChild>
+              <Link to="/billing">Open billing</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -96,11 +118,17 @@ function AgentsPage() {
                   <Button
                     variant="outline"
                     size="sm"
+                    disabled={!d.writable}
                     onClick={() => pause.mutate({ id: a.id, is_paused: !a.is_paused })}
                   >
                     {a.is_paused ? "Resume" : "Pause"}
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => del.mutate(a.id)}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={!d.writable}
+                    onClick={() => del.mutate(a.id)}
+                  >
                     Remove
                   </Button>
                 </div>

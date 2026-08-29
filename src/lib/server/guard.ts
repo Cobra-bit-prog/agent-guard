@@ -587,10 +587,46 @@ export const getDashboard = createServerFn({ method: "GET" })
   .middleware([authMiddleware])
   .handler(async ({ context }) => {
     await ensureWorkspace(context.userId);
+    const entitlement = await loadEntitlement(context.userId);
     const sql = await getSql();
     const agents = (
       await sql`select * from agents where user_id = ${context.userId} order by created_at`
     ).map(mapAgent);
+    if (entitlement.expired) {
+      const liveCount = agents.filter((a) => !a.is_demo).length;
+      const demoCount = agents.filter((a) => a.is_demo).length;
+      return {
+        agents: agents.map((a) => ({ ...a, api_key: "" })),
+        policies: {},
+        volume: {},
+        txs: [],
+        alerts: [],
+        audit: [],
+        spendSeries: [],
+        velocity: [],
+        plan: entitlement.plan,
+        planStatus: entitlement.status,
+        trialEndsAt: entitlement.trialEndsAt,
+        capital: 0,
+        volume24h: 0,
+        onchainUsd: 0,
+        volumeHint: "Monitoring paused",
+        onchainHint: "Monitoring paused",
+        liveCount,
+        demoCount,
+        openAlerts: 0,
+        risk: "Paused",
+        agentLimit: entitlement.agentLimit,
+        expired: true,
+        writable: false,
+        msLeft: entitlement.msLeft,
+        protection: {
+          score: 0,
+          label: "Exposed" as const,
+          notes: ["Trial ended — monitoring is paused until you upgrade."],
+        },
+      };
+    }
     const policiesRaw = await sql`
       select * from policies where user_id = ${context.userId}
     `;
@@ -669,7 +705,6 @@ export const getDashboard = createServerFn({ method: "GET" })
       created_at: String(r.created_at),
     })) as AuditRow[];
 
-    const entitlement = await loadEntitlement(context.userId);
     const liveCount = agents.filter((a) => !a.is_demo).length;
     const demoCount = agents.filter((a) => a.is_demo).length;
     const liveVolume = agents.filter((a) => !a.is_demo).reduce((s, a) => s + (volume[a.id] ?? 0), 0);
@@ -835,6 +870,7 @@ export const deleteAgent = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator((d: unknown) => z.object({ id: z.string() }).parse(d))
   .handler(async ({ context, data }) => {
+    await requireWritable(context.userId);
     const sql = await getSql();
     await sql`delete from alerts where agent_id = ${data.id} and user_id = ${context.userId}`;
     await sql`delete from transactions where agent_id = ${data.id} and user_id = ${context.userId}`;
@@ -887,6 +923,7 @@ export const acknowledgeAlert = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator((d: unknown) => z.object({ id: z.string() }).parse(d))
   .handler(async ({ context, data }) => {
+    await requireWritable(context.userId);
     const sql = await getSql();
     await sql`update alerts set acknowledged = true where id = ${data.id} and user_id = ${context.userId}`;
     return { ok: true };
@@ -1090,6 +1127,9 @@ export const getProfile = createServerFn({ method: "GET" })
       limit 8
     `;
     const ent = await loadEntitlement(context.userId);
+    const agentCountRows = await sql<{ c: number }>`
+      select count(*)::int as c from agents where user_id = ${context.userId}
+    `;
     return {
       telegram_chat_id: String(p[0]?.telegram_chat_id ?? ""),
       email_alerts: Boolean(p[0]?.email_alerts ?? true),
@@ -1106,6 +1146,7 @@ export const getProfile = createServerFn({ method: "GET" })
       trialEndsAt: ent.trialEndsAt,
       periodEndsAt: ent.periodEndsAt,
       agentLimit: ent.agentLimit,
+      agentCount: num(agentCountRows[0]?.c),
       expired: ent.expired,
       writable: ent.writable,
       msLeft: ent.msLeft,
@@ -1125,6 +1166,7 @@ export const saveProfile = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ context, data }) => {
+    await requireWritable(context.userId);
     const url = data.webhook_url.trim();
     if (url && !url.startsWith("https://")) {
       throw new Error("Webhook must be an https URL.");

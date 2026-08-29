@@ -46,6 +46,7 @@ function SettingsPage() {
   });
 
   if (q.isLoading) return <Skeleton className="h-64" />;
+  const writable = q.data?.writable !== false;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -72,14 +73,14 @@ function SettingsPage() {
               <p className="text-sm font-medium">Email alerts</p>
               <p className="text-xs text-muted">Send policy events to your account email.</p>
             </div>
-            <Switch checked={emailOn} onCheckedChange={setEmailOn} />
+            <Switch checked={emailOn} onCheckedChange={setEmailOn} disabled={!writable} />
           </div>
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-sm font-medium">Telegram alerts</p>
               <p className="text-xs text-muted">Route critical events to a chat ID.</p>
             </div>
-            <Switch checked={tgOn} onCheckedChange={setTgOn} />
+            <Switch checked={tgOn} onCheckedChange={setTgOn} disabled={!writable} />
           </div>
           <div className="space-y-1.5">
             <Label>Telegram chat ID</Label>
@@ -87,6 +88,7 @@ function SettingsPage() {
               value={telegram}
               onChange={(e) => setTelegram(e.target.value)}
               placeholder="123456789"
+              disabled={!writable}
             />
           </div>
           <div className="space-y-1.5">
@@ -95,13 +97,14 @@ function SettingsPage() {
               value={webhook}
               onChange={(e) => setWebhook(e.target.value)}
               placeholder="https://example.com/hooks/agent-guard"
+              disabled={!writable}
             />
             <p className="text-xs text-subtle">
               Stored for later delivery. The console does not POST to this URL from
               the preview (avoids sending fleet data to an unknown host).
             </p>
           </div>
-          <Button onClick={() => save.mutate()} disabled={save.isPending}>
+          <Button onClick={() => save.mutate()} disabled={save.isPending || !writable}>
             Save
           </Button>
         </CardContent>

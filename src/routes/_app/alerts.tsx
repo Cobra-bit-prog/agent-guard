@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +29,25 @@ function AlertsPage() {
 
   if (q.isLoading) return <Skeleton className="h-64" />;
   if (!q.data) return null;
+  const writable = q.data.writable !== false;
+  if (q.data.expired) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Alerts</h1>
+          <p className="text-sm text-muted">Live alerts are paused until you pay in USDC.</p>
+        </div>
+        <Card>
+          <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted">Acknowledge and pause stay locked on an ended trial.</p>
+            <Button asChild>
+              <Link to="/billing">Open billing</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -61,10 +80,20 @@ function AlertsPage() {
               </div>
               {!a.acknowledged && (
                 <div className="flex gap-2">
-                  <Button size="sm" variant="secondary" onClick={() => ack.mutate(a.id)}>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={!writable}
+                    onClick={() => ack.mutate(a.id)}
+                  >
                     Acknowledge
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => pause.mutate(a.agent_id)}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={!writable}
+                    onClick={() => pause.mutate(a.agent_id)}
+                  >
                     Pause
                   </Button>
                 </div>

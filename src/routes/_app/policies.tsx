@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getDashboard } from "@/lib/server/guard";
@@ -13,6 +14,26 @@ function PoliciesPage() {
   const q = useQuery({ queryKey: ["dashboard"], queryFn: () => getDashboard() });
   if (q.isLoading) return <Skeleton className="h-64" />;
   if (!q.data) return null;
+  if (q.data.expired) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Policies</h1>
+          <p className="text-sm text-muted">Policy edits are locked until you pay in USDC.</p>
+        </div>
+        <Card>
+          <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted">
+              {q.data.agents.length} agent{q.data.agents.length === 1 ? "" : "s"} on file. Open billing to resume.
+            </p>
+            <Button asChild>
+              <Link to="/billing">Open billing</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -36,9 +57,13 @@ function PoliciesPage() {
                     Allow {p?.allowlist.length ?? 0} · Deny {p?.denylist.length ?? 0}
                   </p>
                 </div>
-                <Link to="/agents/$id" params={{ id: a.id }} className="text-sm text-primary">
-                  Edit policy
-                </Link>
+                {q.data.writable ? (
+                  <Link to="/agents/$id" params={{ id: a.id }} className="text-sm text-primary">
+                    Edit policy
+                  </Link>
+                ) : (
+                  <span className="text-sm text-muted">Locked</span>
+                )}
               </CardContent>
             </Card>
           );

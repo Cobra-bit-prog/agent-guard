@@ -84,6 +84,33 @@ function DashboardPage() {
   }
 
   const d = q.data;
+  if (d.expired) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
+          <p className="text-sm text-muted">Monitoring is paused until you pay in USDC.</p>
+        </div>
+        <Card>
+          <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-xs text-muted">Agent wallets</p>
+                <p className="mt-1 font-medium tabular-nums">{d.agents.length}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted">Coverage</p>
+                <p className="mt-1 font-medium text-primary">Paused</p>
+              </div>
+            </div>
+            <Button asChild>
+              <Link to="/billing">Open billing</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
   const open = d.alerts.filter((a) => !a.acknowledged);
   const agents = [...d.agents].sort(
     (a, b) => chainRank(a.chain) - chainRank(b.chain) || a.name.localeCompare(b.name),
@@ -321,10 +348,20 @@ function DashboardPage() {
                 </p>
               </div>
               <div className="flex gap-2">
-                <Button size="sm" variant="secondary" onClick={() => ack.mutate(a.id)}>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  disabled={!d.writable}
+                  onClick={() => ack.mutate(a.id)}
+                >
                   Acknowledge
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => pause.mutate(a.agent_id)}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!d.writable}
+                  onClick={() => pause.mutate(a.agent_id)}
+                >
                   Pause agent
                 </Button>
               </div>

@@ -41,11 +41,34 @@ export async function checkTransferIntent(input: {
   const agent = agents[0];
   if (!agent) return { ok: false, status: 401, error: "Unknown API key." };
 
-  const sub = await sql<{ plan: string; status: string; trial_ends_at: string | null }>`
-    select plan, status, trial_ends_at from subscriptions where user_id = ${String(agent.user_id)}
+  const sub = await sql<{
+    plan: string;
+    status: string;
+    trial_ends_at: string | null;
+    period_ends_at: string | null;
+  }>`
+    select plan, status, trial_ends_at, period_ends_at from subscriptions where user_id = ${String(agent.user_id)}
   `;
   const ent = evaluateEntitlement(sub[0] ?? { plan: "free", trial_ends_at: null });
-  const paused = Boolean(agent.is_paused) || ent.expired;
+  if (ent.expired) {
+    const reason =
+      ent.plan === "free"
+        ? "Your 1-day free trial has ended. Pay in USDC to resume checks."
+        : "Your plan has ended. Pay in USDC to resume checks.";
+    return {
+      ok: true,
+      result: {
+        decision: "block",
+        reasons: [reason],
+        check_id: uid(),
+        agent_id: String(agent.id),
+        agent: String(agent.name),
+        must_abort: true,
+        paused: true,
+      },
+    };
+  }
+  const paused = Boolean(agent.is_paused);
 
   const policies = await sql`select * from policies where agent_id = ${String(agent.id)}`;
   const p = policies[0];
@@ -130,8 +153,13 @@ export async function agentStatusForKey(apiKey: string) {
   const agents = await sql`select * from agents where api_key = ${apiKey.trim()}`;
   const agent = agents[0];
   if (!agent) return null;
-  const sub = await sql<{ plan: string; status: string; trial_ends_at: string | null }>`
-    select plan, status, trial_ends_at from subscriptions where user_id = ${String(agent.user_id)}
+  const sub = await sql<{
+    plan: string;
+    status: string;
+    trial_ends_at: string | null;
+    period_ends_at: string | null;
+  }>`
+    select plan, status, trial_ends_at, period_ends_at from subscriptions where user_id = ${String(agent.user_id)}
   `;
   const ent = evaluateEntitlement(sub[0] ?? { plan: "free", trial_ends_at: null });
   return {

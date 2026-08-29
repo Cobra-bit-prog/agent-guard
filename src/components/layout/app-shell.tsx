@@ -12,6 +12,7 @@ import { type ReactNode } from "react";
 import { RedirectToSignIn, UserButton } from "@/lib/auth/gates";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { Logo } from "@/components/brand";
+import { ExpiredPaywall } from "@/components/expired-paywall";
 import { TrialBanner } from "@/components/trial-banner";
 import { useQuery } from "@tanstack/react-query";
 import { getProfile } from "@/lib/server/guard";
@@ -27,9 +28,22 @@ const NAV = [
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
+const LOCKED_PREFIXES = ["/dashboard", "/agents", "/policies", "/alerts"];
+
+function isLockedPath(pathname: string) {
+  return LOCKED_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"));
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, isPending } = useCurrentUserState();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const profile = useQuery({
+    queryKey: ["profile"],
+    queryFn: () => getProfile(),
+    enabled: Boolean(user),
+  });
+  const expired = Boolean(profile.data?.expired);
+  const lockConsole = isLockedPath(pathname);
 
   if (isPending) {
     return (
@@ -89,8 +103,14 @@ export function AppShell({ children }: { children: ReactNode }) {
         <SidebarPlan />
         <div className="hidden border-t border-border pt-4 text-xs text-subtle md:block">
           <p className="flex items-center gap-2">
-            <span className="size-1.5 animate-pulse rounded-full bg-success" />
-            All systems operational
+            <span
+              className={
+                expired
+                  ? "size-1.5 rounded-full bg-warning"
+                  : "size-1.5 animate-pulse rounded-full bg-success"
+              }
+            />
+            {expired ? "Monitoring paused" : "All systems operational"}
           </p>
         </div>
         <div className="md:hidden">
@@ -122,7 +142,18 @@ export function AppShell({ children }: { children: ReactNode }) {
             );
           })}
         </nav>
-        <main className="min-w-0 flex-1 px-4 py-6 md:px-8">{children}</main>
+        <main className="min-w-0 flex-1 px-4 py-6 md:px-8">
+          {lockConsole && (profile.isPending || profile.isLoading) ? (
+            <div className="space-y-4">
+              <div className="h-8 w-48 animate-pulse rounded bg-elevated" />
+              <div className="h-40 animate-pulse rounded-[16px] bg-elevated" />
+            </div>
+          ) : lockConsole && expired ? (
+            <ExpiredPaywall profile={profile.data} />
+          ) : (
+            children
+          )}
+        </main>
       </div>
     </div>
   );
