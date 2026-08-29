@@ -5,19 +5,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  GROK_PROVIDERS,
-  authClient,
-  authEnabled,
-  signIn,
-} from "@/lib/auth/client";
+import { GROK_PROVIDERS, authClient, authEnabled, signIn } from "@/lib/auth/client";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 
-export const Route = createFileRoute("/login")({ component: Login });
+type LoginSearch = { mode: "signin" | "signup" };
+
+export const Route = createFileRoute("/login")({
+  component: Login,
+  validateSearch: (search: Record<string, unknown>): LoginSearch => ({
+    mode: search.mode === "signup" ? "signup" : "signin",
+  }),
+});
 
 function Login() {
+  const { mode: initialMode } = Route.useSearch();
   const { user, isPending } = useCurrentUserState();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<"signin" | "signup">(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -63,10 +66,7 @@ function Login() {
         if (err) {
           const code = (err as { code?: string }).code ?? "";
           const message = err.message ?? "";
-          if (
-            code === "EMAIL_NOT_VERIFIED" ||
-            /not verified/i.test(message)
-          ) {
+          if (code === "EMAIL_NOT_VERIFIED" || /not verified/i.test(message)) {
             await authClient.sendVerificationEmail({
               email,
               callbackURL: "/dashboard",
@@ -90,11 +90,9 @@ function Login() {
       <div className="w-full max-w-md rounded-[28px] border border-border bg-surface p-8 shadow-[var(--shadow-panel)]">
         <Logo href="/" />
         <h1 className="mt-6 text-2xl font-semibold tracking-tight">
-          Sign in to Agent Control
+          {mode === "signup" ? "Create your Agent Control account" : "Sign in to Agent Control"}
         </h1>
-        <p className="mt-1 text-sm text-muted">
-          Protect the wallets your agents control.
-        </p>
+        <p className="mt-1 text-sm text-muted">Protect the wallets your agents control.</p>
 
         {authEnabled ? (
           <>
@@ -116,7 +114,11 @@ function Login() {
                 <p className="my-5 text-center text-xs text-subtle">or email</p>
               </>
             )}
-            <Tabs className={showBrokerSignIn ? undefined : "mt-6"} value={mode} onValueChange={(v) => setMode(v as typeof mode)}>
+            <Tabs
+              className={showBrokerSignIn ? undefined : "mt-6"}
+              value={mode}
+              onValueChange={(v) => setMode(v as typeof mode)}
+            >
               <TabsList className="w-full">
                 <TabsTrigger className="flex-1" value="signin">
                   Sign in
@@ -130,11 +132,7 @@ function Login() {
                   {mode === "signup" && (
                     <div className="space-y-1.5">
                       <Label htmlFor="name">Name</Label>
-                      <Input
-                        id="name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                      />
+                      <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
                     </div>
                   )}
                   <div className="space-y-1.5">
@@ -160,9 +158,8 @@ function Login() {
                   </div>
                   {mode === "signup" && (
                     <p className="text-xs text-muted">
-                      We send a confirmation link to this address. You stay on
-                      a waiting screen until you click it. Then the dashboard
-                      opens.
+                      We send a confirmation link to this address. You stay on a waiting screen
+                      until you click it. Then the dashboard opens.
                     </p>
                   )}
                   {notice && <p className="text-sm text-success">{notice}</p>}
