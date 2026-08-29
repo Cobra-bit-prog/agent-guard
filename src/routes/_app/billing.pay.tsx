@@ -174,8 +174,8 @@ function PayRequestPage() {
         <h1 className="mt-3 text-2xl font-semibold tracking-tight">Pay {req.amountUsdc} USDC</h1>
         <p className="mt-1 text-sm text-muted">
           {evm
-            ? "Open your wallet and send a normal USDC transfer. Copy amount and address, or scan the QR."
-            : "Confirm in Phantom. On your phone, tap Pay to open the app, or scan the QR."}
+            ? "Send USDC from your wallet. Copy the amount and address, or scan the QR."
+            : "Send USDC on Solana. Use your wallet, scan the QR, or copy the address."}
         </p>
       </div>
       <Card>
