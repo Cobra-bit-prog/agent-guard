@@ -41,7 +41,7 @@ export function PayQr({ value, alt }: { value: string; alt?: string }) {
       role="img"
       aria-label={alt ?? "Payment QR"}
       viewBox={`0 0 ${encoded.size} ${encoded.size}`}
-      className="mx-auto aspect-square h-[280px] w-[280px] max-w-full rounded-lg bg-white"
+      className="mx-auto aspect-square h-auto w-full max-w-[280px] rounded-lg bg-white"
       shapeRendering="crispEdges"
     >
       <title>{alt ?? "Payment QR"}</title>

@@ -12,7 +12,6 @@ import {
   walletUserRejected,
 } from "@/lib/pay-extension";
 import { PAY_CHAIN_LABEL, phantomBrowseUrl, type PayChain, type PayRequestView } from "@/lib/solana-pay";
-import { shortAddress } from "@/lib/utils";
 
 function NetworkLabel({ chain }: { chain: PayChain }) {
   return (
@@ -101,8 +100,8 @@ export function PayPanel({ req }: { req: PayRequestView }) {
   }
 
   return (
-    <div className="grid gap-5 md:grid-cols-[minmax(240px,280px)_1fr]">
-      <div className="mx-auto flex w-full min-h-[240px] max-w-[280px] justify-center">
+    <div className="flex min-w-0 flex-col gap-5">
+      <div className="mx-auto w-full max-w-[280px]">
         <PayQr
           value={
             evm
@@ -119,8 +118,8 @@ export function PayPanel({ req }: { req: PayRequestView }) {
           You don't need a wallet in Safari. Open the Phantom or MetaMask app, or copy
           amount and address.
         </p>
-        <div className="flex items-center justify-between gap-3 rounded-[12px] border border-border bg-elevated/50 px-3 py-2.5">
-          <div>
+        <div className="flex items-start justify-between gap-3 rounded-[12px] border border-border bg-elevated/50 px-3 py-2.5">
+          <div className="min-w-0">
             <p className="text-xs text-muted">Amount</p>
             <p className="font-medium">{sticker} USDC</p>
             {sendExact ? (
@@ -131,6 +130,7 @@ export function PayPanel({ req }: { req: PayRequestView }) {
             type="button"
             variant="secondary"
             size="sm"
+            className="shrink-0"
             onClick={() => void copy("amount", displayAmount)}
           >
             <Copy />
@@ -145,15 +145,16 @@ export function PayPanel({ req }: { req: PayRequestView }) {
           <span className="text-muted">Token</span>
           <span>USDC</span>
         </div>
-        <div className="flex items-center justify-between gap-3 rounded-[12px] border border-border bg-elevated/50 px-3 py-2.5">
+        <div className="flex items-start justify-between gap-3 rounded-[12px] border border-border bg-elevated/50 px-3 py-2.5">
           <div className="min-w-0">
             <p className="text-xs text-muted">To</p>
-            <p className="truncate font-mono text-xs">{shortAddress(req.recipient, 4)}</p>
+            <p className="break-all font-mono text-xs leading-relaxed">{req.recipient}</p>
           </div>
           <Button
             type="button"
             variant="secondary"
             size="sm"
+            className="shrink-0"
             onClick={() => void copy("address", req.recipient)}
           >
             <Copy />
