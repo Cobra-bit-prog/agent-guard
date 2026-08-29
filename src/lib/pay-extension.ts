@@ -110,6 +110,13 @@ const BROWSER_SOLANA_RPCS = [
 ];
 
 async function latestSolanaBlockhash(): Promise<string> {
+  try {
+    const { getSolanaBlockhash } = await import("@/lib/server/solana-billing");
+    const row = await getSolanaBlockhash();
+    if (row?.blockhash) return row.blockhash;
+  } catch {
+    // public RPCs next
+  }
   for (const url of BROWSER_SOLANA_RPCS) {
     try {
       const res = await fetch(url, {
@@ -121,19 +128,16 @@ async function latestSolanaBlockhash(): Promise<string> {
           method: "getLatestBlockhash",
           params: [{ commitment: "confirmed" }],
         }),
-        signal: AbortSignal.timeout(4000),
+        signal: AbortSignal.timeout(2500),
       });
       const j = (await res.json()) as { result?: { value?: { blockhash?: string } } };
       const hash = j.result?.value?.blockhash;
       if (hash) return hash;
     } catch {
-      // try the next public RPC, then our server
+      // try the next public RPC
     }
   }
-  const { getSolanaBlockhash } = await import("@/lib/server/solana-billing");
-  const row = await getSolanaBlockhash();
-  if (!row?.blockhash) throw new Error("Could not get a recent Solana blockhash. Try Open in Phantom again.");
-  return row.blockhash;
+  throw new Error("Could not get a recent Solana blockhash. Try Open in Phantom again.");
 }
 
 function padAddress(addr: string): string {
