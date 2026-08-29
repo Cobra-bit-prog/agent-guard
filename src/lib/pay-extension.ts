@@ -36,8 +36,7 @@ function injectedWindow() {
 export function hasPhantomExtension(): boolean {
   if (typeof window === "undefined") return false;
   const w = injectedWindow();
-  const p = w.phantom?.solana ?? w.solana;
-  return Boolean(p?.connect && p.signAndSendTransaction);
+  return Boolean(w.phantom?.solana?.isPhantom || w.solana?.isPhantom);
 }
 
 export function hasEthereumExtension(): boolean {
@@ -47,10 +46,8 @@ export function hasEthereumExtension(): boolean {
 
 function getPhantom(): PhantomProvider {
   const w = injectedWindow();
-  const p = w.phantom?.solana ?? w.solana;
-  if (!p?.connect || !p.signAndSendTransaction) {
-    throw new Error("No Solana wallet found. Install Phantom, then tap Pay again.");
-  }
+  const p = w.phantom?.solana ?? (w.solana?.isPhantom ? w.solana : undefined);
+  if (!p?.isPhantom) throw new Error("Phantom extension is not available.");
   return p;
 }
 
@@ -60,7 +57,10 @@ export async function payUsdcWithPhantomExtension(opts: {
   reference: string;
 }): Promise<string> {
   ensureNodeBuffer();
-  const { PublicKey, Transaction } = await import("@solana/web3.js");
+  const {
+    PublicKey,
+    Transaction,
+  } = await import("@solana/web3.js");
   const {
     TOKEN_PROGRAM_ID,
     createAssociatedTokenAccountIdempotentInstruction,
@@ -101,6 +101,7 @@ export async function payUsdcWithPhantomExtension(opts: {
   return sent.signature;
 }
 
+
 const BROWSER_SOLANA_RPCS = [
   "https://solana-rpc.publicnode.com",
   "https://solana.drpc.org",
@@ -140,6 +141,7 @@ async function latestSolanaBlockhash(): Promise<string> {
 }
 
 function padAddress(addr: string): string {
+
   return addr.replace(/^0x/i, "").toLowerCase().padStart(64, "0");
 }
 
@@ -195,15 +197,13 @@ export async function payUsdcWithEthereumExtension(opts: {
       },
     ],
   });
-  if (typeof hash !== "string" || !hash)
-    throw new Error("Wallet did not return a transaction hash.");
+  if (typeof hash !== "string" || !hash) throw new Error("Wallet did not return a transaction hash.");
   return hash;
 }
 
 export function walletUserRejected(err: unknown): boolean {
-  const code =
-    (err as { code?: number; error?: { code?: number } })?.code ??
-    (err as { error?: { code?: number } })?.error?.code;
+  const code = (err as { code?: number; error?: { code?: number } })?.code
+    ?? (err as { error?: { code?: number } })?.error?.code;
   const message = String((err as { message?: string })?.message ?? "");
   return code === 4001 || /user rejected|denied/i.test(message);
 }
