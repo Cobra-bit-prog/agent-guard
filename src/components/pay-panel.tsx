@@ -1,9 +1,16 @@
 import { Copy } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ChainMark } from "@/components/chain-icons";
 import { PayQr } from "@/components/pay-qr";
 import { Button } from "@/components/ui/button";
+import {
+  hasEthereumExtension,
+  hasPhantomExtension,
+  payUsdcWithEthereumExtension,
+  payUsdcWithPhantomExtension,
+  walletUserRejected,
+} from "@/lib/pay-extension";
 import { PAY_CHAIN_LABEL, phantomBrowseUrl, type PayChain, type PayRequestView } from "@/lib/solana-pay";
 import { shortAddress } from "@/lib/utils";
 
@@ -18,6 +25,8 @@ function NetworkLabel({ chain }: { chain: PayChain }) {
 
 export function PayPanel({ req }: { req: PayRequestView }) {
   const [copied, setCopied] = useState<"amount" | "address" | "both" | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [injected, setInjected] = useState({ phantom: false, ethereum: false });
   const chain = (req.chain ?? "solana") as PayChain;
   const chainName = PAY_CHAIN_LABEL[chain] ?? "Solana";
   const evm = chain === "ethereum" || chain === "base";
@@ -30,6 +39,15 @@ export function PayPanel({ req }: { req: PayRequestView }) {
     : payUrl
       ? phantomBrowseUrl(payUrl)
       : "https://phantom.app/download";
+  const usePhantomExt = !evm && injected.phantom;
+  const useEthExt = evm && injected.ethereum;
+
+  useEffect(() => {
+    setInjected({
+      phantom: hasPhantomExtension(),
+      ethereum: hasEthereumExtension(),
+    });
+  }, []);
 
   async function copy(kind: "amount" | "address" | "both", value: string) {
     try {
@@ -50,6 +68,36 @@ export function PayPanel({ req }: { req: PayRequestView }) {
 
   function onOpenWallet() {
     void copy("both", `${displayAmount} USDC\n${req.recipient}`);
+  }
+
+  async function onPayWithExtension() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      if (usePhantomExt) {
+        await payUsdcWithPhantomExtension({
+          recipient: req.recipient,
+          amountUsdc: req.amountUsdc,
+          reference: req.reference,
+        });
+        toast.success("Sent to Phantom. Confirm in the wallet. We'll watch the chain.");
+      } else {
+        await payUsdcWithEthereumExtension({
+          chain: chain === "base" ? "base" : "ethereum",
+          recipient: req.recipient,
+          amountBaseUnits: req.amountBaseUnits,
+        });
+        toast.success("Sent to your wallet. Confirm there. We'll watch the chain.");
+      }
+    } catch (err) {
+      if (walletUserRejected(err)) {
+        toast.error("Wallet request was rejected.");
+      } else {
+        toast.error(err instanceof Error ? err.message : "Could not open the wallet.");
+      }
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -117,35 +165,50 @@ export function PayPanel({ req }: { req: PayRequestView }) {
         </Button>
         {evm ? (
           <>
-            <Button className="w-full" asChild>
-              <a
-                href={walletHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={onOpenWallet}
-              >
-                Open in MetaMask
-              </a>
-            </Button>
+            {useEthExt ? (
+              <Button className="w-full" type="button" disabled={busy} onClick={() => void onPayWithExtension()}>
+                {busy ? "Opening wallet…" : "Open in MetaMask"}
+              </Button>
+            ) : (
+              <Button className="w-full" asChild>
+                <a
+                  href={walletHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={onOpenWallet}
+                >
+                  Open in MetaMask
+                </a>
+              </Button>
+            )}
             <p className="text-center text-xs text-subtle">
-              Opens the MetaMask app. USDC only. You pay network gas. Or scan the QR from a
-              second device.
+              {useEthExt
+                ? "Pays in the wallet window already in this browser. You pay network gas. We'll watch the chain."
+                : "Opens the MetaMask app. USDC only. You pay network gas. Or scan the QR from a second device."}
             </p>
           </>
         ) : (
           <>
-            <Button className="w-full" asChild>
-              <a
-                href={walletHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={onOpenWallet}
-              >
-                Open in Phantom
-              </a>
-            </Button>
+            {usePhantomExt ? (
+              <Button className="w-full" type="button" disabled={busy} onClick={() => void onPayWithExtension()}>
+                {busy ? "Opening Phantom…" : "Open in Phantom"}
+              </Button>
+            ) : (
+              <Button className="w-full" asChild>
+                <a
+                  href={walletHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={onOpenWallet}
+                >
+                  Open in Phantom
+                </a>
+              </Button>
+            )}
             <p className="text-center text-xs text-subtle">
-              Opens the Phantom app. Or scan the QR from a second device.
+              {usePhantomExt
+                ? "Pays in the Phantom window already in this browser. We'll watch the chain."
+                : "Opens the Phantom app. Or scan the QR from a second device."}
             </p>
           </>
         )}
