@@ -18,7 +18,7 @@ const HOME_FAQ_LD = [
     name: "Do you hold my keys?",
     acceptedAnswer: {
       "@type": "Answer",
-      text: "No. We are not a custodian. You keep the keys. Agent Control scores a send against your policy and answers a check the agent must call before it broadcasts.",
+      text: "No. We are not a custodian. You keep the keys. Agent Control scores a send against your policy and answers a check the agent must call before it spends.",
     },
   },
   {
@@ -50,7 +50,7 @@ const HOME_FAQ_LD = [
     name: "What if the agent skips the check?",
     acceptedAnswer: {
       "@type": "Answer",
-      text: "The hook only works if you wire it in front of sign-and-broadcast. If the agent can send without calling check, Agent Control cannot stop that send. Pause the agent from the console if you need a hard stop on your side.",
+      text: "The hook only works if you wire it in front of every send. If the agent can send without calling check, Agent Control cannot stop that send. Pause the agent from the console if you need a hard stop on your side.",
     },
   },
   {
@@ -252,8 +252,7 @@ function Home() {
         <div className="mx-auto max-w-7xl px-6 py-16 md:px-10 lg:px-16">
           <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">How it works</h2>
           <p className="mt-2 max-w-2xl text-muted">
-            Four steps. No custody. The agent cannot skip the check if you wire it in front of
-            sign-and-broadcast.
+            Four steps. No custody. The agent cannot skip the check if you wire it in front of every send.
           </p>
           <ol className="mt-8 grid gap-4 md:grid-cols-4">
             {[

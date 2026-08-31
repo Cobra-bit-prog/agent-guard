@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 const FAQS = [
   {
     q: "Do you hold my keys?",
-    a: "No. We are not a custodian. You keep the keys. Agent Control scores a send against your policy and answers a check the agent must call before it broadcasts.",
+    a: "No. We are not a custodian. You keep the keys. Agent Control scores a send against your policy and answers a check the agent must call before it spends.",
   },
   {
     q: "Why didn’t I get an email when I signed up?",
@@ -20,7 +20,7 @@ const FAQS = [
   },
   {
     q: "What if the agent skips the check?",
-    a: "The hook only works if you wire it in front of sign-and-broadcast. If the agent can send without calling check, Agent Control cannot stop that send. Pause the agent from the console if you need a hard stop on your side.",
+    a: "The hook only works if you wire it in front of every send. If the agent can send without calling check, Agent Control cannot stop that send. Pause the agent from the console if you need a hard stop on your side.",
   },
   {
     q: "Is the trial free? Do I need a card?",

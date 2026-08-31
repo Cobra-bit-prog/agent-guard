@@ -64,8 +64,7 @@ function DocsPage() {
             <p className="font-mono text-xs text-primary">03</p>
             <h2 className="mt-2 text-xl font-medium">POST /api/v1/check before the agent signs</h2>
             <p className="mt-2 text-muted">
-              Send destination + value_usd and the agent API key. Call this in front of
-              sign-and-broadcast.
+              Send destination + value_usd and the agent API key. Call this before the agent spends.
             </p>
             <pre className="mt-4 overflow-x-auto rounded-[var(--radius-lg)] border border-border bg-elevated p-4 font-mono text-xs leading-relaxed text-fg">
               {`curl -s https://agent-control.net/api/v1/check \

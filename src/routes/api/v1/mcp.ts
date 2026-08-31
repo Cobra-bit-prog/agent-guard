@@ -7,7 +7,7 @@ const TOOLS = [
   {
     name: "check_transfer",
     description:
-      "MUST be called before the agent signs or broadcasts a transfer. Returns allow, alert, or block. If must_abort is true, abort the send.",
+      "MUST be called before the agent signs or sends a transfer. Returns allow, alert, or block. If must_abort is true, abort the send.",
     inputSchema: {
       type: "object",
       properties: {

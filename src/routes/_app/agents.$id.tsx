@@ -216,7 +216,7 @@ function AgentDetailPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               <p className="text-sm text-muted">
-                Dry-run against this agent’s live policy. Nothing is signed or broadcast.
+                Dry-run against this agent’s live policy. Nothing is signed or sent.
               </p>
               <div className="space-y-1.5">
                 <Label htmlFor="sim-to">Destination</Label>
@@ -343,7 +343,7 @@ function PreSignCard({
         <p className="text-sm text-muted">
           {demo
             ? "This is a demo wallet. The same hook works — wire it on a live agent before production sends."
-            : "Your agent MUST call this before it signs. If must_abort is true, do not broadcast."}
+            : "Your agent MUST call this before it signs. If must_abort is true, do not send."}
         </p>
         <div className="space-y-1.5">
           <Label>API key</Label>

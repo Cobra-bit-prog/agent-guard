@@ -11,7 +11,7 @@ export const Route = createFileRoute("/api/v1/check")({
         json({
           usage: "POST /api/v1/check with Authorization: Bearer <agent api key>",
           body: { to: "destination address", value_usd: 250 },
-          note: "Call this before signing. If must_abort is true, do not broadcast.",
+          note: "Call this before signing. If must_abort is true, do not send.",
         }),
       POST: async ({ request }) => {
         await getSql();
