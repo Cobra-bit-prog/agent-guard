@@ -69,6 +69,12 @@ test("homepage copy ships three product tabs and 24-hour trial truth", () => {
   assert.match(src, /Download PDF/);
   assert.match(src, /on-demand/);
   assert.match(src, /Connect your agent/);
+  assert.match(
+    src,
+    /Connect your agent with an API key so it checks Agent Control before every spend — you keep the keys\./,
+  );
+  assert.doesNotMatch(src, /Before it sends money/);
+  assert.doesNotMatch(src, /If the answer is no, it must not send/);
   assert.match(src, /Held by you · Check before every send/);
   assert.match(src, /Outside policy = stop/);
   assert.match(src, /Warning alerts are optional/);
@@ -129,6 +135,12 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
   assert.match(docs, /Add an agent wallet/);
   assert.match(docs, /Set spend rules/);
   assert.match(docs, /Connect your agent/);
+  assert.match(
+    docs,
+    /Connect your agent with an API key so it checks Agent Control before every spend — you keep the keys\./,
+  );
+  assert.doesNotMatch(docs, /Before it sends money/);
+  assert.doesNotMatch(docs, /If the answer is no, it must not send/);
   assert.match(docs, /Watch the console/);
   assert.match(docs, /Start free trial/);
   assert.match(docs, /SupportedChains/);
@@ -139,7 +151,7 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
   assert.match(docs, /Allow once/);
   assert.match(docs, /Always allow this\s+address/);
   assert.match(docs, /on-demand Excel or PDF/);
-  assert.match(docs, /wait in Inbox/);
+  assert.match(docs, /destinations wait/);
   assert.match(docs, /Agent Audit/);
   assert.match(docs, /ghost replay/);
   assert.match(docs, /Nothing is auto-emailed/);
