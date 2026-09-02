@@ -144,8 +144,7 @@ export function LandingModules() {
             </span>
           </h3>
           <p className="text-sm text-muted">
-            Your agent requests, your call. Approve once, set limits, or block. Nothing moves
-            without you.
+            Allow once, always, or block — if the hook is wired. A skipped check still goes through.
           </p>
           <p className="mt-3 text-xs font-semibold text-muted">Waiting for you</p>
           <ul>

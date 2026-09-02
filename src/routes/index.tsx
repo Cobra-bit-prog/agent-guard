@@ -168,10 +168,10 @@ function Home() {
                 Within policy = auto
               </span>
               <span className="mt-1 mr-1 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-white px-2.5 py-1.5 text-[12.5px] text-fg shadow-[0_1px_0_rgb(18_38_63/0.04)]">
-                <i className="inline-grid size-[18px] place-items-center rounded-full bg-[#fde8e6] text-[7px] font-bold tracking-tighter not-italic text-danger">
-                  ❚❚
+                <i className="inline-grid size-[18px] place-items-center rounded-full bg-[#fde8e6] text-[10px] font-bold not-italic text-danger">
+                  ✕
                 </i>
-                Outside policy = pause
+                Outside policy = stop
               </span>
               <span className="mt-1 mr-1 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-white px-2.5 py-1.5 text-[12.5px] text-fg shadow-[0_1px_0_rgb(18_38_63/0.04)]">
                 <i className="inline-grid size-[18px] place-items-center rounded-full bg-[#e8eef6] text-[10px] font-bold not-italic text-navy">
@@ -263,7 +263,7 @@ function Home() {
                   </li>
                   <li className="flex gap-2">
                     <Check className="size-4 text-success" />
-                    {p.historyDays}-day history
+                    <span className="whitespace-nowrap">{`${p.historyDays}-day history`}</span>
                   </li>
                   <li className="flex gap-2">
                     <Check className="size-4 text-success" />
