@@ -3,7 +3,6 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { Menu, X } from "lucide-react";
 import { Logo } from "@/components/brand";
 import { Button } from "@/components/ui/button";
-import { SignedIn, SignedOut } from "@/lib/auth/gates";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 
 export const SUPPORT_MAIL = "mailto:support@agent-control.net";
@@ -31,7 +30,7 @@ export function SkyShell({
 }
 
 export function MarketingHeader({ current }: { current?: "home" | "docs" }) {
-  const { isPending } = useCurrentUserState();
+  const { user } = useCurrentUserState();
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
@@ -51,23 +50,18 @@ export function MarketingHeader({ current }: { current?: "home" | "docs" }) {
           ))}
         </nav>
         <div className="flex items-center gap-2">
-          {isPending ? (
-            <div className="h-10 w-24 animate-pulse rounded-full bg-elevated" />
+          {user ? (
+            <Button asChild className="rounded-full">
+              <Link to="/dashboard">Open dashboard</Link>
+            </Button>
           ) : (
             <>
-              <SignedOut>
-                <Button variant="ghost" asChild className="hidden rounded-full sm:inline-flex">
-                  <a href="/login">Sign in</a>
-                </Button>
-                <Button asChild className="rounded-full">
-                  <a href="/signup">Try free</a>
-                </Button>
-              </SignedOut>
-              <SignedIn>
-                <Button asChild className="rounded-full">
-                  <Link to="/dashboard">Open dashboard</Link>
-                </Button>
-              </SignedIn>
+              <Button variant="ghost" asChild className="hidden rounded-full sm:inline-flex">
+                <a href="/login">Sign in</a>
+              </Button>
+              <Button asChild className="rounded-full">
+                <a href="/signup">Try free</a>
+              </Button>
             </>
           )}
           <Button
@@ -94,11 +88,11 @@ export function MarketingHeader({ current }: { current?: "home" | "docs" }) {
                 {item.label}
               </a>
             ))}
-            <SignedOut>
+            {!user && (
               <a href="/login" className="hover:text-fg" onClick={() => setMenuOpen(false)}>
                 Sign in
               </a>
-            </SignedOut>
+            )}
           </div>
         </div>
       )}
