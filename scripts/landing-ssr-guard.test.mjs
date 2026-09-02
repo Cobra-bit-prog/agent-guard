@@ -73,6 +73,34 @@ test("homepage copy ships two product tabs and 24-hour trial truth", () => {
   assert.doesNotMatch(src, /href=["']\/audit["']/);
 });
 
+test("homepage FAQ covers Inbox, Audit, hold vs block, and skipped-check limits", () => {
+  const faq = readFileSync(join(ROOT, "src/components/landing-faq.tsx"), "utf8");
+  const home = readFileSync(join(ROOT, "src/routes/index.tsx"), "utf8");
+  const src = `${faq}\n${home}`;
+  assert.match(src, /How does the pre-sign hook work\?/);
+  assert.match(src, /What if the agent skips the check\?/);
+  assert.match(src, /What is Approval Inbox\?/);
+  assert.match(src, /What is Agent Audit\?/);
+  assert.match(src, /must_abort: true/);
+  assert.match(src, /poll_url/);
+  assert.match(src, /Always allow this address/);
+  assert.match(src, /Holds expire in 10 minutes/);
+  assert.match(src, /hard block/);
+  assert.match(src, /Allow once is not permanent/);
+  assert.match(src, /Inbox cannot stop that send/);
+  assert.match(src, /Connect your agent/);
+  assert.match(src, /You keep the keys/);
+  assert.match(src, /\/audit/);
+  assert.match(src, /auto-emailed/);
+  assert.match(src, /ghost replay/);
+  assert.match(src, /chain explorer/);
+  assert.doesNotMatch(faq, /href=["']\/inbox["']/);
+  assert.doesNotMatch(faq, /href=["']\/audit["']/);
+  assert.doesNotMatch(src, /Wire the hook/);
+  assert.doesNotMatch(src, /Sky Ledger\s*[×xX]\s*Operator/);
+  assert.doesNotMatch(src, /Ghost audit/);
+});
+
 test("docs is an operator quick start; API is collapsed and secondary", () => {
   const docs = readFileSync(join(ROOT, "src/routes/docs.tsx"), "utf8");
   assert.match(docs, /Get set up in a few minutes/);
@@ -86,9 +114,14 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
   assert.match(docs, /<details/);
   assert.match(docs, /For builders/);
   assert.match(docs, /1-day \(24 hour\)/);
-  assert.match(docs, /cannot stop that send/);
+  assert.match(docs, /cannot stop\s+that send/);
   assert.match(docs, /Allow once/);
+  assert.match(docs, /Always allow this\s+address/);
   assert.match(docs, /on-demand Excel or PDF/);
+  assert.match(docs, /wait in Inbox/);
+  assert.match(docs, /Agent Audit/);
+  assert.match(docs, /ghost replay/);
+  assert.match(docs, /Nothing is auto-emailed/);
   const beforeDetails = docs.split("<details")[0] ?? docs;
   assert.doesNotMatch(beforeDetails, /curl /);
   assert.doesNotMatch(beforeDetails, /POST \/api\/v1\/check/);

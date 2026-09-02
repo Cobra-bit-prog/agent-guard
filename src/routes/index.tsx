@@ -39,7 +39,7 @@ const HOME_FAQ_LD = [
     name: "How does the pre-sign hook work?",
     acceptedAnswer: {
       "@type": "Answer",
-      text: "Give the agent an API key. Before it signs, it POSTs /api/v1/check with the destination and value_usd. If the response has must_abort: true, the agent must not send. Off-policy and first-time destinations wait in Inbox until you decide.",
+      text: "Give the agent an API key. Before it signs, it POSTs /api/v1/check with the destination and value_usd. If the response has must_abort: true, do not send. Off-policy and first-time destinations can HOLD with a poll_url — you decide in /inbox. Pause and denylist are a hard block (never a hold).",
     },
   },
   {
@@ -47,7 +47,15 @@ const HOME_FAQ_LD = [
     name: "What if the agent skips the check?",
     acceptedAnswer: {
       "@type": "Answer",
-      text: "The inbox only works if you connect the hook in front of every send. If the agent can send without calling check, Agent Control cannot stop that send. Pause the agent from the console if you need a hard stop on your side.",
+      text: "Connect your agent so it asks before every send. You keep the keys. If the agent skips the check, Inbox cannot stop that send. Pause the agent from the console for a hard stop on your side. Hold waits for you; block means do not send.",
+    },
+  },
+  {
+    "@type": "Question",
+    name: "What is Approval Inbox?",
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: "Off-policy and first-time destinations wait in /inbox. Allow once for this send only, Always allow this address to write the allowlist, or Block. Holds expire in 10 minutes and are then treated as a block. Allow once is not permanent. Pause and denylist never wait here — they are a hard block.",
     },
   },
   {
@@ -55,7 +63,7 @@ const HOME_FAQ_LD = [
     name: "What is Agent Audit?",
     acceptedAnswer: {
       "@type": "Answer",
-      text: "An on-demand Excel or PDF of that agent’s Agent Control trail: checks, alerts, operator decisions, and recorded transfers. Generate it in the console. It is not a full on-chain replay.",
+      text: "On-demand Excel and PDF in /audit. Generate when you want it — nothing is auto-emailed. This is the Agent Control check and decision trail, not a full chain explorer or ghost replay.",
     },
   },
   {

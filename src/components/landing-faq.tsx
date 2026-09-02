@@ -16,11 +16,19 @@ const FAQS = [
   },
   {
     q: "How does the pre-sign hook work?",
-    a: "Give the agent an API key. Before it signs, it POSTs /api/v1/check with the destination and value_usd. If the response has must_abort: true, the agent must not send. Off-policy and first-time destinations wait in Inbox (hold) until you Allow once, always allow, or block.",
+    a: "Give the agent an API key. Before it signs, it POSTs /api/v1/check with the destination and value_usd. If the response has must_abort: true, do not send. Off-policy and first-time destinations can HOLD with a poll_url — you decide in /inbox. Pause and denylist are a hard block (never a hold).",
   },
   {
     q: "What if the agent skips the check?",
-    a: "The inbox only works if you connect the hook in front of every send. If the agent can send without calling check, Agent Control cannot stop that send. Pause the agent from the console if you need a hard stop on your side.",
+    a: "Connect your agent so it asks before every send. You keep the keys. If the agent skips the check, Inbox cannot stop that send. Pause the agent from the console for a hard stop on your side. Hold waits for you; block means do not send.",
+  },
+  {
+    q: "What is Approval Inbox?",
+    a: "Off-policy and first-time destinations wait in /inbox. Allow once for this send only, Always allow this address to write the allowlist, or Block. Holds expire in 10 minutes and are then treated as a block. Allow once is not permanent. Pause and denylist never wait here — they are a hard block.",
+  },
+  {
+    q: "What is Agent Audit?",
+    a: "On-demand Excel and PDF in /audit. Generate when you want it — nothing is auto-emailed. This is the Agent Control check and decision trail, not a full chain explorer or ghost replay.",
   },
   {
     q: "Is the trial free? Do I need a card or KYC?",
@@ -29,10 +37,6 @@ const FAQS = [
   {
     q: "How do I pay? Is there KYC?",
     a: "No KYC and no card. Default is USDC on Solana; you can also pay native SOL or ETH. Scan the QR or copy amount + address from Billing. Do not send from an exchange — they drop the memo / unique amount.",
-  },
-  {
-    q: "What is Agent Audit?",
-    a: "An on-demand Excel or PDF of that agent’s Agent Control trail: checks, alerts, operator decisions, and recorded transfers. Generate it in the console. It is not a full on-chain replay.",
   },
   {
     q: "Is this insurance?",
@@ -62,7 +66,7 @@ export function LandingFaq() {
           Questions operators ask
         </h2>
         <p className="mt-2 text-muted">
-          Straight answers. Custody, chains, billing, and the signup email.
+          Straight answers. Custody, Inbox, Audit, billing, and the signup email.
         </p>
         <div className="faq mt-8 divide-y divide-border rounded-[22px] border border-border bg-surface">
           {FAQS.map((item, i) => {
