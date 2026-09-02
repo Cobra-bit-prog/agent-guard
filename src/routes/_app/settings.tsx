@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -69,9 +69,20 @@ function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between gap-4">
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="text-sm font-medium">Email alerts</p>
-              <p className="text-xs text-muted">Send policy events to your account email.</p>
+              <p className="text-xs text-muted">
+                Optional pings for suspicious activity, spend near the daily cap, or a hold waiting
+                for you. Holds:{" "}
+                <Link to="/inbox" className="text-fg underline underline-offset-4">
+                  Inbox
+                </Link>
+                . Console alerts:{" "}
+                <Link to="/alerts" className="text-fg underline underline-offset-4">
+                  Alerts
+                </Link>
+                .
+              </p>
             </div>
             <Switch checked={emailOn} onCheckedChange={setEmailOn} disabled={!writable} />
           </div>

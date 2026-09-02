@@ -31,6 +31,10 @@ const FAQS = [
     a: "On-demand Excel and PDF in /audit. Generate when you want it — nothing is auto-emailed. This is the Agent Control check and decision trail, not a full chain explorer or ghost replay.",
   },
   {
+    q: "Do you email me when something looks off?",
+    a: "If Email alerts is on in Settings (on by default), we send optional pings for a policy alert, spend near the daily cap, a hold waiting in Inbox (/inbox), or a hard block. Console alerts still list at /alerts. Turn the switch off to keep those in the console only. Telegram and webhook fields are stored for later — they are not sending yet.",
+  },
+  {
     q: "How is this different from agentaudit.dev, SpendGuard, or Turnkey?",
     a: (
       <>
@@ -80,7 +84,8 @@ export function LandingFaq() {
           Questions operators ask
         </h2>
         <p className="mt-2 text-muted">
-          Straight answers. Custody, Inbox, Audit, compare, billing, and the signup email.
+          Straight answers. Custody, Inbox, Audit, warning emails, compare, billing, and the signup
+          email.
         </p>
         <div className="faq mt-8 divide-y divide-border rounded-[22px] border border-border bg-surface">
           {FAQS.map((item, i) => {

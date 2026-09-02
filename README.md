@@ -2,7 +2,7 @@
 
 **[External audit for your agents](https://agent-control.net)** — agent payments control for wallets on Solana, Ethereum, and Base.
 
-You set spend limits. Connect your agent so it asks before every send. Off-policy or first-time destinations wait in Approval Inbox (hold vs block). Agent Audit is an on-demand Excel or PDF of the check trail. You keep the keys. Not a custodian.
+You set spend limits. Connect your agent so it asks before every send. Off-policy or first-time destinations wait in Approval Inbox (hold vs block). Agent Audit is an on-demand Excel or PDF of the check trail. Optional warning emails (Settings → Email alerts) ping you for a policy alert, spend near the daily cap, or a hold waiting in Inbox. You keep the keys. Not a custodian.
 
 If the agent skips the check, Inbox cannot stop that send.
 

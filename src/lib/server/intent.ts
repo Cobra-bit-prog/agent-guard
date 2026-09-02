@@ -1,9 +1,14 @@
 import { getSql } from "@/lib/db";
 import { pollDecisionFromStatus, shouldHoldFirstTimeDestination } from "@/lib/hold";
 import { evaluateEntitlement } from "@/lib/plans";
-import { evaluateTransfer } from "@/lib/policy";
+import { evaluateTransfer, isNearDailyLimit, nearLimitMessage } from "@/lib/policy";
 import { ensureSchema } from "@/lib/server/guard";
 import { getApprovalForAgent, insertHold } from "@/lib/server/approvals";
+import {
+  notifyWarningAlert,
+  shouldInsertNearLimitAlert,
+  warningKindForDecision,
+} from "@/lib/server/notify";
 import { uid } from "@/lib/utils";
 import type { ChainId } from "@/lib/chains";
 
@@ -91,14 +96,16 @@ export async function checkTransferIntent(input: {
     where agent_id = ${String(agent.id)} and timestamp >= ${hour}
   `;
 
+  const usedTodayUsd = num(volRows[0]?.vol);
+  const dailyLimitUsd = num(p.daily_limit_usd);
   const verdict = evaluateTransfer({
     valueUsd: input.valueUsd,
     to: input.to,
-    usedTodayUsd: num(volRows[0]?.vol),
+    usedTodayUsd,
     txsLastHour: num(hourRows[0]?.c),
     paused,
     policy: {
-      daily_limit_usd: num(p.daily_limit_usd),
+      daily_limit_usd: dailyLimitUsd,
       max_tx_amount_usd: num(p.max_tx_amount_usd),
       alert_threshold_usd: num(p.alert_threshold_usd),
       allowlist: asStrings(p.allowlist),
@@ -154,6 +161,20 @@ export async function checkTransferIntent(input: {
 
   let approvalId: string | null = null;
   let expiresInS: number | undefined;
+  const nearLimit = isNearDailyLimit({
+    usedTodayUsd,
+    valueUsd: input.valueUsd,
+    dailyLimitUsd,
+  });
+  const nearMessage = nearLimit
+    ? nearLimitMessage({
+        agentName: String(agent.name),
+        usedTodayUsd,
+        valueUsd: input.valueUsd,
+        dailyLimitUsd,
+      })
+    : "";
+
   if (held) {
     const hold = await insertHold({
       userId: String(agent.user_id),
@@ -186,6 +207,43 @@ export async function checkTransferIntent(input: {
       )
     `;
     await sql`update agents set status = ${"critical"} where id = ${String(agent.id)}`;
+  } else if (action === "alert") {
+    await sql`
+      insert into alerts (id, agent_id, user_id, type, severity, message)
+      values (
+        ${uid()}, ${String(agent.id)}, ${String(agent.user_id)},
+        ${"presign_alert"}, ${"warning"},
+        ${`${String(agent.name)} crossed an alert threshold: ${reasons[0]}`}
+      )
+    `;
+  } else if (shouldInsertNearLimitAlert(action, nearLimit)) {
+    await sql`
+      insert into alerts (id, agent_id, user_id, type, severity, message)
+      values (
+        ${uid()}, ${String(agent.id)}, ${String(agent.user_id)},
+        ${"near_limit"}, ${"warning"},
+        ${nearMessage}
+      )
+    `;
+  }
+
+  const kind = warningKindForDecision(action, nearLimit);
+  if (kind) {
+    const message =
+      kind === "hold"
+        ? `${String(agent.name)} is waiting for you: $${input.valueUsd.toFixed(0)} → ${input.to.slice(0, 18)}`
+        : kind === "block"
+          ? `${String(agent.name)} blocked a pre-sign check: ${reasons[0]}`
+          : kind === "alert"
+            ? `${String(agent.name)} crossed an alert threshold: ${reasons[0]}`
+            : nearMessage;
+    await notifyWarningAlert({
+      userId: String(agent.user_id),
+      agentId: String(agent.id),
+      agentName: String(agent.name),
+      kind,
+      message,
+    });
   }
 
   return {

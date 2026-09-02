@@ -68,6 +68,14 @@ const HOME_FAQ_LD = [
   },
   {
     "@type": "Question",
+    name: "Do you email me when something looks off?",
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: "If Email alerts is on in Settings (on by default), we send optional pings for a policy alert, spend near the daily cap, a hold waiting in Inbox (/inbox), or a hard block. Console alerts still list at /alerts. Turn the switch off to keep those in the console only. Telegram and webhook fields are stored for later — they are not sending yet.",
+    },
+  },
+  {
+    "@type": "Question",
     name: "How is this different from agentaudit.dev, SpendGuard, or Turnkey?",
     acceptedAnswer: {
       "@type": "Answer",

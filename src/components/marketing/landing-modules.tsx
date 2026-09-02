@@ -107,7 +107,8 @@ function DashboardPanel({
         </p>
         <p className="mt-3 text-sm text-muted">
           Warning alerts are optional. Turn them on if you want a ping for suspicious or
-          over-limit activity — you can leave them off.
+          over-limit activity — you can leave them off. After you sign in, Email alerts in
+          Settings is the real switch (this preview does not send mail).
         </p>
         <a
           href="/signup"
@@ -213,6 +214,10 @@ function DashboardPanel({
             Alerts off. Over-limit activity still shows in the console — no extra ping.
           </p>
         )}
+        <p className="mt-2 text-[11px] text-subtle">
+          Preview only — this toggle does not send email. After you sign in, Email alerts in
+          Settings is the real switch.
+        </p>
       </PreviewCard>
     </div>
   );

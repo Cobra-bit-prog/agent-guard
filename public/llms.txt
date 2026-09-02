@@ -30,6 +30,7 @@ Agent Control is non-custodial agent payments control for wallets on Solana, Eth
 - Dashboard — policy, spend, alerts
 - Agent Audit — on-demand Excel/PDF of checks, alerts, decisions, recorded transfers (download only; not auto-emailed; not a full chain explorer)
 - Approval Inbox — HOLD on off-policy / first-time destination; Allow once / Always allow this address / Block; 10-minute TTL then treated as block; Pause + denylist still hard block
+- Optional warning emails — Settings → Email alerts (on by default): policy alert, spend near the daily cap, Inbox hold, or hard block. Telegram / webhook fields are stored, not sending yet.
 
 ## How builders check before spend
 POST /api/v1/check with API key, destination, value_usd. If must_abort is true, do not send. Hold returns poll_url / approval_id — poll until allow or block (or use MCP get_approval). Docs: https://agent-control.net/docs

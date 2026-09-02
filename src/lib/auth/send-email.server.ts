@@ -1,10 +1,15 @@
 /**
  * Transactional mail via Resend. Used by Better Auth for signup confirmation,
- * billing thank-you invoices, and admin new-subscriber notifies.
+ * billing thank-you invoices, admin new-subscriber notifies, and optional
+ * operator warning alerts (hold / policy alert / near-limit / block).
  * Set RESEND_API_KEY (and optional EMAIL_FROM) on the Vercel project.
  * EMAIL_FROM on Vercel is Agent Control <noreply@agent-control.net>.
  * Admin notifies go to STATS_REPORT_EMAIL.
  */
+import type { WarningAlertKind } from "../warning-alert.ts";
+
+export type { WarningAlertKind };
+
 const env = (key: string): string | undefined => {
   const value = process.env[key]?.trim();
   return value ? value : undefined;
@@ -263,5 +268,155 @@ export async function sendNewSubscriberNotifyEmail(
     }
   } catch (err) {
     console.error("[notify] new-subscriber email failed", err);
+  }
+}
+
+export type WarningAlertEmailCopy = {
+  subject: string;
+  title: string;
+  bodyLines: string[];
+  ctaPath: "/inbox" | "/alerts";
+  ctaLabel: string;
+};
+
+export function warningAlertEmailCopy(opts: {
+  kind: WarningAlertKind;
+  agentName: string;
+  message: string;
+}): WarningAlertEmailCopy {
+  const agent = opts.agentName.trim() || "An agent";
+  const detail = opts.message.trim();
+  if (opts.kind === "hold") {
+    return {
+      subject: "Agent Control: hold needs a look",
+      title: "A spend is waiting for you",
+      bodyLines: [
+        `${agent} has a hold in Approval Inbox.`,
+        ...(detail ? [detail] : []),
+        "Allow once, always allow this address, or block. Holds expire in 10 minutes.",
+      ],
+      ctaPath: "/inbox",
+      ctaLabel: "Open Approval Inbox",
+    };
+  }
+  if (opts.kind === "near_limit") {
+    return {
+      subject: "Agent Control: near daily limit",
+      title: "Spend is approaching the daily cap",
+      bodyLines: [
+        `${agent} is near its daily spend limit.`,
+        ...(detail ? [detail] : []),
+        "This send was still allowed. Review the console if you want to pause or tighten the cap.",
+      ],
+      ctaPath: "/alerts",
+      ctaLabel: "Open alerts",
+    };
+  }
+  if (opts.kind === "block") {
+    return {
+      subject: "Agent Control: spend blocked",
+      title: "A spend was blocked",
+      bodyLines: [
+        `${agent} was blocked by policy.`,
+        ...(detail ? [detail] : []),
+        "Paused agents and denylisted destinations are a hard block. The agent must not send.",
+      ],
+      ctaPath: "/alerts",
+      ctaLabel: "Open alerts",
+    };
+  }
+  return {
+    subject: "Agent Control: policy alert",
+    title: "Suspicious or over-threshold spend",
+    bodyLines: [
+      `${agent} crossed an alert threshold.`,
+      ...(detail ? [detail] : []),
+      "The check was allowed (not blocked). Review the console if this looks wrong.",
+    ],
+    ctaPath: "/alerts",
+    ctaLabel: "Open alerts",
+  };
+}
+
+export function warningAlertEmailText(opts: {
+  title: string;
+  bodyLines: string[];
+  ctaUrl: string;
+  ctaLabel: string;
+}): string {
+  return [
+    "Agent-Control.net",
+    "",
+    opts.title,
+    "",
+    ...opts.bodyLines,
+    "",
+    `${opts.ctaLabel}:`,
+    opts.ctaUrl,
+  ].join("\n");
+}
+
+/**
+ * Optional operator warning (hold / policy alert / near-limit / block).
+ * Returns false if skipped or Resend failed. Never throws.
+ */
+export async function sendWarningAlertEmail(opts: {
+  to: string;
+  subject: string;
+  title: string;
+  bodyLines: string[];
+  ctaUrl: string;
+  ctaLabel: string;
+}): Promise<boolean> {
+  try {
+    const apiKey = env("RESEND_API_KEY");
+    if (!apiKey) {
+      console.error("[notify] RESEND_API_KEY is not set; warning email skipped");
+      return false;
+    }
+    const to = opts.to.trim();
+    const ctaUrl = opts.ctaUrl.trim();
+    if (!to || !ctaUrl) {
+      console.error("[notify] warning email skipped: missing to or ctaUrl");
+      return false;
+    }
+    const from = env("EMAIL_FROM") ?? "Agent Control <noreply@agent-control.net>";
+    const safeUrl = escapeHtml(ctaUrl);
+    const paragraphs = opts.bodyLines
+      .map(
+        (line) =>
+          `<p style="font-size:15px;line-height:1.55;color:#444;margin:0 0 12px">${escapeHtml(line)}</p>`,
+      )
+      .join("");
+    const text = warningAlertEmailText(opts);
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from,
+        to: [to],
+        subject: opts.subject,
+        text,
+        html: `<div style="font-family:ui-sans-serif,system-ui,sans-serif;max-width:560px;margin:0 auto;padding:32px 20px;color:#111">
+  <p style="font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#b45309;font-weight:600">Agent-Control.net</p>
+  <h1 style="font-size:22px;line-height:1.3;margin:12px 0 16px">${escapeHtml(opts.title)}</h1>
+  ${paragraphs}
+  <p style="margin:24px 0"><a href="${safeUrl}">${escapeHtml(opts.ctaLabel)}</a></p>
+  <p style="font-size:12px;line-height:1.5;color:#888">Questions? Email <a href="mailto:support@agent-control.net" style="color:#111">support@agent-control.net</a>.</p>
+</div>`,
+      }),
+    });
+    if (!response.ok) {
+      const body = await response.text();
+      console.error("[notify] Resend warning email failed", response.status, body);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("[notify] warning email failed", err);
+    return false;
   }
 }
