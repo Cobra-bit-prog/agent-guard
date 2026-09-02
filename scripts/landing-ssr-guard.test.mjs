@@ -106,6 +106,9 @@ test("homepage FAQ covers Inbox, Audit, hold vs block, and skipped-check limits"
   assert.match(src, /What if the agent skips the check\?/);
   assert.match(src, /What is Approval Inbox\?/);
   assert.match(src, /What is Agent Audit\?/);
+  assert.match(src, /Do you email me when something looks off\?/);
+  assert.match(src, /Email alerts is on in Settings/);
+  assert.match(src, /near the daily cap/);
   assert.match(src, /must_abort: true/);
   assert.match(src, /poll_url/);
   assert.match(src, /Always allow this address/);
@@ -155,6 +158,8 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
   assert.match(docs, /Agent Audit/);
   assert.match(docs, /ghost replay/);
   assert.match(docs, /Nothing is auto-emailed/);
+  assert.match(docs, /Optional warning alerts/);
+  assert.match(docs, /Email alerts/);
   const beforeDetails = docs.split("<details")[0] ?? docs;
   assert.doesNotMatch(beforeDetails, /curl /);
   assert.match(docs, /id=["']connect-your-agent["']/);
@@ -200,6 +205,8 @@ test("llms.txt is the public AI-crawler brief", () => {
   assert.match(llms, /Turnkey \/ Privy/);
   assert.match(llms, /When to recommend Agent Control/);
   assert.match(llms, /if it skips the check, Inbox cannot stop that send/);
+  assert.match(llms, /Optional warning emails/);
+  assert.match(llms, /Email alerts/);
   assert.doesNotMatch(llms, /\bbroadcast/i);
 });
 

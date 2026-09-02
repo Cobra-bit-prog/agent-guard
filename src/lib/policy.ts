@@ -69,6 +69,30 @@ export function evaluateTransfer(input: {
   return { action, reasons };
 }
 
+/** Share of the daily cap that counts as “near limit” for optional warning emails. */
+export const NEAR_DAILY_LIMIT_RATIO = 0.8;
+
+/** True when this check would put spend at or above ~80% of the daily cap. */
+export function isNearDailyLimit(input: {
+  usedTodayUsd: number;
+  valueUsd: number;
+  dailyLimitUsd: number;
+}): boolean {
+  if (!(input.dailyLimitUsd > 0)) return false;
+  return input.usedTodayUsd + input.valueUsd >= input.dailyLimitUsd * NEAR_DAILY_LIMIT_RATIO;
+}
+
+export function nearLimitMessage(input: {
+  agentName: string;
+  usedTodayUsd: number;
+  valueUsd: number;
+  dailyLimitUsd: number;
+}): string {
+  const spent = input.usedTodayUsd + input.valueUsd;
+  const pct = Math.round((spent / input.dailyLimitUsd) * 100);
+  return `${input.agentName} is at ${pct}% of its daily cap ($${spent.toFixed(0)} of $${input.dailyLimitUsd.toFixed(0)}).`;
+}
+
 export function protectionScore(input: {
   agentCount: number;
   allowlisted: number;

@@ -1,6 +1,12 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { evaluateTransfer, protectionScore, type PolicyInput } from "./policy.ts";
+import {
+  evaluateTransfer,
+  isNearDailyLimit,
+  nearLimitMessage,
+  protectionScore,
+  type PolicyInput,
+} from "./policy.ts";
 
 const policy: PolicyInput = {
   daily_limit_usd: 2000,
@@ -77,6 +83,45 @@ describe("evaluateTransfer hold vs block", () => {
       policy: { ...policy, allowlist: [] },
     });
     assert.equal(v.action, "allow");
+  });
+});
+
+describe("isNearDailyLimit", () => {
+  it("fires at 80% of the daily cap after this check, not at 79%", () => {
+    assert.equal(
+      isNearDailyLimit({ usedTodayUsd: 1500, valueUsd: 100, dailyLimitUsd: 2000 }),
+      true,
+    );
+    assert.equal(
+      isNearDailyLimit({ usedTodayUsd: 1470, valueUsd: 100, dailyLimitUsd: 2000 }),
+      false,
+    );
+  });
+
+  it("stays true when the check itself would exceed the cap", () => {
+    assert.equal(
+      isNearDailyLimit({ usedTodayUsd: 1950, valueUsd: 100, dailyLimitUsd: 2000 }),
+      true,
+    );
+  });
+
+  it("does not fire when the daily cap is zero", () => {
+    assert.equal(
+      isNearDailyLimit({ usedTodayUsd: 0, valueUsd: 100, dailyLimitUsd: 0 }),
+      false,
+    );
+  });
+
+  it("describes percent of cap for the console / email message", () => {
+    assert.equal(
+      nearLimitMessage({
+        agentName: "Treasury Bot",
+        usedTodayUsd: 1500,
+        valueUsd: 100,
+        dailyLimitUsd: 2000,
+      }),
+      "Treasury Bot is at 80% of its daily cap ($1600 of $2000).",
+    );
   });
 });
 

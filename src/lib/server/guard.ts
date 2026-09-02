@@ -5,7 +5,7 @@ import { sendNewSubscriberNotifyEmail } from "@/lib/auth/send-email.server";
 import { getSql } from "@/lib/db";
 import { CHAINS, validateAddress, type ChainId } from "@/lib/chains";
 import { FREE_TRIAL_DAYS, PLANS, evaluateEntitlement, type Entitlement } from "@/lib/plans";
-import { evaluateTransfer, protectionScore } from "@/lib/policy";
+import { evaluateTransfer, isNearDailyLimit, nearLimitMessage, protectionScore } from "@/lib/policy";
 import { readNativeBalance, readRecentTransfers, USD_PRICE } from "@/lib/onchain";
 import { uid } from "@/lib/utils";
 import {
@@ -15,6 +15,12 @@ import {
   listOpenHolds,
 } from "@/lib/server/approvals";
 import { ensureAuditReportsTable } from "@/lib/server/audit-reports";
+import {
+  notifyWarningAlert,
+  queueNotice,
+  shouldInsertNearLimitAlert,
+  warningKindForDecision,
+} from "@/lib/server/notify";
 
 function num(v: unknown) {
   const n = typeof v === "number" ? v : parseFloat(String(v ?? 0));
@@ -350,14 +356,6 @@ async function logAudit(userId: string, action: string, detail: string, agentId?
   `;
 }
 
-async function queueNotice(userId: string, channel: string, message: string) {
-  const sql = await getSql();
-  await sql`
-    insert into notification_log (id, user_id, channel, message)
-    values (${uid()}, ${userId}, ${channel}, ${message})
-  `;
-}
-
 export async function ensureSchema() {
   const sql = await getSql();
   await sql.query(
@@ -642,16 +640,22 @@ async function ingestLiveAgent(opts: {
       select count(*)::int as c from transactions
       where agent_id = ${opts.agent.id} and timestamp >= ${hour}
     `;
+    const usedTodayUsd = num(volRows[0]?.vol);
     const verdict = evaluateTransfer({
       valueUsd: tx.valueUsd,
       to: tx.to,
-      usedTodayUsd: num(volRows[0]?.vol),
+      usedTodayUsd,
       txsLastHour: num(hourRows[0]?.c),
       paused: opts.agent.is_paused,
       policy: opts.policy,
     });
     const blocked = verdict.action === "block";
     const held = verdict.action === "hold";
+    const nearLimit = isNearDailyLimit({
+      usedTodayUsd,
+      valueUsd: tx.valueUsd,
+      dailyLimitUsd: opts.policy.daily_limit_usd,
+    });
     await sql`
       insert into transactions (
         id, agent_id, user_id, chain, tx_hash, from_address, to_address,
@@ -664,17 +668,48 @@ async function ingestLiveAgent(opts: {
     `;
     created += 1;
     if (blocked) worst = "critical";
-    else if ((held || verdict.action === "alert") && worst !== "critical") worst = "warning";
-    if (opts.alertNew && (blocked || held || verdict.action === "alert")) {
-      await sql`
-        insert into alerts (id, agent_id, user_id, type, severity, message)
-        values (
-          ${uid()}, ${opts.agent.id}, ${opts.userId},
-          ${blocked ? "policy_block" : held ? "policy_hold" : "policy_alert"},
-          ${blocked ? "critical" : "warning"},
-          ${`${opts.agent.name}: on-chain ${tx.kind} ${verdict.reasons[0]}`}
-        )
-      `;
+    else if ((held || verdict.action === "alert" || nearLimit) && worst !== "critical") {
+      worst = "warning";
+    }
+    if (opts.alertNew) {
+      const onchainMessage = `${opts.agent.name}: on-chain ${tx.kind} ${verdict.reasons[0]}`;
+      const nearMessage = nearLimitMessage({
+        agentName: opts.agent.name,
+        usedTodayUsd,
+        valueUsd: tx.valueUsd,
+        dailyLimitUsd: opts.policy.daily_limit_usd,
+      });
+      if (blocked || held || verdict.action === "alert") {
+        await sql`
+          insert into alerts (id, agent_id, user_id, type, severity, message)
+          values (
+            ${uid()}, ${opts.agent.id}, ${opts.userId},
+            ${blocked ? "policy_block" : held ? "policy_hold" : "policy_alert"},
+            ${blocked ? "critical" : "warning"},
+            ${onchainMessage}
+          )
+        `;
+      } else if (shouldInsertNearLimitAlert(verdict.action, nearLimit)) {
+        await sql`
+          insert into alerts (id, agent_id, user_id, type, severity, message)
+          values (
+            ${uid()}, ${opts.agent.id}, ${opts.userId},
+            ${"near_limit"}, ${"warning"}, ${nearMessage}
+          )
+        `;
+      }
+      const warningKind = warningKindForDecision(verdict.action, nearLimit);
+      if (warningKind) {
+        await notifyWarningAlert({
+          userId: opts.userId,
+          agentId: opts.agent.id,
+          agentName: opts.agent.name,
+          // On-chain transfer already landed — Inbox cannot stop it.
+          kind: warningKind === "hold" ? "alert" : warningKind,
+          message: warningKind === "near_limit" ? nearMessage : onchainMessage,
+          ctaPath: "/alerts",
+        });
+      }
     }
   }
   if (created > 0) {
@@ -1050,8 +1085,8 @@ export const scanAgents = createServerFn({ method: "POST" })
     const policyBy = Object.fromEntries(policiesRaw.map((p) => [String(p.agent_id), mapPolicy(p)]));
     const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
     const hour = new Date(Date.now() - 3600 * 1000).toISOString();
-    const profile = await sql<{ email_alerts: boolean; telegram_alerts: boolean }>`
-      select email_alerts, telegram_alerts from profiles where user_id = ${context.userId}
+    const profile = await sql<{ telegram_alerts: boolean }>`
+      select telegram_alerts from profiles where user_id = ${context.userId}
     `;
     let created = 0;
     let onchain = 0;
@@ -1104,7 +1139,12 @@ export const scanAgents = createServerFn({ method: "POST" })
       });
       const blocked = verdict.action === "block";
       const held = verdict.action === "hold";
-      const kind = blocked
+      const nearLimit = isNearDailyLimit({
+        usedTodayUsd: used,
+        valueUsd: value,
+        dailyLimitUsd: policy.daily_limit_usd,
+      });
+      const txKind = blocked
         ? "Policy Block"
         : held
           ? "Waiting for you"
@@ -1120,7 +1160,7 @@ export const scanAgents = createServerFn({ method: "POST" })
           ${txId}, ${agent.id}, ${context.userId}, ${agent.chain},
           ${fakeHash(agent.id + Date.now(), agent.chain)},
           ${agent.address}, ${to},
-          ${value}, ${String((value / 3200).toFixed(4))}, ${kind}, ${blocked || held},
+          ${value}, ${String((value / 3200).toFixed(4))}, ${txKind}, ${blocked || held},
           ${blocked ? "blocked" : held ? "held" : "success"}, ${new Date().toISOString()}, ${"demo"}
         )
       `;
@@ -1129,7 +1169,7 @@ export const scanAgents = createServerFn({ method: "POST" })
       const status =
         blocked || ratio > 0.9
           ? "critical"
-          : ratio > 0.65 || verdict.action === "alert" || held
+          : ratio > 0.65 || verdict.action === "alert" || held || nearLimit
             ? "warning"
             : "healthy";
       await sql`update agents set status = ${status} where id = ${agent.id} and user_id = ${context.userId}`;
@@ -1143,28 +1183,50 @@ export const scanAgents = createServerFn({ method: "POST" })
           reasons: verdict.reasons,
         });
       }
+      const policyMessage = `${agent.name}: ${verdict.reasons[0]}`;
+      const nearMessage = nearLimitMessage({
+        agentName: agent.name,
+        usedTodayUsd: used,
+        valueUsd: value,
+        dailyLimitUsd: policy.daily_limit_usd,
+      });
       if (blocked || held || verdict.action === "alert") {
         const severity = blocked ? "critical" : "warning";
-        const message = `${agent.name}: ${verdict.reasons[0]}`;
         await sql`
           insert into alerts (id, agent_id, user_id, type, severity, message)
           values (
             ${uid()}, ${agent.id}, ${context.userId},
-            ${blocked ? "policy_block" : held ? "approval_hold" : "policy_alert"}, ${severity}, ${message}
+            ${blocked ? "policy_block" : held ? "approval_hold" : "policy_alert"}, ${severity}, ${policyMessage}
           )
         `;
         await logAudit(
           context.userId,
           blocked ? "policy_block" : held ? "presign_hold" : "policy_alert",
-          message,
+          policyMessage,
           agent.id,
         );
-        if (blocked && profile[0]?.email_alerts) {
-          await queueNotice(context.userId, "email", message);
-        }
         if (blocked && profile[0]?.telegram_alerts) {
-          await queueNotice(context.userId, "telegram", message);
+          await queueNotice(context.userId, "telegram", policyMessage);
         }
+      } else if (shouldInsertNearLimitAlert(verdict.action, nearLimit)) {
+        await sql`
+          insert into alerts (id, agent_id, user_id, type, severity, message)
+          values (
+            ${uid()}, ${agent.id}, ${context.userId},
+            ${"near_limit"}, ${"warning"}, ${nearMessage}
+          )
+        `;
+        await logAudit(context.userId, "near_limit", nearMessage, agent.id);
+      }
+      const warningKind = warningKindForDecision(verdict.action, nearLimit);
+      if (warningKind) {
+        await notifyWarningAlert({
+          userId: context.userId,
+          agentId: agent.id,
+          agentName: agent.name,
+          kind: warningKind,
+          message: warningKind === "near_limit" ? nearMessage : policyMessage,
+        });
       }
     }
     return { created, onchain };
