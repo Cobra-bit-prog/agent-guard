@@ -161,11 +161,13 @@ function DocsPage() {
         </p>
         <p className="mt-3 text-sm leading-relaxed text-muted">
           Inbox is where off-policy and first-time destinations wait: Allow once, Always allow this
-          address, or Block. Holds expire in 10 minutes and are then treated as a block. Agent Audit
-          generates an on-demand Excel or PDF of the Agent Control trail — not a full chain explorer
-          or ghost replay. Nothing is auto-emailed from Agent Audit. Optional warning alerts
-          (Settings → Email alerts) can ping you for a policy alert, spend near the daily cap, or a
-          hold waiting in Inbox.
+          address, or Block. Holds expire in 10 minutes and are then treated as a block. When a
+          spend is held, optional email (Settings → Email alerts) and a Slack incoming webhook (if
+          you set the URL in Settings) can ping you with a link to Approval Inbox. No action within
+          10 minutes = block — the agent must abort. Agent Audit generates an on-demand Excel or PDF
+          of the Agent Control trail — not a full chain explorer or ghost replay. Nothing is auto-emailed
+          from Agent Audit. Optional warning alerts can also ping you for a policy alert or spend
+          near the daily cap.
         </p>
 
         <section id="connect-your-agent" className="mt-16 scroll-mt-6">

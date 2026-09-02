@@ -63,11 +63,18 @@ describe("warning alert email copy", () => {
       kind: "hold",
       agentName: "Treasury Bot",
       message: "First-time destination — waiting for you.",
+      approvalId: "appr_123",
+      valueUsd: 2400,
+      to: "0xabc",
     });
     assert.equal(hold.subject, "Agent Control: hold needs a look");
-    assert.equal(hold.ctaPath, "/inbox");
+    assert.equal(hold.ctaPath, "/inbox?hold=appr_123");
     assert.match(hold.bodyLines.join("\n"), /Treasury Bot/);
     assert.match(hold.bodyLines.join("\n"), /First-time destination/);
+    assert.match(
+      hold.bodyLines.join("\n"),
+      /If you do nothing, the hold expires and the agent must abort \(treated as a block\)/,
+    );
 
     const near = warningAlertEmailCopy({
       kind: "near_limit",

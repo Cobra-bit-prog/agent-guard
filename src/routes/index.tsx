@@ -71,7 +71,7 @@ const HOME_FAQ_LD = [
     name: "Do you email me when something looks off?",
     acceptedAnswer: {
       "@type": "Answer",
-      text: "If Email alerts is on in Settings (on by default), we send optional pings for a policy alert, spend near the daily cap, a hold waiting in Inbox (/inbox), or a hard block. Console alerts still list at /alerts. Turn the switch off to keep those in the console only. Telegram and webhook fields are stored for later — they are not sending yet.",
+      text: "If Email alerts is on in Settings (on by default), we send optional pings for a policy alert, spend near the daily cap, a hold waiting in Inbox (/inbox), or a hard block. When a spend is held, that email (and Slack, if you saved an incoming webhook URL in Settings) includes a link to Approval Inbox. No action within 10 minutes = block — the agent must abort. Console alerts still list at /alerts. Turn Email alerts off to keep policy pings in the console only. If the agent skips the check, Inbox cannot stop that send.",
     },
   },
   {

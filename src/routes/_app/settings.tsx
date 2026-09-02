@@ -89,7 +89,10 @@ function SettingsPage() {
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-sm font-medium">Telegram alerts</p>
-              <p className="text-xs text-muted">Route critical events to a chat ID.</p>
+              <p className="text-xs text-muted">
+                Inbox hold pings to this chat when a Telegram bot is configured on the server.
+                Leave off if unused.
+              </p>
             </div>
             <Switch checked={tgOn} onCheckedChange={setTgOn} disabled={!writable} />
           </div>
@@ -103,16 +106,17 @@ function SettingsPage() {
             />
           </div>
           <div className="space-y-1.5">
-            <Label>Webhook URL (https)</Label>
+            <Label>Slack incoming webhook URL (https)</Label>
             <Input
               value={webhook}
               onChange={(e) => setWebhook(e.target.value)}
-              placeholder="https://example.com/hooks/agent-guard"
+              placeholder="https://hooks.slack.com/services/…"
               disabled={!writable}
             />
             <p className="text-xs text-subtle">
-              Stored for later delivery. The console does not POST to this URL from
-              the preview (avoids sending fleet data to an unknown host).
+              Used for Inbox hold notifications. Paste a Slack incoming webhook URL. We POST Slack
+              JSON (text + blocks) with a link to that hold. If you do nothing within 10 minutes,
+              the hold expires and the agent must abort (treated as a block).
             </p>
           </div>
           <Button onClick={() => save.mutate()} disabled={save.isPending || !writable}>

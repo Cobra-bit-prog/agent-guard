@@ -16,6 +16,7 @@ import {
 } from "@/lib/server/approvals";
 import { ensureAuditReportsTable } from "@/lib/server/audit-reports";
 import {
+  notifyInboxHold,
   notifyWarningAlert,
   queueNotice,
   shouldInsertNearLimitAlert,
@@ -1173,8 +1174,9 @@ export const scanAgents = createServerFn({ method: "POST" })
             ? "warning"
             : "healthy";
       await sql`update agents set status = ${status} where id = ${agent.id} and user_id = ${context.userId}`;
+      let approvalId: string | null = null;
       if (held) {
-        await insertHold({
+        const hold = await insertHold({
           userId: context.userId,
           agentId: agent.id,
           txId,
@@ -1182,6 +1184,7 @@ export const scanAgents = createServerFn({ method: "POST" })
           valueUsd: value,
           reasons: verdict.reasons,
         });
+        approvalId = hold.id;
       }
       const policyMessage = `${agent.name}: ${verdict.reasons[0]}`;
       const nearMessage = nearLimitMessage({
@@ -1219,7 +1222,17 @@ export const scanAgents = createServerFn({ method: "POST" })
         await logAudit(context.userId, "near_limit", nearMessage, agent.id);
       }
       const warningKind = warningKindForDecision(verdict.action, nearLimit);
-      if (warningKind) {
+      if (warningKind === "hold" && approvalId) {
+        await notifyInboxHold({
+          userId: context.userId,
+          agentId: agent.id,
+          agentName: agent.name,
+          approvalId,
+          message: policyMessage,
+          valueUsd: value,
+          to,
+        });
+      } else if (warningKind) {
         await notifyWarningAlert({
           userId: context.userId,
           agentId: agent.id,
