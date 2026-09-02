@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { authMiddleware } from "@/lib/auth/middleware";
+import { sendNewSubscriberNotifyEmail } from "@/lib/auth/send-email.server";
 import { getSql } from "@/lib/db";
 import { CHAINS, validateAddress, type ChainId } from "@/lib/chains";
 import { FREE_TRIAL_DAYS, PLANS, evaluateEntitlement, type Entitlement } from "@/lib/plans";
@@ -462,11 +463,30 @@ async function ensureWorkspace(userId: string) {
     on conflict (user_id) do nothing
   `;
   const trial = new Date(Date.now() + FREE_TRIAL_DAYS * 86400000).toISOString();
-  await sql`
+  const inserted = await sql<{ user_id: string }>`
     insert into subscriptions (user_id, plan, status, trial_ends_at)
     values (${userId}, ${"free"}, ${"trialing"}, ${trial})
     on conflict (user_id) do nothing
+    returning user_id
   `;
+  if (inserted.length > 0) {
+    let userEmail: string | undefined;
+    try {
+      const users = await sql<{ email: string }>`
+        select email from "user" where id = ${userId} limit 1
+      `;
+      const email = users[0]?.email?.trim();
+      if (email) userEmail = email;
+    } catch (err) {
+      console.error("[notify] user email lookup failed", err);
+    }
+    await sendNewSubscriberNotifyEmail({
+      kind: "trial",
+      planName: PLANS.free.name,
+      at: new Date().toISOString(),
+      userEmail,
+    });
+  }
   const existing = await sql<{
     c: number;
   }>`select count(*)::int as c from agents where user_id = ${userId}`;
