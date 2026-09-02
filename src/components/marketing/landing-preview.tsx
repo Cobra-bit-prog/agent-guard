@@ -48,7 +48,7 @@ export function LandingPreview() {
         <div className="min-w-0 flex-1">
           <strong className="block text-[13px] text-danger">Review alert</strong>
           <p className="mt-0.5 text-[13px] leading-snug text-fg">
-            Transfer paused
+            Transfer blocked
             <span className="block sm:inline sm:before:content-['\00a0']">
               $2,400 to unknown address
             </span>
@@ -79,7 +79,7 @@ export function LandingPreview() {
             Keys
           </b>
           <p className="mt-0.5 text-xs leading-snug text-muted">
-            Held by you · Agent cannot move funds
+            Held by you · Check before every send
           </p>
         </div>
       </div>

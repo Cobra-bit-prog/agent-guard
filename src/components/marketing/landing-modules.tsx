@@ -144,8 +144,7 @@ export function LandingModules() {
             </span>
           </h3>
           <p className="text-sm text-muted">
-            Your agent requests, your call. Approve once, set limits, or block. Nothing moves
-            without you.
+            Allow once, always, or block — if the hook is wired. A skipped check still goes through.
           </p>
           <p className="mt-3 text-xs font-semibold text-muted">Waiting for you</p>
           <ul>
@@ -191,8 +190,8 @@ export function LandingModules() {
             </a>
           </h3>
           <p className="text-sm text-muted">
-            Collect payments directly to your wallet. Scan a link or QR. Set your price. No card. No
-            KYC.
+            Pay your plan in USDC, SOL, or ETH. Scan the QR or copy amount and address. We unlock
+            the console when it confirms.
           </p>
           <div className="mt-3.5 grid gap-3 sm:grid-cols-2 sm:items-stretch">
             <div>
@@ -218,14 +217,14 @@ export function LandingModules() {
                 <LandingPayMark />
               </span>
               Scan to pay
-              <span>or share payment link</span>
+              <span>or copy amount and address</span>
             </a>
           </div>
           <p className="mt-3 flex items-center gap-2 text-xs font-semibold text-success">
             <span className="grid size-[18px] place-items-center rounded-full bg-[#dcfce7] text-[10px] text-[#166534]">
               ✓
             </span>
-            No card. No KYC. Live invoice is on Billing.
+            No card. No KYC. No autopay.
           </p>
         </ModuleCard>
       </div>
