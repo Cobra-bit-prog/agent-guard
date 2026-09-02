@@ -3,6 +3,8 @@ import {
   Bell,
   ChevronLeft,
   CreditCard,
+  FileSpreadsheet,
+  Inbox,
   LayoutDashboard,
   Settings,
   Shield,
@@ -15,20 +17,22 @@ import { Logo } from "@/components/brand";
 import { ExpiredPaywall } from "@/components/expired-paywall";
 import { TrialBanner } from "@/components/trial-banner";
 import { useQuery } from "@tanstack/react-query";
-import { getProfile } from "@/lib/server/guard";
+import { getProfile, getHoldCount } from "@/lib/server/guard";
 import { PLANS, type PlanId } from "@/lib/plans";
 import { cn } from "@/lib/utils";
 
 const NAV = [
   { to: "/dashboard", label: "Overview", icon: LayoutDashboard },
+  { to: "/inbox", label: "Inbox", icon: Inbox },
   { to: "/agents", label: "Agents", icon: Wallet },
+  { to: "/audit", label: "Audit", icon: FileSpreadsheet },
   { to: "/policies", label: "Policies", icon: Shield },
   { to: "/alerts", label: "Alerts", icon: Bell },
   { to: "/billing", label: "Billing", icon: CreditCard },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
-const LOCKED_PREFIXES = ["/dashboard", "/agents", "/policies", "/alerts"];
+const LOCKED_PREFIXES = ["/dashboard", "/inbox", "/agents", "/audit", "/policies", "/alerts"];
 
 function isLockedPath(pathname: string) {
   return LOCKED_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"));
@@ -42,6 +46,13 @@ export function AppShell({ children }: { children: ReactNode }) {
     queryFn: () => getProfile(),
     enabled: Boolean(user),
   });
+  const holds = useQuery({
+    queryKey: ["holds-count"],
+    queryFn: () => getHoldCount(),
+    refetchInterval: 8000,
+    enabled: Boolean(user),
+  });
+  const holdCount = holds.data?.count ?? 0;
   const expired = Boolean(profile.data?.expired);
   const lockConsole = isLockedPath(pathname);
 
@@ -63,7 +74,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
   if (!user) return <RedirectToSignIn />;
   if (!user.isDevFallback && !user.emailVerified) {
-    return <Navigate to="/verify-email" />;
+    return <Navigate to="/verify-email" search={{ email: undefined }} />;
   }
 
   return (
@@ -86,9 +97,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 to={item.to}
                 className={cn(
                   "relative flex h-10 items-center gap-3 rounded-[10px] px-3 text-sm font-medium",
-                  active
-                    ? "bg-elevated text-fg"
-                    : "text-muted hover:bg-elevated/60 hover:text-fg",
+                  active ? "bg-elevated text-fg" : "text-muted hover:bg-elevated/60 hover:text-fg",
                 )}
               >
                 {active && (
@@ -96,6 +105,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                 )}
                 <Icon className="size-4" />
                 {item.label}
+                {item.to === "/inbox" && holdCount > 0 && (
+                  <span className="ml-auto rounded-full bg-warning/20 px-2 py-0.5 text-[11px] font-medium text-warning">
+                    {holdCount}
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -138,6 +152,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 )}
               >
                 {item.label}
+                {item.to === "/inbox" && holdCount > 0 ? ` (${holdCount})` : ""}
               </Link>
             );
           })}
@@ -195,7 +210,7 @@ function SidebarPlan() {
   const q = useQuery({ queryKey: ["profile"], queryFn: () => getProfile() });
   const plan = (q.data?.plan ?? "free") as PlanId;
   const expired = Boolean(q.data?.expired);
-  const label = expired && plan === "free" ? "Trial" : PLANS[plan]?.name ?? plan;
+  const label = expired && plan === "free" ? "Trial" : (PLANS[plan]?.name ?? plan);
   const sub =
     expired && plan === "free"
       ? "1-day trial ended"
@@ -212,4 +227,3 @@ function SidebarPlan() {
     </div>
   );
 }
-

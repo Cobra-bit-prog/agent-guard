@@ -38,7 +38,7 @@ function Login() {
 
   if (!isPending && user) {
     if (user.emailVerified || user.isDevFallback) return <Navigate to="/dashboard" />;
-    return <Navigate to="/verify-email" />;
+    return <Navigate to="/verify-email" search={{ email: undefined }} />;
   }
 
   async function onEmail(e: React.FormEvent) {

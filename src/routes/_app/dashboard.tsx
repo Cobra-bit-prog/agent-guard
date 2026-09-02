@@ -141,7 +141,7 @@ function DashboardPage() {
         />
         <Stat
           label="Moved in last 24h"
-          value={formatUsd(d.volume24h ?? d.capital)}
+          value={formatUsd(d.volume24h ?? 0)}
           hint={d.volumeHint ?? "Transfer volume — not treasury size"}
         />
         <Stat

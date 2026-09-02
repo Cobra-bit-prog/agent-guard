@@ -1,7 +1,9 @@
 import { getSql } from "@/lib/db";
+import { pollDecisionFromStatus, shouldHoldFirstTimeDestination } from "@/lib/hold";
 import { evaluateEntitlement } from "@/lib/plans";
 import { evaluateTransfer } from "@/lib/policy";
 import { ensureSchema } from "@/lib/server/guard";
+import { getApprovalForAgent, insertHold } from "@/lib/server/approvals";
 import { uid } from "@/lib/utils";
 import type { ChainId } from "@/lib/chains";
 
@@ -16,13 +18,17 @@ function asStrings(v: unknown): string[] {
 }
 
 export type IntentResult = {
-  decision: "allow" | "alert" | "block";
+  decision: "allow" | "alert" | "block" | "hold";
   reasons: string[];
   check_id: string;
   agent_id: string;
   agent: string;
   must_abort: boolean;
   paused: boolean;
+  approval_id?: string | null;
+  poll_url?: string | null;
+  poll_after_ms?: number;
+  expires_in_s?: number;
 };
 
 export async function checkTransferIntent(input: {
@@ -101,8 +107,31 @@ export async function checkTransferIntent(input: {
     },
   });
 
+  let action = verdict.action;
+  const reasons = [...verdict.reasons];
+  if (action === "allow" || action === "alert") {
+    const known = await sql<{ to_address: string }>`
+      select distinct to_address from transactions
+      where agent_id = ${String(agent.id)}
+        and status = ${"success"}
+        and source <> ${"presign"}
+    `;
+    if (
+      shouldHoldFirstTimeDestination({
+        action,
+        dest: input.to,
+        allowlist: asStrings(p.allowlist),
+        seenSuccessDestinations: known.map((r) => r.to_address),
+      })
+    ) {
+      action = "hold";
+      reasons.unshift("First-time destination — waiting for you.");
+    }
+  }
+
   const checkId = uid();
-  const blocked = verdict.action === "block";
+  const blocked = action === "block";
+  const held = action === "hold";
   await sql`
     insert into transactions (
       id, agent_id, user_id, chain, tx_hash, from_address, to_address,
@@ -110,25 +139,50 @@ export async function checkTransferIntent(input: {
     ) values (
       ${checkId}, ${String(agent.id)}, ${String(agent.user_id)}, ${String(agent.chain) as ChainId},
       ${`presign:${checkId}`}, ${String(agent.address)}, ${input.to},
-      ${input.valueUsd}, ${input.native ?? "0"}, ${"Pre-sign check"}, ${blocked},
-      ${blocked ? "blocked" : "success"}, ${new Date().toISOString()}, ${"presign"}
+      ${input.valueUsd}, ${input.native ?? "0"}, ${"Pre-sign check"}, ${blocked || held},
+      ${blocked ? "blocked" : held ? "held" : "success"}, ${new Date().toISOString()}, ${"presign"}
     )
   `;
   await sql`
     insert into audit_events (id, user_id, agent_id, action, detail)
     values (
       ${uid()}, ${String(agent.user_id)}, ${String(agent.id)},
-      ${blocked ? "presign_block" : "presign_check"},
-      ${`${verdict.action.toUpperCase()} $${input.valueUsd.toFixed(0)} → ${input.to.slice(0, 18)}`}
+      ${blocked ? "presign_block" : held ? "presign_hold" : "presign_check"},
+      ${`${action.toUpperCase()} $${input.valueUsd.toFixed(0)} → ${input.to.slice(0, 18)}`}
     )
   `;
+
+  let approvalId: string | null = null;
+  let expiresInS: number | undefined;
+  if (held) {
+    const hold = await insertHold({
+      userId: String(agent.user_id),
+      agentId: String(agent.id),
+      txId: checkId,
+      to: input.to,
+      valueUsd: input.valueUsd,
+      native: input.native,
+      reasons,
+    });
+    approvalId = hold.id;
+    expiresInS = hold.expiresInS;
+    await sql`
+      insert into alerts (id, agent_id, user_id, type, severity, message)
+      values (
+        ${uid()}, ${String(agent.id)}, ${String(agent.user_id)},
+        ${"approval_hold"}, ${"warning"},
+        ${`${String(agent.name)} is waiting for you: $${input.valueUsd.toFixed(0)} → ${input.to.slice(0, 18)}`}
+      )
+    `;
+  }
+
   if (blocked) {
     await sql`
       insert into alerts (id, agent_id, user_id, type, severity, message)
       values (
         ${uid()}, ${String(agent.id)}, ${String(agent.user_id)},
         ${"presign_block"}, ${"critical"},
-        ${`${String(agent.name)} blocked a pre-sign check: ${verdict.reasons[0]}`}
+        ${`${String(agent.name)} blocked a pre-sign check: ${reasons[0]}`}
       )
     `;
     await sql`update agents set status = ${"critical"} where id = ${String(agent.id)}`;
@@ -137,13 +191,57 @@ export async function checkTransferIntent(input: {
   return {
     ok: true,
     result: {
-      decision: verdict.action,
-      reasons: verdict.reasons,
+      decision: action,
+      reasons,
       check_id: checkId,
       agent_id: String(agent.id),
       agent: String(agent.name),
-      must_abort: blocked,
+      must_abort: blocked || held,
       paused,
+      approval_id: approvalId,
+      poll_url: approvalId ? `/api/v1/approvals/${approvalId}` : null,
+      poll_after_ms: approvalId ? 2000 : undefined,
+      expires_in_s: expiresInS,
+    },
+  };
+}
+
+export async function pollApprovalIntent(input: { apiKey: string; approvalId: string }) {
+  const key = input.apiKey.trim();
+  if (!key) return { ok: false as const, status: 401, error: "Missing API key." };
+  await ensureSchema();
+  const sql = await getSql();
+  const agents = await sql`select * from agents where api_key = ${key}`;
+  const agent = agents[0];
+  if (!agent) return { ok: false as const, status: 401, error: "Unknown API key." };
+
+  const row = await getApprovalForAgent({
+    approvalId: input.approvalId,
+    agentId: String(agent.id),
+  });
+  if (!row) return { ok: false as const, status: 404, error: "Unknown approval." };
+
+  const decision = pollDecisionFromStatus(row.status);
+  const mustAbort = decision !== "allow";
+  const expiresInS = Math.max(
+    0,
+    Math.round((new Date(row.expires_at).getTime() - Date.now()) / 1000),
+  );
+
+  return {
+    ok: true as const,
+    result: {
+      decision,
+      must_abort: mustAbort,
+      approval_id: row.id,
+      poll_url: `/api/v1/approvals/${row.id}`,
+      poll_after_ms: decision === "hold" ? 2000 : undefined,
+      expires_in_s: decision === "hold" ? expiresInS : 0,
+      reasons: row.reasons,
+      agent: String(agent.name),
+      value_usd: row.value_usd,
+      to: row.to_address,
+      status: row.status,
     },
   };
 }

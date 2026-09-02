@@ -9,7 +9,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CHAINS } from "@/lib/chains";
-import { getDashboard, getOnchain, rotateApiKey, savePolicy, simulateTransfer } from "@/lib/server/guard";
+import {
+  getDashboard,
+  getOnchain,
+  rotateApiKey,
+  savePolicy,
+  simulateTransfer,
+  type PolicyRow,
+} from "@/lib/server/guard";
 import { formatUsd, shortAddress, timeAgo } from "@/lib/utils";
 import { useState } from "react";
 
@@ -26,7 +33,11 @@ function AgentDetailPage() {
     queryFn: () => getOnchain({ data: { id } }),
   });
   const agent = q.data?.agents.find((a) => a.id === id);
-  const policy = q.data?.policies[id];
+  const policies =
+    q.data && "policies" in q.data
+      ? (q.data.policies as Record<string, PolicyRow>)
+      : {};
+  const policy = policies[id];
   const txs = q.data?.txs.filter((t) => t.agent_id === id) ?? [];
   const writable = q.data?.writable !== false;
 
@@ -81,16 +92,12 @@ function AgentDetailPage() {
           <Link to="/agents" className="text-xs text-muted hover:text-fg">
             Agents
           </Link>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight">
-            {agent?.name ?? "Agent"}
-          </h1>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight">{agent?.name ?? "Agent"}</h1>
           <p className="text-sm text-muted">This agent is locked until you pay in USDC.</p>
         </div>
         <Card>
           <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-muted">
-              Policy edits, scan, and API key rotate are paused.
-            </p>
+            <p className="text-sm text-muted">Policy edits, scan, and API key rotate are paused.</p>
             <Button asChild>
               <Link to="/billing">Open billing</Link>
             </Button>
@@ -120,6 +127,13 @@ function AgentDetailPage() {
           <StatusBadge status={agent.status} />
         </div>
         <p className="mt-1 font-mono text-xs text-subtle">{agent.address}</p>
+        <div className="mt-3">
+          <Button variant="secondary" size="sm" asChild>
+            <Link to="/audit" search={{ agent: agent.id }}>
+              Generate audit report
+            </Link>
+          </Button>
+        </div>
         <p className="mt-2 text-sm text-muted">
           On-chain {CHAINS[agent.chain].native}:{" "}
           {chain.data?.ok ? (
@@ -135,7 +149,12 @@ function AgentDetailPage() {
         </p>
       </div>
 
-      <PreSignCard agentId={agent.id} apiKey={agent.api_key} demo={agent.is_demo} writable={writable} />
+      <PreSignCard
+        agentId={agent.id}
+        apiKey={agent.api_key}
+        demo={agent.is_demo}
+        writable={writable}
+      />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
@@ -230,11 +249,7 @@ function AgentDetailPage() {
               </div>
               <div className="space-y-1.5">
                 <Label>Amount (USD)</Label>
-                <Input
-                  type="number"
-                  value={simAmt}
-                  onChange={(e) => setSimAmt(e.target.value)}
-                />
+                <Input type="number" value={simAmt} onChange={(e) => setSimAmt(e.target.value)} />
               </div>
               <Button
                 variant="secondary"
@@ -249,9 +264,11 @@ function AgentDetailPage() {
                     className={
                       sim.data.action === "block"
                         ? "bg-danger/15 text-danger"
-                        : sim.data.action === "alert"
+                        : sim.data.action === "hold"
                           ? "bg-warning/15 text-warning"
-                          : "bg-success/15 text-success"
+                          : sim.data.action === "alert"
+                            ? "bg-warning/15 text-warning"
+                            : "bg-success/15 text-success"
                     }
                   >
                     {sim.data.action}
@@ -379,4 +396,3 @@ function PreSignCard({
     </Card>
   );
 }
-
