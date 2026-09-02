@@ -183,6 +183,8 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
   assert.match(docs, /agent spend limit and approval before agent send/);
   assert.match(docs, /HOLD in Approval Inbox \(hold vs block\)/);
   assert.match(docs, /POST \/api\/v1\/check/);
+  assert.match(docs, /POST \/api\/v1\/billing\/checkout/);
+  assert.match(docs, /Not automatic payment/);
   assert.match(docs, /check_transfer/);
   assert.match(docs, /get_approval/);
   assert.match(docs, /get_agent_status/);
@@ -212,6 +214,8 @@ test("llms.txt is the public AI-crawler brief", () => {
   assert.match(llms, /https:\/\/agent-control\.net\/inbox/);
   assert.match(llms, /https:\/\/agent-control\.net\/audit/);
   assert.match(llms, /POST \/api\/v1\/check/);
+  assert.match(llms, /POST \/api\/v1\/billing\/checkout/);
+  assert.match(llms, /Not automatic payment/);
   assert.match(llms, /MCP get_approval/);
   assert.match(llms, /agentaudit\.dev/);
   assert.match(llms, /SpendGuard/);
@@ -273,4 +277,15 @@ test("partners page is wallet-complement copy; sitemap and docs link it", () => 
   assert.match(docs, /id=["']partners["']/);
   assert.match(sitemap, /https:\/\/agent-control\.net\/partners/);
   assert.match(chrome, /href: "\/partners"/);
+});
+
+test("agent checkout is REST only; MCP has no start_checkout", () => {
+  const mcp = readFileSync(join(ROOT, "src/routes/api/v1/mcp.ts"), "utf8");
+  const checkout = readFileSync(join(ROOT, "src/routes/api/v1/billing.checkout.ts"), "utf8");
+  assert.doesNotMatch(mcp, /start_checkout/);
+  assert.match(checkout, /\/api\/v1\/billing\/checkout/);
+  assert.match(checkout, /readApiKey/);
+  assert.match(checkout, /OPTIONS/);
+  assert.doesNotMatch(mcp, /\bbroadcast/i);
+  assert.doesNotMatch(checkout, /\bbroadcast/i);
 });

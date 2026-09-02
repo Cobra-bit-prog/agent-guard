@@ -22,7 +22,6 @@ import {
 } from "@/lib/evm-pay.server";
 import { buildEip681TransferUrl, buildMetamaskSendUrl, type EvmPayChain } from "@/lib/evm-pay";
 import {
-  PAY_ASSET_CHAIN,
   PAY_ASSET_DECIMALS,
   PAY_ASSET_LABEL,
   asPayAsset,
@@ -41,10 +40,18 @@ import {
 import { sendInvoiceEmail, sendNewSubscriberNotifyEmail } from "@/lib/auth/send-email.server";
 import { ensureSchema } from "@/lib/server/guard";
 import { rpc, solanaRpcUrls } from "@/lib/onchain";
+import {
+  CheckoutNotConfiguredError,
+  PAID_PLANS,
+  PAY_ASSETS,
+  PAY_CHAINS,
+  resolveCheckoutInput,
+  type PaidPlanId,
+} from "@/lib/agent-checkout";
 
-const PaidPlan = z.enum(["starter", "pro", "team"]);
-const PayChainZ = z.enum(["solana", "ethereum", "base"]);
-const PayAssetZ = z.enum(["usdc", "sol", "eth"]);
+const PaidPlan = z.enum(PAID_PLANS);
+const PayChainZ = z.enum(PAY_CHAINS);
+const PayAssetZ = z.enum(PAY_ASSETS);
 
 const CHAIN_LABEL: Record<PayChain, string> = {
   solana: "Solana",
@@ -242,6 +249,109 @@ export const getCheckoutConfig = createServerFn({ method: "GET" })
     };
   });
 
+/** Shared insert used by human Billing and agent REST checkout. */
+export async function createPayRequestForUser(
+  userId: string,
+  data: { plan: PaidPlanId; asset?: PayAsset; chain?: PayChain },
+): Promise<PayRequestView> {
+  const { plan: planId, asset, chain } = resolveCheckoutInput(data);
+  const plan = PLANS[planId];
+  const sql = await getSql();
+  const id = uid();
+  const expires = new Date(Date.now() + PAY_EXPIRY_MS).toISOString();
+
+  let recipient: string;
+  let reference: string;
+  let amountBase: string;
+
+  if (asset === "sol") {
+    const addr = payoutAddress();
+    if (!addr) throw new CheckoutNotConfiguredError("Checkout is not configured for Solana.");
+    recipient = addr;
+    reference = newPayReference();
+    const quote = await quoteSolEthUsd();
+    const cutoff = new Date(Date.now() - PAY_EXPIRY_MS - 15 * 60 * 1000).toISOString();
+    const used = await sql<{ amount_base_units: string }>`
+      select amount_base_units from pay_requests
+      where asset = ${"sol"}
+        and (
+          (status in (${"pending"}, ${"underpaid"}) and expires_at > ${new Date().toISOString()})
+          or created_at > ${cutoff}
+        )
+    `;
+    amountBase = allocateUniqueNativeAmount(
+      used.map((r) => r.amount_base_units),
+      plan.price,
+      quote.sol,
+      9,
+    );
+  } else if (asset === "eth") {
+    const addr = evmPayoutAddress();
+    if (!addr) throw new CheckoutNotConfiguredError("Checkout is not configured for Ethereum.");
+    recipient = addr;
+    reference = `eth:${uid()}`;
+    const quote = await quoteSolEthUsd();
+    const cutoff = new Date(Date.now() - PAY_EXPIRY_MS - 15 * 60 * 1000).toISOString();
+    const used = await sql<{ amount_base_units: string }>`
+      select amount_base_units from pay_requests
+      where asset = ${"eth"}
+        and (
+          (status in (${"pending"}, ${"underpaid"}) and expires_at > ${new Date().toISOString()})
+          or created_at > ${cutoff}
+        )
+    `;
+    amountBase = allocateUniqueNativeAmount(
+      used.map((r) => r.amount_base_units),
+      plan.price,
+      quote.eth,
+      18,
+    );
+  } else if (chain === "solana") {
+    const addr = payoutAddress();
+    if (!addr) {
+      throw new CheckoutNotConfiguredError("Checkout is not configured for Solana.");
+    }
+    recipient = addr;
+    reference = newPayReference();
+    amountBase = usdcBaseUnits(plan.price);
+  } else {
+    const addr = evmPayoutAddress();
+    if (!addr) {
+      throw new CheckoutNotConfiguredError(`Checkout is not configured for ${CHAIN_LABEL[chain]}.`);
+    }
+    recipient = addr;
+    reference = `evm:${chain}:${uid()}`;
+    const cutoff = new Date(Date.now() - PAY_EXPIRY_MS - 15 * 60 * 1000).toISOString();
+    const used = await sql<{ amount_base_units: string }>`
+      select amount_base_units from pay_requests
+      where chain = ${chain}
+        and (
+          (status in (${"pending"}, ${"underpaid"}) and expires_at > ${new Date().toISOString()})
+          or created_at > ${cutoff}
+        )
+    `;
+    amountBase = await allocateUniqueUsdcAmount(
+      used.map((r) => r.amount_base_units),
+      plan.price,
+    );
+  }
+
+  await sql`
+    insert into pay_requests (
+      id, user_id, plan, chain, asset, amount_usdc, amount_base_units, reference, recipient,
+      status, expires_at
+    ) values (
+      ${id}, ${userId}, ${planId}, ${chain}, ${asset}, ${plan.price}, ${amountBase},
+      ${reference}, ${recipient}, ${"pending"}, ${expires}
+    )
+  `;
+  const rows = await sql<PayRow>`
+    select id, plan, chain, asset, amount_usdc, amount_base_units, reference, recipient, status, signature, paid_amount_usdc, expires_at, created_at, paid_at, invoice_email_sent_at
+    from pay_requests where id = ${id} and user_id = ${userId}
+  `;
+  return view(rows[0]);
+}
+
 export const createPayRequest = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator((d: unknown) =>
@@ -251,103 +361,7 @@ export const createPayRequest = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     await ensureSchema();
-    const asset = (data.asset ?? "usdc") as PayAsset;
-    const chain: PayChain = data.chain ?? PAY_ASSET_CHAIN[asset];
-    const plan = PLANS[data.plan];
-    const sql = await getSql();
-    const id = uid();
-    const expires = new Date(Date.now() + PAY_EXPIRY_MS).toISOString();
-
-    let recipient: string;
-    let reference: string;
-    let amountBase: string;
-
-    if (asset === "sol") {
-      const addr = payoutAddress();
-      if (!addr) throw new Error("Checkout is not configured for Solana.");
-      recipient = addr;
-      reference = newPayReference();
-      const quote = await quoteSolEthUsd();
-      const cutoff = new Date(Date.now() - PAY_EXPIRY_MS - 15 * 60 * 1000).toISOString();
-      const used = await sql<{ amount_base_units: string }>`
-        select amount_base_units from pay_requests
-        where asset = ${"sol"}
-          and (
-            (status in (${"pending"}, ${"underpaid"}) and expires_at > ${new Date().toISOString()})
-            or created_at > ${cutoff}
-          )
-      `;
-      amountBase = allocateUniqueNativeAmount(
-        used.map((r) => r.amount_base_units),
-        plan.price,
-        quote.sol,
-        9,
-      );
-    } else if (asset === "eth") {
-      const addr = evmPayoutAddress();
-      if (!addr) throw new Error("Checkout is not configured for Ethereum.");
-      recipient = addr;
-      reference = `eth:${uid()}`;
-      const quote = await quoteSolEthUsd();
-      const cutoff = new Date(Date.now() - PAY_EXPIRY_MS - 15 * 60 * 1000).toISOString();
-      const used = await sql<{ amount_base_units: string }>`
-        select amount_base_units from pay_requests
-        where asset = ${"eth"}
-          and (
-            (status in (${"pending"}, ${"underpaid"}) and expires_at > ${new Date().toISOString()})
-            or created_at > ${cutoff}
-          )
-      `;
-      amountBase = allocateUniqueNativeAmount(
-        used.map((r) => r.amount_base_units),
-        plan.price,
-        quote.eth,
-        18,
-      );
-    } else if (chain === "solana") {
-      const addr = payoutAddress();
-      if (!addr) {
-        throw new Error("Checkout is not configured for Solana.");
-      }
-      recipient = addr;
-      reference = newPayReference();
-      amountBase = usdcBaseUnits(plan.price);
-    } else {
-      const addr = evmPayoutAddress();
-      if (!addr) {
-        throw new Error(`Checkout is not configured for ${CHAIN_LABEL[chain]}.`);
-      }
-      recipient = addr;
-      reference = `evm:${chain}:${uid()}`;
-      const cutoff = new Date(Date.now() - PAY_EXPIRY_MS - 15 * 60 * 1000).toISOString();
-      const used = await sql<{ amount_base_units: string }>`
-        select amount_base_units from pay_requests
-        where chain = ${chain}
-          and (
-            (status in (${"pending"}, ${"underpaid"}) and expires_at > ${new Date().toISOString()})
-            or created_at > ${cutoff}
-          )
-      `;
-      amountBase = await allocateUniqueUsdcAmount(
-        used.map((r) => r.amount_base_units),
-        plan.price,
-      );
-    }
-
-    await sql`
-      insert into pay_requests (
-        id, user_id, plan, chain, asset, amount_usdc, amount_base_units, reference, recipient,
-        status, expires_at
-      ) values (
-        ${id}, ${context.userId}, ${data.plan}, ${chain}, ${asset}, ${plan.price}, ${amountBase},
-        ${reference}, ${recipient}, ${"pending"}, ${expires}
-      )
-    `;
-    const rows = await sql<PayRow>`
-      select id, plan, chain, asset, amount_usdc, amount_base_units, reference, recipient, status, signature, paid_amount_usdc, expires_at, created_at, paid_at, invoice_email_sent_at
-      from pay_requests where id = ${id} and user_id = ${context.userId}
-    `;
-    return view(rows[0]);
+    return await createPayRequestForUser(context.userId, data);
   });
 
 export const getPayRequest = createServerFn({ method: "GET" })
