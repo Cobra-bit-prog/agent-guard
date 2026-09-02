@@ -12,9 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as DocsRouteImport } from './routes/docs'
-import { Route as PartnersRouteImport } from './routes/partners'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LogosRouteImport } from './routes/logos'
+import { Route as PartnersRouteImport } from './routes/partners'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as AppAgentsRouteImport } from './routes/_app/agents'
@@ -31,9 +31,9 @@ import { Route as AppBillingIndexRouteImport } from './routes/_app/billing.index
 import { Route as AppBillingPayRouteImport } from './routes/_app/billing.pay'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiV1CheckRouteImport } from './routes/api/v1/check'
-import { Route as ApiV1BillingCheckoutRouteImport } from './routes/api/v1/billing.checkout'
 import { Route as ApiV1McpRouteImport } from './routes/api/v1/mcp'
 import { Route as ApiV1ApprovalsIdRouteImport } from './routes/api/v1/approvals.$id'
+import { Route as ApiV1BillingCheckoutRouteImport } from './routes/api/v1/billing.checkout'
 import { Route as ApiV1InternalStatsRouteImport } from './routes/api/v1/internal/stats'
 
 const IndexRoute = IndexRouteImport.update({
@@ -50,11 +50,6 @@ const DocsRoute = DocsRouteImport.update({
   path: '/docs',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PartnersRoute = PartnersRouteImport.update({
-  id: '/partners',
-  path: '/partners',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -63,6 +58,11 @@ const LoginRoute = LoginRouteImport.update({
 const LogosRoute = LogosRouteImport.update({
   id: '/logos',
   path: '/logos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PartnersRoute = PartnersRouteImport.update({
+  id: '/partners',
+  path: '/partners',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignupRoute = SignupRouteImport.update({
@@ -145,11 +145,6 @@ const ApiV1CheckRoute = ApiV1CheckRouteImport.update({
   path: '/api/v1/check',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiV1BillingCheckoutRoute = ApiV1BillingCheckoutRouteImport.update({
-  id: '/api/v1/billing/checkout',
-  path: '/api/v1/billing/checkout',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiV1McpRoute = ApiV1McpRouteImport.update({
   id: '/api/v1/mcp',
   path: '/api/v1/mcp',
@@ -158,6 +153,11 @@ const ApiV1McpRoute = ApiV1McpRouteImport.update({
 const ApiV1ApprovalsIdRoute = ApiV1ApprovalsIdRouteImport.update({
   id: '/api/v1/approvals/$id',
   path: '/api/v1/approvals/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1BillingCheckoutRoute = ApiV1BillingCheckoutRouteImport.update({
+  id: '/api/v1/billing/checkout',
+  path: '/api/v1/billing/checkout',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiV1InternalStatsRoute = ApiV1InternalStatsRouteImport.update({
@@ -169,9 +169,9 @@ const ApiV1InternalStatsRoute = ApiV1InternalStatsRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/docs': typeof DocsRoute
-  '/partners': typeof PartnersRoute
   '/login': typeof LoginRoute
   '/logos': typeof LogosRoute
+  '/partners': typeof PartnersRoute
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
   '/agents': typeof AppAgentsRouteWithChildren
@@ -186,19 +186,19 @@ export interface FileRoutesByFullPath {
   '/billing/pay': typeof AppBillingPayRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/v1/check': typeof ApiV1CheckRoute
-  '/api/v1/billing/checkout': typeof ApiV1BillingCheckoutRoute
   '/api/v1/mcp': typeof ApiV1McpRoute
   '/agents/': typeof AppAgentsIndexRoute
   '/billing/': typeof AppBillingIndexRoute
   '/api/v1/approvals/$id': typeof ApiV1ApprovalsIdRoute
+  '/api/v1/billing/checkout': typeof ApiV1BillingCheckoutRoute
   '/api/v1/internal/stats': typeof ApiV1InternalStatsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/docs': typeof DocsRoute
-  '/partners': typeof PartnersRoute
   '/login': typeof LoginRoute
   '/logos': typeof LogosRoute
+  '/partners': typeof PartnersRoute
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
   '/alerts': typeof AppAlertsRoute
@@ -211,11 +211,11 @@ export interface FileRoutesByTo {
   '/billing/pay': typeof AppBillingPayRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/v1/check': typeof ApiV1CheckRoute
-  '/api/v1/billing/checkout': typeof ApiV1BillingCheckoutRoute
   '/api/v1/mcp': typeof ApiV1McpRoute
   '/agents': typeof AppAgentsIndexRoute
   '/billing': typeof AppBillingIndexRoute
   '/api/v1/approvals/$id': typeof ApiV1ApprovalsIdRoute
+  '/api/v1/billing/checkout': typeof ApiV1BillingCheckoutRoute
   '/api/v1/internal/stats': typeof ApiV1InternalStatsRoute
 }
 export interface FileRoutesById {
@@ -223,9 +223,9 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/docs': typeof DocsRoute
-  '/partners': typeof PartnersRoute
   '/login': typeof LoginRoute
   '/logos': typeof LogosRoute
+  '/partners': typeof PartnersRoute
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
   '/_app/agents': typeof AppAgentsRouteWithChildren
@@ -240,11 +240,11 @@ export interface FileRoutesById {
   '/_app/billing/pay': typeof AppBillingPayRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/v1/check': typeof ApiV1CheckRoute
-  '/api/v1/billing/checkout': typeof ApiV1BillingCheckoutRoute
   '/api/v1/mcp': typeof ApiV1McpRoute
   '/_app/agents/': typeof AppAgentsIndexRoute
   '/_app/billing/': typeof AppBillingIndexRoute
   '/api/v1/approvals/$id': typeof ApiV1ApprovalsIdRoute
+  '/api/v1/billing/checkout': typeof ApiV1BillingCheckoutRoute
   '/api/v1/internal/stats': typeof ApiV1InternalStatsRoute
 }
 export interface FileRouteTypes {
@@ -252,9 +252,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/docs'
-    | '/partners'
     | '/login'
     | '/logos'
+    | '/partners'
     | '/signup'
     | '/verify-email'
     | '/agents'
@@ -269,19 +269,19 @@ export interface FileRouteTypes {
     | '/billing/pay'
     | '/api/auth/$'
     | '/api/v1/check'
-    | '/api/v1/billing/checkout'
     | '/api/v1/mcp'
     | '/agents/'
     | '/billing/'
     | '/api/v1/approvals/$id'
+    | '/api/v1/billing/checkout'
     | '/api/v1/internal/stats'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/docs'
-    | '/partners'
     | '/login'
     | '/logos'
+    | '/partners'
     | '/signup'
     | '/verify-email'
     | '/alerts'
@@ -294,20 +294,20 @@ export interface FileRouteTypes {
     | '/billing/pay'
     | '/api/auth/$'
     | '/api/v1/check'
-    | '/api/v1/billing/checkout'
     | '/api/v1/mcp'
     | '/agents'
     | '/billing'
     | '/api/v1/approvals/$id'
+    | '/api/v1/billing/checkout'
     | '/api/v1/internal/stats'
   id:
     | '__root__'
     | '/'
     | '/_app'
     | '/docs'
-    | '/partners'
     | '/login'
     | '/logos'
+    | '/partners'
     | '/signup'
     | '/verify-email'
     | '/_app/agents'
@@ -322,11 +322,11 @@ export interface FileRouteTypes {
     | '/_app/billing/pay'
     | '/api/auth/$'
     | '/api/v1/check'
-    | '/api/v1/billing/checkout'
     | '/api/v1/mcp'
     | '/_app/agents/'
     | '/_app/billing/'
     | '/api/v1/approvals/$id'
+    | '/api/v1/billing/checkout'
     | '/api/v1/internal/stats'
   fileRoutesById: FileRoutesById
 }
@@ -334,16 +334,16 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   DocsRoute: typeof DocsRoute
-  PartnersRoute: typeof PartnersRoute
   LoginRoute: typeof LoginRoute
   LogosRoute: typeof LogosRoute
+  PartnersRoute: typeof PartnersRoute
   SignupRoute: typeof SignupRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiV1CheckRoute: typeof ApiV1CheckRoute
-  ApiV1BillingCheckoutRoute: typeof ApiV1BillingCheckoutRoute
   ApiV1McpRoute: typeof ApiV1McpRoute
   ApiV1ApprovalsIdRoute: typeof ApiV1ApprovalsIdRoute
+  ApiV1BillingCheckoutRoute: typeof ApiV1BillingCheckoutRoute
   ApiV1InternalStatsRoute: typeof ApiV1InternalStatsRoute
 }
 
@@ -370,13 +370,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/partners': {
-      id: '/partners'
-      path: '/partners'
-      fullPath: '/partners'
-      preLoaderRoute: typeof PartnersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -389,6 +382,13 @@ declare module '@tanstack/react-router' {
       path: '/logos'
       fullPath: '/logos'
       preLoaderRoute: typeof LogosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/partners': {
+      id: '/partners'
+      path: '/partners'
+      fullPath: '/partners'
+      preLoaderRoute: typeof PartnersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/signup': {
@@ -503,13 +503,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1CheckRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/v1/billing/checkout': {
-      id: '/api/v1/billing/checkout'
-      path: '/api/v1/billing/checkout'
-      fullPath: '/api/v1/billing/checkout'
-      preLoaderRoute: typeof ApiV1BillingCheckoutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/v1/mcp': {
       id: '/api/v1/mcp'
       path: '/api/v1/mcp'
@@ -522,6 +515,13 @@ declare module '@tanstack/react-router' {
       path: '/api/v1/approvals/$id'
       fullPath: '/api/v1/approvals/$id'
       preLoaderRoute: typeof ApiV1ApprovalsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/billing/checkout': {
+      id: '/api/v1/billing/checkout'
+      path: '/api/v1/billing/checkout'
+      fullPath: '/api/v1/billing/checkout'
+      preLoaderRoute: typeof ApiV1BillingCheckoutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/v1/internal/stats': {
@@ -590,16 +590,16 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   DocsRoute: DocsRoute,
-  PartnersRoute: PartnersRoute,
   LoginRoute: LoginRoute,
   LogosRoute: LogosRoute,
+  PartnersRoute: PartnersRoute,
   SignupRoute: SignupRoute,
   VerifyEmailRoute: VerifyEmailRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiV1CheckRoute: ApiV1CheckRoute,
-  ApiV1BillingCheckoutRoute: ApiV1BillingCheckoutRoute,
   ApiV1McpRoute: ApiV1McpRoute,
   ApiV1ApprovalsIdRoute: ApiV1ApprovalsIdRoute,
+  ApiV1BillingCheckoutRoute: ApiV1BillingCheckoutRoute,
   ApiV1InternalStatsRoute: ApiV1InternalStatsRoute,
 }
 export const routeTree = rootRouteImport
