@@ -13,6 +13,10 @@
     <changefreq>weekly</changefreq>
   </url>
   <url>
+    <loc>https://agent-control.net/partners</loc>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
     <loc>https://agent-control.net/llms.txt</loc>
     <changefreq>weekly</changefreq>
   </url>

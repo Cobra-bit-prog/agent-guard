@@ -237,6 +237,27 @@ export const auth = betterAuth({
   secret: authSecret(),
   database,
 
+  // First-touch `?partner=` attribution. Cookie write is marketing-only; a
+  // missing/invalid slug must never fail signup or sign-in.
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          try {
+            const id = typeof user?.id === "string" ? user.id : "";
+            if (!id) return;
+            const { rememberPartnerSourceFromCookie } = await import(
+              "../partner-persist.server"
+            );
+            await rememberPartnerSourceFromCookie(id);
+          } catch {
+            console.error("[partner] signup attribution skipped");
+          }
+        },
+      },
+    },
+  },
+
   // CSRF / origin check for credentialed auth POSTs (email sign-up/sign-in, …).
   // See `trustedOrigins` construction above — must cover live preview hosts AND
   // local loopback variants, or clients get "Invalid origin".
