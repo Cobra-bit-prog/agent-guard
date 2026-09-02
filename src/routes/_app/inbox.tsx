@@ -58,7 +58,7 @@ function InboxPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Waiting for you</h1>
         <p className="text-sm text-muted">
-          Off-policy and first-time destinations pause here if the agent hooked check before it
+          Off-policy and first-time destinations pause here if the agent called check before it
           signs. The agent must not send until you decide, or the request expires (10 minutes).
         </p>
       </div>
