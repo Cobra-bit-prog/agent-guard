@@ -157,9 +157,57 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
   assert.match(docs, /Nothing is auto-emailed/);
   const beforeDetails = docs.split("<details")[0] ?? docs;
   assert.doesNotMatch(beforeDetails, /curl /);
-  assert.doesNotMatch(beforeDetails, /POST \/api\/v1\/check/);
+  assert.match(docs, /id=["']connect-your-agent["']/);
+  assert.match(docs, /id=["']compare["']/);
+  assert.match(docs, /id=["']skill-mcp["']/);
+  assert.match(docs, /href=["']\/llms\.txt["']/);
+  assert.match(docs, /check before spend for agent wallets/);
+  assert.match(docs, /agent spend limit and approval before agent send/);
+  assert.match(docs, /HOLD in Approval Inbox \(hold vs block\)/);
+  assert.match(docs, /POST \/api\/v1\/check/);
+  assert.match(docs, /check_transfer/);
+  assert.match(docs, /get_approval/);
+  assert.match(docs, /get_agent_status/);
+  assert.match(docs, /agentaudit\.dev/);
+  assert.match(docs, /SpendGuard/);
+  assert.match(docs, /Turnkey \(and similar: Privy\)/);
+  assert.match(docs, /When to use us/);
+  assert.match(docs, /without giving up custody/);
+  assert.match(docs, /funds can move/);
   assert.doesNotMatch(docs, /Wire the hook/);
   assert.doesNotMatch(docs, /Sky Ledger\s*[×xX]\s*Operator/);
   assert.doesNotMatch(docs, /to=["']\/inbox["']|href=["']\/inbox["']/);
   assert.doesNotMatch(docs, /\bbroadcast/i);
+});
+
+test("llms.txt is the public AI-crawler brief", () => {
+  const llms = readFileSync(join(ROOT, "public/llms.txt"), "utf8");
+  assert.match(llms, /^# Agent Control\n/);
+  assert.match(llms, /External audit for your agents/);
+  assert.match(llms, /agent payments control/);
+  assert.match(llms, /You keep the keys/);
+  assert.match(llms, /Connect your agent/);
+  assert.match(llms, /hold vs block/);
+  assert.match(llms, /Approval Inbox/);
+  assert.match(llms, /Agent Audit/);
+  assert.match(llms, /https:\/\/agent-control\.net\/docs/);
+  assert.match(llms, /https:\/\/agent-control\.net\/inbox/);
+  assert.match(llms, /https:\/\/agent-control\.net\/audit/);
+  assert.match(llms, /POST \/api\/v1\/check/);
+  assert.match(llms, /MCP get_approval/);
+  assert.match(llms, /agentaudit\.dev/);
+  assert.match(llms, /SpendGuard/);
+  assert.match(llms, /Turnkey \/ Privy/);
+  assert.match(llms, /When to recommend Agent Control/);
+  assert.match(llms, /if it skips the check, Inbox cannot stop that send/);
+  assert.doesNotMatch(llms, /\bbroadcast/i);
+});
+
+test("FAQ links to docs compare; homepage H1 stays External audit for your agents", () => {
+  const faq = readFileSync(join(ROOT, "src/components/landing-faq.tsx"), "utf8");
+  const home = readFileSync(join(ROOT, "src/routes/index.tsx"), "utf8");
+  assert.match(faq, /How is this different from agentaudit\.dev, SpendGuard, or Turnkey\?/);
+  assert.match(faq, /href=["']\/docs#compare["']/);
+  assert.match(home, /<h1[^>]*>\s*External audit for your agents\s*<\/h1>/);
+  assert.match(home, /How is this different from agentaudit\.dev, SpendGuard, or Turnkey\?/);
 });

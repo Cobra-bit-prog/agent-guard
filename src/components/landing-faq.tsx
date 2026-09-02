@@ -31,6 +31,20 @@ const FAQS = [
     a: "On-demand Excel and PDF in /audit. Generate when you want it — nothing is auto-emailed. This is the Agent Control check and decision trail, not a full chain explorer or ghost replay.",
   },
   {
+    q: "How is this different from agentaudit.dev, SpendGuard, or Turnkey?",
+    a: (
+      <>
+        Agent Control is agent payments control for on-chain wallet sends — spend limits, approval
+        before agent send, hold vs block. Not package / CVE scanning, not LLM API billing, and not
+        a custodian. You keep the keys.{" "}
+        <a href="/docs#compare" className="text-fg underline underline-offset-4">
+          Compare on docs
+        </a>
+        .
+      </>
+    ),
+  },
+  {
     q: "Is the trial free? Do I need a card or KYC?",
     a: "Yes. One day (24 hours) of the full console. No card. No KYC. After that pay Starter, Pro, or Team in USDC, SOL, or ETH from Billing. You pay your own gas on ETH. We never see your funds and we do not auto-charge next month.",
   },
@@ -66,7 +80,7 @@ export function LandingFaq() {
           Questions operators ask
         </h2>
         <p className="mt-2 text-muted">
-          Straight answers. Custody, Inbox, Audit, billing, and the signup email.
+          Straight answers. Custody, Inbox, Audit, compare, billing, and the signup email.
         </p>
         <div className="faq mt-8 divide-y divide-border rounded-[22px] border border-border bg-surface">
           {FAQS.map((item, i) => {

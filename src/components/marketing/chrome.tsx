@@ -115,6 +115,9 @@ export function MarketingFooter() {
           <a href="/docs" className="text-muted hover:text-fg">
             Docs
           </a>
+          <a href="/llms.txt" className="text-muted hover:text-fg">
+            llms.txt
+          </a>
           <a href={SUPPORT_MAIL} className="text-muted hover:text-fg">
             Contact · support@agent-control.net
           </a>

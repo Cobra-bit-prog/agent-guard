@@ -68,6 +68,14 @@ const HOME_FAQ_LD = [
   },
   {
     "@type": "Question",
+    name: "How is this different from agentaudit.dev, SpendGuard, or Turnkey?",
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: "Agent Control is agent payments control for on-chain wallet sends — spend limits, approval before agent send, hold vs block. Not package / CVE scanning, not LLM API billing, and not a custodian. You keep the keys. See agent-control.net/docs#compare.",
+    },
+  },
+  {
+    "@type": "Question",
     name: "Is the trial free? Do I need a card or KYC?",
     acceptedAnswer: {
       "@type": "Answer",
