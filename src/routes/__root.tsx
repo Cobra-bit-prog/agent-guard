@@ -10,18 +10,17 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Agent Control — Your agents can spend. You set the limits." },
+      { title: "Agent Control — See every send before it happens." },
       {
         name: "description",
         content:
-          "Pre-sign policy for autonomous wallets on Solana, Ethereum, and Base. Agents call /api/v1/check before they sign. You hold the keys.",
+          "Policy caps and a yes or no before your agent signs. You keep the keys. 1-day trial, then pay on-chain. No card. No KYC.",
       },
       { name: "theme-color", content: "#07090f" },
-      { property: "og:title", content: "Agent Control — Your agents can spend. You set the limits." },
+      { property: "og:title", content: "Agent Control — See every send before it happens." },
       {
         property: "og:description",
-        content:
-          "Always-on policy and pre-sign checks for autonomous wallets. Not a custodian.",
+        content: "Policy caps and a yes or no before your agent signs. You keep the keys.",
       },
     ],
     links: [

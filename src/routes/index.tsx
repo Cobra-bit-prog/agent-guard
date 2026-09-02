@@ -1,14 +1,10 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { Check, Menu, X } from "lucide-react";
-import { Logo } from "@/components/brand";
-import { SupportedChains } from "@/components/chain-icons";
-import { LandingConsole } from "@/components/landing-console";
-import { LandingDemoDashboard } from "@/components/landing-demo-dashboard";
+import { createFileRoute } from "@tanstack/react-router";
+import { Check } from "lucide-react";
+import { SkyShell } from "@/components/marketing/chrome";
+import { LandingModules } from "@/components/marketing/landing-modules";
+import { LandingPreview } from "@/components/marketing/landing-preview";
 import { LandingFaq } from "@/components/landing-faq";
 import { Button } from "@/components/ui/button";
-import { SignedIn, SignedOut } from "@/lib/auth/gates";
-import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { PLANS } from "@/lib/plans";
 import { cn } from "@/lib/utils";
 
@@ -55,10 +51,18 @@ const HOME_FAQ_LD = [
   },
   {
     "@type": "Question",
-    name: "Is the trial free? Do I need a card?",
+    name: "Is the trial free? Do I need a card or KYC?",
     acceptedAnswer: {
       "@type": "Answer",
-      text: "Yes. One day of the full console, no card. After that pay Starter, Pro, or Team in USDC on Solana, Ethereum, or Base from Billing. Phantom for Solana; MetaMask or any wallet for Ethereum and Base. You pay your own gas on ETH/Base. We never see your funds and we do not auto-charge next month.",
+      text: "Yes. One day (24 hours) of the full console. No card. No KYC. After that pay Starter, Pro, or Team in USDC, SOL, or ETH from Billing. You pay your own gas on ETH. We never see your funds and we do not auto-charge next month.",
+    },
+  },
+  {
+    "@type": "Question",
+    name: "How do I pay? Is there KYC?",
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: "No KYC and no card. Default is USDC on Solana; you can also pay native SOL or ETH. Scan the QR or copy amount + address from Billing. Do not send from an exchange — they drop the memo / unique amount.",
     },
   },
   {
@@ -98,7 +102,7 @@ const HOME_JSON_LD = {
         lowPrice: "0",
         highPrice: "149",
         priceCurrency: "USD",
-        description: "1-day free trial then 29/49/149 USDC on Solana, Ethereum, or Base",
+        description: "1-day (24 hour) free trial then 29/49/149 USDC, SOL, or ETH",
       },
     },
   ],
@@ -107,6 +111,20 @@ const HOME_JSON_LD = {
 export const Route = createFileRoute("/")({
   component: Home,
   head: () => ({
+    meta: [
+      { title: "Agent Control — See every send before it happens." },
+      {
+        name: "description",
+        content:
+          "Policy caps and a yes or no before your agent signs. You keep the keys. 1-day trial, then pay on-chain. No card. No KYC.",
+      },
+      { name: "theme-color", content: "#eef3f8" },
+      { property: "og:title", content: "Agent Control — See every send before it happens." },
+      {
+        property: "og:description",
+        content: "Policy caps and a yes or no before your agent signs. You keep the keys.",
+      },
+    ],
     scripts: [
       {
         type: "application/ld+json",
@@ -116,150 +134,74 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-const SUPPORT_MAIL = "mailto:support@agent-control.net";
-
-const NAV = [
-  { href: "/docs", label: "Docs" },
-  { href: "#pricing", label: "Pricing" },
-  { href: SUPPORT_MAIL, label: "Contact" },
-];
-
 function Home() {
-  const { isPending } = useCurrentUserState();
-  const [menuOpen, setMenuOpen] = useState(false);
-
   return (
-    <div className="min-h-screen bg-bg">
-      <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 md:px-10 lg:px-16">
-        <Logo size="lg" href="/" />
-        <nav className="hidden items-center gap-6 text-sm text-muted md:flex">
-          {NAV.map((item) => (
-            <a key={item.href} href={item.href} className="hover:text-fg">
-              {item.label}
-            </a>
-          ))}
-        </nav>
-        <div className="flex items-center gap-2">
-          {isPending ? (
-            <div className="h-10 w-24 animate-pulse rounded-[var(--radius-sm)] bg-elevated" />
-          ) : (
-            <>
-              <SignedOut>
-                <Button variant="ghost" asChild className="hidden sm:inline-flex">
-                  <Link to="/login">Sign in</Link>
-                </Button>
-                <Button asChild>
-                  <Link to="/signup">Start 1-day trial</Link>
-                </Button>
-              </SignedOut>
-              <SignedIn>
-                <Button asChild>
-                  <Link to="/dashboard">Open dashboard</Link>
-                </Button>
-              </SignedIn>
-            </>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
-            aria-label={menuOpen ? "Close menu" : "Open menu"}
-            onClick={() => setMenuOpen((v) => !v)}
-          >
-            {menuOpen ? <X /> : <Menu />}
-          </Button>
-        </div>
-      </header>
-      {menuOpen && (
-        <div className="border-b border-border px-6 py-3 md:hidden">
-          <div className="flex flex-col gap-3 text-sm text-muted">
-            {NAV.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                className="hover:text-fg"
-                onClick={() => setMenuOpen(false)}
-              >
-                {item.label}
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <section className="landing-hero mx-auto max-w-7xl px-6 pb-16 pt-8 md:px-10 md:pt-14 lg:px-16">
-        <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
+    <SkyShell current="home">
+      <section className="landing-hero mx-auto max-w-[1140px] px-5 pb-7 pt-2 md:px-6">
+        <div className="grid items-center gap-8 lg:grid-cols-[1.14fr_0.96fr]">
           <div>
-            <p className="landing-rise text-xs font-medium uppercase tracking-[0.18em] text-warning">
-              Pre-sign policy for agent wallets
+            <p className="landing-rise mb-4 inline-flex items-center rounded-full bg-[#e7eef7] px-3 py-1 text-xs font-semibold text-navy">
+              Sky Ledger × Operator
             </p>
-            <h1 className="landing-rise mt-4 text-5xl font-semibold leading-[1.1] tracking-[-0.03em] md:text-7xl">
-              Your agents can spend. You set the limits.
+            <h1 className="landing-rise text-[clamp(34px,4.8vw,56px)] font-semibold leading-[1.06] tracking-[-0.035em] text-fg">
+              See every send before it happens.
             </h1>
-            <p
-              className="landing-rise mt-5 max-w-2xl text-base text-muted md:text-lg"
-              style={{ animationDelay: "80ms" }}
-            >
-              Suspicious sends show up as alerts. You still hold the keys.
+            <p className="landing-rise mt-3.5 max-w-[34ch] text-lg leading-snug text-muted">
+              Policy caps and a yes or no before your agent signs. You keep the keys.
             </p>
-            <div
-              className="landing-rise mt-5 flex flex-wrap gap-2 text-xs text-muted"
-              style={{ animationDelay: "120ms" }}
-            >
-              {["Not a custodian", "You hold the keys", "Solana · Ethereum · Base"].map((item) => (
-                <span
-                  key={item}
-                  className="rounded-full border border-border bg-surface/70 px-3 py-1.5"
-                >
-                  {item}
-                </span>
-              ))}
-            </div>
-            <div
-              className="landing-rise mt-8 flex flex-wrap gap-3"
-              style={{ animationDelay: "160ms" }}
-            >
-              <Button size="lg" asChild>
-                <Link to="/signup">Start 1-day trial</Link>
-              </Button>
-              <Button size="lg" variant="secondary" asChild>
-                <a href="#how">How it works</a>
+            <div className="landing-rise mt-5 flex flex-wrap items-center gap-3">
+              <Button size="lg" asChild className="rounded-full">
+                <a href="/signup">
+                  Start free trial
+                  <span aria-hidden>→</span>
+                </a>
               </Button>
             </div>
-            <SupportedChains className="landing-rise mt-8" />
+            <p className="landing-rise mt-2 text-xs font-medium leading-snug text-[#3a4d63]">
+              1-day (24 hour) trial, then pay on-chain. No card. No KYC.
+            </p>
+            <div className="landing-rise mt-4 flex flex-wrap gap-1">
+              <span className="mt-1 mr-1 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-white px-2.5 py-1.5 text-[12.5px] text-fg shadow-[0_1px_0_rgb(18_38_63/0.04)]">
+                <i className="inline-grid size-[18px] place-items-center rounded-full bg-[#dcfce7] text-[10px] font-bold not-italic text-[#166534]">
+                  ✓
+                </i>
+                Within policy = auto
+              </span>
+              <span className="mt-1 mr-1 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-white px-2.5 py-1.5 text-[12.5px] text-fg shadow-[0_1px_0_rgb(18_38_63/0.04)]">
+                <i className="inline-grid size-[18px] place-items-center rounded-full bg-[#fde8e6] text-[7px] font-bold tracking-tighter not-italic text-danger">
+                  ❚❚
+                </i>
+                Outside policy = pause
+              </span>
+              <span className="mt-1 mr-1 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-white px-2.5 py-1.5 text-[12.5px] text-fg shadow-[0_1px_0_rgb(18_38_63/0.04)]">
+                <i className="inline-grid size-[18px] place-items-center rounded-full bg-[#e8eef6] text-[10px] font-bold not-italic text-navy">
+                  🔑
+                </i>
+                Keys stay with you
+              </span>
+            </div>
           </div>
           <div className="min-w-0">
-            <LandingConsole />
+            <LandingPreview />
           </div>
         </div>
       </section>
 
-      <section id="console" className="border-t border-border">
-        <div className="mx-auto max-w-7xl px-6 py-16 md:px-10 lg:px-16">
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-warning">
-            Demo · sample
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">The console</h2>
-          <p className="mt-2 max-w-2xl text-muted">
-            Agent wallets, spend vs daily cap, and activity. Sample data so you can see the layout
-            before you sign in.
-          </p>
-          <LandingDemoDashboard />
-        </div>
-      </section>
+      <LandingModules />
 
       <section id="how" className="border-t border-border">
-        <div className="mx-auto max-w-7xl px-6 py-16 md:px-10 lg:px-16">
+        <div className="mx-auto max-w-[1140px] px-5 py-16 md:px-6">
           <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">How it works</h2>
           <p className="mt-2 max-w-2xl text-muted">
-            Four steps. No custody. The agent cannot skip the check if you wire it in front of every send.
+            Four steps. No custody. The agent cannot skip the check if you wire it in front of every
+            send.
           </p>
           <ol className="mt-8 grid gap-4 md:grid-cols-4">
             {[
               {
                 n: "01",
                 t: "Enroll a wallet",
-                d: "Paste a live address. We pull native balance and recent on-chain transfers.",
+                d: "Paste a live address. We pull native balance and recent transfers.",
               },
               {
                 n: "02",
@@ -277,11 +219,8 @@ function Home() {
                 d: "On-chain sync and pre-sign decisions land in one feed. Pause from the console.",
               },
             ].map((s) => (
-              <li
-                key={s.n}
-                className="rounded-[var(--radius-lg)] bg-surface p-5 ring-1 ring-border"
-              >
-                <p className="font-mono text-xs text-primary">{s.n}</p>
+              <li key={s.n} className="rounded-[20px] border border-border bg-surface p-5">
+                <p className="font-mono text-xs text-navy">{s.n}</p>
                 <h3 className="mt-3 font-medium">{s.t}</h3>
                 <p className="mt-1 text-sm text-muted">{s.d}</p>
               </li>
@@ -291,28 +230,30 @@ function Home() {
       </section>
 
       <section id="pricing" className="border-t border-border">
-        <div className="mx-auto max-w-7xl px-6 py-16 md:px-10 lg:px-16">
-          <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">Pricing</h2>
+        <div className="mx-auto max-w-[1140px] px-5 py-16 md:px-6">
+          <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">
+            1-day trial, then on-chain.
+          </h2>
           <p className="mt-2 text-muted">
-            1-day full console. No card required to start. Paid plans are USDC on Solana, Ethereum,
-            or Base. You pay gas on ETH/Base. No autopay.
+            24 hours free. No card. No KYC. USDC on Solana, or native SOL / ETH. Unique amount so
+            the watcher can match.
           </p>
           <div className="mt-8 grid gap-4 md:grid-cols-4">
             {Object.values(PLANS).map((p) => (
               <div
                 key={p.id}
                 className={cn(
-                  "flex flex-col rounded-[var(--radius-xl)] border p-5",
-                  p.id === "pro" ? "border-primary/40 bg-surface" : "border-border bg-surface/70",
+                  "flex flex-col rounded-[20px] border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]",
+                  p.id === "pro" ? "border-coral/50" : "border-border",
                 )}
               >
-                <p className="text-sm text-muted">{p.name}</p>
+                <p className="text-sm text-muted">{p.id === "free" ? "Trial" : p.name}</p>
                 <p className="mt-3 text-3xl font-semibold tracking-tight">
-                  {p.price === 0 ? "Free" : `$${p.price}`}
+                  {p.price === 0 ? "1 day" : `$${p.price}`}
                   {p.price > 0 && <span className="text-sm font-normal text-muted">/mo</span>}
                 </p>
                 {p.id === "free" && (
-                  <p className="mt-1 text-xs font-medium text-primary">1 day · no card</p>
+                  <p className="mt-1 text-xs font-medium text-coral">24 hours · no card · no KYC</p>
                 )}
                 <p className="mt-2 text-sm text-muted">{p.blurb}</p>
                 <ul className="mt-4 flex-1 space-y-2 text-sm text-muted">
@@ -329,16 +270,18 @@ function Home() {
                     Policy + pre-sign hook
                   </li>
                 </ul>
-                <Button className="mt-6" variant={p.id === "pro" ? "default" : "secondary"} asChild>
-                  <Link to="/signup">
+                <Button
+                  className="mt-6 rounded-full"
+                  variant={p.id === "pro" ? "default" : "secondary"}
+                  asChild
+                >
+                  <a href={p.price === 0 ? "/signup" : "/billing"}>
                     {p.price === 0
-                      ? "Start 1-day trial"
+                      ? "Start free trial"
                       : p.id === "starter"
-                        ? "Get Starter"
-                        : p.id === "pro"
-                          ? "Get Pro"
-                          : "Get Team"}
-                  </Link>
+                        ? "Pay USDC"
+                        : "Pay on-chain"}
+                  </a>
                 </Button>
               </div>
             ))}
@@ -347,25 +290,6 @@ function Home() {
       </section>
 
       <LandingFaq />
-
-      <footer className="border-t border-border">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-8 text-sm text-subtle md:flex-row md:items-center md:justify-between md:px-10 lg:px-16">
-          <Logo size="lg" href="/" />
-          <p>Monitoring and policy checks. Not a custodian. Not insurance.</p>
-          <p className="flex flex-col gap-1 text-xs md:items-end">
-            <a href="/docs" className="text-muted hover:text-fg">
-              Docs
-            </a>
-            <a href={SUPPORT_MAIL} className="text-muted hover:text-fg">
-              Contact · support@agent-control.net
-            </a>
-            <span>
-              Chain marks identify supported networks. Agent Control is not affiliated with Solana,
-              Ethereum, or Base.
-            </span>
-          </p>
-        </div>
-      </footer>
-    </div>
+    </SkyShell>
   );
 }

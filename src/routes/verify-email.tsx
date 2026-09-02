@@ -52,17 +52,15 @@ function VerifyEmail() {
   }
 
   return (
-    <main className="grid min-h-screen place-items-center bg-bg px-5 py-10">
+    <main className="sky grid min-h-screen place-items-center bg-bg px-5 py-10">
       <div className="w-full max-w-md rounded-[28px] border border-border bg-surface p-8 shadow-[var(--shadow-panel)]">
         <Link to="/" className="inline-flex">
-          <Logo />
+          <Logo markClassName="text-navy" />
         </Link>
-        <h1 className="mt-6 text-2xl font-semibold tracking-tight">
-          Check your email
-        </h1>
+        <h1 className="mt-6 text-2xl font-semibold tracking-tight">Check your email</h1>
         <p className="mt-2 text-sm text-muted">
-          Confirm the address to open the dashboard. The link expires in one
-          hour. Unconfirmed accounts cannot use the console.
+          Confirm the address to open the dashboard. The link expires in one hour. Unconfirmed
+          accounts cannot use the console.
         </p>
         <div className="mt-6 space-y-3">
           <div className="space-y-1.5">

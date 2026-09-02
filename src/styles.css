@@ -17,6 +17,9 @@
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
   --color-ring: #3b82f6;
+  --color-navy: #1e3a5f;
+  --color-coral: #e85d4c;
+  --color-chart: #5b8def;
 
   --radius-xs: 4px;
   --radius-sm: 8px;
@@ -61,6 +64,37 @@
       radial-gradient(920px 460px at 6% -16%, rgb(245 158 11 / 0.11), transparent 56%),
       radial-gradient(720px 380px at 14% -10%, rgb(59 130 246 / 0.18), transparent 58%),
       radial-gradient(520px 280px at 90% 10%, rgb(16 185 129 / 0.09), transparent 50%);
+  }
+
+  /* Sky Ledger marketing theme — scoped so the authenticated console stays dark. */
+  .sky {
+    --color-bg: #eef3f8;
+    --color-surface: #ffffff;
+    --color-elevated: #f6f8fb;
+    --color-fg: #12263f;
+    --color-muted: #5b6b80;
+    --color-subtle: #8a96a8;
+    --color-border: #dce4ee;
+    --color-primary: #e85d4c;
+    --color-primary-fg: #ffffff;
+    --color-success: #1f7a4c;
+    --color-warning: #c47b16;
+    --color-danger: #c2413b;
+    --color-ring: #e85d4c;
+    --shadow-panel: 0 16px 40px -20px rgb(18 38 63 / 0.18);
+    background: var(--color-bg);
+    color: var(--color-fg);
+  }
+
+  html:has(.sky),
+  html:has(.sky) body,
+  html:has(.sky) #app {
+    background: #eef3f8;
+    color: #12263f;
+  }
+
+  .sky .landing-hero {
+    background: radial-gradient(720px 380px at 88% 8%, rgb(255 236 228 / 0.9), transparent 58%);
   }
 }
 
@@ -143,7 +177,6 @@
   transform-origin: left;
   animation: landing-scan 1.5s ease-in-out infinite alternate;
 }
-
 
 @keyframes dashboard-stat-in {
   from {

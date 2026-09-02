@@ -3,11 +3,7 @@ import { cn } from "@/lib/utils";
 /** Node Shield — filled heater, punched node + lateral channels, inner agent dot. */
 export function ShieldMark({ className }: { className?: string }) {
   return (
-    <svg
-      viewBox="0 0 32 32"
-      className={cn("text-primary", className)}
-      aria-hidden
-    >
+    <svg viewBox="0 0 32 32" className={cn("text-primary", className)} aria-hidden>
       <path
         fill="currentColor"
         fillRule="evenodd"
@@ -22,21 +18,20 @@ export function Logo({
   compact = false,
   size = "md",
   href,
+  markClassName,
 }: {
   compact?: boolean;
   size?: "md" | "lg";
   href?: string;
+  markClassName?: string;
 }) {
   const large = size === "lg";
   const inner = (
     <>
-      <ShieldMark className={cn("shrink-0", large ? "size-10" : "size-7")} />
+      <ShieldMark className={cn("shrink-0", large ? "size-10" : "size-7", markClassName)} />
       {!compact && (
         <span
-          className={cn(
-            "font-semibold tracking-tight",
-            large ? "text-xl md:text-2xl" : "text-sm",
-          )}
+          className={cn("font-semibold tracking-tight", large ? "text-xl md:text-2xl" : "text-sm")}
         >
           Agent Control
         </span>

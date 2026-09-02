@@ -23,8 +23,12 @@ const FAQS = [
     a: "The hook only works if you wire it in front of every send. If the agent can send without calling check, Agent Control cannot stop that send. Pause the agent from the console if you need a hard stop on your side.",
   },
   {
-    q: "Is the trial free? Do I need a card?",
-    a: "Yes. One day of the full console, no card. After that pay Starter, Pro, or Team in USDC on Solana, Ethereum, or Base from Billing. Phantom for Solana; MetaMask or any wallet for Ethereum and Base. You pay your own gas on ETH/Base. We never see your funds and we do not auto-charge next month.",
+    q: "Is the trial free? Do I need a card or KYC?",
+    a: "Yes. One day (24 hours) of the full console. No card. No KYC. After that pay Starter, Pro, or Team in USDC, SOL, or ETH from Billing. You pay your own gas on ETH. We never see your funds and we do not auto-charge next month.",
+  },
+  {
+    q: "How do I pay? Is there KYC?",
+    a: "No KYC and no card. Default is USDC on Solana; you can also pay native SOL or ETH. Scan the QR or copy amount + address from Billing. Do not send from an exchange — they drop the memo / unique amount.",
   },
   {
     q: "Is this insurance?",
@@ -50,11 +54,13 @@ export function LandingFaq() {
   return (
     <section id="faq" className="border-t border-border">
       <div className="mx-auto max-w-3xl px-6 py-16 md:px-10">
-        <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">FAQ</h2>
+        <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">
+          Questions operators ask
+        </h2>
         <p className="mt-2 text-muted">
           Straight answers. Custody, chains, billing, and the signup email.
         </p>
-        <div className="mt-8 divide-y divide-border rounded-[22px] border border-border bg-surface">
+        <div className="faq mt-8 divide-y divide-border rounded-[22px] border border-border bg-surface">
           {FAQS.map((item, i) => {
             const isOpen = open === i;
             return (
