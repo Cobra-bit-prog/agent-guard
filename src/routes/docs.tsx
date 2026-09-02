@@ -22,12 +22,12 @@ const STEPS = [
   {
     n: "04",
     t: "Connect your agent",
-    d: "Before it sends money, the agent must ask Agent Control. If the answer is no, it must not send.",
+    d: "Before it sends money, the agent must ask Agent Control. If the answer is no, it must not send. Off-policy or first-time destinations wait in Inbox. You keep the keys.",
   },
   {
     n: "05",
     t: "Watch the console",
-    d: "Pause if something looks wrong.",
+    d: "Inbox is where holds wait for you. Agent Audit builds an on-demand Excel or PDF of the check trail. Pause if something looks wrong.",
   },
 ] as const;
 
@@ -74,13 +74,14 @@ function DocsPage() {
         </ol>
 
         <p className="mt-8 text-sm leading-relaxed text-muted">
-          The check only works if the agent is wired to call it. If it skips the hook, Agent Control
-          cannot stop that send.
+          The check only works if you connect your agent. If it skips the check, Inbox cannot stop
+          that send.
         </p>
         <p className="mt-3 text-sm leading-relaxed text-muted">
           Inbox is where off-policy and first-time destinations wait: Allow once, Always allow this
-          address, or Block. Agent Audit generates an on-demand Excel or PDF of the Agent Control
-          trail for an enrolled wallet — not a full chain replay.
+          address, or Block. Holds expire in 10 minutes and are then treated as a block. Agent Audit
+          generates an on-demand Excel or PDF of the Agent Control trail — not a full chain explorer
+          or ghost replay. Nothing is auto-emailed.
         </p>
 
         <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -103,9 +104,10 @@ function DocsPage() {
             <p>
               Give the agent its API key. Before every send it should call the check. If{" "}
               <code className="font-mono text-fg">must_abort</code> is true, do not send. Pause and
-              denylist still block. Off-policy or first-time destinations return{" "}
-              <code className="font-mono text-fg">hold</code> — poll until allow or block (10-minute
-              TTL).
+              denylist still block (never hold). Off-policy or first-time destinations return{" "}
+              <code className="font-mono text-fg">hold</code> with{" "}
+              <code className="font-mono text-fg">poll_url</code> — poll until allow or block
+              (10-minute TTL; expired holds are a block).
             </p>
             <pre className="overflow-x-auto rounded-[16px] bg-[#12263f] p-4 font-mono text-xs leading-relaxed text-[#e8eef6]">
               {`curl -s https://agent-control.net/api/v1/check \\
