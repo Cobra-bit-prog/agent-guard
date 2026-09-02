@@ -4,6 +4,7 @@ import { SkyShell } from "@/components/marketing/chrome";
 import { LandingModules } from "@/components/marketing/landing-modules";
 import { LandingPreview } from "@/components/marketing/landing-preview";
 import { LandingFaq } from "@/components/landing-faq";
+import { SupportedChains } from "@/components/chain-icons";
 import { Button } from "@/components/ui/button";
 import { PLANS } from "@/lib/plans";
 import { cn } from "@/lib/utils";
@@ -137,12 +138,9 @@ export const Route = createFileRoute("/")({
 function Home() {
   return (
     <SkyShell current="home">
-      <section className="landing-hero mx-auto max-w-[1140px] px-5 pb-7 pt-2 md:px-6">
+      <section className="landing-hero mx-auto max-w-[1140px] px-5 pb-7 pt-6 md:px-6">
         <div className="grid items-center gap-8 lg:grid-cols-[1.14fr_0.96fr]">
           <div>
-            <p className="landing-rise mb-4 inline-flex items-center rounded-full bg-[#e7eef7] px-3 py-1 text-xs font-semibold text-navy">
-              Sky Ledger × Operator
-            </p>
             <h1 className="landing-rise text-[clamp(34px,4.8vw,56px)] font-semibold leading-[1.06] tracking-[-0.035em] text-fg">
               See every send before it happens.
             </h1>
@@ -180,6 +178,7 @@ function Home() {
                 Keys stay with you
               </span>
             </div>
+            <SupportedChains className="landing-rise mt-5" />
           </div>
           <div className="min-w-0">
             <LandingPreview />
@@ -193,8 +192,7 @@ function Home() {
         <div className="mx-auto max-w-[1140px] px-5 py-16 md:px-6">
           <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">How it works</h2>
           <p className="mt-2 max-w-2xl text-muted">
-            Four steps. No custody. The agent cannot skip the check if you wire it in front of every
-            send.
+            Four steps. No custody. The agent has to ask before it sends.
           </p>
           <ol className="mt-8 grid gap-4 md:grid-cols-4">
             {[
@@ -210,8 +208,8 @@ function Home() {
               },
               {
                 n: "03",
-                t: "Wire the hook",
-                d: "Give the agent its API key. It MUST POST /api/v1/check before every send.",
+                t: "Connect your agent",
+                d: "Before it sends money, the agent must ask Agent Control. If the answer is no, it must not send. You keep the keys.",
               },
               {
                 n: "04",
