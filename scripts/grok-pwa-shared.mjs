@@ -340,7 +340,10 @@ export function grokOgHeadTags({
   documentTitle = "",
   cwd = process.cwd(),
 } = {}) {
-  const title = resolveOgTitle(site, appName, host, documentTitle);
+  // Page <title> must win so homepage vs docs og:title match the document.
+  // site.json remains the fallback when HTML has no title (PWA/share name).
+  const fromDoc = String(documentTitle ?? "").trim();
+  const title = fromDoc || resolveOgTitle(site, appName, host, "");
   const publicHost = resolvePublicHost(host);
   const tags = [
     `<meta name="twitter:card" content="summary_large_image">`,

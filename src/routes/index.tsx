@@ -114,6 +114,8 @@ const HOME_JSON_LD = {
       applicationCategory: "DeveloperApplication",
       operatingSystem: "Web",
       sameAs: ["https://github.com/Cobra-bit-prog/agent-guard"],
+      description:
+        "External audit for your agents. Agent payments control with spend limits, Approval Inbox, and Agent Audit. You keep the keys.",
       offers: {
         "@type": "AggregateOffer",
         lowPrice: "0",
@@ -129,17 +131,18 @@ export const Route = createFileRoute("/")({
   component: Home,
   head: () => ({
     meta: [
-      { title: "Agent Control — See every send before it happens." },
+      { title: "External audit for your agents — Agent Control" },
       {
         name: "description",
         content:
-          "Policy caps and a yes or no before your agent signs. You keep the keys. 1-day trial, then pay on-chain. No card. No KYC.",
+          "External audit for your agents. Agent payments control with spend limits, Approval Inbox, and Agent Audit. You keep the keys. 1-day trial. No card. No KYC.",
       },
       { name: "theme-color", content: "#eef3f8" },
-      { property: "og:title", content: "Agent Control — See every send before it happens." },
+      { property: "og:title", content: "External audit for your agents — Agent Control" },
       {
         property: "og:description",
-        content: "Policy caps and a yes or no before your agent signs. You keep the keys.",
+        content:
+          "External audit for your agents. Agent payments control with spend limits, Approval Inbox, and Agent Audit. You keep the keys.",
       },
     ],
     scripts: [
@@ -157,11 +160,15 @@ function Home() {
       <section className="landing-hero mx-auto max-w-[1140px] px-5 pb-7 pt-6 md:px-6">
         <div className="grid items-center gap-8 lg:grid-cols-[1.14fr_0.96fr]">
           <div>
-            <h1 className="landing-rise text-[clamp(34px,4.8vw,56px)] font-semibold leading-[1.06] tracking-[-0.035em] text-fg">
-              See every send before it happens.
+            <h1 className="landing-rise text-[clamp(32px,4.6vw,54px)] font-semibold leading-[1.08] tracking-[-0.035em] text-balance text-fg">
+              External audit for your agents
             </h1>
-            <p className="landing-rise mt-3.5 max-w-[34ch] text-lg leading-snug text-muted">
-              Policy caps and a yes or no before your agent signs. You keep the keys.
+            <p className="landing-rise mt-3.5 max-w-[44ch] text-lg leading-snug text-muted">
+              Keep control of your agents’ spending. You set the limits. Suspicious transactions
+              show up as alerts.
+            </p>
+            <p className="landing-rise mt-2.5 max-w-[44ch] text-[15px] leading-snug text-muted">
+              Agent payments control — spend limits you set, and you keep the keys.
             </p>
             <div className="landing-rise mt-5 flex flex-wrap items-center gap-3">
               <Button size="lg" asChild className="rounded-full">

@@ -4,8 +4,8 @@
 - URL: https://agent-control.net
 - Docs: https://agent-control.net/docs
 - GitHub: https://github.com/Cobra-bit-prog/agent-guard
-- What: Spend control for agent wallets on Solana, Ethereum, and Base. Pre-sign check before the agent signs. Not a custodian. You hold the keys.
-- Hero: Your agents can spend. You set the limits.
+- What: External audit for your agents. Agent payments control with spend limits on Solana, Ethereum, and Base. Approval Inbox and Agent Audit. Not a custodian. You keep the keys.
+- Hero: External audit for your agents
 - Subhead: Keep control of your agents’ spending. You set the limits. Suspicious transactions show up as alerts.
 - Trial: 1-day full console, no card, then Starter 29 / Pro 49 / Team 149 USDC on Solana, Ethereum, or Base.
 - Contact: support@agent-control.net

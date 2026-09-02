@@ -10,17 +10,18 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Agent Control — See every send before it happens." },
+      { title: "External audit for your agents — Agent Control" },
       {
         name: "description",
         content:
-          "Policy caps and a yes or no before your agent signs. You keep the keys. 1-day trial, then pay on-chain. No card. No KYC.",
+          "External audit for your agents. Agent payments control with spend limits, Approval Inbox, and Agent Audit. You keep the keys. 1-day trial. No card. No KYC.",
       },
       { name: "theme-color", content: "#07090f" },
-      { property: "og:title", content: "Agent Control — See every send before it happens." },
+      { property: "og:title", content: "External audit for your agents — Agent Control" },
       {
         property: "og:description",
-        content: "Policy caps and a yes or no before your agent signs. You keep the keys.",
+        content:
+          "External audit for your agents. Agent payments control with spend limits, Approval Inbox, and Agent Audit. You keep the keys.",
       },
     ],
     links: [
