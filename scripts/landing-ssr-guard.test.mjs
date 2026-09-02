@@ -43,7 +43,7 @@ test("marketing landing never imports pay-extension (SSR-unsafe wallet send)", (
   }
 });
 
-test("homepage copy ships three product tabs and 24-hour trial truth", () => {
+test("homepage copy ships four product tabs and 24-hour trial truth", () => {
   const home = readFileSync(join(ROOT, "src/routes/index.tsx"), "utf8");
   const modules = readFileSync(join(ROOT, "src/components/marketing/landing-modules.tsx"), "utf8");
   const preview = readFileSync(join(ROOT, "src/components/marketing/landing-preview.tsx"), "utf8");
@@ -56,9 +56,18 @@ test("homepage copy ships three product tabs and 24-hour trial truth", () => {
   assert.match(modules, /label: "Dashboard"/);
   assert.match(modules, /label: "Agent Audit"/);
   assert.match(modules, /label: "Approval Inbox"/);
+  assert.match(modules, /label: "Partners"/);
   assert.match(
     modules,
-    /\{ id: "dashboard", label: "Dashboard" \}[\s\S]*\{ id: "audit", label: "Agent Audit" \}[\s\S]*\{ id: "inbox", label: "Approval Inbox" \}/,
+    /\{ id: "dashboard", label: "Dashboard" \}[\s\S]*\{ id: "audit", label: "Agent Audit" \}[\s\S]*\{ id: "inbox", label: "Approval Inbox" \}[\s\S]*\{ id: "partners", label: "Partners" \}/,
+  );
+  assert.match(modules, /Corporate & wallets/);
+  assert.match(modules, /Turnkey, Privy, Coinbase, and x402/);
+  assert.match(modules, /href=["']\/partners["']/);
+  assert.match(modules, /href=["']\/docs#connect-your-agent["']/);
+  assert.match(
+    modules,
+    /A human principal signs up and owns billing and Approval Inbox; agents connect under that\s+account\./,
   );
   assert.match(src, /Approval Inbox/);
   assert.match(src, /Agent Audit/);
@@ -215,6 +224,10 @@ test("llms.txt is the public AI-crawler brief", () => {
   assert.match(llms, /inbox\?hold=/);
   assert.match(llms, /https:\/\/agent-control\.net\/partners/);
   assert.match(llms, /\?partner=slug/);
+  assert.match(
+    llms,
+    /A human principal signs up and owns billing and Approval Inbox; agents connect under that account\./,
+  );
   assert.doesNotMatch(llms, /\bbroadcast/i);
 });
 
@@ -235,6 +248,10 @@ test("partners page is wallet-complement copy; sitemap and docs link it", () => 
   assert.match(partners, /Wallet partners — Agent Control/);
   assert.match(partners, /External audit beside your wallet/);
   assert.match(partners, /non-custodial check before send/);
+  assert.match(
+    partners,
+    /A human principal signs up and owns billing and Approval Inbox; agents connect under that\s+account\./,
+  );
   assert.match(partners, /Approval Inbox/);
   assert.match(partners, /Agent Audit/);
   assert.match(partners, /You keep the keys/);

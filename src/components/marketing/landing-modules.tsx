@@ -2,13 +2,16 @@ import { useState, type ReactNode } from "react";
 
 /** Marketing product tabs. Do not import @/lib/pay-extension — that module is not SSR-safe. */
 
-type ProductTab = "dashboard" | "audit" | "inbox";
+type ProductTab = "dashboard" | "audit" | "inbox" | "partners";
 
 const PRODUCT_TABS: { id: ProductTab; label: string }[] = [
   { id: "dashboard", label: "Dashboard" },
   { id: "audit", label: "Agent Audit" },
   { id: "inbox", label: "Approval Inbox" },
+  { id: "partners", label: "Partners" },
 ];
+
+const PARTNER_WALLETS = ["Turnkey", "Privy", "Coinbase", "x402"] as const;
 
 const INBOX_ROWS = [
   { title: "Transfer $2,400", detail: "To unknown address · Held" },
@@ -75,8 +78,8 @@ function ProductTabButton({
       aria-controls={`panel-${id}`}
       className={
         selected
-          ? "rounded-full bg-navy px-3.5 py-2 text-sm font-semibold text-white sm:px-4"
-          : "rounded-full px-3.5 py-2 text-sm font-semibold text-muted hover:text-fg sm:px-4"
+          ? "shrink-0 whitespace-nowrap rounded-full bg-navy px-3.5 py-2 text-sm font-semibold text-white sm:px-4"
+          : "shrink-0 whitespace-nowrap rounded-full px-3.5 py-2 text-sm font-semibold text-muted hover:text-fg sm:px-4"
       }
       onClick={() => onSelect(id)}
     >
@@ -307,6 +310,65 @@ function AuditPanel() {
   );
 }
 
+function PartnersPanel() {
+  return (
+    <div
+      role="tabpanel"
+      id="panel-partners"
+      aria-labelledby="tab-partners"
+      className="mt-4 grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-start"
+    >
+      <div>
+        <p className="text-xs font-medium uppercase tracking-[0.18em] text-coral">
+          Corporate & wallets
+        </p>
+        <h2 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">Partners</h2>
+        <p className="mt-2 max-w-[42ch] text-muted">
+          External audit for your agents — beside Turnkey, Privy, Coinbase, and x402. Agent
+          payments control with Approval Inbox (hold vs block) and Agent Audit. You keep the keys.
+        </p>
+        <p className="mt-3 text-sm text-muted">
+          A human principal signs up and owns billing and Approval Inbox; agents connect under that
+          account.
+        </p>
+        <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <a
+            href="/partners"
+            className="inline-flex items-center text-[13px] font-semibold text-navy hover:text-coral"
+          >
+            Partner page →
+          </a>
+          <a
+            href="/docs#connect-your-agent"
+            className="inline-flex items-center text-[13px] font-semibold text-navy hover:text-coral"
+          >
+            Connect your agent →
+          </a>
+        </div>
+      </div>
+      <PreviewCard>
+        <p className="text-sm font-semibold">Beside your wallet</p>
+        <p className="mt-0.5 text-xs text-muted">External audit for your agents</p>
+        <ul className="mt-3">
+          {PARTNER_WALLETS.map((name) => (
+            <li key={name} className="border-t border-border py-2.5 text-[13px] font-semibold">
+              {name}
+            </li>
+          ))}
+        </ul>
+        <p className="mt-1 text-xs font-medium text-navy">You keep the keys</p>
+        <div className="mt-3 rounded-[14px] border border-border bg-elevated px-3.5 py-3">
+          <p className="text-[13px] font-semibold">Agent Control</p>
+          <p className="mt-0.5 text-xs leading-snug text-muted">
+            Agent payments control — Approval Inbox (hold vs block) and Agent Audit. Connect your
+            agent.
+          </p>
+        </div>
+      </PreviewCard>
+    </div>
+  );
+}
+
 function InboxPanel() {
   return (
     <div
@@ -407,8 +469,10 @@ export function LandingProductTabs() {
         />
       ) : tab === "audit" ? (
         <AuditPanel />
-      ) : (
+      ) : tab === "inbox" ? (
         <InboxPanel />
+      ) : (
+        <PartnersPanel />
       )}
     </section>
   );
