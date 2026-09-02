@@ -1,8 +1,9 @@
 /**
- * Transactional mail via Resend. Used by Better Auth for signup confirmation
- * and by billing for thank-you invoices.
+ * Transactional mail via Resend. Used by Better Auth for signup confirmation,
+ * billing thank-you invoices, and admin new-subscriber notifies.
  * Set RESEND_API_KEY (and optional EMAIL_FROM) on the Vercel project.
  * EMAIL_FROM on Vercel is Agent Control <noreply@agent-control.net>.
+ * Admin notifies go to STATS_REPORT_EMAIL.
  */
 const env = (key: string): string | undefined => {
   const value = process.env[key]?.trim();
@@ -145,4 +146,122 @@ export async function sendInvoiceEmail(opts: {
     return false;
   }
   return true;
+}
+
+export type NewSubscriberNotifyKind = "trial" | "paid";
+
+export type NewSubscriberNotifyOpts = {
+  kind: NewSubscriberNotifyKind;
+  planName: string;
+  at: string;
+  userEmail?: string | null;
+  payRequestId?: string | null;
+  chain?: string | null;
+};
+
+export function newSubscriberNotifySubject(opts: {
+  kind: NewSubscriberNotifyKind;
+  planName: string;
+}): string {
+  if (opts.kind === "trial") return "New subscriber — Free trial";
+  return `New subscriber — Paid ${opts.planName}`;
+}
+
+export function newSubscriberNotifyText(opts: NewSubscriberNotifyOpts): string {
+  const kindLabel = opts.kind === "trial" ? "Free trial start" : "Paid confirmation";
+  const lines = [
+    `New subscriber — ${kindLabel}`,
+    "",
+    `Kind: ${kindLabel}`,
+    `Plan: ${opts.planName}`,
+    `When: ${opts.at}`,
+  ];
+  const email = opts.userEmail?.trim();
+  if (email) lines.push(`User: ${email}`);
+  const payRequestId = opts.payRequestId?.trim();
+  if (payRequestId) lines.push(`Pay request: ${payRequestId}`);
+  const chain = opts.chain?.trim();
+  if (chain) lines.push(`Network: ${chain}`);
+  return lines.join("\n");
+}
+
+/**
+ * Admin ping on every new subscription activation (trial start or paid confirm).
+ * Sends to STATS_REPORT_EMAIL. Skip + log if unset. Never throws.
+ */
+export async function sendNewSubscriberNotifyEmail(
+  opts: NewSubscriberNotifyOpts,
+): Promise<void> {
+  try {
+    const to = env("STATS_REPORT_EMAIL");
+    if (!to) {
+      console.error("[notify] STATS_REPORT_EMAIL is not set; new-subscriber email skipped");
+      return;
+    }
+    const apiKey = env("RESEND_API_KEY");
+    if (!apiKey) {
+      console.error("[notify] RESEND_API_KEY is not set; new-subscriber email skipped");
+      return;
+    }
+    const from = env("EMAIL_FROM") ?? "Agent Control <noreply@agent-control.net>";
+    const subject = newSubscriberNotifySubject(opts);
+    const text = newSubscriberNotifyText(opts);
+    const kindLabel = opts.kind === "trial" ? "Free trial start" : "Paid confirmation";
+    const planName = escapeHtml(opts.planName);
+    const at = escapeHtml(opts.at);
+    const email = opts.userEmail?.trim();
+    const payRequestId = opts.payRequestId?.trim();
+    const chain = opts.chain?.trim();
+    const rows = [
+      `<tr><td style="padding:8px 0;color:#666;border-top:1px solid #eee">Kind</td><td style="padding:8px 0;text-align:right;border-top:1px solid #eee">${escapeHtml(kindLabel)}</td></tr>`,
+      `<tr><td style="padding:8px 0;color:#666;border-top:1px solid #eee">Plan</td><td style="padding:8px 0;text-align:right;border-top:1px solid #eee">${planName}</td></tr>`,
+      `<tr><td style="padding:8px 0;color:#666;border-top:1px solid #eee">When</td><td style="padding:8px 0;text-align:right;border-top:1px solid #eee;font-family:ui-monospace,monospace;font-size:12px">${at}</td></tr>`,
+    ];
+    if (email) {
+      rows.push(
+        `<tr><td style="padding:8px 0;color:#666;border-top:1px solid #eee">User</td><td style="padding:8px 0;text-align:right;border-top:1px solid #eee">${escapeHtml(email)}</td></tr>`,
+      );
+    }
+    if (payRequestId) {
+      rows.push(
+        `<tr><td style="padding:8px 0;color:#666;border-top:1px solid #eee">Pay request</td><td style="padding:8px 0;text-align:right;border-top:1px solid #eee;font-family:ui-monospace,monospace;font-size:12px">${escapeHtml(payRequestId)}</td></tr>`,
+      );
+    }
+    if (chain) {
+      rows.push(
+        `<tr><td style="padding:8px 0;color:#666;border-top:1px solid #eee">Network</td><td style="padding:8px 0;text-align:right;border-top:1px solid #eee">${escapeHtml(chain)}</td></tr>`,
+      );
+    }
+    const intro =
+      opts.kind === "trial"
+        ? "A free trial just started on Agent Control."
+        : "A paid subscription was just confirmed on Agent Control.";
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from,
+        to: [to],
+        subject,
+        text,
+        html: `<div style="font-family:ui-sans-serif,system-ui,sans-serif;max-width:560px;margin:0 auto;padding:32px 20px;color:#111">
+  <p style="font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#b45309;font-weight:600">Agent-Control.net</p>
+  <h1 style="font-size:22px;line-height:1.3;margin:12px 0 16px">${escapeHtml(subject)}</h1>
+  <p style="font-size:15px;line-height:1.55;color:#444;margin:0 0 24px">${intro}</p>
+  <table style="width:100%;border-collapse:collapse;font-size:14px;line-height:1.6">
+    ${rows.join("")}
+  </table>
+</div>`,
+      }),
+    });
+    if (!response.ok) {
+      const body = await response.text();
+      console.error("[notify] Resend new-subscriber failed", response.status, body);
+    }
+  } catch (err) {
+    console.error("[notify] new-subscriber email failed", err);
+  }
 }

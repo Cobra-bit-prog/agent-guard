@@ -38,7 +38,7 @@ import {
   findMatchingNativeSolPayment,
   quoteSolEthUsd,
 } from "@/lib/native-pay.server";
-import { sendInvoiceEmail } from "@/lib/auth/send-email.server";
+import { sendInvoiceEmail, sendNewSubscriberNotifyEmail } from "@/lib/auth/send-email.server";
 import { ensureSchema } from "@/lib/server/guard";
 import { rpc, solanaRpcUrls } from "@/lib/onchain";
 
@@ -434,19 +434,29 @@ export const watchPayRequest = createServerFn({ method: "POST" })
       match = { kind: "none" };
     }
     if (match.kind === "paid") {
+      const paidAt = new Date().toISOString();
       await sql`
         update pay_requests
         set status = ${"paid"},
             signature = ${match.signature},
             paid_amount_usdc = ${match.amountUsdc},
-            paid_at = ${new Date().toISOString()}
+            paid_at = ${paidAt}
         where id = ${row.id}
       `;
       await applyPaidPlan(context.userId, row.plan as "starter" | "pro" | "team", chain);
       row.status = "paid";
       row.signature = match.signature;
       row.paid_amount_usdc = match.amountUsdc;
-      row.paid_at = new Date().toISOString();
+      row.paid_at = paidAt;
+      const planName = PLANS[(row.plan as PlanId) in PLANS ? (row.plan as PlanId) : "starter"].name;
+      await sendNewSubscriberNotifyEmail({
+        kind: "paid",
+        planName,
+        at: paidAt,
+        userEmail: await lookupUserEmail(context.userId),
+        payRequestId: row.id,
+        chain: CHAIN_LABEL[chain],
+      });
       await sendInvoiceIfNeeded(context.userId, row);
       return view(row);
     }
