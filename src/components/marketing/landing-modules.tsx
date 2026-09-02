@@ -1,24 +1,12 @@
 import type { ReactNode } from "react";
-import { PayQr } from "@/components/pay-qr";
+import { encode } from "@/lib/qr/encode";
 
 /** Marketing modules. Do not import @/lib/pay-extension — that module is not SSR-safe. */
 
 const AUDIT_ROWS = [
-  { time: "May 20, 10:42 AM", to: "0x7f3a…b9c1", amount: "$350.00", result: "Allowed", kind: "ok" },
-  {
-    time: "May 20, 10:28 AM",
-    to: "7GdK…Lr9e",
-    amount: "$1,200.00",
-    result: "Paused",
-    kind: "pause",
-  },
-  {
-    time: "May 20, 10:15 AM",
-    to: "0x91aa…c0de",
-    amount: "$780.00",
-    result: "Aborted",
-    kind: "abort",
-  },
+  { time: "10:42 AM", to: "0x7f3a…b9c1", amount: "$350.00", result: "Allowed", kind: "ok" },
+  { time: "10:28 AM", to: "7GdK…Lr9e", amount: "$1,200.00", result: "Paused", kind: "pause" },
+  { time: "10:15 AM", to: "0x91aa…c0de", amount: "$780.00", result: "Aborted", kind: "abort" },
 ] as const;
 
 const INBOX_ROWS = [
@@ -43,6 +31,28 @@ function exportAuditCsv() {
   a.click();
   a.remove();
   URL.revokeObjectURL(a.href);
+}
+
+function LandingPayMark() {
+  const result = encode("https://agent-control.net/billing", { ecc: "M", border: 2 });
+  const modules: string[] = [];
+  for (let y = 0; y < result.size; y += 1) {
+    for (let x = 0; x < result.size; x += 1) {
+      if (result.data[y][x]) modules.push(`M${x} ${y}h1v1h-1z`);
+    }
+  }
+  return (
+    <svg
+      role="img"
+      aria-label="Open Billing to pay on-chain"
+      viewBox={`0 0 ${result.size} ${result.size}`}
+      className="aspect-square h-auto w-full bg-white"
+      shapeRendering="crispEdges"
+    >
+      <rect width={result.size} height={result.size} fill="#ffffff" />
+      <path fill="#000000" d={modules.join("")} />
+    </svg>
+  );
 }
 
 function ModuleCard({ children }: { children: ReactNode }) {
@@ -76,35 +86,35 @@ export function LandingModules() {
             Replay the last sends in a read-only view. Understand what happened, verify policy, and
             export for your records.
           </p>
-          <div className="mt-3 overflow-x-auto">
-            <table className="w-full border-collapse text-xs">
+          <div className="miniwrap mt-3 overflow-x-auto">
+            <table className="mini w-full border-collapse text-[11px]">
               <thead>
                 <tr className="text-left font-medium text-subtle">
-                  <th className="border-b border-border px-1.5 py-2">Time</th>
-                  <th className="border-b border-border px-1.5 py-2">To</th>
-                  <th className="border-b border-border px-1.5 py-2">Amount</th>
-                  <th className="border-b border-border px-1.5 py-2">Result</th>
+                  <th className="border-b border-border py-2 pr-2">Time</th>
+                  <th className="border-b border-border py-2 pr-2">To</th>
+                  <th className="border-b border-border py-2 pr-2">Amount</th>
+                  <th className="border-b border-border py-2">Result</th>
                 </tr>
               </thead>
               <tbody>
                 {AUDIT_ROWS.map((row) => (
                   <tr key={row.to}>
-                    <td className="whitespace-nowrap border-t border-border px-1.5 py-2.5">
+                    <td className="whitespace-nowrap border-t border-border py-2 pr-2">
                       {row.time}
                     </td>
-                    <td className="whitespace-nowrap border-t border-border px-1.5 py-2.5 font-mono text-[11px]">
+                    <td className="whitespace-nowrap border-t border-border py-2 pr-2 font-mono text-[11px]">
                       {row.to}
                     </td>
-                    <td className="whitespace-nowrap border-t border-border px-1.5 py-2.5">
+                    <td className="whitespace-nowrap border-t border-border py-2 pr-2">
                       {row.amount}
                     </td>
                     <td
                       className={
                         row.kind === "ok"
-                          ? "whitespace-nowrap border-t border-border px-1.5 py-2.5 font-semibold text-success"
+                          ? "whitespace-nowrap border-t border-border py-2 font-semibold text-success"
                           : row.kind === "pause"
-                            ? "whitespace-nowrap border-t border-border px-1.5 py-2.5 font-semibold text-warning"
-                            : "whitespace-nowrap border-t border-border px-1.5 py-2.5 font-semibold text-danger"
+                            ? "whitespace-nowrap border-t border-border py-2 font-semibold text-warning"
+                            : "whitespace-nowrap border-t border-border py-2 font-semibold text-danger"
                       }
                     >
                       {row.result}
@@ -205,10 +215,7 @@ export function LandingModules() {
               className="flex flex-col items-center justify-center gap-2 rounded-[14px] border border-border bg-elevated p-3 text-center text-xs text-muted"
             >
               <span className="block w-full max-w-[132px] rounded-lg border border-border bg-white p-1.5">
-                <PayQr
-                  value="https://agent-control.net/billing"
-                  alt="Open Billing to pay on-chain"
-                />
+                <LandingPayMark />
               </span>
               Scan to pay
               <span>or share payment link</span>
