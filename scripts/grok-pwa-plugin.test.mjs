@@ -362,6 +362,17 @@ test("site.json title wins over the host slug", () => {
   assert.match(out, /property="og:title" content="Pixel Nova"/);
 });
 
+test("document title wins over site.json title for og:title", () => {
+  const out = injectGrokPwaHead(
+    "<html><head><title>External audit for your agents — Agent Control</title></head></html>",
+    { site: { title: "Agent Control" } },
+  );
+  assert.match(
+    out,
+    /property="og:title" content="External audit for your agents — Agent Control"/,
+  );
+});
+
 test("injects into documents with no head element", () => {
   const out = injectGrokPwaHead("<html><body>hi</body></html>", { appName: "Solo" });
   assert.match(out, /<head>/);
