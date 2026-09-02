@@ -5,7 +5,7 @@ import {
 } from "@/lib/agent-checkout";
 import { getSql } from "@/lib/db";
 import { ensureSchema } from "@/lib/server/guard";
-import { createPayRequestForUser } from "@/lib/server/solana-billing";
+import { createPayRequestForUser } from "@/lib/server/pay-request.server";
 
 function asCheckoutRow(row: {
   id: string;
