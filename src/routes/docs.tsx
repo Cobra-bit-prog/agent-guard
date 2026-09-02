@@ -35,14 +35,19 @@ export const Route = createFileRoute("/docs")({
   component: DocsPage,
   head: () => ({
     meta: [
-      { title: "Quick start — Agent Control" },
+      { title: "Approval Inbox and Agent Audit — Agent Control" },
       {
         name: "description",
         content:
-          "Get set up in a few minutes. Create an account, add an agent wallet, set spend rules, and watch the console. 1-day trial. You keep the keys.",
+          "Operator quick start for Agent Control. Connect your agent, decide holds in Approval Inbox, and generate Agent Audit reports. Agent payments control with spend limits. You keep the keys.",
       },
       { name: "theme-color", content: "#eef3f8" },
-      { property: "og:title", content: "Quick start — Agent Control" },
+      { property: "og:title", content: "Approval Inbox and Agent Audit — Agent Control" },
+      {
+        property: "og:description",
+        content:
+          "Operator quick start: Approval Inbox, Agent Audit, and agent payments control with spend limits. You keep the keys.",
+      },
     ],
   }),
 });
@@ -55,8 +60,8 @@ function DocsPage() {
         <h1 className="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">
           Get set up in a few minutes
         </h1>
-        <p className="mt-4 max-w-[42ch] text-lg text-muted">
-          1-day trial. You keep the keys. Then watch the console.
+        <p className="mt-4 max-w-[46ch] text-lg text-muted">
+          1-day trial. Agent payments control with spend limits you set. You keep the keys.
         </p>
         <SupportedChains className="mt-5" />
 

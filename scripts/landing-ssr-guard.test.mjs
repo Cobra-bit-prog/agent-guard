@@ -47,7 +47,11 @@ test("homepage copy ships two product tabs and 24-hour trial truth", () => {
   const modules = readFileSync(join(ROOT, "src/components/marketing/landing-modules.tsx"), "utf8");
   const preview = readFileSync(join(ROOT, "src/components/marketing/landing-preview.tsx"), "utf8");
   const src = `${home}\n${modules}\n${preview}`;
-  assert.match(src, /See every send before it happens/);
+  assert.match(src, /External audit for your agents — Agent Control/);
+  assert.match(src, /External audit for your agents/);
+  assert.doesNotMatch(src, /See every send before it happens/);
+  assert.match(src, /Keep control of your agents/);
+  assert.match(src, /Agent payments control/);
   assert.match(src, /Approval Inbox/);
   assert.match(src, /Agent Audit/);
   assert.match(src, /Requires the agent hook/);
@@ -71,6 +75,7 @@ test("homepage copy ships two product tabs and 24-hour trial truth", () => {
   assert.doesNotMatch(src, /\+100s of teams|hundreds of teams/i);
   assert.doesNotMatch(src, /to=["']\/inbox["']|href=["']\/inbox["']/);
   assert.doesNotMatch(src, /href=["']\/audit["']/);
+  assert.doesNotMatch(src, /\bbroadcast/i);
 });
 
 test("homepage FAQ covers Inbox, Audit, hold vs block, and skipped-check limits", () => {
@@ -103,6 +108,8 @@ test("homepage FAQ covers Inbox, Audit, hold vs block, and skipped-check limits"
 
 test("docs is an operator quick start; API is collapsed and secondary", () => {
   const docs = readFileSync(join(ROOT, "src/routes/docs.tsx"), "utf8");
+  assert.match(docs, /Approval Inbox and Agent Audit — Agent Control/);
+  assert.match(docs, /Agent payments control/);
   assert.match(docs, /Get set up in a few minutes/);
   assert.match(docs, /Create an account/);
   assert.match(docs, /Add an agent wallet/);
@@ -128,4 +135,5 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
   assert.doesNotMatch(docs, /Wire the hook/);
   assert.doesNotMatch(docs, /Sky Ledger\s*[×xX]\s*Operator/);
   assert.doesNotMatch(docs, /to=["']\/inbox["']|href=["']\/inbox["']/);
+  assert.doesNotMatch(docs, /\bbroadcast/i);
 });
