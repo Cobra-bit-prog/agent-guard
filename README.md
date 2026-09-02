@@ -1,7 +1,15 @@
 # Agent Control
 
-**[agent-control.net](https://agent-control.net)**
+**[External audit for your agents](https://agent-control.net)** — agent payments control for wallets on Solana, Ethereum, and Base.
 
-Pre-sign policy for agent wallets on Solana, Ethereum, and Base. You hold the keys. Start a 1-day trial, then pay in USDC with Phantom or MetaMask.
+You set spend limits. Connect your agent so it asks before every send. Off-policy or first-time destinations wait in Approval Inbox (hold vs block). Agent Audit is an on-demand Excel or PDF of the check trail. You keep the keys. Not a custodian.
+
+If the agent skips the check, Inbox cannot stop that send.
+
+- Product: [https://agent-control.net](https://agent-control.net)
+- Docs: [https://agent-control.net/docs](https://agent-control.net/docs)
+- For AI crawlers: [https://agent-control.net/llms.txt](https://agent-control.net/llms.txt)
+
+1-day full console trial, no card, no KYC. Then Starter $29 / Pro $49 / Team $149 from Billing (on-chain USDC, SOL, or ETH).
 
 Contact: [support@agent-control.net](mailto:support@agent-control.net)
