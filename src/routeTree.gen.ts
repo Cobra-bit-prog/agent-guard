@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as DocsRouteImport } from './routes/docs'
+import { Route as PartnersRouteImport } from './routes/partners'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LogosRouteImport } from './routes/logos'
 import { Route as SignupRouteImport } from './routes/signup'
@@ -46,6 +47,11 @@ const AppRoute = AppRouteImport.update({
 const DocsRoute = DocsRouteImport.update({
   id: '/docs',
   path: '/docs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PartnersRoute = PartnersRouteImport.update({
+  id: '/partners',
+  path: '/partners',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -157,6 +163,7 @@ const ApiV1InternalStatsRoute = ApiV1InternalStatsRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/docs': typeof DocsRoute
+  '/partners': typeof PartnersRoute
   '/login': typeof LoginRoute
   '/logos': typeof LogosRoute
   '/signup': typeof SignupRoute
@@ -182,6 +189,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/docs': typeof DocsRoute
+  '/partners': typeof PartnersRoute
   '/login': typeof LoginRoute
   '/logos': typeof LogosRoute
   '/signup': typeof SignupRoute
@@ -207,6 +215,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/docs': typeof DocsRoute
+  '/partners': typeof PartnersRoute
   '/login': typeof LoginRoute
   '/logos': typeof LogosRoute
   '/signup': typeof SignupRoute
@@ -234,6 +243,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/docs'
+    | '/partners'
     | '/login'
     | '/logos'
     | '/signup'
@@ -259,6 +269,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/docs'
+    | '/partners'
     | '/login'
     | '/logos'
     | '/signup'
@@ -283,6 +294,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_app'
     | '/docs'
+    | '/partners'
     | '/login'
     | '/logos'
     | '/signup'
@@ -310,6 +322,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   DocsRoute: typeof DocsRoute
+  PartnersRoute: typeof PartnersRoute
   LoginRoute: typeof LoginRoute
   LogosRoute: typeof LogosRoute
   SignupRoute: typeof SignupRoute
@@ -342,6 +355,13 @@ declare module '@tanstack/react-router' {
       path: '/docs'
       fullPath: '/docs'
       preLoaderRoute: typeof DocsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/partners': {
+      id: '/partners'
+      path: '/partners'
+      fullPath: '/partners'
+      preLoaderRoute: typeof PartnersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -550,6 +570,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   DocsRoute: DocsRoute,
+  PartnersRoute: PartnersRoute,
   LoginRoute: LoginRoute,
   LogosRoute: LogosRoute,
   SignupRoute: SignupRoute,

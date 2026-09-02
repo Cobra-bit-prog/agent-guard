@@ -9,6 +9,7 @@ export const SUPPORT_MAIL = "mailto:support@agent-control.net";
 
 const NAV = [
   { href: "/docs", label: "Docs" },
+  { href: "/partners", label: "Partners" },
   { href: "/#pricing", label: "Pricing" },
   { href: SUPPORT_MAIL, label: "Contact" },
 ] as const;
@@ -18,7 +19,7 @@ export function SkyShell({
   current,
 }: {
   children: ReactNode;
-  current?: "home" | "docs";
+  current?: "home" | "docs" | "partners";
 }) {
   return (
     <div className="sky min-h-screen bg-bg text-fg">
@@ -29,7 +30,7 @@ export function SkyShell({
   );
 }
 
-export function MarketingHeader({ current }: { current?: "home" | "docs" }) {
+export function MarketingHeader({ current }: { current?: "home" | "docs" | "partners" }) {
   const { user } = useCurrentUserState();
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -100,7 +101,7 @@ export function MarketingHeader({ current }: { current?: "home" | "docs" }) {
   );
 }
 
-function navHref(href: string, pathname: string, current?: "home" | "docs") {
+function navHref(href: string, pathname: string, current?: "home" | "docs" | "partners") {
   if (href === "/#pricing" && (current === "home" || pathname === "/")) return "#pricing";
   return href;
 }
@@ -114,6 +115,9 @@ export function MarketingFooter() {
         <p className="flex flex-col gap-1 text-xs md:items-end">
           <a href="/docs" className="text-muted hover:text-fg">
             Docs
+          </a>
+          <a href="/partners" className="text-muted hover:text-fg">
+            Partners
           </a>
           <a href="/llms.txt" className="text-muted hover:text-fg">
             llms.txt

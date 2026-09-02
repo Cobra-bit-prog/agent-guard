@@ -7,14 +7,19 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GROK_PROVIDERS, authClient, authEnabled, signIn } from "@/lib/auth/client";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
+import { parsePartnerSlug } from "@/lib/partner";
 
-type LoginSearch = { mode: "signin" | "signup" };
+type LoginSearch = { mode: "signin" | "signup"; partner?: string };
 
 export const Route = createFileRoute("/login")({
   component: Login,
-  validateSearch: (search: Record<string, unknown>): LoginSearch => ({
-    mode: search.mode === "signup" ? "signup" : "signin",
-  }),
+  validateSearch: (search: Record<string, unknown>): LoginSearch => {
+    const partner = parsePartnerSlug(search.partner);
+    return {
+      mode: search.mode === "signup" ? "signup" : "signin",
+      ...(partner ? { partner } : {}),
+    };
+  },
 });
 
 function Login() {

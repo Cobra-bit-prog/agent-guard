@@ -20,6 +20,7 @@ test("marketing landing never imports pay-extension (SSR-unsafe wallet send)", (
   const files = [
     join(ROOT, "src/routes/index.tsx"),
     join(ROOT, "src/routes/docs.tsx"),
+    join(ROOT, "src/routes/partners.tsx"),
     join(ROOT, "src/routes/login.tsx"),
     join(ROOT, "src/routes/signup.tsx"),
     ...walk(join(ROOT, "src/components/marketing")),
@@ -212,6 +213,8 @@ test("llms.txt is the public AI-crawler brief", () => {
   assert.match(llms, /Email alerts/);
   assert.match(llms, /Slack incoming webhook/);
   assert.match(llms, /inbox\?hold=/);
+  assert.match(llms, /https:\/\/agent-control\.net\/partners/);
+  assert.match(llms, /\?partner=slug/);
   assert.doesNotMatch(llms, /\bbroadcast/i);
 });
 
@@ -222,4 +225,35 @@ test("FAQ links to docs compare; homepage H1 stays External audit for your agent
   assert.match(faq, /href=["']\/docs#compare["']/);
   assert.match(home, /<h1[^>]*>\s*External audit for your agents\s*<\/h1>/);
   assert.match(home, /How is this different from agentaudit\.dev, SpendGuard, or Turnkey\?/);
+});
+
+test("partners page is wallet-complement copy; sitemap and docs link it", () => {
+  const partners = readFileSync(join(ROOT, "src/routes/partners.tsx"), "utf8");
+  const docs = readFileSync(join(ROOT, "src/routes/docs.tsx"), "utf8");
+  const sitemap = readFileSync(join(ROOT, "public/sitemap.xml"), "utf8");
+  const chrome = readFileSync(join(ROOT, "src/components/marketing/chrome.tsx"), "utf8");
+  assert.match(partners, /Wallet partners — Agent Control/);
+  assert.match(partners, /External audit beside your wallet/);
+  assert.match(partners, /non-custodial check before send/);
+  assert.match(partners, /Approval Inbox/);
+  assert.match(partners, /Agent Audit/);
+  assert.match(partners, /You keep the keys/);
+  assert.match(partners, /Connect your agent/);
+  assert.match(partners, /hold vs block/);
+  assert.match(partners, /Turnkey, Privy, Coinbase, x402/);
+  assert.match(partners, /POST \/api\/v1\/check/);
+  assert.match(partners, /poll_url/);
+  assert.match(partners, /\$29 \/ Pro \$49 \/ Team \$149 USDC/);
+  assert.match(partners, /support@agent-control\.net/);
+  assert.match(partners, /\/docs#connect-your-agent/);
+  assert.match(partners, /\/docs#compare/);
+  assert.match(partners, /\?partner=/);
+  assert.match(partners, /login\?partner=turnkey/);
+  assert.doesNotMatch(partners, /\bbroadcast/i);
+  assert.doesNotMatch(partners, /to=["']\/inbox["']|href=["']\/inbox["']/);
+  assert.doesNotMatch(partners, /href=["']\/audit["']/);
+  assert.match(docs, /href=["']\/partners["']/);
+  assert.match(docs, /id=["']partners["']/);
+  assert.match(sitemap, /https:\/\/agent-control\.net\/partners/);
+  assert.match(chrome, /href: "\/partners"/);
 });

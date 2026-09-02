@@ -129,6 +129,9 @@ function DocsPage() {
           <a href="#compare" className="text-muted hover:text-fg">
             Compare
           </a>
+          <a href="/partners" className="text-muted hover:text-fg">
+            Partners
+          </a>
           <a href="/llms.txt" className="text-muted hover:text-fg">
             llms.txt
           </a>
@@ -242,6 +245,22 @@ function DocsPage() {
               audit for your agents — without giving up custody.
             </p>
           </div>
+        </section>
+
+        <section id="partners" className="mt-16 scroll-mt-6">
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-coral">Partners</p>
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight md:text-3xl">
+            Wallet and runtime partners
+          </h2>
+          <p className="mt-3 max-w-[52ch] text-muted">
+            Agent Control complements wallets and runtimes (Turnkey, Privy, Coinbase, x402) — it
+            does not replace them. Non-custodial external audit: spend limits, Approval Inbox (hold
+            vs block), and Agent Audit. You keep the keys.{" "}
+            <a href="/partners" className="font-medium text-navy hover:text-coral">
+              Partner page
+            </a>
+            .
+          </p>
         </section>
 
         <div className="mt-10 flex flex-wrap items-center gap-3">
