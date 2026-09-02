@@ -1,8 +1,6 @@
 import { useId } from "react";
 import { CHAINS, DISPLAY_CHAIN_ORDER, type ChainId } from "@/lib/chains";
 import { cn } from "@/lib/utils";
-
-
 /** Original geometric marks used only to label supported networks. */
 export function EthereumMark({ className }: { className?: string }) {
   return (
@@ -59,21 +57,28 @@ export function ChainMark({
   return <BaseMark className={className} />;
 }
 
+/** Slim marketing row — not a partner wall. */
 export function SupportedChains({ className }: { className?: string }) {
   return (
-    <ul className={cn("flex flex-wrap items-center gap-3", className)}>
-      {DISPLAY_CHAIN_ORDER.map((id) => {
-        const c = CHAINS[id];
-        return (
-          <li
-            key={c.id}
-            className="inline-flex items-center gap-3 rounded-2xl border border-border bg-surface/80 px-5 py-3 text-base font-semibold"
-          >
-            <ChainMark chain={c.id} className="size-8" />
-            {c.name}
-          </li>
-        );
-      })}
-    </ul>
+    <div className={cn("flex flex-wrap items-center gap-x-3 gap-y-2", className)}>
+      <p className="text-xs font-medium text-muted">Works on</p>
+      <ul
+        className="flex flex-wrap items-center gap-1.5"
+        aria-label="Supported networks: Solana, Ethereum, and Base"
+      >
+        {DISPLAY_CHAIN_ORDER.map((id) => {
+          const c = CHAINS[id];
+          return (
+            <li
+              key={c.id}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-white px-2.5 py-1 text-[13px] text-fg shadow-[0_1px_0_rgb(18_38_63/0.04)]"
+            >
+              <ChainMark chain={c.id} className="size-4" />
+              {c.name}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }

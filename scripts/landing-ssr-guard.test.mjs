@@ -58,9 +58,36 @@ test("homepage copy ships Sky Operator modules and 24-hour trial truth", () => {
   assert.match(src, /\$\{p\.historyDays\}-day history/);
   assert.match(src, /1-day \(24 hour\)/);
   assert.match(src, /No card\. No KYC/);
+  assert.match(src, /Connect your agent/);
+  assert.match(src, /SupportedChains/);
+  assert.doesNotMatch(src, /Wire the hook/);
+  assert.doesNotMatch(src, /It MUST POST \/api\/v1\/check/);
+  assert.doesNotMatch(src, /Sky Ledger\s*[×xX]\s*Operator/);
   assert.doesNotMatch(src, /collect payments|set your price|share payment link/i);
   assert.doesNotMatch(src, /Agent cannot move funds|Nothing moves without you|set limits/i);
   assert.doesNotMatch(src, /Outside policy = pause/);
   assert.doesNotMatch(src, /\+100s of teams|hundreds of teams/i);
   assert.doesNotMatch(src, /to=["']\/inbox["']|href=["']\/inbox["']/);
+});
+
+test("docs is an operator quick start; API is collapsed and secondary", () => {
+  const docs = readFileSync(join(ROOT, "src/routes/docs.tsx"), "utf8");
+  assert.match(docs, /Get set up in a few minutes/);
+  assert.match(docs, /Create an account/);
+  assert.match(docs, /Add an agent wallet/);
+  assert.match(docs, /Set spend rules/);
+  assert.match(docs, /Connect your agent/);
+  assert.match(docs, /Watch the console/);
+  assert.match(docs, /Start free trial/);
+  assert.match(docs, /SupportedChains/);
+  assert.match(docs, /<details/);
+  assert.match(docs, /For builders/);
+  assert.match(docs, /1-day \(24 hour\)/);
+  assert.match(docs, /cannot stop that send/);
+  const beforeDetails = docs.split("<details")[0] ?? docs;
+  assert.doesNotMatch(beforeDetails, /curl /);
+  assert.doesNotMatch(beforeDetails, /POST \/api\/v1\/check/);
+  assert.doesNotMatch(docs, /Wire the hook/);
+  assert.doesNotMatch(docs, /Sky Ledger\s*[×xX]\s*Operator/);
+  assert.doesNotMatch(docs, /to=["']\/inbox["']|href=["']\/inbox["']/);
 });
