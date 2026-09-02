@@ -5,6 +5,7 @@ import { evaluateTransfer, isNearDailyLimit, nearLimitMessage } from "@/lib/poli
 import { ensureSchema } from "@/lib/server/guard";
 import { getApprovalForAgent, insertHold } from "@/lib/server/approvals";
 import {
+  notifyInboxHold,
   notifyWarningAlert,
   shouldInsertNearLimitAlert,
   warningKindForDecision,
@@ -228,15 +229,23 @@ export async function checkTransferIntent(input: {
   }
 
   const kind = warningKindForDecision(action, nearLimit);
-  if (kind) {
+  if (kind === "hold" && approvalId) {
+    await notifyInboxHold({
+      userId: String(agent.user_id),
+      agentId: String(agent.id),
+      agentName: String(agent.name),
+      approvalId,
+      message: `${String(agent.name)} is waiting for you: $${input.valueUsd.toFixed(0)} → ${input.to.slice(0, 18)}`,
+      valueUsd: input.valueUsd,
+      to: input.to,
+    });
+  } else if (kind) {
     const message =
-      kind === "hold"
-        ? `${String(agent.name)} is waiting for you: $${input.valueUsd.toFixed(0)} → ${input.to.slice(0, 18)}`
-        : kind === "block"
-          ? `${String(agent.name)} blocked a pre-sign check: ${reasons[0]}`
-          : kind === "alert"
-            ? `${String(agent.name)} crossed an alert threshold: ${reasons[0]}`
-            : nearMessage;
+      kind === "block"
+        ? `${String(agent.name)} blocked a pre-sign check: ${reasons[0]}`
+        : kind === "alert"
+          ? `${String(agent.name)} crossed an alert threshold: ${reasons[0]}`
+          : nearMessage;
     await notifyWarningAlert({
       userId: String(agent.user_id),
       agentId: String(agent.id),

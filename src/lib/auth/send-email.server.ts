@@ -6,6 +6,7 @@
  * EMAIL_FROM on Vercel is Agent Control <noreply@agent-control.net>.
  * Admin notifies go to STATS_REPORT_EMAIL.
  */
+import { inboxHoldEmailCopy } from "../inbox-hold.ts";
 import type { WarningAlertKind } from "../warning-alert.ts";
 
 export type { WarningAlertKind };
@@ -275,7 +276,7 @@ export type WarningAlertEmailCopy = {
   subject: string;
   title: string;
   bodyLines: string[];
-  ctaPath: "/inbox" | "/alerts";
+  ctaPath: string;
   ctaLabel: string;
 };
 
@@ -283,21 +284,20 @@ export function warningAlertEmailCopy(opts: {
   kind: WarningAlertKind;
   agentName: string;
   message: string;
+  approvalId?: string | null;
+  valueUsd?: number;
+  to?: string;
 }): WarningAlertEmailCopy {
   const agent = opts.agentName.trim() || "An agent";
   const detail = opts.message.trim();
   if (opts.kind === "hold") {
-    return {
-      subject: "Agent Control: hold needs a look",
-      title: "A spend is waiting for you",
-      bodyLines: [
-        `${agent} has a hold in Approval Inbox.`,
-        ...(detail ? [detail] : []),
-        "Allow once, always allow this address, or block. Holds expire in 10 minutes.",
-      ],
-      ctaPath: "/inbox",
-      ctaLabel: "Open Approval Inbox",
-    };
+    return inboxHoldEmailCopy({
+      agentName: opts.agentName,
+      message: opts.message,
+      approvalId: opts.approvalId,
+      valueUsd: opts.valueUsd,
+      to: opts.to,
+    });
   }
   if (opts.kind === "near_limit") {
     return {

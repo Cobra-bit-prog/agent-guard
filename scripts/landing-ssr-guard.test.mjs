@@ -109,6 +109,9 @@ test("homepage FAQ covers Inbox, Audit, hold vs block, and skipped-check limits"
   assert.match(src, /Do you email me when something looks off\?/);
   assert.match(src, /Email alerts is on in Settings/);
   assert.match(src, /near the daily cap/);
+  assert.match(src, /incoming webhook URL/);
+  assert.match(src, /No action within 10 minutes/);
+  assert.match(src, /must abort/);
   assert.match(src, /must_abort: true/);
   assert.match(src, /poll_url/);
   assert.match(src, /Always allow this address/);
@@ -207,6 +210,8 @@ test("llms.txt is the public AI-crawler brief", () => {
   assert.match(llms, /if it skips the check, Inbox cannot stop that send/);
   assert.match(llms, /Optional warning emails/);
   assert.match(llms, /Email alerts/);
+  assert.match(llms, /Slack incoming webhook/);
+  assert.match(llms, /inbox\?hold=/);
   assert.doesNotMatch(llms, /\bbroadcast/i);
 });
 

@@ -48,6 +48,7 @@ describe("warning email dedup", () => {
 
   it("points holds at Inbox and other kinds at Alerts", () => {
     assert.equal(absoluteAppUrl("/inbox"), "https://agent-control.net/inbox");
+    assert.equal(absoluteAppUrl("/inbox?hold=appr_1"), "https://agent-control.net/inbox?hold=appr_1");
     assert.equal(absoluteAppUrl("/alerts"), "https://agent-control.net/alerts");
   });
 });
