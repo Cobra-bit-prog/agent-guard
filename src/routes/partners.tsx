@@ -56,6 +56,10 @@ function PartnersPage() {
           Approval Inbox and Agent Audit when humans keep the keys across wallets and chains. Add
           Agent Control as the non-custodial check before send.
         </p>
+        <p className="mt-4 max-w-[54ch] text-[15px] leading-snug text-fg">
+          A human principal signs up and owns billing and Approval Inbox; agents connect under that
+          account.
+        </p>
 
         <section className="mt-12">
           <h2 className="text-2xl font-semibold tracking-tight">What you are. What we are.</h2>
