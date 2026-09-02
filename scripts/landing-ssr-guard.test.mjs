@@ -50,8 +50,10 @@ test("homepage copy ships Sky Operator modules and 24-hour trial truth", () => {
   assert.match(src, /Ghost audit/);
   assert.match(src, /Approval inbox/);
   assert.match(src, /On-chain pay/);
+  assert.match(src, /Pay your plan in USDC, SOL, or ETH/);
   assert.match(src, /1-day \(24 hour\)/);
   assert.match(src, /No card\. No KYC/);
+  assert.doesNotMatch(src, /collect payments|set your price|share payment link/i);
   assert.doesNotMatch(src, /\+100s of teams|hundreds of teams/i);
   assert.doesNotMatch(src, /to=["']\/inbox["']|href=["']\/inbox["']/);
 });
