@@ -22,7 +22,7 @@ const STEPS = [
   {
     n: "04",
     t: "Connect your agent",
-    d: "Before it sends money, the agent must ask Agent Control. If the answer is no, it must not send. Off-policy or first-time destinations wait in Inbox. You keep the keys.",
+    d: "Connect your agent with an API key so it checks Agent Control before every spend — you keep the keys.",
   },
   {
     n: "05",

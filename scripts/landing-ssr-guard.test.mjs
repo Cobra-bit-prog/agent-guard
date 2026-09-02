@@ -42,7 +42,7 @@ test("marketing landing never imports pay-extension (SSR-unsafe wallet send)", (
   }
 });
 
-test("homepage copy ships two product tabs and 24-hour trial truth", () => {
+test("homepage copy ships three product tabs and 24-hour trial truth", () => {
   const home = readFileSync(join(ROOT, "src/routes/index.tsx"), "utf8");
   const modules = readFileSync(join(ROOT, "src/components/marketing/landing-modules.tsx"), "utf8");
   const preview = readFileSync(join(ROOT, "src/components/marketing/landing-preview.tsx"), "utf8");
@@ -52,15 +52,34 @@ test("homepage copy ships two product tabs and 24-hour trial truth", () => {
   assert.doesNotMatch(src, /See every send before it happens/);
   assert.match(src, /Keep control of your agents/);
   assert.match(src, /Agent payments control/);
+  assert.match(modules, /label: "Dashboard"/);
+  assert.match(modules, /label: "Agent Audit"/);
+  assert.match(modules, /label: "Approval Inbox"/);
+  assert.match(
+    modules,
+    /\{ id: "dashboard", label: "Dashboard" \}[\s\S]*\{ id: "audit", label: "Agent Audit" \}[\s\S]*\{ id: "inbox", label: "Approval Inbox" \}/,
+  );
   assert.match(src, /Approval Inbox/);
   assert.match(src, /Agent Audit/);
   assert.match(src, /Requires the agent hook/);
+  assert.match(src, /Allow once/);
+  assert.match(src, /Always allow/);
+  assert.match(src, /10-minute hold/);
   assert.match(src, /Download Excel/);
   assert.match(src, /Download PDF/);
   assert.match(src, /on-demand/);
   assert.match(src, /Connect your agent/);
+  assert.match(
+    src,
+    /Connect your agent with an API key so it checks Agent Control before every spend — you keep the keys\./,
+  );
+  assert.doesNotMatch(src, /Before it sends money/);
+  assert.doesNotMatch(src, /If the answer is no, it must not send/);
   assert.match(src, /Held by you · Check before every send/);
   assert.match(src, /Outside policy = stop/);
+  assert.match(src, /Warning alerts are optional/);
+  assert.match(src, /suspicious or\s+over-limit activity/);
+  assert.match(src, /Monitoring and spend overview/);
   assert.match(src, /\$\{p\.historyDays\}-day history/);
   assert.match(src, /1-day \(24 hour\)/);
   assert.match(src, /No card\. No KYC/);
@@ -70,7 +89,8 @@ test("homepage copy ships two product tabs and 24-hour trial truth", () => {
   assert.doesNotMatch(src, /Sky Ledger\s*[×xX]\s*Operator/);
   assert.doesNotMatch(src, /Ghost audit/);
   assert.doesNotMatch(src, /collect payments|set your price|share payment link/i);
-  assert.doesNotMatch(src, /Agent cannot move funds|Nothing moves without you|set limits/i);
+  assert.doesNotMatch(src, /collect to your wallet/i);
+  assert.doesNotMatch(src, /Agent cannot move funds|Nothing moves without you/i);
   assert.doesNotMatch(src, /Outside policy = pause/);
   assert.doesNotMatch(src, /\+100s of teams|hundreds of teams/i);
   assert.doesNotMatch(src, /to=["']\/inbox["']|href=["']\/inbox["']/);
@@ -115,6 +135,12 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
   assert.match(docs, /Add an agent wallet/);
   assert.match(docs, /Set spend rules/);
   assert.match(docs, /Connect your agent/);
+  assert.match(
+    docs,
+    /Connect your agent with an API key so it checks Agent Control before every spend — you keep the keys\./,
+  );
+  assert.doesNotMatch(docs, /Before it sends money/);
+  assert.doesNotMatch(docs, /If the answer is no, it must not send/);
   assert.match(docs, /Watch the console/);
   assert.match(docs, /Start free trial/);
   assert.match(docs, /SupportedChains/);
@@ -125,7 +151,7 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
   assert.match(docs, /Allow once/);
   assert.match(docs, /Always allow this\s+address/);
   assert.match(docs, /on-demand Excel or PDF/);
-  assert.match(docs, /wait in Inbox/);
+  assert.match(docs, /destinations wait/);
   assert.match(docs, /Agent Audit/);
   assert.match(docs, /ghost replay/);
   assert.match(docs, /Nothing is auto-emailed/);

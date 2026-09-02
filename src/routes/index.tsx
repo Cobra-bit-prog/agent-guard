@@ -115,7 +115,7 @@ const HOME_JSON_LD = {
       operatingSystem: "Web",
       sameAs: ["https://github.com/Cobra-bit-prog/agent-guard"],
       description:
-        "External audit for your agents. Agent payments control with spend limits, Approval Inbox, and Agent Audit. You keep the keys.",
+        "External audit for your agents. Agent payments control with spend limits, Dashboard, Agent Audit, and Approval Inbox. You keep the keys.",
       offers: {
         "@type": "AggregateOffer",
         lowPrice: "0",
@@ -135,14 +135,14 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "External audit for your agents. Agent payments control with spend limits, Approval Inbox, and Agent Audit. You keep the keys. 1-day trial. No card. No KYC.",
+          "External audit for your agents. Agent payments control with spend limits, Dashboard, Agent Audit, and Approval Inbox. You keep the keys. 1-day trial. No card. No KYC.",
       },
       { name: "theme-color", content: "#eef3f8" },
       { property: "og:title", content: "External audit for your agents — Agent Control" },
       {
         property: "og:description",
         content:
-          "External audit for your agents. Agent payments control with spend limits, Approval Inbox, and Agent Audit. You keep the keys.",
+          "External audit for your agents. Agent payments control with spend limits, Dashboard, Agent Audit, and Approval Inbox. You keep the keys.",
       },
     ],
     scripts: [
@@ -232,7 +232,7 @@ function Home() {
               {
                 n: "03",
                 t: "Connect your agent",
-                d: "Before it sends money, the agent must ask Agent Control. If the answer is no, it must not send. You keep the keys.",
+                d: "Connect your agent with an API key so it checks Agent Control before every spend — you keep the keys.",
               },
               {
                 n: "04",
