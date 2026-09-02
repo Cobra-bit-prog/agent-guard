@@ -298,6 +298,11 @@ client.onBeforePaymentCreation(
             <code className="font-mono text-fg">get_agent_status</code>. If the check says stop, do
             not send. If the agent skips the check, Inbox cannot stop that send — funds can move.
           </p>
+          <p className="mt-4 text-sm leading-relaxed text-muted">
+            An agent can POST /api/v1/billing/checkout with its API key to open a pay request. The
+            human pays at the returned pay_url. The plan credits the human account. Not automatic
+            payment.
+          </p>
         </section>
 
         <section id="compare" className="mt-16 scroll-mt-6">
@@ -421,6 +426,12 @@ client.onBeforePaymentCreation(
               tools on POST /api/v1/mcp: <code className="font-mono text-fg">check_transfer</code>,{" "}
               <code className="font-mono text-fg">get_approval</code>,{" "}
               <code className="font-mono text-fg">get_agent_status</code>.
+            </p>
+            <p>
+              Checkout: POST /api/v1/billing/checkout with{" "}
+              <code className="font-mono text-fg">{"{ plan }"}</code> (optional asset/chain).
+              Returns <code className="font-mono text-fg">pay_url</code> for the human pay page. The
+              human pays; the plan credits the human account. Not automatic payment.
             </p>
           </div>
         </details>

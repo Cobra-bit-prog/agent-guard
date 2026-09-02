@@ -31,6 +31,7 @@ import { Route as AppBillingIndexRouteImport } from './routes/_app/billing.index
 import { Route as AppBillingPayRouteImport } from './routes/_app/billing.pay'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiV1CheckRouteImport } from './routes/api/v1/check'
+import { Route as ApiV1BillingCheckoutRouteImport } from './routes/api/v1/billing.checkout'
 import { Route as ApiV1McpRouteImport } from './routes/api/v1/mcp'
 import { Route as ApiV1ApprovalsIdRouteImport } from './routes/api/v1/approvals.$id'
 import { Route as ApiV1InternalStatsRouteImport } from './routes/api/v1/internal/stats'
@@ -144,6 +145,11 @@ const ApiV1CheckRoute = ApiV1CheckRouteImport.update({
   path: '/api/v1/check',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1BillingCheckoutRoute = ApiV1BillingCheckoutRouteImport.update({
+  id: '/api/v1/billing/checkout',
+  path: '/api/v1/billing/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1McpRoute = ApiV1McpRouteImport.update({
   id: '/api/v1/mcp',
   path: '/api/v1/mcp',
@@ -180,6 +186,7 @@ export interface FileRoutesByFullPath {
   '/billing/pay': typeof AppBillingPayRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/v1/check': typeof ApiV1CheckRoute
+  '/api/v1/billing/checkout': typeof ApiV1BillingCheckoutRoute
   '/api/v1/mcp': typeof ApiV1McpRoute
   '/agents/': typeof AppAgentsIndexRoute
   '/billing/': typeof AppBillingIndexRoute
@@ -204,6 +211,7 @@ export interface FileRoutesByTo {
   '/billing/pay': typeof AppBillingPayRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/v1/check': typeof ApiV1CheckRoute
+  '/api/v1/billing/checkout': typeof ApiV1BillingCheckoutRoute
   '/api/v1/mcp': typeof ApiV1McpRoute
   '/agents': typeof AppAgentsIndexRoute
   '/billing': typeof AppBillingIndexRoute
@@ -232,6 +240,7 @@ export interface FileRoutesById {
   '/_app/billing/pay': typeof AppBillingPayRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/v1/check': typeof ApiV1CheckRoute
+  '/api/v1/billing/checkout': typeof ApiV1BillingCheckoutRoute
   '/api/v1/mcp': typeof ApiV1McpRoute
   '/_app/agents/': typeof AppAgentsIndexRoute
   '/_app/billing/': typeof AppBillingIndexRoute
@@ -260,6 +269,7 @@ export interface FileRouteTypes {
     | '/billing/pay'
     | '/api/auth/$'
     | '/api/v1/check'
+    | '/api/v1/billing/checkout'
     | '/api/v1/mcp'
     | '/agents/'
     | '/billing/'
@@ -284,6 +294,7 @@ export interface FileRouteTypes {
     | '/billing/pay'
     | '/api/auth/$'
     | '/api/v1/check'
+    | '/api/v1/billing/checkout'
     | '/api/v1/mcp'
     | '/agents'
     | '/billing'
@@ -311,6 +322,7 @@ export interface FileRouteTypes {
     | '/_app/billing/pay'
     | '/api/auth/$'
     | '/api/v1/check'
+    | '/api/v1/billing/checkout'
     | '/api/v1/mcp'
     | '/_app/agents/'
     | '/_app/billing/'
@@ -329,6 +341,7 @@ export interface RootRouteChildren {
   VerifyEmailRoute: typeof VerifyEmailRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiV1CheckRoute: typeof ApiV1CheckRoute
+  ApiV1BillingCheckoutRoute: typeof ApiV1BillingCheckoutRoute
   ApiV1McpRoute: typeof ApiV1McpRoute
   ApiV1ApprovalsIdRoute: typeof ApiV1ApprovalsIdRoute
   ApiV1InternalStatsRoute: typeof ApiV1InternalStatsRoute
@@ -490,6 +503,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1CheckRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/billing/checkout': {
+      id: '/api/v1/billing/checkout'
+      path: '/api/v1/billing/checkout'
+      fullPath: '/api/v1/billing/checkout'
+      preLoaderRoute: typeof ApiV1BillingCheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/mcp': {
       id: '/api/v1/mcp'
       path: '/api/v1/mcp'
@@ -577,6 +597,7 @@ const rootRouteChildren: RootRouteChildren = {
   VerifyEmailRoute: VerifyEmailRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiV1CheckRoute: ApiV1CheckRoute,
+  ApiV1BillingCheckoutRoute: ApiV1BillingCheckoutRoute,
   ApiV1McpRoute: ApiV1McpRoute,
   ApiV1ApprovalsIdRoute: ApiV1ApprovalsIdRoute,
   ApiV1InternalStatsRoute: ApiV1InternalStatsRoute,
