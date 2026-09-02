@@ -16,11 +16,11 @@ const FAQS = [
   },
   {
     q: "How does the pre-sign hook work?",
-    a: "Give the agent an API key. Before it signs, it POSTs /api/v1/check with the destination and value_usd. If the response has must_abort: true, the agent must not send.",
+    a: "Give the agent an API key. Before it signs, it POSTs /api/v1/check with the destination and value_usd. If the response has must_abort: true, the agent must not send. Off-policy and first-time destinations wait in Inbox (hold) until you Allow once, always allow, or block.",
   },
   {
     q: "What if the agent skips the check?",
-    a: "The hook only works if you wire it in front of every send. If the agent can send without calling check, Agent Control cannot stop that send. Pause the agent from the console if you need a hard stop on your side.",
+    a: "The inbox only works if you connect the hook in front of every send. If the agent can send without calling check, Agent Control cannot stop that send. Pause the agent from the console if you need a hard stop on your side.",
   },
   {
     q: "Is the trial free? Do I need a card or KYC?",
@@ -29,6 +29,10 @@ const FAQS = [
   {
     q: "How do I pay? Is there KYC?",
     a: "No KYC and no card. Default is USDC on Solana; you can also pay native SOL or ETH. Scan the QR or copy amount + address from Billing. Do not send from an exchange — they drop the memo / unique amount.",
+  },
+  {
+    q: "What is Agent Audit?",
+    a: "An on-demand Excel or PDF of that agent’s Agent Control trail: checks, alerts, operator decisions, and recorded transfers. Generate it in the console. It is not a full on-chain replay.",
   },
   {
     q: "Is this insurance?",

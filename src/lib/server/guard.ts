@@ -7,6 +7,13 @@ import { FREE_TRIAL_DAYS, PLANS, evaluateEntitlement, type Entitlement } from "@
 import { evaluateTransfer, protectionScore } from "@/lib/policy";
 import { readNativeBalance, readRecentTransfers, USD_PRICE } from "@/lib/onchain";
 import { uid } from "@/lib/utils";
+import {
+  countOpenHolds,
+  ensureApprovalsTable,
+  insertHold,
+  listOpenHolds,
+} from "@/lib/server/approvals";
+import { ensureAuditReportsTable } from "@/lib/server/audit-reports";
 
 function num(v: unknown) {
   const n = typeof v === "number" ? v : parseFloat(String(v ?? 0));
@@ -133,9 +140,22 @@ function hashStr(s: string) {
 function fakeHash(seed: string, chain: ChainId) {
   const h = hashStr(seed).toString(16).padStart(8, "0");
   if (chain === "solana") {
-    return `${h}${hashStr(seed + "x").toString(16)}${hashStr(seed + "y").toString(16)}`.slice(0, 44);
+    return `${h}${hashStr(seed + "x").toString(16)}${hashStr(seed + "y").toString(16)}`.slice(
+      0,
+      44,
+    );
   }
-  return `0x${h}${hashStr(seed + "a").toString(16).padStart(8, "0")}${hashStr(seed + "b").toString(16).padStart(8, "0")}${hashStr(seed + "c").toString(16).padStart(8, "0")}${hashStr(seed + "d").toString(16).padStart(8, "0")}${hashStr(seed + "e").toString(16).padStart(4, "0")}`;
+  return `0x${h}${hashStr(seed + "a")
+    .toString(16)
+    .padStart(8, "0")}${hashStr(seed + "b")
+    .toString(16)
+    .padStart(8, "0")}${hashStr(seed + "c")
+    .toString(16)
+    .padStart(8, "0")}${hashStr(seed + "d")
+    .toString(16)
+    .padStart(8, "0")}${hashStr(seed + "e")
+    .toString(16)
+    .padStart(4, "0")}`;
 }
 
 function fakeAddr(seed: string, chain: ChainId) {
@@ -149,7 +169,15 @@ function fakeAddr(seed: string, chain: ChainId) {
     }
     return out;
   }
-  return `0x${hashStr(seed).toString(16).padStart(8, "0")}${hashStr(seed + "z").toString(16).padStart(8, "0")}${hashStr(seed + "q").toString(16).padStart(8, "0")}${hashStr(seed + "w").toString(16).padStart(8, "0")}${hashStr(seed + "e").toString(16).padStart(8, "0")}`;
+  return `0x${hashStr(seed).toString(16).padStart(8, "0")}${hashStr(seed + "z")
+    .toString(16)
+    .padStart(8, "0")}${hashStr(seed + "q")
+    .toString(16)
+    .padStart(8, "0")}${hashStr(seed + "w")
+    .toString(16)
+    .padStart(8, "0")}${hashStr(seed + "e")
+    .toString(16)
+    .padStart(8, "0")}`;
 }
 
 const KINDS = [
@@ -160,7 +188,6 @@ const KINDS = [
   "Spend Limit Reset",
   "Transfer",
 ];
-
 
 function demoSampleUsd(seed: string) {
   return 2400 + (hashStr(seed) % 12600);
@@ -183,10 +210,7 @@ async function seedDemoHistory(
     const ts = new Date(now - i * 47 * 60 * 1000 - (hashStr(agent.name + i + salt) % 20) * 60000);
     const value = 40 + (hashStr(agent.address + i + salt) % 1800);
     const kind = KINDS[hashStr(agent.name + String(i) + salt) % KINDS.length];
-    const isV =
-      agent.status === "critical" && i < 2
-        ? true
-        : agent.status === "warning" && i === 0;
+    const isV = agent.status === "critical" && i < 2 ? true : agent.status === "warning" && i === 0;
     const txStatus =
       isV && kind.includes("Failed")
         ? "failed"
@@ -209,7 +233,9 @@ async function seedDemoHistory(
 
 async function hydrateDemoAgents(userId: string) {
   const sql = await getSql();
-  const agents = (await sql`select * from agents where user_id = ${userId} and is_demo = true`).map(mapAgent);
+  const agents = (await sql`select * from agents where user_id = ${userId} and is_demo = true`).map(
+    mapAgent,
+  );
   const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
   for (const agent of agents) {
     if (agent.balance_usd <= 0) {
@@ -227,7 +253,9 @@ async function hydrateDemoAgents(userId: string) {
     if (num(txCount[0]?.c) === 0) {
       await seedDemoHistory(sql, userId, agent, "hydrate");
     }
-    const pol = await sql<{ id: string }>`select id from policies where agent_id = ${agent.id} limit 1`;
+    const pol = await sql<{
+      id: string;
+    }>`select id from policies where agent_id = ${agent.id} limit 1`;
     if (!pol[0]) {
       const daily = 12000;
       const allow = JSON.stringify([
@@ -313,12 +341,7 @@ function mapAgent(r: Record<string, unknown>): AgentRow {
   };
 }
 
-async function logAudit(
-  userId: string,
-  action: string,
-  detail: string,
-  agentId?: string | null,
-) {
+async function logAudit(userId: string, action: string, detail: string, agentId?: string | null) {
   const sql = await getSql();
   await sql`
     insert into audit_events (id, user_id, agent_id, action, detail)
@@ -368,11 +391,19 @@ export async function ensureSchema() {
   await sql.query(
     `create index if not exists notification_log_user_idx on notification_log (user_id, created_at desc)`,
   );
-  await sql.query(`alter table agents add column if not exists is_demo boolean not null default false`);
+  await ensureApprovalsTable();
+  await ensureAuditReportsTable();
+  await sql.query(
+    `alter table agents add column if not exists is_demo boolean not null default false`,
+  );
   await sql.query(`alter table agents add column if not exists api_key text`);
   await sql.query(`alter table agents add column if not exists last_synced_at timestamptz`);
-  await sql.query(`alter table agents add column if not exists balance_usd numeric not null default 0`);
-  await sql.query(`alter table transactions add column if not exists source text not null default 'demo'`);
+  await sql.query(
+    `alter table agents add column if not exists balance_usd numeric not null default 0`,
+  );
+  await sql.query(
+    `alter table transactions add column if not exists source text not null default 'demo'`,
+  );
   await sql.query(
     `create unique index if not exists transactions_agent_hash_idx on transactions (agent_id, tx_hash)`,
   );
@@ -396,10 +427,18 @@ export async function ensureSchema() {
       invoice_email_sent_at timestamptz
     )
   `);
-  await sql.query(`create index if not exists pay_requests_user_idx on pay_requests (user_id, created_at desc)`);
-  await sql.query(`create index if not exists pay_requests_reference_idx on pay_requests (reference)`);
-  await sql.query(`alter table pay_requests add column if not exists chain text not null default 'solana'`);
-  await sql.query(`alter table pay_requests add column if not exists asset text not null default 'usdc'`);
+  await sql.query(
+    `create index if not exists pay_requests_user_idx on pay_requests (user_id, created_at desc)`,
+  );
+  await sql.query(
+    `create index if not exists pay_requests_reference_idx on pay_requests (reference)`,
+  );
+  await sql.query(
+    `alter table pay_requests add column if not exists chain text not null default 'solana'`,
+  );
+  await sql.query(
+    `alter table pay_requests add column if not exists asset text not null default 'usdc'`,
+  );
   await sql.query(
     `alter table pay_requests add column if not exists invoice_email_sent_at timestamptz`,
   );
@@ -407,7 +446,9 @@ export async function ensureSchema() {
   for (const addr of demoAddrs) {
     await sql`update agents set is_demo = true where address = ${addr} and is_demo = false`;
   }
-  const missingKeys = await sql<{ id: string }>`select id from agents where api_key is null or api_key = ${""}`;
+  const missingKeys = await sql<{
+    id: string;
+  }>`select id from agents where api_key is null or api_key = ${""}`;
   for (const row of missingKeys) {
     await sql`update agents set api_key = ${generateApiKey()} where id = ${row.id}`;
   }
@@ -426,20 +467,22 @@ async function ensureWorkspace(userId: string) {
     values (${userId}, ${"free"}, ${"trialing"}, ${trial})
     on conflict (user_id) do nothing
   `;
-  const existing = await sql<{ c: number }>`select count(*)::int as c from agents where user_id = ${userId}`;
+  const existing = await sql<{
+    c: number;
+  }>`select count(*)::int as c from agents where user_id = ${userId}`;
   if (num(existing[0]?.c) === 0) {
-  for (const demo of DEMO_AGENTS.slice(0, 2)) {
-    const id = uid();
-    const sampleUsd = demoSampleUsd(demo.address);
-    await sql`
+    for (const demo of DEMO_AGENTS.slice(0, 2)) {
+      const id = uid();
+      const sampleUsd = demoSampleUsd(demo.address);
+      await sql`
       insert into agents (id, user_id, name, address, chain, role, status, is_demo, api_key, balance_usd)
       values (${id}, ${userId}, ${demo.name}, ${demo.address}, ${demo.chain}, ${demo.role}, ${demo.status}, ${true}, ${generateApiKey()}, ${sampleUsd})
     `;
-    const allow = JSON.stringify([
-      fakeAddr(demo.address + "ok1", demo.chain),
-      fakeAddr(demo.address + "ok2", demo.chain),
-    ]);
-    await sql`
+      const allow = JSON.stringify([
+        fakeAddr(demo.address + "ok1", demo.chain),
+        fakeAddr(demo.address + "ok2", demo.chain),
+      ]);
+      await sql`
       insert into policies (
         id, agent_id, user_id, daily_limit_usd, max_tx_amount_usd, alert_threshold_usd,
         allowlist, denylist, max_hourly_txs
@@ -449,14 +492,14 @@ async function ensureWorkspace(userId: string) {
         ${allow}::jsonb, ${"[]"}::jsonb, ${12}
       )
     `;
-    await seedDemoHistory(
-      sql,
-      userId,
-      { id, name: demo.name, address: demo.address, chain: demo.chain, status: demo.status },
-      "seed",
-    );
-    if (demo.status !== "healthy") {
-      await sql`
+      await seedDemoHistory(
+        sql,
+        userId,
+        { id, name: demo.name, address: demo.address, chain: demo.chain, status: demo.status },
+        "seed",
+      );
+      if (demo.status !== "healthy") {
+        await sql`
         insert into alerts (id, agent_id, user_id, type, severity, message)
         values (
           ${uid()}, ${id}, ${userId},
@@ -469,11 +512,54 @@ async function ensureWorkspace(userId: string) {
           }
         )
       `;
+      }
     }
-  }
-  await logAudit(userId, "workspace_seeded", "Demo fleet enrolled with sample policy and history.");
+    await logAudit(
+      userId,
+      "workspace_seeded",
+      "Demo fleet enrolled with sample policy and history.",
+    );
   }
   await hydrateDemoAgents(userId);
+  await seedSampleHold(userId);
+}
+
+async function seedSampleHold(userId: string) {
+  const sql = await getSql();
+  const existingHold = await sql<{ c: number }>`
+    select count(*)::int as c from pending_approvals
+    where user_id = ${userId}
+  `;
+  if (num(existingHold[0]?.c) > 0) return;
+  const first = (
+    await sql<{ id: string; chain: string; address: string }>`
+      select id, chain, address from agents
+      where user_id = ${userId} and is_demo = true
+      order by created_at
+      limit 1
+    `
+  )[0];
+  if (!first) return;
+  const txId = uid();
+  const dest = fakeAddr(first.id + "hold-sample", first.chain as ChainId);
+  await sql`
+    insert into transactions (
+      id, agent_id, user_id, chain, tx_hash, from_address, to_address,
+      value_usd, value_native, kind, is_violation, status, timestamp, source
+    ) values (
+      ${txId}, ${first.id}, ${userId}, ${first.chain as ChainId}, ${`presign:${txId}`},
+      ${first.address}, ${dest}, ${2400}, ${"0.75"}, ${"Pre-sign check"}, ${true},
+      ${"held"}, ${new Date().toISOString()}, ${"presign"}
+    )
+  `;
+  await insertHold({
+    userId,
+    agentId: first.id,
+    txId,
+    to: dest,
+    valueUsd: 2400,
+    reasons: ["First-time destination — waiting for you."],
+  });
 }
 
 async function loadEntitlement(userId: string): Promise<Entitlement> {
@@ -545,6 +631,7 @@ async function ingestLiveAgent(opts: {
       policy: opts.policy,
     });
     const blocked = verdict.action === "block";
+    const held = verdict.action === "hold";
     await sql`
       insert into transactions (
         id, agent_id, user_id, chain, tx_hash, from_address, to_address,
@@ -552,18 +639,18 @@ async function ingestLiveAgent(opts: {
       ) values (
         ${uid()}, ${opts.agent.id}, ${opts.userId}, ${opts.agent.chain}, ${tx.hash},
         ${tx.from}, ${tx.to}, ${tx.valueUsd}, ${String(tx.valueNative)},
-        ${tx.kind}, ${blocked}, ${blocked ? "blocked" : tx.status}, ${tx.timestamp}, ${"onchain"}
+        ${tx.kind}, ${blocked || held}, ${blocked ? "blocked" : tx.status}, ${tx.timestamp}, ${"onchain"}
       )
     `;
     created += 1;
     if (blocked) worst = "critical";
-    else if (verdict.action === "alert" && worst !== "critical") worst = "warning";
-    if (opts.alertNew && (blocked || verdict.action === "alert")) {
+    else if ((held || verdict.action === "alert") && worst !== "critical") worst = "warning";
+    if (opts.alertNew && (blocked || held || verdict.action === "alert")) {
       await sql`
         insert into alerts (id, agent_id, user_id, type, severity, message)
         values (
           ${uid()}, ${opts.agent.id}, ${opts.userId},
-          ${blocked ? "policy_block" : "policy_alert"},
+          ${blocked ? "policy_block" : held ? "policy_hold" : "policy_alert"},
           ${blocked ? "critical" : "warning"},
           ${`${opts.agent.name}: on-chain ${tx.kind} ${verdict.reasons[0]}`}
         )
@@ -630,9 +717,7 @@ export const getDashboard = createServerFn({ method: "GET" })
     const policiesRaw = await sql`
       select * from policies where user_id = ${context.userId}
     `;
-    const policies = Object.fromEntries(
-      policiesRaw.map((p) => [String(p.agent_id), mapPolicy(p)]),
-    );
+    const policies = Object.fromEntries(policiesRaw.map((p) => [String(p.agent_id), mapPolicy(p)]));
     const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
     const volumeRows = await sql<{ agent_id: string; vol: string }>`
       select agent_id, coalesce(sum(value_usd), 0)::text as vol
@@ -707,7 +792,9 @@ export const getDashboard = createServerFn({ method: "GET" })
 
     const liveCount = agents.filter((a) => !a.is_demo).length;
     const demoCount = agents.filter((a) => a.is_demo).length;
-    const liveVolume = agents.filter((a) => !a.is_demo).reduce((s, a) => s + (volume[a.id] ?? 0), 0);
+    const liveVolume = agents
+      .filter((a) => !a.is_demo)
+      .reduce((s, a) => s + (volume[a.id] ?? 0), 0);
     const demoVolume = agents.filter((a) => a.is_demo).reduce((s, a) => s + (volume[a.id] ?? 0), 0);
     const volume24h = liveVolume + demoVolume;
     const liveUsd = agents.filter((a) => !a.is_demo).reduce((s, a) => s + a.balance_usd, 0);
@@ -727,12 +814,11 @@ export const getDashboard = createServerFn({ method: "GET" })
             : "Enroll a live wallet to fetch chain balance";
     const openAlerts = alerts.filter((a) => !a.acknowledged).length;
     const openCritical = alerts.filter((a) => !a.acknowledged && a.severity === "critical").length;
-    const risk =
-      agents.some((a) => a.status === "critical" && !a.is_paused)
-        ? "High"
-        : agents.some((a) => a.status === "warning")
-          ? "Medium"
-          : "Low";
+    const risk = agents.some((a) => a.status === "critical" && !a.is_paused)
+      ? "High"
+      : agents.some((a) => a.status === "warning")
+        ? "Medium"
+        : "Low";
 
     const protection = protectionScore({
       agentCount: agents.length,
@@ -874,6 +960,8 @@ export const deleteAgent = createServerFn({ method: "POST" })
     const sql = await getSql();
     await sql`delete from alerts where agent_id = ${data.id} and user_id = ${context.userId}`;
     await sql`delete from transactions where agent_id = ${data.id} and user_id = ${context.userId}`;
+    await sql`delete from pending_approvals where agent_id = ${data.id} and user_id = ${context.userId}`;
+    await sql`delete from audit_reports where agent_id = ${data.id} and user_id = ${context.userId}`;
     await sql`delete from policies where agent_id = ${data.id} and user_id = ${context.userId}`;
     await sql`delete from agents where id = ${data.id} and user_id = ${context.userId}`;
     await logAudit(context.userId, "agent_removed", "Agent removed from the console.", data.id);
@@ -935,7 +1023,9 @@ export const scanAgents = createServerFn({ method: "POST" })
     await requireWritable(context.userId);
     await hydrateDemoAgents(context.userId);
     const sql = await getSql();
-    const agents = (await sql`select * from agents where user_id = ${context.userId}`).map(mapAgent);
+    const agents = (await sql`select * from agents where user_id = ${context.userId}`).map(
+      mapAgent,
+    );
     const policiesRaw = await sql`select * from policies where user_id = ${context.userId}`;
     const policyBy = Object.fromEntries(policiesRaw.map((p) => [String(p.agent_id), mapPolicy(p)]));
     const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
@@ -979,10 +1069,11 @@ export const scanAgents = createServerFn({ method: "POST" })
       const used = num(volRows[0]?.vol);
       const txsLastHour = num(hourRows[0]?.c);
       const value = 80 + (hashStr(agent.id + String(Date.now())) % 900);
-      const offList = policy.allowlist.length > 0 && hashStr(agent.id + String(Date.now())) % 3 === 0;
+      const offList =
+        policy.allowlist.length > 0 && hashStr(agent.id + String(Date.now())) % 3 === 0;
       const to = offList
         ? fakeAddr(agent.id + "off", agent.chain)
-        : policy.allowlist[0] ?? fakeAddr(agent.id + "scan", agent.chain);
+        : (policy.allowlist[0] ?? fakeAddr(agent.id + "scan", agent.chain));
       const verdict = evaluateTransfer({
         valueUsd: value,
         to,
@@ -992,34 +1083,62 @@ export const scanAgents = createServerFn({ method: "POST" })
         policy,
       });
       const blocked = verdict.action === "block";
-      const kind = blocked ? "Policy Block" : verdict.action === "alert" ? "Policy Alert" : "Transfer";
+      const held = verdict.action === "hold";
+      const kind = blocked
+        ? "Policy Block"
+        : held
+          ? "Waiting for you"
+          : verdict.action === "alert"
+            ? "Policy Alert"
+            : "Transfer";
+      const txId = uid();
       await sql`
         insert into transactions (
           id, agent_id, user_id, chain, tx_hash, from_address, to_address,
           value_usd, value_native, kind, is_violation, status, timestamp, source
         ) values (
-          ${uid()}, ${agent.id}, ${context.userId}, ${agent.chain},
+          ${txId}, ${agent.id}, ${context.userId}, ${agent.chain},
           ${fakeHash(agent.id + Date.now(), agent.chain)},
           ${agent.address}, ${to},
-          ${value}, ${String((value / 3200).toFixed(4))}, ${kind}, ${blocked},
-          ${blocked ? "blocked" : "success"}, ${new Date().toISOString()}, ${"demo"}
+          ${value}, ${String((value / 3200).toFixed(4))}, ${kind}, ${blocked || held},
+          ${blocked ? "blocked" : held ? "held" : "success"}, ${new Date().toISOString()}, ${"demo"}
         )
       `;
       created += 1;
       const ratio = (used + value) / policy.daily_limit_usd;
-      const status = blocked || ratio > 0.9 ? "critical" : ratio > 0.65 || verdict.action === "alert" ? "warning" : "healthy";
+      const status =
+        blocked || ratio > 0.9
+          ? "critical"
+          : ratio > 0.65 || verdict.action === "alert" || held
+            ? "warning"
+            : "healthy";
       await sql`update agents set status = ${status} where id = ${agent.id} and user_id = ${context.userId}`;
-      if (blocked || verdict.action === "alert") {
+      if (held) {
+        await insertHold({
+          userId: context.userId,
+          agentId: agent.id,
+          txId,
+          to,
+          valueUsd: value,
+          reasons: verdict.reasons,
+        });
+      }
+      if (blocked || held || verdict.action === "alert") {
         const severity = blocked ? "critical" : "warning";
         const message = `${agent.name}: ${verdict.reasons[0]}`;
         await sql`
           insert into alerts (id, agent_id, user_id, type, severity, message)
           values (
             ${uid()}, ${agent.id}, ${context.userId},
-            ${blocked ? "policy_block" : "policy_alert"}, ${severity}, ${message}
+            ${blocked ? "policy_block" : held ? "approval_hold" : "policy_alert"}, ${severity}, ${message}
           )
         `;
-        await logAudit(context.userId, blocked ? "policy_block" : "policy_alert", message, agent.id);
+        await logAudit(
+          context.userId,
+          blocked ? "policy_block" : held ? "presign_hold" : "policy_alert",
+          message,
+          agent.id,
+        );
         if (blocked && profile[0]?.email_alerts) {
           await queueNotice(context.userId, "email", message);
         }
@@ -1050,9 +1169,9 @@ export const simulateTransfer = createServerFn({ method: "POST" })
     ).map(mapAgent);
     const agent = agents[0];
     if (!agent) throw new Error("Agent not found.");
-    const policies = (await sql`select * from policies where agent_id = ${agent.id} and user_id = ${context.userId}`).map(
-      mapPolicy,
-    );
+    const policies = (
+      await sql`select * from policies where agent_id = ${agent.id} and user_id = ${context.userId}`
+    ).map(mapPolicy);
     const policy = policies[0];
     if (!policy) throw new Error("No policy on this agent.");
     const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
@@ -1200,4 +1319,112 @@ export const rotateApiKey = createServerFn({ method: "POST" })
     await sql`update agents set api_key = ${key} where id = ${data.id} and user_id = ${context.userId}`;
     await logAudit(context.userId, "api_key_rotated", "Pre-sign API key rotated.", data.id);
     return { api_key: key };
+  });
+
+export const getHoldCount = createServerFn({ method: "GET" })
+  .middleware([authMiddleware])
+  .handler(async ({ context }) => {
+    await ensureSchema();
+    const count = await countOpenHolds(context.userId);
+    return { count };
+  });
+
+export const getInbox = createServerFn({ method: "GET" })
+  .middleware([authMiddleware])
+  .handler(async ({ context }) => {
+    await ensureWorkspace(context.userId);
+    const items = await listOpenHolds(context.userId);
+    const ent = await loadEntitlement(context.userId);
+    return { items, writable: ent.writable };
+  });
+
+export const decideApproval = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator((d: unknown) =>
+    z
+      .object({
+        id: z.string(),
+        decision: z.enum(["allow", "always", "block"]),
+      })
+      .parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    await requireWritable(context.userId);
+    await ensureSchema();
+    const sql = await getSql();
+    const now = new Date().toISOString();
+    const rows = await sql`
+      select * from pending_approvals
+      where id = ${data.id} and user_id = ${context.userId}
+    `;
+    const row = rows[0];
+    if (!row) throw new Error("Request not found.");
+    if (String(row.status) !== "hold") throw new Error("This request was already decided.");
+    if (new Date(String(row.expires_at)).getTime() <= Date.now()) {
+      await sql`
+        update pending_approvals set status = ${"expired"}, decided_at = ${now}
+        where id = ${data.id} and user_id = ${context.userId}
+      `;
+      throw new Error("This request expired. The agent must not sign.");
+    }
+
+    const toAddr = String(row.to_address);
+    const agentId = String(row.agent_id);
+    const txId = row.tx_id ? String(row.tx_id) : null;
+
+    if (data.decision === "always") {
+      const pol =
+        await sql`select allowlist from policies where agent_id = ${agentId} and user_id = ${context.userId}`;
+      const list = asStrings(pol[0]?.allowlist);
+      const exists = list.some((a) => a.toLowerCase() === toAddr.toLowerCase());
+      if (!exists) {
+        const next = JSON.stringify([...list, toAddr]);
+        await sql`
+          update policies set allowlist = ${next}::jsonb
+          where agent_id = ${agentId} and user_id = ${context.userId}
+        `;
+      }
+    }
+
+    if (data.decision === "block") {
+      if (txId) {
+        await sql`
+          update transactions
+          set status = ${"blocked"}, is_violation = ${true}
+          where id = ${txId} and user_id = ${context.userId}
+        `;
+      }
+      await sql`update agents set status = ${"critical"} where id = ${agentId} and user_id = ${context.userId}`;
+      await sql`
+        insert into alerts (id, agent_id, user_id, type, severity, message)
+        values (
+          ${uid()}, ${agentId}, ${context.userId},
+          ${"presign_block"}, ${"critical"},
+          ${`You blocked $${num(row.value_usd).toFixed(0)} to ${toAddr.slice(0, 18)}`}
+        )
+      `;
+    } else if (txId) {
+      await sql`
+        update transactions
+        set status = ${"success"}, is_violation = ${false}, kind = ${"Pre-sign approved"}
+        where id = ${txId} and user_id = ${context.userId}
+      `;
+    }
+
+    await sql`
+      update pending_approvals
+      set status = ${data.decision}, decided_at = ${now}
+      where id = ${data.id} and user_id = ${context.userId}
+    `;
+    await logAudit(
+      context.userId,
+      data.decision === "block"
+        ? "approval_block"
+        : data.decision === "always"
+          ? "approval_always"
+          : "approval_allow",
+      `${data.decision.toUpperCase()} $${num(row.value_usd).toFixed(0)} → ${toAddr.slice(0, 18)}`,
+      agentId,
+    );
+    return { ok: true, decision: data.decision };
   });

@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CORS, json, readApiKey } from "@/lib/server/http";
-import { agentStatusForKey, checkTransferIntent } from "@/lib/server/intent";
+import { agentStatusForKey, checkTransferIntent, pollApprovalIntent } from "@/lib/server/intent";
 import { getSql } from "@/lib/db";
 
 const TOOLS = [
   {
     name: "check_transfer",
     description:
-      "MUST be called before the agent signs or sends a transfer. Returns allow, alert, or block. If must_abort is true, abort the send.",
+      "MUST be called before the agent signs or broadcasts a transfer. Returns allow, alert, hold, or block. If must_abort is true, do not sign. If decision is hold, poll get_approval until allow or block.",
     inputSchema: {
       type: "object",
       properties: {
@@ -21,6 +21,21 @@ const TOOLS = [
     name: "get_agent_status",
     description: "Returns whether this agent is paused, expired, or healthy.",
     inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "get_approval",
+    description:
+      "Poll a held pre-sign check. Pass approval_id from check_transfer. Repeat until decision is allow or block.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        approval_id: {
+          type: "string",
+          description: "ID returned when check_transfer decision is hold",
+        },
+      },
+      required: ["approval_id"],
+    },
   },
 ];
 
@@ -43,7 +58,12 @@ export const Route = createFileRoute("/api/v1/mcp")({
           method?: string;
           params?: {
             name?: string;
-            arguments?: { to?: string; value_usd?: number; valueUsd?: number };
+            arguments?: {
+              to?: string;
+              value_usd?: number;
+              valueUsd?: number;
+              approval_id?: string;
+            };
           };
         } = {};
         try {
@@ -73,9 +93,16 @@ export const Route = createFileRoute("/api/v1/mcp")({
           if (name === "get_agent_status") {
             const status = await agentStatusForKey(apiKey);
             if (!status) {
-              return json({ jsonrpc: "2.0", id, error: { code: 401, message: "Unknown API key." } }, 401);
+              return json(
+                { jsonrpc: "2.0", id, error: { code: 401, message: "Unknown API key." } },
+                401,
+              );
             }
-            return json({ jsonrpc: "2.0", id, result: { content: [{ type: "text", text: JSON.stringify(status) }] } });
+            return json({
+              jsonrpc: "2.0",
+              id,
+              result: { content: [{ type: "text", text: JSON.stringify(status) }] },
+            });
           }
           if (name === "check_transfer") {
             const args = msg.params?.arguments ?? {};
@@ -85,7 +112,10 @@ export const Route = createFileRoute("/api/v1/mcp")({
               valueUsd: Number(args.value_usd ?? args.valueUsd ?? 0),
             });
             if (!result.ok) {
-              return json({ jsonrpc: "2.0", id, error: { code: result.status, message: result.error } }, result.status);
+              return json(
+                { jsonrpc: "2.0", id, error: { code: result.status, message: result.error } },
+                result.status,
+              );
             }
             return json({
               jsonrpc: "2.0",
@@ -93,9 +123,33 @@ export const Route = createFileRoute("/api/v1/mcp")({
               result: { content: [{ type: "text", text: JSON.stringify(result.result) }] },
             });
           }
-          return json({ jsonrpc: "2.0", id, error: { code: -32601, message: "Unknown tool." } }, 400);
+          if (name === "get_approval") {
+            const args = msg.params?.arguments ?? {};
+            const result = await pollApprovalIntent({
+              apiKey,
+              approvalId: String(args.approval_id ?? ""),
+            });
+            if (!result.ok) {
+              return json(
+                { jsonrpc: "2.0", id, error: { code: result.status, message: result.error } },
+                result.status,
+              );
+            }
+            return json({
+              jsonrpc: "2.0",
+              id,
+              result: { content: [{ type: "text", text: JSON.stringify(result.result) }] },
+            });
+          }
+          return json(
+            { jsonrpc: "2.0", id, error: { code: -32601, message: "Unknown tool." } },
+            400,
+          );
         }
-        return json({ jsonrpc: "2.0", id, error: { code: -32601, message: "Unknown method." } }, 400);
+        return json(
+          { jsonrpc: "2.0", id, error: { code: -32601, message: "Unknown method." } },
+          400,
+        );
       },
     },
   },

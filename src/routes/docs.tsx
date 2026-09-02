@@ -77,6 +77,11 @@ function DocsPage() {
           The check only works if the agent is wired to call it. If it skips the hook, Agent Control
           cannot stop that send.
         </p>
+        <p className="mt-3 text-sm leading-relaxed text-muted">
+          Inbox is where off-policy and first-time destinations wait: Allow once, Always allow this
+          address, or Block. Agent Audit generates an on-demand Excel or PDF of the Agent Control
+          trail for an enrolled wallet — not a full chain replay.
+        </p>
 
         <div className="mt-8 flex flex-wrap items-center gap-3">
           <Button size="lg" asChild className="rounded-full">
@@ -91,11 +96,16 @@ function DocsPage() {
         </div>
 
         <details className="mt-16 rounded-[20px] border border-border bg-surface">
-          <summary className="cursor-pointer px-5 py-4 font-medium">For builders · API details</summary>
+          <summary className="cursor-pointer px-5 py-4 font-medium">
+            For builders · API details
+          </summary>
           <div className="space-y-3 border-t border-border px-5 py-4 text-sm text-muted">
             <p>
               Give the agent its API key. Before every send it should call the check. If{" "}
-              <code className="font-mono text-fg">must_abort</code> is true, do not send.
+              <code className="font-mono text-fg">must_abort</code> is true, do not send. Pause and
+              denylist still block. Off-policy or first-time destinations return{" "}
+              <code className="font-mono text-fg">hold</code> — poll until allow or block (10-minute
+              TTL).
             </p>
             <pre className="overflow-x-auto rounded-[16px] bg-[#12263f] p-4 font-mono text-xs leading-relaxed text-[#e8eef6]">
               {`curl -s https://agent-control.net/api/v1/check \\
@@ -103,6 +113,11 @@ function DocsPage() {
   -H "Content-Type: application/json" \\
   -d '{"to":"<destination>","value_usd":2400}'`}
             </pre>
+            <p>
+              Hold response includes <code className="font-mono text-fg">poll_url</code> and{" "}
+              <code className="font-mono text-fg">approval_id</code>. MCP tool{" "}
+              <code className="font-mono text-fg">get_approval</code> polls the same decision.
+            </p>
           </div>
         </details>
       </main>

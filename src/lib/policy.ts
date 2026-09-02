@@ -7,8 +7,10 @@ export type PolicyInput = {
   max_hourly_txs: number;
 };
 
+export type VerdictAction = "allow" | "alert" | "block" | "hold";
+
 export type Verdict = {
-  action: "allow" | "alert" | "block";
+  action: VerdictAction;
   reasons: string[];
 };
 
@@ -25,37 +27,37 @@ export function evaluateTransfer(input: {
   policy: PolicyInput;
 }): Verdict {
   const reasons: string[] = [];
-  let action: Verdict["action"] = "allow";
+  let action: VerdictAction = "allow";
   const block = (r: string) => {
     reasons.push(r);
     action = "block";
   };
+  const hold = (r: string) => {
+    reasons.push(r);
+    if (action !== "block") action = "hold";
+  };
   const alert = (r: string) => {
     reasons.push(r);
-    if (action !== "block") action = "alert";
+    if (action === "allow") action = "alert";
   };
 
   const to = norm(input.to);
   const allow = input.policy.allowlist.map(norm).filter(Boolean);
   const deny = input.policy.denylist.map(norm).filter(Boolean);
 
-  if (input.paused) block("Agent is paused — all transfers are held.");
+  if (input.paused) block("Agent is paused — all transfers are blocked.");
   if (deny.includes(to)) block("Destination is on the denylist.");
   if (allow.length > 0 && to && !allow.includes(to)) {
-    block("Destination is not on the allowlist.");
+    hold("Destination is not on the allowlist.");
   }
   if (input.valueUsd > input.policy.max_tx_amount_usd) {
-    block(
-      `Amount exceeds max transaction of $${input.policy.max_tx_amount_usd.toFixed(0)}.`,
-    );
+    hold(`Amount exceeds max transaction of $${input.policy.max_tx_amount_usd.toFixed(0)}.`);
   }
   if (input.usedTodayUsd + input.valueUsd > input.policy.daily_limit_usd) {
-    block(
-      `Would exceed daily spend cap of $${input.policy.daily_limit_usd.toFixed(0)}.`,
-    );
+    hold(`Would exceed daily spend cap of $${input.policy.daily_limit_usd.toFixed(0)}.`);
   }
   if (input.txsLastHour >= input.policy.max_hourly_txs) {
-    block(`Hourly velocity cap of ${input.policy.max_hourly_txs} txs reached.`);
+    hold(`Hourly velocity cap of ${input.policy.max_hourly_txs} txs reached.`);
   }
   if (input.valueUsd >= input.policy.alert_threshold_usd) {
     alert(
@@ -111,7 +113,9 @@ export function protectionScore(input: {
 
   if (input.openCritical > 0) {
     score -= Math.min(25, input.openCritical * 10);
-    notes.push(`${input.openCritical} unacknowledged critical alert${input.openCritical === 1 ? "" : "s"}.`);
+    notes.push(
+      `${input.openCritical} unacknowledged critical alert${input.openCritical === 1 ? "" : "s"}.`,
+    );
   } else {
     score += 10;
     notes.push("No open critical alerts.");

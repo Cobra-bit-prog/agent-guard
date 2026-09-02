@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getDashboard } from "@/lib/server/guard";
+import { getDashboard, type PolicyRow } from "@/lib/server/guard";
 import { formatUsd } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/policies")({
@@ -45,7 +45,9 @@ function PoliciesPage() {
       </div>
       <div className="grid gap-3">
         {q.data.agents.map((a) => {
-          const p = q.data.policies[a.id];
+          const policies =
+            "policies" in q.data ? (q.data.policies as Record<string, PolicyRow>) : {};
+          const p = policies[a.id];
           return (
             <Card key={a.id}>
               <CardContent className="flex flex-col gap-2 p-5 md:flex-row md:items-center md:justify-between">
