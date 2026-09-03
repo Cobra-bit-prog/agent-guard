@@ -108,7 +108,7 @@ function PartnersPage() {
               {
                 n: "3",
                 t: "POST /api/v1/check",
-                d: "Before send: destination + value_usd. If must_abort is true, do not send.",
+                d: "Before send: destination + value_usd. If the check says stop, do not send.",
               },
               {
                 n: "4",

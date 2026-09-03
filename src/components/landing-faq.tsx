@@ -16,7 +16,7 @@ const FAQS = [
   },
   {
     q: "How does the pre-sign hook work?",
-    a: "Give the agent an API key. Before it signs, it POSTs /api/v1/check with the destination and value_usd. If the response has must_abort: true, do not send. Off-policy and first-time destinations can HOLD with a poll_url — you decide in /inbox. Pause and denylist are a hard block (never a hold).",
+    a: "Give the agent an API key. Before it signs, it POSTs /api/v1/check with the destination and value_usd. If the check says stop, do not send. Off-policy and first-time destinations can HOLD with a poll_url — you decide in /inbox. Pause and denylist are a hard block (never a hold).",
   },
   {
     q: "What if the agent skips the check?",
@@ -38,9 +38,9 @@ const FAQS = [
     q: "How is this different from agentaudit.dev, SpendGuard, or Turnkey?",
     a: (
       <>
-        Agent Control is agent payments control for on-chain wallet sends — spend limits, approval
-        before agent send, hold vs block. Not package / CVE scanning, not LLM API billing, and not
-        a custodian. You keep the keys.{" "}
+        Agent Control is agent payments control for agent wallets — spend limits, approval before
+        agent send, hold vs block. Not a package scanner. SpendGuard (x402-spendguard) is a firewall
+        you run yourself. We host Approval Inbox and Agent Audit. You keep the keys.{" "}
         <a href="/docs#compare" className="text-fg underline underline-offset-4">
           Compare on docs
         </a>

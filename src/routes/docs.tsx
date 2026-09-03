@@ -55,7 +55,7 @@ const CONNECT_STEPS = [
   {
     n: "5",
     t: "Check before every send",
-    d: "The agent POSTs /api/v1/check (or MCP check_transfer, then get_approval on hold). If must_abort is true, do not send.",
+    d: "The agent POSTs /api/v1/check (or MCP check_transfer, then get_approval on hold). If the check says stop, do not send.",
   },
   {
     n: "6",
@@ -64,26 +64,41 @@ const CONNECT_STEPS = [
   },
 ] as const;
 
-const COMPARE = [
+type CompareRow = {
+  themName: string;
+  them: string;
+  us: string;
+  pick: string;
+  themList?: readonly string[];
+  usList?: readonly string[];
+};
+
+const COMPARE: readonly CompareRow[] = [
   {
     themName: "agentaudit.dev",
-    them: "Package / CVE / dependency security registry.",
+    them: "They scan code packages.",
     us: "Agent payments control — spend limits, approval before agent send, Approval Inbox, Agent Audit on wallet sends.",
-    pick: "Pick us when the risk is an agent spending crypto, not a vulnerable npm package.",
+    pick: "Pick us when the risk is an agent spending crypto, not a code package.",
   },
   {
     themName: "SpendGuard",
-    them: "LLM / API dollar spend and usage guards.",
-    us: "On-chain wallet sends on Solana, Ethereum, and Base. External audit for your agents.",
-    pick: "Pick us when the spend is crypto from an agent wallet, not model API billing.",
+    them: "x402-spendguard: a firewall you run on your own machine. For EVM and x402. You run it yourself.",
+    us: "Hosted Approval Inbox and Agent Audit. Solana, Ethereum, and Base. You set the limits. You keep the keys.",
+    pick: "They run on your machine. We host the human inbox. You can use both.",
+    themList: ["A firewall you run on your own machine", "For EVM and x402", "You run it yourself"],
+    usList: [
+      "Hosted Approval Inbox and Agent Audit",
+      "Solana, Ethereum, and Base",
+      "You set the limits. You keep the keys.",
+    ],
   },
   {
     themName: "Turnkey (and similar: Privy)",
-    them: "Custody, wallet infra, TEE / key management.",
-    us: "Non-custodial policy + pre-sign check. You keep the keys. Connect your agent; we answer allow / hold / block.",
-    pick: "Pick us when you already have keys/wallets and need hold vs block + agent wallet audit, not a new custodian.",
+    them: "Wallets and keys.",
+    us: "Connect your agent. We answer allow / hold vs block. You keep the keys.",
+    pick: "Pick us when you already have keys and need hold vs block plus an agent wallet audit.",
   },
-] as const;
+];
 
 export const Route = createFileRoute("/docs")({
   component: DocsPage,
@@ -168,9 +183,9 @@ function DocsPage() {
           spend is held, optional email (Settings → Email alerts) and a Slack incoming webhook (if
           you set the URL in Settings) can ping you with a link to Approval Inbox. No action within
           10 minutes = block — the agent must abort. Agent Audit generates an on-demand Excel or PDF
-          of the Agent Control trail — not a full chain explorer or ghost replay. Nothing is auto-emailed
-          from Agent Audit. Optional warning alerts can also ping you for a policy alert or spend
-          near the daily cap.
+          of the Agent Control trail — not a full chain explorer or ghost replay. Nothing is
+          auto-emailed from Agent Audit. Optional warning alerts can also ping you for a policy
+          alert or spend near the daily cap.
         </p>
 
         <section id="connect-your-agent" className="mt-16 scroll-mt-6">
@@ -187,6 +202,9 @@ function DocsPage() {
             the keys. External audit for your agents; agent payments control on Solana, Ethereum,
             and Base.
           </p>
+          <p className="mt-3 max-w-[52ch] text-muted">
+            Works with Coinbase AgentKit and any agent that can ask before it sends.
+          </p>
           <ol className="mt-8 space-y-3">
             {CONNECT_STEPS.map((s) => (
               <li
@@ -199,12 +217,41 @@ function DocsPage() {
               </li>
             ))}
           </ol>
+          <article
+            id="agentkit"
+            className="mt-8 scroll-mt-6 rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]"
+          >
+            <h3 className="text-lg font-medium">Coinbase AgentKit (and similar)</h3>
+            <p className="mt-2 text-sm text-muted">
+              If your agent already asks before it sends — like Coinbase AgentKit — send that ask to
+              Agent Control. You set the limit. Over the line → hold vs block.
+            </p>
+            <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-muted">
+              <li>You set the spend limit in Agent Control.</li>
+              <li>The agent asks before every send.</li>
+              <li>Under the limit, it can send.</li>
+              <li>Over the line: hold waits in Approval Inbox. Block means do not send.</li>
+              <li>You keep the keys.</li>
+            </ul>
+            <p className="mt-4 text-sm text-muted">That ask is POST /api/v1/check:</p>
+            <pre className="mt-2 overflow-x-auto rounded-[16px] bg-[#12263f] p-4 font-mono text-xs leading-relaxed text-[#e8eef6]">
+              {`fetch("https://agent-control.net/api/v1/check", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer YOUR_AGENT_API_KEY",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({ to: destination, value_usd: amount }),
+})`}
+            </pre>
+            <p className="mt-3 text-sm text-muted">If the check says stop, do not send.</p>
+          </article>
           <p id="skill-mcp" className="mt-6 scroll-mt-6 text-sm leading-relaxed text-muted">
-            Coding agents (Cursor and similar) connect the same way: give the agent the API key, then
-            check before spend. HTTP today: POST /api/v1/check with the Bearer key. MCP at POST
+            Coding agents (Cursor and similar) connect the same way: give the agent the API key,
+            then check before spend. HTTP today: POST /api/v1/check with the Bearer key. MCP at POST
             /api/v1/mcp — tools <code className="font-mono text-fg">check_transfer</code>,{" "}
             <code className="font-mono text-fg">get_approval</code>, and{" "}
-            <code className="font-mono text-fg">get_agent_status</code>. If must_abort is true, do
+            <code className="font-mono text-fg">get_agent_status</code>. If the check says stop, do
             not send. If the agent skips the check, Inbox cannot stop that send — funds can move.
           </p>
         </section>
@@ -215,8 +262,8 @@ function DocsPage() {
             When to use Agent Control
           </h2>
           <p className="mt-3 max-w-[52ch] text-muted">
-            Agent payments control for on-chain wallet sends. Not a package scanner, not an LLM
-            billing guard, not a custodian.
+            Agent payments control for agent wallets. Not a package scanner. Not a firewall you run
+            on your own machine. You keep the keys.
           </p>
           <div className="mt-8 space-y-3">
             {COMPARE.map((row) => (
@@ -224,13 +271,42 @@ function DocsPage() {
                 key={row.themName}
                 className="rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]"
               >
-                <h3 className="text-lg font-medium">vs {row.themName}</h3>
-                <p className="mt-2 text-sm text-muted">
-                  <span className="font-medium text-fg">Them.</span> {row.them}
-                </p>
-                <p className="mt-2 text-sm text-muted">
-                  <span className="font-medium text-fg">Us.</span> {row.us}
-                </p>
+                <h3 className="text-lg font-medium">
+                  vs {row.themName}
+                  {row.themName === "SpendGuard" ? (
+                    <span className="mt-1 block text-sm font-normal text-muted">
+                      x402-spendguard
+                    </span>
+                  ) : null}
+                </h3>
+                {row.themList ? (
+                  <>
+                    <p className="mt-2 text-sm font-medium text-fg">Them.</p>
+                    <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-muted">
+                      {row.themList.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </>
+                ) : (
+                  <p className="mt-2 text-sm text-muted">
+                    <span className="font-medium text-fg">Them.</span> {row.them}
+                  </p>
+                )}
+                {row.usList ? (
+                  <>
+                    <p className="mt-2 text-sm font-medium text-fg">Us.</p>
+                    <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-muted">
+                      {row.usList.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </>
+                ) : (
+                  <p className="mt-2 text-sm text-muted">
+                    <span className="font-medium text-fg">Us.</span> {row.us}
+                  </p>
+                )}
                 <p className="mt-2 text-sm text-muted">{row.pick}</p>
               </article>
             ))}
@@ -298,8 +374,7 @@ function DocsPage() {
               Hold response includes <code className="font-mono text-fg">poll_url</code> and{" "}
               <code className="font-mono text-fg">approval_id</code>. MCP tool{" "}
               <code className="font-mono text-fg">get_approval</code> polls the same decision. Same
-              tools on POST /api/v1/mcp:{" "}
-              <code className="font-mono text-fg">check_transfer</code>,{" "}
+              tools on POST /api/v1/mcp: <code className="font-mono text-fg">check_transfer</code>,{" "}
               <code className="font-mono text-fg">get_approval</code>,{" "}
               <code className="font-mono text-fg">get_agent_status</code>.
             </p>
