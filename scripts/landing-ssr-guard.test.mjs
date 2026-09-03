@@ -126,7 +126,8 @@ test("homepage FAQ covers Inbox, Audit, hold vs block, and skipped-check limits"
   assert.match(src, /incoming webhook URL/);
   assert.match(src, /No action within 10 minutes/);
   assert.match(src, /must abort/);
-  assert.match(src, /must_abort: true/);
+  assert.match(src, /If the check says stop, do not send/);
+  assert.doesNotMatch(src, /must_abort/);
   assert.match(src, /poll_url/);
   assert.match(src, /Always allow this address/);
   assert.match(src, /Holds expire in 10 minutes/);
@@ -227,6 +228,8 @@ test("llms.txt is the public AI-crawler brief", () => {
   assert.match(llms, /https:\/\/agent-control\.net\/inbox/);
   assert.match(llms, /https:\/\/agent-control\.net\/audit/);
   assert.match(llms, /POST \/api\/v1\/check/);
+  assert.match(llms, /If the check says stop, do not send/);
+  assert.doesNotMatch(llms, /must_abort/);
   assert.match(llms, /MCP get_approval/);
   assert.match(llms, /agentaudit\.dev/);
   assert.match(llms, /SpendGuard/);
@@ -282,6 +285,8 @@ test("partners page is wallet-complement copy; sitemap and docs link it", () => 
   assert.match(partners, /hold vs block/);
   assert.match(partners, /Turnkey, Privy, Coinbase, x402/);
   assert.match(partners, /POST \/api\/v1\/check/);
+  assert.match(partners, /If the check says stop, do not send/);
+  assert.doesNotMatch(partners, /must_abort/);
   assert.match(partners, /poll_url/);
   assert.match(partners, /\$29 \/ Pro \$49 \/ Team \$149 USDC/);
   assert.match(partners, /support@agent-control\.net/);

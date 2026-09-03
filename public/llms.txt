@@ -34,7 +34,7 @@ Agent Control is non-custodial agent payments control for wallets on Solana, Eth
 - Optional warning emails — Settings → Email alerts (on by default): policy alert, spend near the daily cap, Inbox hold, or hard block. Inbox holds can also POST a Slack incoming webhook if you set the URL in Settings (link to /inbox?hold=<approvalId>). No action within 10 minutes = block / abort. If the agent skips the check, Inbox cannot stop that send.
 
 ## How builders check before spend
-POST /api/v1/check with API key, destination, value_usd. If must_abort is true, do not send. Hold returns poll_url / approval_id — poll until allow or block (or use MCP get_approval). Coinbase AgentKit and similar: if the agent already asks before it sends, send that ask to this POST. You set the limit. Over the line → hold vs block. Docs: https://agent-control.net/docs#connect-your-agent
+POST /api/v1/check with API key, destination, value_usd. If the check says stop, do not send. Hold returns poll_url / approval_id — poll until allow or block (or use MCP get_approval). Coinbase AgentKit and similar: if the agent already asks before it sends, send that ask to this POST. You set the limit. Over the line → hold vs block. Docs: https://agent-control.net/docs#connect-your-agent
 
 ## Pricing
 1-day full console trial, no card, no KYC. Then Starter $29 / Pro $49 / Team $149. DIY on-chain USDC (Solana) or native SOL/ETH from Billing. No in-page Phantom pay-extension.

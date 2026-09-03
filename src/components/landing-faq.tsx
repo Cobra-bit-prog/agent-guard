@@ -16,7 +16,7 @@ const FAQS = [
   },
   {
     q: "How does the pre-sign hook work?",
-    a: "Give the agent an API key. Before it signs, it POSTs /api/v1/check with the destination and value_usd. If the response has must_abort: true, do not send. Off-policy and first-time destinations can HOLD with a poll_url — you decide in /inbox. Pause and denylist are a hard block (never a hold).",
+    a: "Give the agent an API key. Before it signs, it POSTs /api/v1/check with the destination and value_usd. If the check says stop, do not send. Off-policy and first-time destinations can HOLD with a poll_url — you decide in /inbox. Pause and denylist are a hard block (never a hold).",
   },
   {
     q: "What if the agent skips the check?",
