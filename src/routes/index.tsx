@@ -194,7 +194,7 @@ function Home() {
                 </a>
               </Button>
             </div>
-            <p className="landing-rise mt-2 text-xs font-medium leading-snug text-[#3a4d63]">
+            <p className="landing-rise mt-2 text-xs font-medium leading-snug text-muted">
               1-day (24 hour) trial, then pay on-chain. No card. No KYC.
             </p>
             <div className="landing-rise mt-4 flex flex-wrap gap-1">
