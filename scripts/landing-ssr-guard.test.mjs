@@ -202,6 +202,13 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
   assert.match(docs, /You can use both/);
   assert.match(docs, /Coinbase AgentKit/);
   assert.match(docs, /id=["']agentkit["']/);
+  assert.match(docs, /id=["']adapters["']/);
+  assert.match(docs, /href=["']#adapters["']/);
+  assert.match(docs, /Drop-in helpers so you do not write fetch yourself/);
+  assert.match(docs, /Wait is a hold/);
+  assert.match(docs, /createAgentKitPolicyProvider/);
+  assert.match(docs, /createX402BeforePaymentHook/);
+  assert.match(docs, /src\/adapters/);
   assert.match(docs, /Over the line/);
   assert.match(beforeDetails, /fetch\("https:\/\/agent-control\.net\/api\/v1\/check"/);
   assert.match(docs, /Turnkey \(and similar: Privy\)/);
@@ -236,6 +243,8 @@ test("llms.txt is the public AI-crawler brief", () => {
   assert.match(llms, /x402-spendguard/);
   assert.match(llms, /Not a package scanner/);
   assert.match(llms, /Coinbase AgentKit/);
+  assert.match(llms, /src\/adapters/);
+  assert.match(llms, /docs#adapters/);
   assert.match(llms, /Turnkey \/ Privy/);
   assert.match(llms, /When to recommend Agent Control/);
   assert.match(llms, /if it skips the check, Inbox cannot stop that send/);

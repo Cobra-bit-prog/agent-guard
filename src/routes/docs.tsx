@@ -141,6 +141,9 @@ function DocsPage() {
           <a href="#connect-your-agent" className="text-muted hover:text-fg">
             Connect your agent
           </a>
+          <a href="#adapters" className="text-muted hover:text-fg">
+            Adapters
+          </a>
           <a href="#compare" className="text-muted hover:text-fg">
             Compare
           </a>
@@ -244,7 +247,48 @@ function DocsPage() {
   body: JSON.stringify({ to: destination, value_usd: amount }),
 })`}
             </pre>
-            <p className="mt-3 text-sm text-muted">If the check says stop, do not send.</p>
+            <p className="mt-3 text-sm text-muted">
+              If the check says stop, do not send. Prefer the{" "}
+              <a href="#adapters" className="font-medium text-navy hover:text-coral">
+                adapter
+              </a>{" "}
+              if you do not want to write fetch yourself.
+            </p>
+          </article>
+          <article
+            id="adapters"
+            className="mt-8 scroll-mt-6 rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]"
+          >
+            <h3 className="text-lg font-medium">Adapters</h3>
+            <p className="mt-2 text-sm text-muted">
+              Drop-in helpers so you do not write fetch yourself. They only call the same check.
+              Connect your agent. You keep the keys.
+            </p>
+            <p className="mt-3 text-sm text-muted">
+              Allow means send. Wait is a hold — you decide in Approval Inbox (hold vs block). Stop
+              means do not send.
+            </p>
+            <p className="mt-4 text-sm text-muted">Coinbase AgentKit — pass the policy helper:</p>
+            <pre className="mt-2 overflow-x-auto rounded-[16px] bg-[#12263f] p-4 font-mono text-xs leading-relaxed text-[#e8eef6]">
+              {`import { createAgentKitPolicyProvider } from "./src/adapters/agentkit.ts";
+
+const policyProvider = createAgentKitPolicyProvider({
+  apiKey: process.env.AGENT_CONTROL_API_KEY,
+});
+// Pass policyProvider into AgentKit BasePayConfig`}
+            </pre>
+            <p className="mt-4 text-sm text-muted">x402 — run the same check before money moves:</p>
+            <pre className="mt-2 overflow-x-auto rounded-[16px] bg-[#12263f] p-4 font-mono text-xs leading-relaxed text-[#e8eef6]">
+              {`import { createX402BeforePaymentHook } from "./src/adapters/x402.ts";
+
+client.onBeforePaymentCreation(
+  createX402BeforePaymentHook({ apiKey: process.env.AGENT_CONTROL_API_KEY }),
+);`}
+            </pre>
+            <p className="mt-3 text-sm text-muted">
+              Copy <code className="font-mono text-fg">src/adapters</code> from the repo. If the
+              check says stop, do not send.
+            </p>
           </article>
           <p id="skill-mcp" className="mt-6 scroll-mt-6 text-sm leading-relaxed text-muted">
             Coding agents (Cursor and similar) connect the same way: give the agent the API key,
