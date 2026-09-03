@@ -55,7 +55,7 @@ const CONNECT_STEPS = [
   {
     n: "5",
     t: "Check before every send",
-    d: "The agent POSTs /api/v1/check (or MCP check_transfer, then get_approval on hold). If must_abort is true, do not send.",
+    d: "The agent POSTs /api/v1/check (or MCP check_transfer, then get_approval on hold). If the check says stop, do not send.",
   },
   {
     n: "6",
@@ -251,7 +251,7 @@ function DocsPage() {
             then check before spend. HTTP today: POST /api/v1/check with the Bearer key. MCP at POST
             /api/v1/mcp — tools <code className="font-mono text-fg">check_transfer</code>,{" "}
             <code className="font-mono text-fg">get_approval</code>, and{" "}
-            <code className="font-mono text-fg">get_agent_status</code>. If must_abort is true, do
+            <code className="font-mono text-fg">get_agent_status</code>. If the check says stop, do
             not send. If the agent skips the check, Inbox cannot stop that send — funds can move.
           </p>
         </section>

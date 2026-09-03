@@ -179,6 +179,9 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
   assert.match(docs, /Email alerts/);
   const beforeDetails = docs.split("<details")[0] ?? docs;
   assert.doesNotMatch(beforeDetails, /curl /);
+  assert.doesNotMatch(beforeDetails, /must_abort/);
+  assert.match(docs, /If the check says stop, do not send/);
+  assert.match(docs, /<code className="font-mono text-fg">must_abort<\/code>/);
   assert.match(docs, /id=["']connect-your-agent["']/);
   assert.match(docs, /id=["']compare["']/);
   assert.match(docs, /id=["']skill-mcp["']/);
