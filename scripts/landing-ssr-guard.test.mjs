@@ -104,7 +104,7 @@ test("homepage copy ships three product tabs and 24-hour trial truth", () => {
 
 test("marketing sky theme uses darker navy muted copy for contrast", () => {
   const css = readFileSync(join(ROOT, "src/styles.css"), "utf8");
-  const sky = css.match(/\.sky\s*\{[\s\S]*?\n  \}/)?.[0] ?? "";
+  const sky = css.match(/\.sky\s*\{[\s\S]*?\n {2}\}/)?.[0] ?? "";
   assert.match(sky, /--color-muted:\s*#3a4d63/);
   assert.match(sky, /--color-subtle:\s*#4a5d73/);
   assert.doesNotMatch(sky, /--color-muted:\s*#5b6b80/);
