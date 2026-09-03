@@ -43,7 +43,7 @@ test("marketing landing never imports pay-extension (SSR-unsafe wallet send)", (
   }
 });
 
-test("homepage copy ships four product tabs and 24-hour trial truth", () => {
+test("homepage copy ships three product tabs and 24-hour trial truth", () => {
   const home = readFileSync(join(ROOT, "src/routes/index.tsx"), "utf8");
   const modules = readFileSync(join(ROOT, "src/components/marketing/landing-modules.tsx"), "utf8");
   const preview = readFileSync(join(ROOT, "src/components/marketing/landing-preview.tsx"), "utf8");
@@ -56,19 +56,13 @@ test("homepage copy ships four product tabs and 24-hour trial truth", () => {
   assert.match(modules, /label: "Dashboard"/);
   assert.match(modules, /label: "Agent Audit"/);
   assert.match(modules, /label: "Approval Inbox"/);
-  assert.match(modules, /label: "Partners"/);
+  assert.doesNotMatch(modules, /label: "Partners"/);
+  assert.doesNotMatch(modules, /id: "partners"/);
   assert.match(
     modules,
-    /\{ id: "dashboard", label: "Dashboard" \}[\s\S]*\{ id: "audit", label: "Agent Audit" \}[\s\S]*\{ id: "inbox", label: "Approval Inbox" \}[\s\S]*\{ id: "partners", label: "Partners" \}/,
+    /\{ id: "dashboard", label: "Dashboard" \}[\s\S]*\{ id: "audit", label: "Agent Audit" \}[\s\S]*\{ id: "inbox", label: "Approval Inbox" \}/,
   );
-  assert.match(modules, /Corporate & wallets/);
-  assert.match(modules, /Turnkey, Privy, Coinbase, and x402/);
-  assert.match(modules, /href=["']\/partners["']/);
-  assert.match(modules, /href=["']\/docs#connect-your-agent["']/);
-  assert.match(
-    modules,
-    /A human principal signs up and owns billing and Approval Inbox; agents connect under that\s+account\./,
-  );
+  assert.doesNotMatch(modules, /\{ id: "partners", label: "Partners" \}/);
   assert.match(src, /Approval Inbox/);
   assert.match(src, /Agent Audit/);
   assert.match(src, /Requires the agent hook/);
@@ -88,7 +82,7 @@ test("homepage copy ships four product tabs and 24-hour trial truth", () => {
   assert.match(src, /Held by you · Check before every send/);
   assert.match(src, /Outside policy = stop/);
   assert.match(src, /Warning alerts are optional/);
-  assert.match(src, /suspicious or\s+over-limit activity/);
+  assert.match(src, /suspicious or\s+over-limit\s+activity/);
   assert.match(src, /Monitoring and spend overview/);
   assert.match(src, /\$\{p\.historyDays\}-day history/);
   assert.match(src, /1-day \(24 hour\)/);
@@ -106,6 +100,15 @@ test("homepage copy ships four product tabs and 24-hour trial truth", () => {
   assert.doesNotMatch(src, /to=["']\/inbox["']|href=["']\/inbox["']/);
   assert.doesNotMatch(src, /href=["']\/audit["']/);
   assert.doesNotMatch(src, /\bbroadcast/i);
+});
+
+test("marketing sky theme uses darker navy muted copy for contrast", () => {
+  const css = readFileSync(join(ROOT, "src/styles.css"), "utf8");
+  const sky = css.match(/\.sky\s*\{[\s\S]*?\n  \}/)?.[0] ?? "";
+  assert.match(sky, /--color-muted:\s*#3a4d63/);
+  assert.match(sky, /--color-subtle:\s*#4a5d73/);
+  assert.doesNotMatch(sky, /--color-muted:\s*#5b6b80/);
+  assert.doesNotMatch(sky, /--color-subtle:\s*#8a96a8/);
 });
 
 test("homepage FAQ covers Inbox, Audit, hold vs block, and skipped-check limits", () => {
