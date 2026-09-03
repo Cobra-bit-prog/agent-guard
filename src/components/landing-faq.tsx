@@ -40,7 +40,7 @@ const FAQS = [
       <>
         Agent Control is agent payments control for agent wallets — spend limits, approval before
         agent send, hold vs block. Not a package scanner. SpendGuard (x402-spendguard) is a firewall
-        you run yourself. We are hosted Approval Inbox and Agent Audit. You keep the keys.{" "}
+        you run yourself. We host Approval Inbox and Agent Audit. You keep the keys.{" "}
         <a href="/docs#compare" className="text-fg underline underline-offset-4">
           Compare on docs
         </a>

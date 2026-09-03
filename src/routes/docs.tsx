@@ -76,20 +76,16 @@ type CompareRow = {
 const COMPARE: readonly CompareRow[] = [
   {
     themName: "agentaudit.dev",
-    them: "Package / dependency security registry.",
+    them: "They scan code packages.",
     us: "Agent payments control — spend limits, approval before agent send, Approval Inbox, Agent Audit on wallet sends.",
-    pick: "Pick us when the risk is an agent spending crypto, not a vulnerable npm package.",
+    pick: "Pick us when the risk is an agent spending crypto, not a code package.",
   },
   {
     themName: "SpendGuard",
-    them: "x402-spendguard: a firewall you run on your own machine. Focused on EVM and x402. You run it yourself.",
+    them: "x402-spendguard: a firewall you run on your own machine. For EVM and x402. You run it yourself.",
     us: "Hosted Approval Inbox and Agent Audit. Solana, Ethereum, and Base. You set the limits. You keep the keys.",
     pick: "They run on your machine. We host the human inbox. You can use both.",
-    themList: [
-      "A firewall you run on your own machine",
-      "Focused on EVM and x402",
-      "You run it yourself",
-    ],
+    themList: ["A firewall you run on your own machine", "For EVM and x402", "You run it yourself"],
     usList: [
       "Hosted Approval Inbox and Agent Audit",
       "Solana, Ethereum, and Base",
@@ -227,17 +223,17 @@ function DocsPage() {
           >
             <h3 className="text-lg font-medium">Coinbase AgentKit (and similar)</h3>
             <p className="mt-2 text-sm text-muted">
-              If your agent already asks before it sends — like Coinbase AgentKit — point that ask
-              at Agent Control. You set the limit. Over the line → hold vs block.
+              If your agent already asks before it sends — like Coinbase AgentKit — send that ask to
+              Agent Control. You set the limit. Over the line → hold vs block.
             </p>
             <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-muted">
               <li>You set the spend limit in Agent Control.</li>
-              <li>The agent asks before every send (POST /api/v1/check).</li>
-              <li>Inside the line: it can send.</li>
+              <li>The agent asks before every send.</li>
+              <li>Under the limit, it can send.</li>
               <li>Over the line: hold waits in Approval Inbox. Block means do not send.</li>
               <li>You keep the keys.</li>
             </ul>
-            <p className="mt-4 text-sm text-muted">One tiny example:</p>
+            <p className="mt-4 text-sm text-muted">That ask is POST /api/v1/check:</p>
             <pre className="mt-2 overflow-x-auto rounded-[16px] bg-[#12263f] p-4 font-mono text-xs leading-relaxed text-[#e8eef6]">
               {`fetch("https://agent-control.net/api/v1/check", {
   method: "POST",
@@ -248,9 +244,7 @@ function DocsPage() {
   body: JSON.stringify({ to: destination, value_usd: amount }),
 })`}
             </pre>
-            <p className="mt-3 text-sm text-muted">
-              If must_abort is true, that means stop. Do not send.
-            </p>
+            <p className="mt-3 text-sm text-muted">If the check says stop, do not send.</p>
           </article>
           <p id="skill-mcp" className="mt-6 scroll-mt-6 text-sm leading-relaxed text-muted">
             Coding agents (Cursor and similar) connect the same way: give the agent the API key,
