@@ -79,7 +79,7 @@ const HOME_FAQ_LD = [
     name: "How is this different from agentaudit.dev, SpendGuard, or Turnkey?",
     acceptedAnswer: {
       "@type": "Answer",
-      text: "Agent Control is agent payments control for on-chain wallet sends — spend limits, approval before agent send, hold vs block. Not package / CVE scanning, not LLM API billing, and not a custodian. You keep the keys. See agent-control.net/docs#compare.",
+      text: "Agent Control is agent payments control for on-chain wallet sends — spend limits, approval before agent send, hold vs block. Not a package scanner. SpendGuard (x402-spendguard) is a self-host firewall; we are hosted Approval Inbox and Agent Audit. You keep the keys. See agent-control.net/docs#compare.",
     },
   },
   {
@@ -179,7 +179,10 @@ function Home() {
             <h1 className="landing-rise text-[clamp(32px,4.6vw,54px)] font-semibold leading-[1.08] tracking-[-0.035em] text-balance text-fg">
               External audit for your agents
             </h1>
-            <p className="landing-rise mt-3.5 max-w-[44ch] text-lg leading-snug text-muted">
+            <p className="landing-rise mt-3 max-w-[44ch] text-base font-medium leading-snug text-navy">
+              Not a package scanner — this is spend control for agent wallets.
+            </p>
+            <p className="landing-rise mt-3 max-w-[44ch] text-lg leading-snug text-muted">
               Keep control of your agents’ spending. You set the limits. Suspicious transactions
               show up as alerts.
             </p>

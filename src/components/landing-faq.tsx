@@ -39,8 +39,8 @@ const FAQS = [
     a: (
       <>
         Agent Control is agent payments control for on-chain wallet sends — spend limits, approval
-        before agent send, hold vs block. Not package / CVE scanning, not LLM API billing, and not
-        a custodian. You keep the keys.{" "}
+        before agent send, hold vs block. Not a package scanner. SpendGuard (x402-spendguard) is a
+        self-host firewall; we are hosted Approval Inbox and Agent Audit. You keep the keys.{" "}
         <a href="/docs#compare" className="text-fg underline underline-offset-4">
           Compare on docs
         </a>
