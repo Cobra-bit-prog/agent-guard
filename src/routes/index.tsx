@@ -79,7 +79,7 @@ const HOME_FAQ_LD = [
     name: "How is this different from agentaudit.dev, SpendGuard, or Turnkey?",
     acceptedAnswer: {
       "@type": "Answer",
-      text: "Agent Control is agent payments control for on-chain wallet sends — spend limits, approval before agent send, hold vs block. Not a package scanner. SpendGuard (x402-spendguard) is a self-host firewall; we are hosted Approval Inbox and Agent Audit. You keep the keys. See agent-control.net/docs#compare.",
+      text: "Agent Control is agent payments control for agent wallets — spend limits, approval before agent send, hold vs block. Not a package scanner. SpendGuard (x402-spendguard) is a firewall you run yourself. We are hosted Approval Inbox and Agent Audit. You keep the keys. See agent-control.net/docs#compare.",
     },
   },
   {

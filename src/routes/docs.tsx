@@ -82,10 +82,14 @@ const COMPARE: readonly CompareRow[] = [
   },
   {
     themName: "SpendGuard",
-    them: "x402-spendguard: self-host firewall on your machine. EVM / x402 focused. You run it yourself.",
+    them: "x402-spendguard: a firewall you run on your own machine. Focused on EVM and x402. You run it yourself.",
     us: "Hosted Approval Inbox and Agent Audit. Solana, Ethereum, and Base. You set the limits. You keep the keys.",
-    pick: "They run on your machine. We host the human inbox. Complementary — not a replacement.",
-    themList: ["Self-host firewall on your machine", "EVM / x402 focused", "You run it yourself"],
+    pick: "They run on your machine. We host the human inbox. You can use both.",
+    themList: [
+      "A firewall you run on your own machine",
+      "Focused on EVM and x402",
+      "You run it yourself",
+    ],
     usList: [
       "Hosted Approval Inbox and Agent Audit",
       "Solana, Ethereum, and Base",
@@ -94,9 +98,9 @@ const COMPARE: readonly CompareRow[] = [
   },
   {
     themName: "Turnkey (and similar: Privy)",
-    them: "Wallet infra and key management.",
-    us: "Policy plus a check before send. You keep the keys. Connect your agent; we answer allow / hold / block.",
-    pick: "Pick us when you already have keys and need hold vs block plus agent wallet audit.",
+    them: "Wallets and keys.",
+    us: "Connect your agent. We answer allow / hold vs block. You keep the keys.",
+    pick: "Pick us when you already have keys and need hold vs block plus an agent wallet audit.",
   },
 ];
 
@@ -223,18 +227,17 @@ function DocsPage() {
           >
             <h3 className="text-lg font-medium">Coinbase AgentKit (and similar)</h3>
             <p className="mt-2 text-sm text-muted">
-              If your agent already has a policy hook — like Coinbase AgentKit — point that hook at
-              Agent Control. The agent asks before send. You set the limit. Over the line → hold vs
-              block.
+              If your agent already asks before it sends — like Coinbase AgentKit — point that ask
+              at Agent Control. You set the limit. Over the line → hold vs block.
             </p>
             <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-muted">
               <li>You set the spend limit in Agent Control.</li>
-              <li>The agent POSTs /api/v1/check before every send.</li>
+              <li>The agent asks before every send (POST /api/v1/check).</li>
               <li>Inside the line: it can send.</li>
               <li>Over the line: hold waits in Approval Inbox. Block means do not send.</li>
               <li>You keep the keys.</li>
             </ul>
-            <p className="mt-4 text-sm text-muted">One tiny example — policy hook:</p>
+            <p className="mt-4 text-sm text-muted">One tiny example:</p>
             <pre className="mt-2 overflow-x-auto rounded-[16px] bg-[#12263f] p-4 font-mono text-xs leading-relaxed text-[#e8eef6]">
               {`fetch("https://agent-control.net/api/v1/check", {
   method: "POST",
@@ -245,7 +248,9 @@ function DocsPage() {
   body: JSON.stringify({ to: destination, value_usd: amount }),
 })`}
             </pre>
-            <p className="mt-3 text-sm text-muted">If must_abort is true, do not send.</p>
+            <p className="mt-3 text-sm text-muted">
+              If must_abort is true, that means stop. Do not send.
+            </p>
           </article>
           <p id="skill-mcp" className="mt-6 scroll-mt-6 text-sm leading-relaxed text-muted">
             Coding agents (Cursor and similar) connect the same way: give the agent the API key,
@@ -263,8 +268,8 @@ function DocsPage() {
             When to use Agent Control
           </h2>
           <p className="mt-3 max-w-[52ch] text-muted">
-            Agent payments control for on-chain wallet sends. Not a package scanner. Not a firewall
-            you run on your own machine. You keep the keys.
+            Agent payments control for agent wallets. Not a package scanner. Not a firewall you run
+            on your own machine. You keep the keys.
           </p>
           <div className="mt-8 space-y-3">
             {COMPARE.map((row) => (

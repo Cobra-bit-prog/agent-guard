@@ -193,9 +193,9 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
   assert.match(docs, /agentaudit\.dev/);
   assert.match(docs, /SpendGuard/);
   assert.match(docs, /x402-spendguard/);
-  assert.match(docs, /Self-host firewall on your machine/);
+  assert.match(docs, /firewall you run on your own machine/);
   assert.match(docs, /Hosted Approval Inbox and Agent Audit/);
-  assert.match(docs, /Complementary/);
+  assert.match(docs, /You can use both/);
   assert.match(docs, /Coinbase AgentKit/);
   assert.match(docs, /id=["']agentkit["']/);
   assert.match(docs, /Over the line/);
