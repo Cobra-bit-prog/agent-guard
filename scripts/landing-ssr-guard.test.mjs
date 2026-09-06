@@ -47,7 +47,10 @@ test("homepage copy ships three product tabs and 24-hour trial truth", () => {
   const home = readFileSync(join(ROOT, "src/routes/index.tsx"), "utf8");
   const modules = readFileSync(join(ROOT, "src/components/marketing/landing-modules.tsx"), "utf8");
   const preview = readFileSync(join(ROOT, "src/components/marketing/landing-preview.tsx"), "utf8");
-  const src = `${home}\n${modules}\n${preview}`;
+  const verdict = readFileSync(join(ROOT, "src/components/marketing/landing-verdict.tsx"), "utf8");
+  const catchDemo = readFileSync(join(ROOT, "src/components/marketing/landing-catch.tsx"), "utf8");
+  const gate = readFileSync(join(ROOT, "src/components/marketing/landing-gate.tsx"), "utf8");
+  const src = `${home}\n${modules}\n${preview}\n${verdict}\n${catchDemo}\n${gate}`;
   assert.match(src, /External audit for your agents — Agent Control/);
   assert.match(src, /External audit for your agents/);
   assert.match(src, /Not a package scanner — this is spend control for agent wallets\./);
@@ -103,6 +106,37 @@ test("homepage copy ships three product tabs and 24-hour trial truth", () => {
   assert.doesNotMatch(src, /to=["']\/inbox["']|href=["']\/inbox["']/);
   assert.doesNotMatch(src, /href=["']\/audit["']/);
   assert.doesNotMatch(src, /\bbroadcast/i);
+  assert.doesNotMatch(src, /\bmagnet\b/i);
+  assert.doesNotMatch(src, /\bwired\b/i);
+  assert.doesNotMatch(src, /\blookup\b/i);
+  assert.doesNotMatch(src, /locked sample/i);
+  assert.doesNotMatch(src, /sandbox JSON/i);
+  assert.match(src, /Paste the wallet\. See what would not have left\./);
+  assert.match(src, /Example week from a research agent — or paste yours\. Read-only\. We never hold the keys\./);
+  assert.match(src, /Open an example/);
+  assert.match(src, /2 fine, 1 would wait, 1 would stop\. \$9,100 would not have left\./);
+  assert.match(src, /Example week · research agent/);
+  assert.match(src, /A new address waits on you\./);
+  assert.match(
+    src,
+    /The agent wants to pay\. You have not seen this address\. Money does not leave until you\s+tap\./,
+  );
+  assert.match(src, /Example only\. No real money moves\./);
+  assert.match(src, /See the \$2,400 one/);
+  assert.match(src, /Take money only from agents that have a leash\./);
+  assert.match(
+    src,
+    /You keep your own checkout\. We only answer: is this agent capped, and does a human see\s+new addresses\?/,
+  );
+  assert.match(
+    src,
+    /Pays only if the agent is leashed\. You keep the keys\. Agent Control checks the cap before\s+we take USDC\./,
+  );
+  assert.doesNotMatch(src, /\/api\/v1\/verify/);
+  assert.match(
+    home,
+    /LandingVerdict[\s\S]*LandingProductTabs[\s\S]*LandingCatch[\s\S]*id="how"[\s\S]*id="pricing"[\s\S]*LandingGate[\s\S]*LandingFaq/,
+  );
 });
 
 test("marketing sky theme uses darker navy muted copy for contrast", () => {
