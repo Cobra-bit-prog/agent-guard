@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CORS, json, readApiKey } from "@/lib/server/http";
 import { agentStatusForKey, checkTransferIntent, pollApprovalIntent } from "@/lib/server/intent";
+import { dispatchStorefrontTool } from "@/lib/server/storefront";
 import { getSql } from "@/lib/db";
 
 const TOOLS = [
@@ -37,6 +38,56 @@ const TOOLS = [
       required: ["approval_id"],
     },
   },
+  {
+    name: "get_pricing",
+    description:
+      "List Agent Control plans and trial truth. Starter $29 / Pro $49 / Team $149. 1-day trial, no card, no KYC. Pay on-chain USDC on Solana. A human principal owns billing and Approval Inbox.",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "start_trial",
+    description:
+      "Invite a human to start the 1-day trial. Provide human_email or an existing principal_id. Agents cannot open a root account. The human owns billing and Approval Inbox.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        human_email: { type: "string", description: "Email of the human customer of record" },
+        principal_id: { type: "string", description: "Existing human user id, if you already have one" },
+      },
+    },
+  },
+  {
+    name: "attach_human",
+    description:
+      "Attach this agent to a human principal (email or existing principal_id). Does not move the agent to a different human. Agents cannot decide Approval Inbox.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        human_email: { type: "string", description: "Email of the human customer of record" },
+        principal_id: { type: "string", description: "Existing human user id" },
+      },
+    },
+  },
+  {
+    name: "create_checkout",
+    description:
+      "Open a pay request on the human principal that owns this agent. Wraps POST /api/v1/billing/checkout. The human pays on-chain USDC (Solana). Not automatic payment. Agents cannot decide Approval Inbox.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        plan: { type: "string", description: "starter, pro, or team" },
+        asset: { type: "string", description: "usdc (default), sol, or eth" },
+        chain: { type: "string", description: "solana (default), ethereum, or base" },
+      },
+      required: ["plan"],
+    },
+  },
+  {
+    name: "get_status",
+    description:
+      "Subscription or trial status for the human principal that owns this agent. Does not return Approval Inbox items and cannot approve holds.",
+    inputSchema: { type: "object", properties: {} },
+  },
 ];
 
 export const Route = createFileRoute("/api/v1/mcp")({
@@ -48,7 +99,14 @@ export const Route = createFileRoute("/api/v1/mcp")({
           name: "Agent Control",
           protocol: "mcp",
           tools: TOOLS,
-          auth: "Bearer agent API key",
+          auth: "Bearer agent API key (required for check, approval, checkout, and status; get_pricing is public)",
+          storefront: [
+            "get_pricing",
+            "start_trial",
+            "attach_human",
+            "create_checkout",
+            "get_status",
+          ],
         }),
       POST: async ({ request }) => {
         await getSql();
@@ -58,7 +116,7 @@ export const Route = createFileRoute("/api/v1/mcp")({
           method?: string;
           params?: {
             name?: string;
-            arguments?: {
+            arguments?: Record<string, unknown> & {
               to?: string;
               value_usd?: number;
               valueUsd?: number;
@@ -90,6 +148,24 @@ export const Route = createFileRoute("/api/v1/mcp")({
         if (method === "tools/call" || method === "call_tool") {
           const apiKey = readApiKey(request);
           const name = msg.params?.name ?? "";
+          const storefront = await dispatchStorefrontTool(
+            name,
+            (msg.params?.arguments ?? {}) as Record<string, unknown>,
+            apiKey,
+          );
+          if (storefront) {
+            if (!storefront.ok) {
+              return json(
+                { jsonrpc: "2.0", id, error: { code: storefront.status, message: storefront.error } },
+                storefront.status,
+              );
+            }
+            return json({
+              jsonrpc: "2.0",
+              id,
+              result: { content: [{ type: "text", text: JSON.stringify(storefront.result) }] },
+            });
+          }
           if (name === "get_agent_status") {
             const status = await agentStatusForKey(apiKey);
             if (!status) {

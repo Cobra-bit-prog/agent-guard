@@ -141,6 +141,9 @@ function DocsPage() {
           <a href="#connect-your-agent" className="text-muted hover:text-fg">
             Connect your agent
           </a>
+          <a href="#agent-storefront" className="text-muted hover:text-fg">
+            Agent storefront
+          </a>
           <a href="#adapters" className="text-muted hover:text-fg">
             Adapters
           </a>
@@ -294,9 +297,92 @@ client.onBeforePaymentCreation(
             Coding agents (Cursor and similar) connect the same way: give the agent the API key,
             then check before spend. HTTP today: POST /api/v1/check with the Bearer key. MCP at POST
             /api/v1/mcp — tools <code className="font-mono text-fg">check_transfer</code>,{" "}
-            <code className="font-mono text-fg">get_approval</code>, and{" "}
-            <code className="font-mono text-fg">get_agent_status</code>. If the check says stop, do
-            not send. If the agent skips the check, Inbox cannot stop that send — funds can move.
+            <code className="font-mono text-fg">get_approval</code>,{" "}
+            <code className="font-mono text-fg">get_agent_status</code>, plus storefront{" "}
+            <code className="font-mono text-fg">get_pricing</code>,{" "}
+            <code className="font-mono text-fg">start_trial</code>,{" "}
+            <code className="font-mono text-fg">attach_human</code>,{" "}
+            <code className="font-mono text-fg">create_checkout</code>, and{" "}
+            <code className="font-mono text-fg">get_status</code>. If the check says stop, do not
+            send. If the agent skips the check, Inbox cannot stop that send — funds can move.
+          </p>
+        </section>
+
+        <section id="agent-storefront" className="mt-16 scroll-mt-6">
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-coral">
+            Agent storefront
+          </p>
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight md:text-3xl">
+            Price, trial, and checkout for agents
+          </h2>
+          <p className="mt-3 max-w-[52ch] text-muted">
+            Agents find us via{" "}
+            <a href="/llms.txt" className="font-medium text-navy hover:text-coral">
+              /llms.txt
+            </a>{" "}
+            and MCP. A human principal signs up and owns billing and Approval Inbox; agents connect
+            under that account. You keep the keys.
+          </p>
+          <p className="mt-3 max-w-[52ch] text-muted">
+            1-day trial, no card, no KYC. Then Starter $29 / Pro $49 / Team $149 in USDC on Solana.
+            The agent opens the pay request. The human pays. Agents cannot decide Approval Inbox.
+          </p>
+          <ol className="mt-8 space-y-3">
+            <li className="rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]">
+              <p className="font-mono text-xs text-navy">1</p>
+              <h3 className="mt-2 text-lg font-medium">Read pricing</h3>
+              <p className="mt-1 text-muted">
+                GET /api/v1/storefront/pricing or MCP get_pricing. No API key.
+              </p>
+              <pre className="mt-3 overflow-x-auto rounded-[16px] bg-[#12263f] p-4 font-mono text-xs leading-relaxed text-[#e8eef6]">
+                {`fetch("https://agent-control.net/api/v1/storefront/pricing")`}
+              </pre>
+            </li>
+            <li className="rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]">
+              <p className="font-mono text-xs text-navy">2</p>
+              <h3 className="mt-2 text-lg font-medium">Start a trial for a human</h3>
+              <p className="mt-1 text-muted">
+                POST /api/v1/storefront/trial with that person&apos;s email. Agents cannot open a
+                root account. attach_human is the same idea when you already have a principal.
+              </p>
+              <pre className="mt-3 overflow-x-auto rounded-[16px] bg-[#12263f] p-4 font-mono text-xs leading-relaxed text-[#e8eef6]">
+                {`fetch("https://agent-control.net/api/v1/storefront/trial", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ human_email: "ops@example.com" }),
+})`}
+              </pre>
+            </li>
+            <li className="rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]">
+              <p className="font-mono text-xs text-navy">3</p>
+              <h3 className="mt-2 text-lg font-medium">Start checkout</h3>
+              <p className="mt-1 text-muted">
+                POST /api/v1/billing/checkout with the agent API key. That opens a pay request for
+                the human principal — Solana USDC by default.
+              </p>
+              <pre className="mt-3 overflow-x-auto rounded-[16px] bg-[#12263f] p-4 font-mono text-xs leading-relaxed text-[#e8eef6]">
+                {`fetch("https://agent-control.net/api/v1/billing/checkout", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer YOUR_AGENT_API_KEY",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({ plan: "starter" }),
+})`}
+              </pre>
+            </li>
+          </ol>
+          <p className="mt-6 text-sm leading-relaxed text-muted">
+            GET /api/v1/storefront/status returns that human&apos;s trial or plan. MCP tools:{" "}
+            <code className="font-mono text-fg">get_pricing</code>,{" "}
+            <code className="font-mono text-fg">start_trial</code>,{" "}
+            <code className="font-mono text-fg">attach_human</code>,{" "}
+            <code className="font-mono text-fg">create_checkout</code>,{" "}
+            <code className="font-mono text-fg">get_status</code>. Then{" "}
+            <a href="#connect-your-agent" className="font-medium text-navy hover:text-coral">
+              connect your agent
+            </a>{" "}
+            so every send asks Agent Control first.
           </p>
         </section>
 
@@ -420,7 +506,12 @@ client.onBeforePaymentCreation(
               <code className="font-mono text-fg">get_approval</code> polls the same decision. Same
               tools on POST /api/v1/mcp: <code className="font-mono text-fg">check_transfer</code>,{" "}
               <code className="font-mono text-fg">get_approval</code>,{" "}
-              <code className="font-mono text-fg">get_agent_status</code>.
+              <code className="font-mono text-fg">get_agent_status</code>, plus storefront{" "}
+              <code className="font-mono text-fg">get_pricing</code>,{" "}
+              <code className="font-mono text-fg">start_trial</code>,{" "}
+              <code className="font-mono text-fg">attach_human</code>,{" "}
+              <code className="font-mono text-fg">create_checkout</code>,{" "}
+              <code className="font-mono text-fg">get_status</code>.
             </p>
           </div>
         </details>

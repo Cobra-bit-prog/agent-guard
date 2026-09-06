@@ -194,6 +194,19 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
   assert.match(docs, /check_transfer/);
   assert.match(docs, /get_approval/);
   assert.match(docs, /get_agent_status/);
+  assert.match(docs, /id=["']agent-storefront["']/);
+  assert.match(docs, /href=["']#agent-storefront["']/);
+  assert.match(docs, /get_pricing/);
+  assert.match(docs, /start_trial/);
+  assert.match(docs, /attach_human/);
+  assert.match(docs, /create_checkout/);
+  assert.match(docs, /get_status/);
+  assert.match(docs, /POST \/api\/v1\/billing\/checkout/);
+  assert.match(docs, /GET \/api\/v1\/storefront\/pricing/);
+  assert.match(
+    docs,
+    /A human principal signs up and owns billing and Approval Inbox; agents connect\s+under that account/,
+  );
   assert.match(docs, /agentaudit\.dev/);
   assert.match(docs, /SpendGuard/);
   assert.match(docs, /x402-spendguard/);
@@ -258,6 +271,19 @@ test("llms.txt is the public AI-crawler brief", () => {
     llms,
     /A human principal signs up and owns billing and Approval Inbox; agents connect under that account\./,
   );
+  assert.match(llms, /## Agent Storefront/);
+  assert.match(llms, /GET \/api\/v1\/storefront\/pricing/);
+  assert.match(llms, /POST \/api\/v1\/storefront\/trial/);
+  assert.match(llms, /POST \/api\/v1\/billing\/checkout/);
+  assert.match(llms, /GET \/api\/v1\/storefront\/status/);
+  assert.match(llms, /get_pricing/);
+  assert.match(llms, /start_trial/);
+  assert.match(llms, /attach_human/);
+  assert.match(llms, /create_checkout/);
+  assert.match(llms, /get_status/);
+  assert.match(llms, /docs#agent-storefront/);
+  assert.match(llms, /Agents cannot open a root account/);
+  assert.match(llms, /cannot decide Approval Inbox/);
   assert.doesNotMatch(llms, /\bbroadcast/i);
 });
 
