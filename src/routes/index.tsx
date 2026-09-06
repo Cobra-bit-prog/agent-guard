@@ -1,8 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Check } from "lucide-react";
 import { SkyShell } from "@/components/marketing/chrome";
+import { LandingCatch } from "@/components/marketing/landing-catch";
+import { LandingGate } from "@/components/marketing/landing-gate";
 import { LandingProductTabs } from "@/components/marketing/landing-modules";
 import { LandingPreview } from "@/components/marketing/landing-preview";
+import { LandingVerdict } from "@/components/marketing/landing-verdict";
 import { LandingFaq } from "@/components/landing-faq";
 import { SupportedChains } from "@/components/chain-icons";
 import { Button } from "@/components/ui/button";
@@ -236,7 +239,11 @@ function Home() {
         </div>
       </section>
 
+      <LandingVerdict />
+
       <LandingProductTabs />
+
+      <LandingCatch />
 
       <section id="how" className="border-t border-border">
         <div className="mx-auto max-w-[1140px] px-5 py-16 md:px-6">
@@ -339,6 +346,8 @@ function Home() {
           </p>
         </div>
       </section>
+
+      <LandingGate />
 
       <LandingFaq />
     </SkyShell>
