@@ -63,7 +63,15 @@ const HOME_FAQ_LD = [
     name: "What is Agent Audit?",
     acceptedAnswer: {
       "@type": "Answer",
-      text: "On-demand Excel and PDF in /audit. Generate when you want it — nothing is auto-emailed. This is the Agent Control check and decision trail, not a full chain explorer or ghost replay.",
+      text: "On-demand Excel, PDF, or CSV in /audit. Generate when you want it — nothing is auto-emailed. This is the Agent Control check and decision trail, not a full chain explorer or ghost replay.",
+    },
+  },
+  {
+    "@type": "Question",
+    name: "Is this like agentaudit.dev?",
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: "No. They scan packages. We are agent payments control — Approval Inbox and spend limits for agent wallets. Not a package scanner.",
     },
   },
   {
@@ -326,6 +334,9 @@ function Home() {
               </div>
             ))}
           </div>
+          <p className="mt-6 text-center text-sm text-muted">
+            External audit for your agents — you keep the keys.
+          </p>
         </div>
       </section>
 

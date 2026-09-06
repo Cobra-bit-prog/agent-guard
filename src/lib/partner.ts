@@ -74,6 +74,17 @@ export function readStoredPartnerSlug(): string | null {
   }
 }
 
+/** Append first-touch ?partner= when we already have a valid slug. */
+export function partnerAwarePath(path: string, slug: unknown): string {
+  const valid = parsePartnerSlug(slug);
+  if (!valid) return path;
+  const hashAt = path.indexOf("#");
+  const hash = hashAt === -1 ? "" : path.slice(hashAt);
+  const base = hashAt === -1 ? path : path.slice(0, hashAt);
+  const sep = base.includes("?") ? "&" : "?";
+  return `${base}${sep}partner=${encodeURIComponent(valid)}${hash}`;
+}
+
 export function storePartnerSlug(slug: string): void {
   if (typeof window === "undefined") return;
   const valid = parsePartnerSlug(slug);

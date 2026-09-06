@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { FileSpreadsheet, FileText } from "lucide-react";
+import { FileDown, FileSpreadsheet, FileText } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -68,14 +68,14 @@ function AuditPage() {
       }),
     onSuccess: (r) => {
       setPreview(r);
-      toast.success("Report ready. Download Excel or PDF.");
+      toast.success("Report ready. Download Excel, PDF, or CSV.");
       void qc.invalidateQueries({ queryKey: ["audit-reports"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
   const download = useMutation({
-    mutationFn: (input: { id: string; format: "xlsx" | "pdf" }) =>
+    mutationFn: (input: { id: string; format: "xlsx" | "pdf" | "csv" }) =>
       downloadAuditReport({ data: input }),
     onSuccess: (file) => {
       downloadBase64(file);
@@ -99,7 +99,8 @@ function AuditPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Agent Audit</h1>
         <p className="text-sm text-muted">
           On-demand report of this agent’s Agent Control trail — checks, alerts, operator decisions,
-          and recorded transfers. Not a full chain replay. Generate, then download Excel or PDF.
+          and recorded transfers. Not a full chain replay. Generate, then download Excel, PDF, or
+          CSV.
         </p>
       </div>
 
@@ -172,6 +173,14 @@ function AuditPage() {
               >
                 <FileText className="size-4" />
                 PDF
+              </Button>
+              <Button
+                variant="secondary"
+                disabled={download.isPending}
+                onClick={() => download.mutate({ id: preview.id, format: "csv" })}
+              >
+                <FileDown className="size-4" />
+                CSV
               </Button>
             </div>
           </CardHeader>
@@ -254,6 +263,14 @@ function AuditPage() {
                   onClick={() => download.mutate({ id: r.id, format: "pdf" })}
                 >
                   PDF
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  disabled={download.isPending}
+                  onClick={() => download.mutate({ id: r.id, format: "csv" })}
+                >
+                  CSV
                 </Button>
               </div>
             </div>

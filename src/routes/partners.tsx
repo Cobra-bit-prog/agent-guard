@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SkyShell, SUPPORT_MAIL } from "@/components/marketing/chrome";
 import { Button } from "@/components/ui/button";
-import { parsePartnerSlug } from "@/lib/partner";
+import { parsePartnerSlug, partnerAwarePath } from "@/lib/partner";
 
 const POSITIONING = [
   {
@@ -42,6 +42,9 @@ export const Route = createFileRoute("/partners")({
 });
 
 function PartnersPage() {
+  const { partner } = Route.useSearch();
+  const signupHref = partnerAwarePath("/signup", partner);
+
   return (
     <SkyShell current="partners">
       <main className="mx-auto max-w-3xl px-6 pb-20 pt-8 md:px-10">
@@ -131,6 +134,14 @@ function PartnersPage() {
             <a href="/docs#connect-your-agent" className="font-medium text-navy hover:text-coral">
               Connect your agent
             </a>
+            . Drop-in helpers:{" "}
+            <a href="/docs#adapters" className="font-medium text-navy hover:text-coral">
+              adapters
+            </a>
+            . Daily cap + approval threshold:{" "}
+            <a href="/docs#policy-recipe" className="font-medium text-navy hover:text-coral">
+              Policy recipe
+            </a>
             . Positioning vs wallets and other tools:{" "}
             <a href="/docs#compare" className="font-medium text-navy hover:text-coral">
               Compare
@@ -149,8 +160,16 @@ function PartnersPage() {
           <pre className="mt-5 overflow-x-auto rounded-[16px] bg-[#12263f] p-4 font-mono text-xs leading-relaxed text-[#e8eef6]">
             {`https://agent-control.net/login?partner=turnkey
 https://agent-control.net/login?mode=signup&partner=privy
-https://agent-control.net/partners?partner=x402`}
+https://agent-control.net/partners?partner=x402
+https://agent-control.net/signup?partner=agentkit`}
           </pre>
+          <p className="mt-4 text-sm text-muted">
+            Connect your agent from docs:{" "}
+            <a href="/docs#adapters" className="font-medium text-navy hover:text-coral">
+              /docs#adapters
+            </a>
+            .
+          </p>
         </section>
 
         <section className="mt-12">
@@ -159,14 +178,20 @@ https://agent-control.net/partners?partner=x402`}
             1-day full console trial, then Starter $29 / Pro $49 / Team $149 USDC (or native SOL /
             ETH from Billing). No card. No KYC.
           </p>
+          <p className="mt-3 text-sm text-muted">
+            External audit for your agents — you keep the keys.
+          </p>
         </section>
 
         <div className="mt-10 flex flex-wrap items-center gap-3">
           <Button size="lg" asChild className="rounded-full">
-            <a href="/signup">
+            <a href={signupHref}>
               Start free trial
               <span aria-hidden>→</span>
             </a>
+          </Button>
+          <Button size="lg" variant="secondary" asChild className="rounded-full">
+            <a href="/docs#connect-your-agent">Connect your agent</a>
           </Button>
           <a href={SUPPORT_MAIL} className="text-sm text-muted hover:text-fg">
             Contact · support@agent-control.net

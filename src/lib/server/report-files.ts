@@ -189,6 +189,22 @@ export function xlsxLooksValid(bytes: Uint8Array): boolean {
   );
 }
 
+export function csvEscape(value: string): string {
+  if (/[",\n\r]/.test(value)) {
+    return `"${value.replaceAll('"', '""')}"`;
+  }
+  return value;
+}
+
+/** UTF-8 CSV of the same audit trail columns as Excel. */
+export function buildCsv(snapshot: AuditSnapshot): Uint8Array {
+  const lines = [
+    HEADERS.join(","),
+    ...snapshot.rows.map((row) => rowValues(row).map(csvEscape).join(",")),
+  ];
+  return new TextEncoder().encode(`${lines.join("\n")}\n`);
+}
+
 function pdfEscape(s: string) {
   return s.replaceAll("\\", "\\\\").replaceAll("(", "\\(").replaceAll(")", "\\)");
 }

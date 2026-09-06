@@ -8,7 +8,7 @@ import {
   buildAuditTrail,
   type AuditSnapshot,
 } from "@/lib/audit-report";
-import { bytesToBase64, buildPdf, buildXlsx } from "@/lib/server/report-files";
+import { bytesToBase64, buildCsv, buildPdf, buildXlsx } from "@/lib/server/report-files";
 import { uid } from "@/lib/utils";
 
 function num(v: unknown) {
@@ -183,7 +183,7 @@ export const downloadAuditReport = createServerFn({ method: "POST" })
     z
       .object({
         id: z.string(),
-        format: z.enum(["xlsx", "pdf"]),
+        format: z.enum(["xlsx", "pdf", "csv"]),
       })
       .parse(d),
   )
@@ -204,6 +204,14 @@ export const downloadAuditReport = createServerFn({ method: "POST" })
       return {
         filename: `${stem}.xlsx`,
         mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        base64: bytesToBase64(bytes),
+      };
+    }
+    if (data.format === "csv") {
+      const bytes = buildCsv(snapshot);
+      return {
+        filename: `${stem}.csv`,
+        mime: "text/csv;charset=utf-8",
         base64: bytesToBase64(bytes),
       };
     }

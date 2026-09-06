@@ -235,8 +235,8 @@ function AuditPanel() {
         <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">Agent Audit</h2>
         <p className="mt-2 max-w-[42ch] text-muted">
           Generate an on-demand report of an enrolled agent’s Agent Control trail — checks,
-          alerts, decisions, and recorded transfers. Download Excel or PDF. Not a full on-chain
-          replay.
+          alerts, decisions, and recorded transfers. Download Excel, PDF, or CSV. Not a full
+          on-chain replay.
         </p>
         <p className="mt-3 text-sm text-muted">
           Reports are generated when you ask — nothing is auto-emailed.
@@ -301,6 +301,12 @@ function AuditPanel() {
           >
             Download PDF
           </a>
+          <a
+            href="/signup"
+            className="inline-flex items-center rounded-[10px] border border-border bg-white px-2.5 py-1.5 text-xs font-semibold text-navy"
+          >
+            Download CSV
+          </a>
         </div>
       </PreviewCard>
     </div>
@@ -323,6 +329,7 @@ function InboxPanel() {
         </p>
         <p className="mt-3 text-sm text-muted">
           Pause and denylist still block. Holds expire in 10 minutes if you do not decide.
+          Optional email and Slack can ping you when a spend is held.
         </p>
         <a
           href="/signup"

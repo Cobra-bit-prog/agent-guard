@@ -4,6 +4,7 @@ import { Menu, X } from "lucide-react";
 import { Logo } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
+import { parsePartnerSlug, partnerAwarePath } from "@/lib/partner";
 
 export const SUPPORT_MAIL = "mailto:support@agent-control.net";
 
@@ -34,6 +35,11 @@ export function MarketingHeader({ current }: { current?: "home" | "docs" | "part
   const { user } = useCurrentUserState();
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const partner = useRouterState({
+    select: (s) => parsePartnerSlug((s.location.search as { partner?: unknown } | undefined)?.partner),
+  });
+  const signupHref = partnerAwarePath("/signup", partner);
+  const loginHref = partnerAwarePath("/login", partner);
 
   return (
     <>
@@ -58,10 +64,10 @@ export function MarketingHeader({ current }: { current?: "home" | "docs" | "part
           ) : (
             <>
               <Button variant="ghost" asChild className="hidden rounded-full sm:inline-flex">
-                <a href="/login">Sign in</a>
+                <a href={loginHref}>Sign in</a>
               </Button>
               <Button asChild className="rounded-full">
-                <a href="/signup">Try free</a>
+                <a href={signupHref}>Try free</a>
               </Button>
             </>
           )}
@@ -90,7 +96,7 @@ export function MarketingHeader({ current }: { current?: "home" | "docs" | "part
               </a>
             ))}
             {!user && (
-              <a href="/login" className="hover:text-fg" onClick={() => setMenuOpen(false)}>
+              <a href={loginHref} className="hover:text-fg" onClick={() => setMenuOpen(false)}>
                 Sign in
               </a>
             )}

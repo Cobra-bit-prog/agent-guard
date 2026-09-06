@@ -4,6 +4,7 @@ import {
   PARTNER_COOKIE,
   firstTouchPartnerSlug,
   parsePartnerSlug,
+  partnerAwarePath,
   partnerCookieWrite,
   partnerSlugFromCookieHeader,
   partnerSlugFromSearchParams,
@@ -69,6 +70,16 @@ describe("partner cookie helpers", () => {
   it("ignores a bad cookie value", () => {
     assert.equal(partnerSlugFromCookieHeader(`${PARTNER_COOKIE}=nope!`), null);
     assert.equal(partnerSlugFromCookieHeader(""), null);
+  });
+});
+
+describe("partnerAwarePath", () => {
+  it("appends a valid slug and leaves invalid slugs alone", () => {
+    assert.equal(partnerAwarePath("/signup", "agentkit"), "/signup?partner=agentkit");
+    assert.equal(partnerAwarePath("/login?mode=signup", "privy"), "/login?mode=signup&partner=privy");
+    assert.equal(partnerAwarePath("/signup#top", "x402"), "/signup?partner=x402#top");
+    assert.equal(partnerAwarePath("/signup", "nope!"), "/signup");
+    assert.equal(partnerAwarePath("/signup", undefined), "/signup");
   });
 });
 

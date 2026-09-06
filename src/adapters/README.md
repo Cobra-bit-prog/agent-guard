@@ -6,6 +6,8 @@ Allow means send. Wait is a hold — you decide in Approval Inbox (hold vs block
 
 ## AgentKit
 
+Set a daily cap and an approval threshold in the console, then Connect your agent:
+
 ```ts
 import { createAgentKitPolicyProvider } from "./agentkit.ts";
 
@@ -14,6 +16,8 @@ const policyProvider = createAgentKitPolicyProvider({
 });
 // Pass policyProvider into AgentKit BasePayConfig
 ```
+
+Docs recipe: https://agent-control.net/docs#policy-recipe
 
 ## x402
 
