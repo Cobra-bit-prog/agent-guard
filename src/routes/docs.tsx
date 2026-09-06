@@ -347,8 +347,8 @@ client.onBeforePaymentCreation(
           >
             <h3 className="text-lg font-medium">Hold notifications</h3>
             <p className="mt-2 text-sm text-muted">
-              When a spend is held, we reuse the same email and Slack paths already in Settings. No
-              extra vendor.
+              When a spend is held, we reuse the same email and Slack paths already in Settings.
+              No extra vendor.
             </p>
             <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-muted">
               <li>Email alerts (on by default) send a link to Approval Inbox.</li>
