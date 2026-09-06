@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SkyShell, SUPPORT_MAIL } from "@/components/marketing/chrome";
 import { Button } from "@/components/ui/button";
-import { parsePartnerSlug } from "@/lib/partner";
+import { parsePartnerSlug, partnerAwarePath } from "@/lib/partner";
 
 const POSITIONING = [
   {
@@ -43,7 +43,7 @@ export const Route = createFileRoute("/partners")({
 
 function PartnersPage() {
   const { partner } = Route.useSearch();
-  const signupHref = partner ? `/signup?partner=${encodeURIComponent(partner)}` : "/signup";
+  const signupHref = partnerAwarePath("/signup", partner);
 
   return (
     <SkyShell current="partners">

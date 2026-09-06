@@ -359,4 +359,6 @@ test("partners page is wallet-complement copy; sitemap and docs link it", () => 
   assert.match(docs, /id=["']partners["']/);
   assert.match(sitemap, /https:\/\/agent-control\.net\/partners/);
   assert.match(chrome, /href: "\/partners"/);
+  assert.match(chrome, /partnerAwarePath/);
+  assert.match(partners, /partnerAwarePath/);
 });
