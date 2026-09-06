@@ -28,7 +28,11 @@ const FAQS = [
   },
   {
     q: "What is Agent Audit?",
-    a: "On-demand Excel and PDF in /audit. Generate when you want it — nothing is auto-emailed. This is the Agent Control check and decision trail, not a full chain explorer or ghost replay.",
+    a: "On-demand Excel, PDF, or CSV in /audit. Generate when you want it — nothing is auto-emailed. This is the Agent Control check and decision trail, not a full chain explorer or ghost replay.",
+  },
+  {
+    q: "Is this like agentaudit.dev?",
+    a: "No. They scan packages. We are agent payments control — Approval Inbox and spend limits for agent wallets. Not a package scanner.",
   },
   {
     q: "Do you email me when something looks off?",

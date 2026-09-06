@@ -7,7 +7,7 @@ import {
   kindFromTx,
   resultFromTx,
 } from "./audit-report.ts";
-import { buildPdf, buildXlsx, xlsxLooksValid } from "./server/report-files.ts";
+import { buildCsv, buildPdf, buildXlsx, csvEscape, xlsxLooksValid } from "./server/report-files.ts";
 
 describe("audit trail mapping", () => {
   it("maps presign success as a check, not a seen on-chain send", () => {
@@ -94,7 +94,7 @@ describe("audit trail mapping", () => {
   });
 });
 
-describe("on-demand Excel and PDF", () => {
+describe("on-demand Excel, PDF, and CSV", () => {
   const snapshot = {
     generatedAt: "2026-09-02T15:04:00.000Z",
     disclaimer: AUDIT_DISCLAIMER,
@@ -135,5 +135,20 @@ describe("on-demand Excel and PDF", () => {
     assert.match(text, /Time/);
     assert.match(text, /Result/);
     assert.match(text, /%%EOF/);
+  });
+
+  it("builds a CSV of the same trail columns", () => {
+    const text = new TextDecoder().decode(buildCsv(snapshot));
+    assert.match(text, /^Time,Kind,Chain,To,Amount,Result,Detail\n/);
+    assert.match(text, /check/);
+    assert.match(text, /0x7f3ab9c1/);
+    assert.match(text, /\$350\.00/);
+    assert.match(text, /Checked/);
+  });
+
+  it("quotes CSV fields that contain commas or quotes", () => {
+    assert.equal(csvEscape("plain"), "plain");
+    assert.equal(csvEscape("held, waiting"), '"held, waiting"');
+    assert.equal(csvEscape('say "no"'), '"say ""no"""');
   });
 });

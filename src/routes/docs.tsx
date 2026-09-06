@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { CopyCode } from "@/components/copy-code";
 import { SkyShell, SUPPORT_MAIL } from "@/components/marketing/chrome";
 import { SupportedChains } from "@/components/chain-icons";
 import { Button } from "@/components/ui/button";
+import { AGENTKIT_RECIPE_CODE, AGENTKIT_RECIPE_STEPS } from "@/lib/agentkit-recipe";
 
 const STEPS = [
   {
@@ -27,7 +29,7 @@ const STEPS = [
   {
     n: "05",
     t: "Watch the console",
-    d: "Inbox is where holds wait for you. Agent Audit builds an on-demand Excel or PDF of the check trail. Pause if something looks wrong.",
+    d: "Inbox is where holds wait for you. Agent Audit builds an on-demand Excel, PDF, or CSV of the check trail. Pause if something looks wrong.",
   },
 ] as const;
 
@@ -60,7 +62,7 @@ const CONNECT_STEPS = [
   {
     n: "6",
     t: "Inbox and Audit",
-    d: "Open /inbox for holds (Allow once / Always allow this address / Block). Open /audit for an on-demand Excel or PDF trail.",
+    d: "Open /inbox for holds (Allow once / Always allow this address / Block). Open /audit for an on-demand Excel, PDF, or CSV trail.",
   },
 ] as const;
 
@@ -90,6 +92,18 @@ const COMPARE: readonly CompareRow[] = [
       "Hosted Approval Inbox and Agent Audit",
       "Solana, Ethereum, and Base",
       "You set the limits. You keep the keys.",
+    ],
+  },
+  {
+    themName: "Agentspay",
+    them: "A control plane or cards. Some teams use DIY libs.",
+    us: "Hosted Approval Inbox and Agent Audit on Solana, Ethereum, and Base. You keep the keys.",
+    pick: "You can use both. They are a control plane or cards. We sit beside the wallet you already have.",
+    themList: ["Control plane or cards", "Or DIY libs you run yourself"],
+    usList: [
+      "Hosted Approval Inbox and Agent Audit",
+      "Solana, Ethereum, and Base",
+      "You keep the keys.",
     ],
   },
   {
@@ -147,6 +161,9 @@ function DocsPage() {
           <a href="#adapters" className="text-muted hover:text-fg">
             Adapters
           </a>
+          <a href="#policy-recipe" className="text-muted hover:text-fg">
+            Policy recipe
+          </a>
           <a href="#compare" className="text-muted hover:text-fg">
             Compare
           </a>
@@ -188,8 +205,8 @@ function DocsPage() {
           address, or Block. Holds expire in 10 minutes and are then treated as a block. When a
           spend is held, optional email (Settings → Email alerts) and a Slack incoming webhook (if
           you set the URL in Settings) can ping you with a link to Approval Inbox. No action within
-          10 minutes = block — the agent must abort. Agent Audit generates an on-demand Excel or PDF
-          of the Agent Control trail — not a full chain explorer or ghost replay. Nothing is
+          10 minutes = block — the agent must abort. Agent Audit generates an on-demand Excel, PDF,
+          or CSV of the Agent Control trail — not a full chain explorer or ghost replay. Nothing is
           auto-emailed from Agent Audit. Optional warning alerts can also ping you for a policy
           alert or spend near the daily cap.
         </p>
@@ -272,14 +289,18 @@ function DocsPage() {
               means do not send.
             </p>
             <p className="mt-4 text-sm text-muted">Coinbase AgentKit — pass the policy helper:</p>
-            <pre className="mt-2 overflow-x-auto rounded-[16px] bg-[#12263f] p-4 font-mono text-xs leading-relaxed text-[#e8eef6]">
-              {`import { createAgentKitPolicyProvider } from "./src/adapters/agentkit.ts";
-
-const policyProvider = createAgentKitPolicyProvider({
-  apiKey: process.env.AGENT_CONTROL_API_KEY,
-});
-// Pass policyProvider into AgentKit BasePayConfig`}
-            </pre>
+            <CopyCode code={AGENTKIT_RECIPE_CODE} label="Copy" />
+            <p className="mt-3 text-sm text-muted">
+              Daily cap + approval threshold recipe:{" "}
+              <a href="#policy-recipe" className="font-medium text-navy hover:text-coral">
+                Policy recipe
+              </a>
+              . Partner signup with{" "}
+              <a href="/partners?partner=agentkit" className="font-medium text-navy hover:text-coral">
+                ?partner=agentkit
+              </a>
+              .
+            </p>
             <p className="mt-4 text-sm text-muted">x402 — run the same check before money moves:</p>
             <pre className="mt-2 overflow-x-auto rounded-[16px] bg-[#12263f] p-4 font-mono text-xs leading-relaxed text-[#e8eef6]">
               {`import { createX402BeforePaymentHook } from "./src/adapters/x402.ts";
@@ -290,8 +311,50 @@ client.onBeforePaymentCreation(
             </pre>
             <p className="mt-3 text-sm text-muted">
               Copy <code className="font-mono text-fg">src/adapters</code> from the repo. If the
-              check says stop, do not send.
+              check says stop, do not send. Wallet and runtime partners:{" "}
+              <a href="/partners" className="font-medium text-navy hover:text-coral">
+                /partners
+              </a>
+              .
             </p>
+          </article>
+          <article
+            id="policy-recipe"
+            className="mt-8 scroll-mt-6 rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]"
+          >
+            <h3 className="text-lg font-medium">AgentKit policy recipe</h3>
+            <p className="mt-2 text-sm text-muted">
+              Daily cap + approval threshold, then Connect your agent. Copy this tiny
+              createAgentKitPolicyProvider helper. You keep the keys.
+            </p>
+            <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm text-muted">
+              {AGENTKIT_RECIPE_STEPS.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ol>
+            <CopyCode code={AGENTKIT_RECIPE_CODE} label="Copy recipe" />
+            <p className="mt-3 text-sm text-muted">
+              Same check as{" "}
+              <a href="#adapters" className="font-medium text-navy hover:text-coral">
+                adapters
+              </a>
+              . If the check says stop, do not send.
+            </p>
+          </article>
+          <article
+            id="hold-notifications"
+            className="mt-8 scroll-mt-6 rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]"
+          >
+            <h3 className="text-lg font-medium">Hold notifications</h3>
+            <p className="mt-2 text-sm text-muted">
+              When a spend is held, we reuse the same email and Slack paths already in Settings. No
+              extra vendor.
+            </p>
+            <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-muted">
+              <li>Email alerts (on by default) send a link to Approval Inbox.</li>
+              <li>Paste a Slack incoming webhook URL in Settings to get the same ping there.</li>
+              <li>No action within 10 minutes = block — the agent must abort.</li>
+            </ul>
           </article>
           <p id="skill-mcp" className="mt-6 scroll-mt-6 text-sm leading-relaxed text-muted">
             Coding agents (Cursor and similar) connect the same way: give the agent the API key,
@@ -393,7 +456,8 @@ client.onBeforePaymentCreation(
           </h2>
           <p className="mt-3 max-w-[52ch] text-muted">
             Agent payments control for agent wallets. Not a package scanner. Not a firewall you run
-            on your own machine. You keep the keys.
+            on your own machine. Not a control plane or cards. You keep the keys. You can use both
+            SpendGuard DIY and Agentspay beside us.
           </p>
           <div className="mt-8 space-y-3">
             {COMPARE.map((row) => (
@@ -406,6 +470,11 @@ client.onBeforePaymentCreation(
                   {row.themName === "SpendGuard" ? (
                     <span className="mt-1 block text-sm font-normal text-muted">
                       x402-spendguard
+                    </span>
+                  ) : null}
+                  {row.themName === "Agentspay" ? (
+                    <span className="mt-1 block text-sm font-normal text-muted">
+                      control plane or cards
                     </span>
                   ) : null}
                 </h3>
@@ -465,7 +534,12 @@ client.onBeforePaymentCreation(
             <a href="/partners" className="font-medium text-navy hover:text-coral">
               Partner page
             </a>
-            .
+            . Adapters:{" "}
+            <a href="#adapters" className="font-medium text-navy hover:text-coral">
+              Connect your agent
+            </a>
+            . First-touch links use{" "}
+            <span className="font-mono text-fg">?partner=</span> on signup.
           </p>
         </section>
 

@@ -72,7 +72,9 @@ test("homepage copy ships three product tabs and 24-hour trial truth", () => {
   assert.match(src, /10-minute hold/);
   assert.match(src, /Download Excel/);
   assert.match(src, /Download PDF/);
+  assert.match(src, /Download CSV/);
   assert.match(src, /on-demand/);
+  assert.match(src, /External audit for your agents — you keep the keys\./);
   assert.match(src, /Connect your agent/);
   assert.match(
     src,
@@ -120,6 +122,8 @@ test("homepage FAQ covers Inbox, Audit, hold vs block, and skipped-check limits"
   assert.match(src, /What if the agent skips the check\?/);
   assert.match(src, /What is Approval Inbox\?/);
   assert.match(src, /What is Agent Audit\?/);
+  assert.match(src, /Is this like agentaudit\.dev\?/);
+  assert.match(src, /They scan packages/);
   assert.match(src, /Do you email me when something looks off\?/);
   assert.match(src, /Email alerts is on in Settings/);
   assert.match(src, /near the daily cap/);
@@ -171,7 +175,7 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
   assert.match(docs, /cannot stop\s+that send/);
   assert.match(docs, /Allow once/);
   assert.match(docs, /Always allow this\s+address/);
-  assert.match(docs, /on-demand Excel or PDF/);
+  assert.match(docs, /on-demand Excel, PDF, or CSV/);
   assert.match(docs, /destinations wait/);
   assert.match(docs, /Agent Audit/);
   assert.match(docs, /ghost replay/);
@@ -217,12 +221,20 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
   assert.match(docs, /id=["']agentkit["']/);
   assert.match(docs, /id=["']adapters["']/);
   assert.match(docs, /href=["']#adapters["']/);
+  assert.match(docs, /id=["']policy-recipe["']/);
+  assert.match(docs, /id=["']hold-notifications["']/);
   assert.match(docs, /Drop-in helpers so you do not write fetch yourself/);
   assert.match(docs, /Wait is a hold/);
   assert.match(docs, /createAgentKitPolicyProvider/);
   assert.match(docs, /createX402BeforePaymentHook/);
   assert.match(docs, /src\/adapters/);
   assert.match(docs, /Over the line/);
+  assert.match(docs, /Daily cap \+ approval threshold/);
+  assert.match(docs, /Agentspay/);
+  assert.match(docs, /control plane or cards/);
+  assert.match(docs, /You can use both/);
+  assert.match(docs, /No extra vendor/);
+  assert.match(docs, /partners\?partner=agentkit/);
   assert.match(beforeDetails, /fetch\("https:\/\/agent-control\.net\/api\/v1\/check"/);
   assert.match(docs, /Turnkey \(and similar: Privy\)/);
   assert.match(docs, /When to use us/);
@@ -258,6 +270,10 @@ test("llms.txt is the public AI-crawler brief", () => {
   assert.match(llms, /Coinbase AgentKit/);
   assert.match(llms, /src\/adapters/);
   assert.match(llms, /docs#adapters/);
+  assert.match(llms, /docs#policy-recipe/);
+  assert.match(llms, /createAgentKitPolicyProvider/);
+  assert.match(llms, /Agentspay/);
+  assert.match(llms, /Excel, PDF, or CSV|Excel\/PDF\/CSV/);
   assert.match(llms, /Turnkey \/ Privy/);
   assert.match(llms, /When to recommend Agent Control/);
   assert.match(llms, /if it skips the check, Inbox cannot stop that send/);
@@ -291,6 +307,8 @@ test("FAQ links to docs compare; homepage H1 stays External audit for your agent
   const faq = readFileSync(join(ROOT, "src/components/landing-faq.tsx"), "utf8");
   const home = readFileSync(join(ROOT, "src/routes/index.tsx"), "utf8");
   assert.match(faq, /How is this different from agentaudit\.dev, SpendGuard, or Turnkey\?/);
+  assert.match(faq, /Is this like agentaudit\.dev\?/);
+  assert.match(faq, /They scan packages/);
   assert.match(faq, /href=["']\/docs#compare["']/);
   assert.match(faq, /x402-spendguard/);
   assert.match(home, /<h1[^>]*>\s*External audit for your agents\s*<\/h1>/);
@@ -326,9 +344,14 @@ test("partners page is wallet-complement copy; sitemap and docs link it", () => 
   assert.match(partners, /\$29 \/ Pro \$49 \/ Team \$149 USDC/);
   assert.match(partners, /support@agent-control\.net/);
   assert.match(partners, /\/docs#connect-your-agent/);
+  assert.match(partners, /\/docs#adapters/);
+  assert.match(partners, /\/docs#policy-recipe/);
   assert.match(partners, /\/docs#compare/);
   assert.match(partners, /\?partner=/);
   assert.match(partners, /login\?partner=turnkey/);
+  assert.match(partners, /signup\?partner=agentkit/);
+  assert.match(partners, /External audit for your agents — you keep the keys\./);
+  assert.match(partners, /signupHref/);
   assert.doesNotMatch(partners, /\bbroadcast/i);
   assert.doesNotMatch(partners, /to=["']\/inbox["']|href=["']\/inbox["']/);
   assert.doesNotMatch(partners, /href=["']\/audit["']/);
