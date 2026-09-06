@@ -39,6 +39,21 @@ POST /api/v1/check with API key, destination, value_usd. If the check says stop,
 ## Pricing
 1-day full console trial, no card, no KYC. Then Starter $29 / Pro $49 / Team $149. DIY on-chain USDC (Solana) or native SOL/ETH from Billing. No in-page Phantom pay-extension.
 
+## Agent Storefront
+Agents discover price, start a trial, and start checkout here. A human principal signs up and owns billing and Approval Inbox; agents connect under that account. Agents cannot open a root account, cannot decide Approval Inbox, and cannot use a virtual card.
+
+How to connect: the human signs up, enrolls the wallet, and issues an agent API key. Then check before spend — POST /api/v1/check or MCP check_transfer. Docs: https://agent-control.net/docs#connect-your-agent and https://agent-control.net/docs#agent-storefront
+
+How to pay: on-chain USDC on Solana (also SOL / ETH). The agent opens a pay request for the human principal. The human pays. Not automatic payment.
+
+APIs (machine-readable):
+- GET /api/v1/storefront/pricing — Starter $29 / Pro $49 / Team $149 + 1-day trial truth (no auth)
+- POST /api/v1/storefront/trial — start_trial: provide human_email or existing principal_id
+- POST /api/v1/storefront/attach — attach_human: same body; does not move the customer of record
+- POST /api/v1/billing/checkout — create_checkout: Bearer agent API key → pay request for that human (plan starter|pro|team; default asset usdc, chain solana)
+- GET /api/v1/storefront/status — subscription or trial status for the human principal (Bearer agent API key)
+- POST /api/v1/mcp — tools get_pricing, start_trial, attach_human, create_checkout, get_status (plus check_transfer, get_approval, get_agent_status)
+
 ## Not the same as
 - agentaudit.dev — they scan code packages. Agent Control is agent payments control, not a package scanner.
 - SpendGuard (x402-spendguard) — a firewall you run on your own machine, for EVM and x402. Agent Control is hosted Approval Inbox and Agent Audit on Solana, Ethereum, and Base. You set the limits. You keep the keys. You can use both.

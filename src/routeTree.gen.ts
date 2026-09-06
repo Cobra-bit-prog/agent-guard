@@ -33,6 +33,12 @@ import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiV1CheckRouteImport } from './routes/api/v1/check'
 import { Route as ApiV1McpRouteImport } from './routes/api/v1/mcp'
 import { Route as ApiV1ApprovalsIdRouteImport } from './routes/api/v1/approvals.$id'
+import { Route as ApiV1StorefrontPricingRouteImport } from './routes/api/v1/storefront.pricing'
+import { Route as ApiV1StorefrontTrialRouteImport } from './routes/api/v1/storefront.trial'
+import { Route as ApiV1StorefrontAttachRouteImport } from './routes/api/v1/storefront.attach'
+import { Route as ApiV1StorefrontStatusRouteImport } from './routes/api/v1/storefront.status'
+import { Route as ApiV1StorefrontCheckoutRouteImport } from './routes/api/v1/storefront.checkout'
+import { Route as ApiV1BillingCheckoutRouteImport } from './routes/api/v1/billing.checkout'
 import { Route as ApiV1InternalStatsRouteImport } from './routes/api/v1/internal/stats'
 
 const IndexRoute = IndexRouteImport.update({
@@ -154,6 +160,36 @@ const ApiV1ApprovalsIdRoute = ApiV1ApprovalsIdRouteImport.update({
   path: '/api/v1/approvals/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1StorefrontPricingRoute = ApiV1StorefrontPricingRouteImport.update({
+  id: '/api/v1/storefront/pricing',
+  path: '/api/v1/storefront/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1StorefrontTrialRoute = ApiV1StorefrontTrialRouteImport.update({
+  id: '/api/v1/storefront/trial',
+  path: '/api/v1/storefront/trial',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1StorefrontAttachRoute = ApiV1StorefrontAttachRouteImport.update({
+  id: '/api/v1/storefront/attach',
+  path: '/api/v1/storefront/attach',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1StorefrontStatusRoute = ApiV1StorefrontStatusRouteImport.update({
+  id: '/api/v1/storefront/status',
+  path: '/api/v1/storefront/status',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1StorefrontCheckoutRoute = ApiV1StorefrontCheckoutRouteImport.update({
+  id: '/api/v1/storefront/checkout',
+  path: '/api/v1/storefront/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1BillingCheckoutRoute = ApiV1BillingCheckoutRouteImport.update({
+  id: '/api/v1/billing/checkout',
+  path: '/api/v1/billing/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1InternalStatsRoute = ApiV1InternalStatsRouteImport.update({
   id: '/api/v1/internal/stats',
   path: '/api/v1/internal/stats',
@@ -184,6 +220,12 @@ export interface FileRoutesByFullPath {
   '/agents/': typeof AppAgentsIndexRoute
   '/billing/': typeof AppBillingIndexRoute
   '/api/v1/approvals/$id': typeof ApiV1ApprovalsIdRoute
+  '/api/v1/storefront/pricing': typeof ApiV1StorefrontPricingRoute
+  '/api/v1/storefront/trial': typeof ApiV1StorefrontTrialRoute
+  '/api/v1/storefront/attach': typeof ApiV1StorefrontAttachRoute
+  '/api/v1/storefront/status': typeof ApiV1StorefrontStatusRoute
+  '/api/v1/storefront/checkout': typeof ApiV1StorefrontCheckoutRoute
+  '/api/v1/billing/checkout': typeof ApiV1BillingCheckoutRoute
   '/api/v1/internal/stats': typeof ApiV1InternalStatsRoute
 }
 export interface FileRoutesByTo {
@@ -208,6 +250,12 @@ export interface FileRoutesByTo {
   '/agents': typeof AppAgentsIndexRoute
   '/billing': typeof AppBillingIndexRoute
   '/api/v1/approvals/$id': typeof ApiV1ApprovalsIdRoute
+  '/api/v1/storefront/pricing': typeof ApiV1StorefrontPricingRoute
+  '/api/v1/storefront/trial': typeof ApiV1StorefrontTrialRoute
+  '/api/v1/storefront/attach': typeof ApiV1StorefrontAttachRoute
+  '/api/v1/storefront/status': typeof ApiV1StorefrontStatusRoute
+  '/api/v1/storefront/checkout': typeof ApiV1StorefrontCheckoutRoute
+  '/api/v1/billing/checkout': typeof ApiV1BillingCheckoutRoute
   '/api/v1/internal/stats': typeof ApiV1InternalStatsRoute
 }
 export interface FileRoutesById {
@@ -236,6 +284,12 @@ export interface FileRoutesById {
   '/_app/agents/': typeof AppAgentsIndexRoute
   '/_app/billing/': typeof AppBillingIndexRoute
   '/api/v1/approvals/$id': typeof ApiV1ApprovalsIdRoute
+  '/api/v1/storefront/pricing': typeof ApiV1StorefrontPricingRoute
+  '/api/v1/storefront/trial': typeof ApiV1StorefrontTrialRoute
+  '/api/v1/storefront/attach': typeof ApiV1StorefrontAttachRoute
+  '/api/v1/storefront/status': typeof ApiV1StorefrontStatusRoute
+  '/api/v1/storefront/checkout': typeof ApiV1StorefrontCheckoutRoute
+  '/api/v1/billing/checkout': typeof ApiV1BillingCheckoutRoute
   '/api/v1/internal/stats': typeof ApiV1InternalStatsRoute
 }
 export interface FileRouteTypes {
@@ -264,6 +318,12 @@ export interface FileRouteTypes {
     | '/agents/'
     | '/billing/'
     | '/api/v1/approvals/$id'
+    | '/api/v1/storefront/pricing'
+    | '/api/v1/storefront/trial'
+    | '/api/v1/storefront/attach'
+    | '/api/v1/storefront/status'
+    | '/api/v1/storefront/checkout'
+    | '/api/v1/billing/checkout'
     | '/api/v1/internal/stats'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -288,6 +348,12 @@ export interface FileRouteTypes {
     | '/agents'
     | '/billing'
     | '/api/v1/approvals/$id'
+    | '/api/v1/storefront/pricing'
+    | '/api/v1/storefront/trial'
+    | '/api/v1/storefront/attach'
+    | '/api/v1/storefront/status'
+    | '/api/v1/storefront/checkout'
+    | '/api/v1/billing/checkout'
     | '/api/v1/internal/stats'
   id:
     | '__root__'
@@ -315,6 +381,12 @@ export interface FileRouteTypes {
     | '/_app/agents/'
     | '/_app/billing/'
     | '/api/v1/approvals/$id'
+    | '/api/v1/storefront/pricing'
+    | '/api/v1/storefront/trial'
+    | '/api/v1/storefront/attach'
+    | '/api/v1/storefront/status'
+    | '/api/v1/storefront/checkout'
+    | '/api/v1/billing/checkout'
     | '/api/v1/internal/stats'
   fileRoutesById: FileRoutesById
 }
@@ -330,6 +402,12 @@ export interface RootRouteChildren {
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiV1CheckRoute: typeof ApiV1CheckRoute
   ApiV1McpRoute: typeof ApiV1McpRoute
+  ApiV1StorefrontPricingRoute: typeof ApiV1StorefrontPricingRoute
+  ApiV1StorefrontTrialRoute: typeof ApiV1StorefrontTrialRoute
+  ApiV1StorefrontAttachRoute: typeof ApiV1StorefrontAttachRoute
+  ApiV1StorefrontStatusRoute: typeof ApiV1StorefrontStatusRoute
+  ApiV1StorefrontCheckoutRoute: typeof ApiV1StorefrontCheckoutRoute
+  ApiV1BillingCheckoutRoute: typeof ApiV1BillingCheckoutRoute
   ApiV1ApprovalsIdRoute: typeof ApiV1ApprovalsIdRoute
   ApiV1InternalStatsRoute: typeof ApiV1InternalStatsRoute
 }
@@ -504,6 +582,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1ApprovalsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/storefront/pricing': {
+      id: '/api/v1/storefront/pricing'
+      path: '/api/v1/storefront/pricing'
+      fullPath: '/api/v1/storefront/pricing'
+      preLoaderRoute: typeof ApiV1StorefrontPricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/storefront/trial': {
+      id: '/api/v1/storefront/trial'
+      path: '/api/v1/storefront/trial'
+      fullPath: '/api/v1/storefront/trial'
+      preLoaderRoute: typeof ApiV1StorefrontTrialRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/storefront/attach': {
+      id: '/api/v1/storefront/attach'
+      path: '/api/v1/storefront/attach'
+      fullPath: '/api/v1/storefront/attach'
+      preLoaderRoute: typeof ApiV1StorefrontAttachRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/storefront/status': {
+      id: '/api/v1/storefront/status'
+      path: '/api/v1/storefront/status'
+      fullPath: '/api/v1/storefront/status'
+      preLoaderRoute: typeof ApiV1StorefrontStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/storefront/checkout': {
+      id: '/api/v1/storefront/checkout'
+      path: '/api/v1/storefront/checkout'
+      fullPath: '/api/v1/storefront/checkout'
+      preLoaderRoute: typeof ApiV1StorefrontCheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/billing/checkout': {
+      id: '/api/v1/billing/checkout'
+      path: '/api/v1/billing/checkout'
+      fullPath: '/api/v1/billing/checkout'
+      preLoaderRoute: typeof ApiV1BillingCheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/internal/stats': {
       id: '/api/v1/internal/stats'
       path: '/api/v1/internal/stats'
@@ -578,6 +698,12 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiV1CheckRoute: ApiV1CheckRoute,
   ApiV1McpRoute: ApiV1McpRoute,
+  ApiV1StorefrontPricingRoute: ApiV1StorefrontPricingRoute,
+  ApiV1StorefrontTrialRoute: ApiV1StorefrontTrialRoute,
+  ApiV1StorefrontAttachRoute: ApiV1StorefrontAttachRoute,
+  ApiV1StorefrontStatusRoute: ApiV1StorefrontStatusRoute,
+  ApiV1StorefrontCheckoutRoute: ApiV1StorefrontCheckoutRoute,
+  ApiV1BillingCheckoutRoute: ApiV1BillingCheckoutRoute,
   ApiV1ApprovalsIdRoute: ApiV1ApprovalsIdRoute,
   ApiV1InternalStatsRoute: ApiV1InternalStatsRoute,
 }
