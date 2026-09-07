@@ -52,7 +52,7 @@ APIs (machine-readable):
 - POST /api/v1/storefront/attach — attach_human: same body; does not move the customer of record
 - POST /api/v1/billing/checkout — create_checkout: Bearer agent API key → pay request for that human (plan starter|pro|team; default asset usdc, chain solana)
 - GET /api/v1/storefront/status — subscription or trial status for the human principal (Bearer agent API key)
-- POST /api/v1/mcp — tools get_pricing, start_trial, attach_human, create_checkout, get_status (plus check_transfer, get_approval, get_agent_status)
+- POST /api/v1/mcp — Streamable HTTP. Tools get_pricing, start_trial, attach_human, create_checkout, get_status (plus check_transfer, get_approval, get_agent_status). Send JSON-RPC. initialize returns a session header. get_pricing is public; other spend and checkout tools need a Bearer agent API key.
 
 ## Not the same as
 - agentaudit.dev — they scan code packages. Agent Control is agent payments control, not a package scanner. Is this like agentaudit.dev? No — we are Approval Inbox and spend limits for agent wallets.

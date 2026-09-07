@@ -1,0 +1,26 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "net.agent-control/agent-control",
+  "title": "Agent Control",
+  "description": "External audit for your agents. Hold vs block before an agent sends.",
+  "version": "1.0.0",
+  "websiteUrl": "https://agent-control.net/docs",
+  "repository": {
+    "url": "https://github.com/Cobra-bit-prog/agent-guard",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://agent-control.net/api/v1/mcp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Bearer agent API key. Required for spend checks, checkout, and status. get_pricing is public.",
+          "isRequired": false,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}
