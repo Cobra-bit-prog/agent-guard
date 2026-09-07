@@ -358,8 +358,10 @@ client.onBeforePaymentCreation(
           </article>
           <p id="skill-mcp" className="mt-6 scroll-mt-6 text-sm leading-relaxed text-muted">
             Coding agents (Cursor and similar) connect the same way: give the agent the API key,
-            then check before spend. HTTP today: POST /api/v1/check with the Bearer key. MCP at POST
-            /api/v1/mcp — tools <code className="font-mono text-fg">check_transfer</code>,{" "}
+            then check before spend. HTTP today: POST /api/v1/check with the Bearer key. The MCP
+            path is Streamable HTTP: POST JSON-RPC to /api/v1/mcp and the server answers as JSON or
+            as a short event stream, with a session header on initialize. Tools:{" "}
+            <code className="font-mono text-fg">check_transfer</code>,{" "}
             <code className="font-mono text-fg">get_approval</code>,{" "}
             <code className="font-mono text-fg">get_agent_status</code>, plus storefront{" "}
             <code className="font-mono text-fg">get_pricing</code>,{" "}
@@ -578,7 +580,8 @@ client.onBeforePaymentCreation(
               Hold response includes <code className="font-mono text-fg">poll_url</code> and{" "}
               <code className="font-mono text-fg">approval_id</code>. MCP tool{" "}
               <code className="font-mono text-fg">get_approval</code> polls the same decision. Same
-              tools on POST /api/v1/mcp: <code className="font-mono text-fg">check_transfer</code>,{" "}
+              tools on Streamable HTTP POST /api/v1/mcp:{" "}
+              <code className="font-mono text-fg">check_transfer</code>,{" "}
               <code className="font-mono text-fg">get_approval</code>,{" "}
               <code className="font-mono text-fg">get_agent_status</code>, plus storefront{" "}
               <code className="font-mono text-fg">get_pricing</code>,{" "}
