@@ -46,6 +46,8 @@ describe("Solana Pay URL", () => {
     const a = newPayReference();
     const b = newPayReference();
     assert.notEqual(a, b);
+    assert.ok(a.length >= 32 && a.length <= 44, a);
+    assert.ok(b.length >= 32 && b.length <= 44, b);
     const url = buildSolanaPayUrl({
       recipient: "WrongWalletDoNotUse111111111111111111111",
       amountUsdc: 29,

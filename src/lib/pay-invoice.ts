@@ -35,7 +35,7 @@ function encodeBase58(bytes: Uint8Array): string {
     for (let j = 0; j < digits.length; j += 1) {
       const x = digits[j] * 256 + carry;
       digits[j] = x % 58;
-      carry = (carry / 58) | 0;
+      carry = (x / 58) | 0;
     }
     while (carry) {
       digits.push(carry % 58);
