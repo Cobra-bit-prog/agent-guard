@@ -4,8 +4,17 @@ export const USDC_DECIMALS = 6;
 export const PAY_EXPIRY_MS = 30 * 60 * 1000;
 export const PERIOD_DAYS = 30;
 
-/** Production Phantom receive pubkey. QR / Pay / invoices send USDC here only. */
+/**
+ * Production Phantom receive pubkey for every human Solana USDC payment.
+ * Must match Vercel Production `SOLANA_PAYOUT_ADDRESS`.
+ * Do not read this from query params, JSON bodies, or env overrides.
+ */
 export const SOLANA_PAYOUT_ADDRESS = "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR";
+
+/** Ignore any candidate wallet — env mistakes and query strings cannot retarget funds. */
+export function lockedSolanaUsdcRecipient(_candidate?: string | null): string {
+  return SOLANA_PAYOUT_ADDRESS;
+}
 
 export type PayChain = "solana" | "ethereum" | "base";
 
@@ -50,7 +59,7 @@ export function buildSolanaPayUrl(opts: {
     label: "Agent Control",
     message: `Pay $${amount}`,
   });
-  return `solana:${SOLANA_PAYOUT_ADDRESS}?${q.toString()}`;
+  return `solana:${lockedSolanaUsdcRecipient(opts.recipient)}?${q.toString()}`;
 }
 
 /** HTTPS universal link: opens the Phantom app, or the App Store / download page. */

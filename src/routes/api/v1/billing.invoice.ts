@@ -40,6 +40,7 @@ export const Route = createFileRoute("/api/v1/billing/invoice")({
             plan: parsePaidPlan(rec.plan),
             email: parseEmail(rec.email ?? rec.human_email),
             source: "human",
+            // rec.recipient / query wallets are ignored — payout is hard-locked.
           });
           return json(invoiceView(row, originFromRequest(request)));
         } catch (err) {

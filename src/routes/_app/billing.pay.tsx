@@ -26,6 +26,7 @@ export const Route = createFileRoute("/_app/billing/pay")({
     if (id) out.id = id;
     if (search.plan) out.plan = plan;
     if (email) out.email = email;
+    // search.recipient is ignored — query strings cannot retarget funds.
     return out;
   },
   component: PayRequestPage,

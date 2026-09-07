@@ -423,5 +423,6 @@ export function publicCheckoutConfig() {
     no_unique_amount: true as const,
     recipient: addr,
     helius: Boolean(process.env.HELIUS_API_KEY?.trim()),
+    note: "Recipient is hard-locked to Vercel Production SOLANA_PAYOUT_ADDRESS.",
   };
 }

@@ -1,6 +1,6 @@
 import { FREE_TRIAL_DAYS, FREE_TRIAL_HOURS, PLANS, type Entitlement, type PlanId } from "./plans.ts";
 import { PAY_ASSET_CHAIN, asPayAsset, type PayAsset } from "./pay-asset.ts";
-import { SOLANA_PAYOUT_ADDRESS, type PayChain } from "./solana-pay.ts";
+import { SOLANA_PAYOUT_ADDRESS, lockedSolanaUsdcRecipient, type PayChain } from "./solana-pay.ts";
 import { APP_ORIGIN, absoluteAppUrl } from "./warning-alert.ts";
 
 /** Locked product line: human is customer of record. */
@@ -544,7 +544,9 @@ export function toCheckoutResponse(row: CheckoutPayRequest): CheckoutResponse {
   const asset = asPayAsset(row.asset);
   const chain = asPayChain(row.chain);
   const recipient =
-    asset === "usdc" && chain === "solana" ? SOLANA_PAYOUT_ADDRESS : row.recipient;
+    asset === "usdc" && chain === "solana"
+      ? lockedSolanaUsdcRecipient(row.recipient)
+      : row.recipient;
   return {
     pay_request_id: row.id,
     plan: row.plan,

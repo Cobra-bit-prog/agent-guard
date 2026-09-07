@@ -1,24 +1,31 @@
 import {
-  SOLANA_PAYOUT_ADDRESS,
   matchUsdcByReference,
   type MatchResult,
   type ParsedTx,
 } from "@/lib/pay-invoice";
+import {
+  SOLANA_PAYOUT_ADDRESS,
+  lockedSolanaUsdcRecipient,
+} from "@/lib/solana-pay";
 import { rpc, solanaRpcUrl } from "@/lib/onchain";
 
 export { newPayReference } from "@/lib/pay-invoice";
 
-/** Always the production Phantom pubkey. Env mismatches are logged and ignored. */
+/**
+ * Always the production Phantom pubkey (same value as Vercel Production
+ * SOLANA_PAYOUT_ADDRESS). Env mismatches are logged and ignored so a wrong
+ * Vercel preview env cannot retarget funds.
+ */
 export function payoutAddress(): string {
   const fromEnv = process.env.SOLANA_PAYOUT_ADDRESS?.trim();
   if (fromEnv && fromEnv !== SOLANA_PAYOUT_ADDRESS) {
     console.error(
       "[billing] SOLANA_PAYOUT_ADDRESS must be",
       SOLANA_PAYOUT_ADDRESS,
-      "— ignoring override",
+      "(Vercel Production). Ignoring override.",
     );
   }
-  return SOLANA_PAYOUT_ADDRESS;
+  return lockedSolanaUsdcRecipient(fromEnv);
 }
 
 export function checkoutConfigured(): boolean {

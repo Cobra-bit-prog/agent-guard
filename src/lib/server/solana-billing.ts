@@ -47,7 +47,7 @@ import {
   sendInvoiceIfNeeded,
   type PayRow,
 } from "@/lib/server/billing-core.server";
-import { SOLANA_PAYOUT_ADDRESS } from "@/lib/pay-invoice";
+import { lockedSolanaUsdcRecipient } from "@/lib/pay-invoice";
 
 const PaidPlan = z.enum(["starter", "pro", "team"]);
 const PayChainZ = z.enum(["solana", "ethereum", "base"]);
@@ -77,7 +77,7 @@ function view(row: PayRow): PayRequestView {
       ? formatUsdcExact(amountBaseUnits)
       : formatExactAmount(amountBaseUnits, decimals);
   const isEvmUsdc = asset === "usdc" && (chain === "ethereum" || chain === "base");
-  const solanaRecipient = chain === "solana" ? SOLANA_PAYOUT_ADDRESS : row.recipient;
+  const solanaRecipient = chain === "solana" ? lockedSolanaUsdcRecipient(row.recipient) : row.recipient;
   let payUrl = "";
   let metamaskUrl: string | null = null;
   if (asset === "sol") {

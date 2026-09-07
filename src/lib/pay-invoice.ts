@@ -9,13 +9,14 @@ import {
   SOLANA_PAYOUT_ADDRESS,
   USDC_MINT,
   buildSolanaPayUrl,
+  lockedSolanaUsdcRecipient,
   phantomBrowseUrl,
   usdcBaseUnits,
   type PayStatus,
 } from "./solana-pay.ts";
 
 /** Production Phantom Solana USDC receive pubkey. Human checkout funds go here only. */
-export { SOLANA_PAYOUT_ADDRESS };
+export { SOLANA_PAYOUT_ADDRESS, lockedSolanaUsdcRecipient };
 
 export const PAID_PLAN_IDS = ["starter", "pro", "team"] as const;
 export type PaidPlanId = (typeof PAID_PLAN_IDS)[number];
@@ -68,7 +69,7 @@ export function parseEmail(value: unknown): string | null {
 
 /** Ignore any candidate wallet. Query strings cannot retarget funds. */
 export function receiveWallet(_candidate?: string | null): string {
-  return SOLANA_PAYOUT_ADDRESS;
+  return lockedSolanaUsdcRecipient(_candidate);
 }
 
 export type PayCopy = {
@@ -156,6 +157,7 @@ export function matchUsdcByReference(opts: {
   amountUsdc: number;
   signatures: Array<{ signature: string; err?: unknown; tx?: ParsedTx | null }>;
 }): MatchResult {
+  const recipient = lockedSolanaUsdcRecipient(opts.recipient);
   const expected = BigInt(usdcBaseUnits(opts.amountUsdc));
   const signatures = opts.signatures || [];
   let bestUnder: MatchResult = { kind: "none" };
@@ -163,7 +165,7 @@ export function matchUsdcByReference(opts: {
     if (item.err) continue;
     const tx = item.tx;
     if (!tx || tx.meta?.err) continue;
-    const delta = usdcDeltaToOwner(tx, opts.recipient);
+    const delta = usdcDeltaToOwner(tx, recipient);
     if (delta <= 0n) continue;
     const amountUsdc = Number(delta) / 1e6;
     if (delta >= expected) {
@@ -254,13 +256,14 @@ function usdcAmountToRecipient(ev: HeliusEvent, recipient: string): number {
 }
 
 /** Helius enhanced + raw webhook → candidate payments keyed by reference accounts. */
-export function paymentsFromHeliusPayload(body: unknown, recipient: string): HeliusPayment[] {
+export function paymentsFromHeliusPayload(body: unknown, recipient?: string): HeliusPayment[] {
+  const locked = lockedSolanaUsdcRecipient(recipient);
   const events = normalizeHeliusEvents(body);
   const out: HeliusPayment[] = [];
   for (const ev of events) {
     const signature = ev.signature || ev.transactionSignature || "";
     const references = collectAccountKeys(ev);
-    const amountUsdc = usdcAmountToRecipient(ev, recipient);
+    const amountUsdc = usdcAmountToRecipient(ev, locked);
     if (!signature || amountUsdc <= 0) continue;
     out.push({ signature, amountUsdc, references });
   }
@@ -317,7 +320,7 @@ export function viewInvoice(row: InvoiceRow, origin?: string | null): InvoiceVie
   const planId = parsePaidPlan(row.plan);
   const plan = PLANS[planId];
   const copy = copyFor(plan.price);
-  const recipient = SOLANA_PAYOUT_ADDRESS;
+  const recipient = lockedSolanaUsdcRecipient(row.recipient);
   const payUrl = buildSolanaPayUrl({
     recipient,
     amountUsdc: plan.price,

@@ -338,6 +338,10 @@ describe("create_checkout — agent key pays for the principal", () => {
     assert.equal(second.result.pay_request_id, "pay_existing");
     assert.equal(first.result.recipient, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
     assert.equal(deps.createCalls, 0);
+    const retarget = toCheckoutResponse(
+      payRow({ recipient: "EvilWalletDoNotPay11111111111111111111111" }),
+    );
+    assert.equal(retarget.recipient, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
   });
 
   it("returns 401 for missing or unknown keys — no real keys in tests", async () => {

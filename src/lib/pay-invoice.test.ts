@@ -7,6 +7,7 @@ import {
   SOLANA_PAYOUT_ADDRESS,
   copyFor,
   isForbiddenCustomerWord,
+  lockedSolanaUsdcRecipient,
   matchUsdcByReference,
   paymentsFromHeliusPayload,
   receiveWallet,
@@ -62,6 +63,10 @@ describe("Solana Pay URL", () => {
     assert.match(url, new RegExp(`reference=${a}`));
     assert.equal(SOLANA_PAYOUT_ADDRESS, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
     assert.equal(receiveWallet("SomeOtherWallet111111111111111111111111"), SOLANA_PAYOUT_ADDRESS);
+    assert.equal(
+      lockedSolanaUsdcRecipient("preview-env-wrong-wallet"),
+      "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR",
+    );
   });
 });
 
@@ -103,6 +108,13 @@ describe("payment matches by reference without a special amount", () => {
     });
     assert.equal(exactPlan.kind, "paid");
     assert.notEqual(uniqueDustWouldHaveBeen, 29_000_000);
+
+    const ignoredCallerWallet = matchUsdcByReference({
+      recipient: "WrongWalletDoNotUse111111111111111111111",
+      amountUsdc: 29,
+      signatures: [{ signature: "sigLock", tx: usdcTx(SOLANA_PAYOUT_ADDRESS, 29_000_000) }],
+    });
+    assert.equal(ignoredCallerWallet.kind, "paid");
   });
 });
 
@@ -122,7 +134,7 @@ describe("Helius webhook", () => {
         ],
       },
     ];
-    const payments = paymentsFromHeliusPayload(body, SOLANA_PAYOUT_ADDRESS);
+    const payments = paymentsFromHeliusPayload(body, "WrongWalletDoNotUse111111111111111111111");
     assert.equal(payments.length, 1);
     assert.equal(payments[0]?.amountUsdc, 29);
     assert.ok(payments[0]?.references.includes(reference));
