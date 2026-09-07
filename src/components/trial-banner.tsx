@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { getProfile } from "@/lib/server/guard";
 import { formatTrialLeft, PLANS, type PlanId } from "@/lib/plans";
@@ -15,12 +14,12 @@ export function TrialBanner() {
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-danger/30 bg-danger/10 px-4 py-2 text-sm md:px-8">
         <p>
           {plan === "free"
-            ? "Your 1-day free trial has ended. Monitoring is paused until you pay in USDC."
+            ? "Your 1-day free trial has ended. Pay $29 USDC on Solana to keep the console."
             : `${PLANS[plan].name} ended. Pay again on Billing to keep monitoring.`}
         </p>
-        <Link to="/billing" className="font-medium text-primary hover:underline">
-          Open billing
-        </Link>
+        <a href="/billing/pay?plan=starter" className="font-medium text-primary hover:underline">
+          Pay $29
+        </a>
       </div>
     );
   }
@@ -36,9 +35,9 @@ export function TrialBanner() {
       <p>
         Free trial — {formatTrialLeft(p.msLeft)}. Then a paid plan is required.
       </p>
-      <Link to="/billing" className="font-medium text-primary hover:underline">
-        View plans
-      </Link>
+        <a href="/billing/pay?plan=starter" className="font-medium text-primary hover:underline">
+          Pay $29
+        </a>
     </div>
   );
 }

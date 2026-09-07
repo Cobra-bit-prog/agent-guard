@@ -442,6 +442,16 @@ export async function ensureSchema() {
   await sql.query(
     `alter table pay_requests add column if not exists invoice_email_sent_at timestamptz`,
   );
+  await sql.query(`alter table pay_requests add column if not exists guest_email text`);
+  await sql.query(
+    `alter table pay_requests add column if not exists source text not null default 'human'`,
+  );
+  await sql.query(
+    `create index if not exists pay_requests_guest_email_idx on pay_requests (guest_email)`,
+  );
+  await sql.query(
+    `alter table subscriptions add column if not exists trial_ending_sent_at timestamptz`,
+  );
   const demoAddrs = DEMO_AGENTS.map((d) => d.address);
   for (const addr of demoAddrs) {
     await sql`update agents set is_demo = true where address = ${addr} and is_demo = false`;
@@ -485,6 +495,14 @@ async function ensureWorkspace(userId: string) {
       at: new Date().toISOString(),
       userEmail,
     });
+    if (userEmail) {
+      try {
+        const { claimPaidInvoicesForUser } = await import("@/lib/server/billing-core.server");
+        await claimPaidInvoicesForUser(userId, userEmail);
+      } catch (err) {
+        console.error("[billing] claim paid invoices failed", err);
+      }
+    }
   }
   const existing = await sql<{
     c: number;

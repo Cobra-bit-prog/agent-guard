@@ -108,25 +108,30 @@ function BillingPage() {
       )}
 
       <div>
-        <p className="text-sm text-muted">Pay with</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {ASSETS.map((a) => (
-            <button
-              key={a}
-              type="button"
-              className={cn(
-                "rounded-full border px-3 py-1.5 text-sm",
-                asset === a
-                  ? "border-primary bg-primary/10 text-fg"
-                  : "border-border text-muted hover:text-fg",
-              )}
-              onClick={() => setAsset(a)}
-            >
-              {PAY_ASSET_LABEL[a]}
-            </button>
-          ))}
-        </div>
-        <p className="mt-2 text-xs text-subtle">{assetHint(asset)}</p>
+        <p className="text-sm text-muted">Pay with USDC on Solana</p>
+        <details className="mt-3 rounded-[14px] border border-border bg-elevated/50 px-3.5 py-3">
+          <summary className="cursor-pointer text-sm font-medium">Other</summary>
+          <p className="mt-2 text-xs text-subtle">
+            SOL and ETH sit under Other. Default is $29 USDC on Solana.
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {ASSETS.map((a) => (
+              <button
+                key={a}
+                type="button"
+                className={cn(
+                  "rounded-full border px-3 py-1.5 text-sm",
+                  asset === a
+                    ? "border-primary bg-primary/10 text-fg"
+                    : "border-border text-muted hover:text-fg",
+                )}
+                onClick={() => setAsset(a)}
+              >
+                {PAY_ASSET_LABEL[a]}
+              </button>
+            ))}
+          </div>
+        </details>
       </div>
 
       {cfg.isError ? (
@@ -169,7 +174,7 @@ function BillingPage() {
                     {p.historyDays}-day history
                   </li>
                 </ul>
-                <Button
+        <Button
                   className="mt-6"
                   variant={highlighted || isCurrent ? "default" : "secondary"}
                   disabled={pay.isPending || isCurrent || checkoutOff}
@@ -179,7 +184,7 @@ function BillingPage() {
                     ? "Current plan"
                     : pay.isPending
                       ? "Starting…"
-                      : `Pay ${p.price} in ${PAY_ASSET_LABEL[asset]}`}
+                      : `Pay $${p.price}`}
                 </Button>
                 <p className="mt-2 text-center text-xs text-subtle">{assetHint(asset)}</p>
               </CardContent>
@@ -211,7 +216,7 @@ function BillingPage() {
       </p>
       <p className="text-xs text-subtle">
         Free is a one-time {FREE_TRIAL_DAYS}-day trial. After it ends, scans and new agents pause
-        until you pay in USDC, SOL, or ETH. No silent autopay.
+        until you pay $29 USDC on Solana. No silent autopay.
       </p>
     </div>
   );

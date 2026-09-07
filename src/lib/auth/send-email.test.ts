@@ -57,6 +57,21 @@ describe("new subscriber admin notify", () => {
   });
 });
 
+describe("trial ending hour-20 copy", () => {
+  it("asks for $29 USDC on Solana without watcher language", async () => {
+    const { trialEndingEmailCopy, TRIAL_ENDING_BODY } = await import("./send-email.server.ts");
+    const copy = trialEndingEmailCopy();
+    assert.equal(copy.subject, "Your day is almost up");
+    assert.equal(copy.ctaLabel, "Pay $29");
+    assert.equal(copy.ctaPath, "/billing/pay?plan=starter");
+    assert.equal(TRIAL_ENDING_BODY, "Your day is almost up. Pay $29 USDC on Solana to keep the console.");
+    assert.match(copy.bodyLines.join("\n"), /Pay \$29 USDC on Solana/);
+    assert.doesNotMatch(copy.bodyLines.join("\n"), /\bwatcher\b/i);
+    assert.doesNotMatch(copy.bodyLines.join("\n"), /unique amount/i);
+    assert.doesNotMatch(copy.bodyLines.join("\n"), /\bmemo\b/i);
+  });
+});
+
 describe("warning alert email copy", () => {
   it("uses the sketched subjects and CTAs", () => {
     const hold = warningAlertEmailCopy({

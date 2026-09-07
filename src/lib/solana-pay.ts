@@ -4,6 +4,18 @@ export const USDC_DECIMALS = 6;
 export const PAY_EXPIRY_MS = 30 * 60 * 1000;
 export const PERIOD_DAYS = 30;
 
+/**
+ * Production Phantom receive pubkey for every human Solana USDC payment.
+ * Must match Vercel Production `SOLANA_PAYOUT_ADDRESS`.
+ * Do not read this from query params, JSON bodies, or env overrides.
+ */
+export const SOLANA_PAYOUT_ADDRESS = "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR";
+
+/** Ignore any candidate wallet — env mistakes and query strings cannot retarget funds. */
+export function lockedSolanaUsdcRecipient(_candidate?: string | null): string {
+  return SOLANA_PAYOUT_ADDRESS;
+}
+
 export type PayChain = "solana" | "ethereum" | "base";
 
 export const PAY_CHAIN_LABEL: Record<PayChain, string> = {
@@ -34,19 +46,20 @@ export function formatUsdcExact(baseUnits: string): string {
 }
 
 export function buildSolanaPayUrl(opts: {
-  recipient: string;
+  recipient?: string;
   amountUsdc: number;
   reference: string;
-  planName: string;
+  planName?: string;
 }): string {
+  const amount = Number(opts.amountUsdc);
   const q = new URLSearchParams({
-    amount: String(opts.amountUsdc),
+    amount: String(amount),
     "spl-token": USDC_MINT,
     reference: opts.reference,
     label: "Agent Control",
-    message: `${opts.planName} on agent-control.net`,
+    message: `Pay $${amount}`,
   });
-  return `solana:${opts.recipient}?${q.toString()}`;
+  return `solana:${lockedSolanaUsdcRecipient(opts.recipient)}?${q.toString()}`;
 }
 
 /** HTTPS universal link: opens the Phantom app, or the App Store / download page. */

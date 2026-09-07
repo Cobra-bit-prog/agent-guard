@@ -7,16 +7,27 @@ import { ChainMark } from "@/components/chain-icons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getPayRequest, watchPayRequest } from "@/lib/server/solana-billing";
-import { PLANS, type PlanId } from "@/lib/plans";
-import { PAY_CHAIN_LABEL, type PayChain } from "@/lib/solana-pay";
+import { SolanaPayBlock } from "@/components/solana-pay-block";
+import { useCurrentUserState } from "@/lib/auth/use-current-user";
+import { parseEmail, parsePaidPlan } from "@/lib/pay-invoice";
 import { asPayAsset } from "@/lib/pay-asset";
+import { getPayRequest, watchPayRequest } from "@/lib/server/solana-billing";
+import { PAY_CHAIN_LABEL, type PayChain } from "@/lib/solana-pay";
 import { shortAddress } from "@/lib/utils";
 
+type PaySearch = { id?: string; plan?: string; email?: string };
+
 export const Route = createFileRoute("/_app/billing/pay")({
-  validateSearch: (search: Record<string, unknown>): { id?: string } => {
+  validateSearch: (search: Record<string, unknown>): PaySearch => {
     const id = typeof search.id === "string" ? search.id.trim() : "";
-    return id ? { id } : {};
+    const plan = parsePaidPlan(search.plan);
+    const email = parseEmail(search.email);
+    const out: PaySearch = {};
+    if (id) out.id = id;
+    if (search.plan) out.plan = plan;
+    if (email) out.email = email;
+    // search.recipient is ignored — query strings cannot retarget funds.
+    return out;
   },
   component: PayRequestPage,
 });
@@ -31,15 +42,39 @@ function NetworkLabel({ chain }: { chain: PayChain }) {
 }
 
 function PayRequestPage() {
-  const { id } = Route.useSearch();
-  const qc = useQueryClient();
+  const { id, plan, email } = Route.useSearch();
+  const { user } = useCurrentUserState();
+  const native = useQuery({
+    queryKey: ["pay-request", id],
+    queryFn: () => getPayRequest({ data: { id: id as string } }),
+    enabled: Boolean(id && user),
+  });
+  const asset = native.data ? asPayAsset(native.data.asset) : "usdc";
 
+  if (id && user && native.isLoading) {
+    return <Skeleton className="h-80" />;
+  }
+  if (id && native.data && asset !== "usdc") {
+    return <NativePayRequest id={id} />;
+  }
+
+  return (
+    <div className="mx-auto max-w-lg space-y-6">
+      <Link to="/" className="text-sm text-muted hover:text-fg">
+        ← Home
+      </Link>
+      <SolanaPayBlock plan={plan ?? "starter"} id={id} email={email} />
+    </div>
+  );
+}
+
+/** SOL / ETH under Other — logged-in PayPanel, not the $29 USDC invoice. */
+function NativePayRequest({ id }: { id: string }) {
+  const qc = useQueryClient();
   const q = useQuery({
     queryKey: ["pay-request", id],
     queryFn: () => getPayRequest({ data: { id } }),
-    enabled: Boolean(id),
   });
-
   const watch = useMutation({
     mutationFn: () => watchPayRequest({ data: { id } }),
     onSuccess: (row) => {
@@ -49,7 +84,6 @@ function PayRequestPage() {
   });
 
   useEffect(() => {
-    if (!id) return;
     const row = q.data;
     if (!row || row.status === "paid" || row.status === "expired") return;
     const t = setInterval(() => {
@@ -60,17 +94,6 @@ function PayRequestPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, q.data?.status]);
 
-  if (!id) {
-    return (
-      <div className="mx-auto max-w-lg space-y-4">
-        <h1 className="text-2xl font-semibold">Pay link is missing</h1>
-        <p className="text-sm text-muted">Go back to Billing and tap Pay again.</p>
-        <Button asChild>
-          <Link to="/billing">Back to billing</Link>
-        </Button>
-      </div>
-    );
-  }
   if (q.isLoading) return <Skeleton className="h-80" />;
   if (q.isError) {
     return (
@@ -83,20 +106,18 @@ function PayRequestPage() {
     );
   }
   const req = q.data!;
-  const plan = PLANS[(req.plan as PlanId) in PLANS ? (req.plan as PlanId) : "starter"];
   const chain = (req.chain ?? "solana") as PayChain;
   const asset = asPayAsset(req.asset);
   const symbol = req.symbol ?? "USDC";
-  const evm = asset === "eth" || chain === "ethereum" || chain === "base";
   const displayAmount = req.exactAmount ?? req.exactAmountUsdc ?? String(req.amountUsdc);
 
   if (req.status === "paid") {
     return <Navigate to="/billing" />;
   }
 
-  const watching = Boolean(req.signature) || req.status === "underpaid";
+  const waiting = Boolean(req.signature) || req.status === "underpaid";
 
-  if (watching && req.status !== "expired") {
+  if (waiting && req.status !== "expired") {
     return (
       <div className="mx-auto max-w-lg space-y-6">
         <div>
@@ -104,7 +125,7 @@ function PayRequestPage() {
             ← Billing
           </Link>
           <h1 className="mt-3 inline-flex items-center gap-2 text-2xl font-semibold tracking-tight">
-            Watching <NetworkLabel chain={chain} />
+            Waiting for confirmation · <NetworkLabel chain={chain} />
           </h1>
           <p className="mt-1 text-sm text-muted">
             Waiting for {displayAmount} {symbol} to confirm. This usually takes a few seconds.
@@ -114,7 +135,7 @@ function PayRequestPage() {
           <CardContent className="space-y-4 p-6 text-center">
             <div className="mx-auto size-16 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             <p className="inline-flex items-center justify-center gap-2 text-lg font-semibold">
-              Watching <NetworkLabel chain={chain} />
+              Waiting · <NetworkLabel chain={chain} />
             </p>
             {req.status === "underpaid" && (
               <p className="text-sm text-warning">
@@ -137,9 +158,6 @@ function PayRequestPage() {
             </div>
           </CardContent>
         </Card>
-        <p className="text-center text-xs text-subtle">
-          You will be notified here once the transaction is confirmed.
-        </p>
       </div>
     );
   }
@@ -180,11 +198,9 @@ function PayRequestPage() {
           Send {displayAmount} {symbol}
         </h1>
         <p className="mt-1 text-sm text-muted">
-          {asset === "usdc"
-            ? "Send USDC from your wallet. Copy the amount and address, or scan the QR."
-            : asset === "sol"
-              ? "Send SOL from your wallet. Copy the exact amount and address, or scan the QR. The rate is locked on this invoice."
-              : "Send ETH from your wallet. Copy the exact amount and address, or scan the QR. The rate is locked on this invoice."}
+          {asset === "sol"
+            ? "Send SOL from your wallet. Copy the exact amount and address, or scan the QR. The rate is locked on this invoice."
+            : "Send ETH from your wallet. Copy the exact amount and address, or scan the QR. The rate is locked on this invoice."}
         </p>
       </div>
       <Card>
@@ -194,7 +210,7 @@ function PayRequestPage() {
       </Card>
       <p className="flex items-start gap-2 text-xs text-muted">
         <Info className="mt-0.5 size-3.5 shrink-0" />
-        Do not send from an exchange.
+        Use a wallet. Do not send from Coinbase or Binance.
       </p>
     </div>
   );

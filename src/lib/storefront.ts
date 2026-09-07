@@ -1,6 +1,6 @@
 import { FREE_TRIAL_DAYS, FREE_TRIAL_HOURS, PLANS, type Entitlement, type PlanId } from "./plans.ts";
 import { PAY_ASSET_CHAIN, asPayAsset, type PayAsset } from "./pay-asset.ts";
-import type { PayChain } from "./solana-pay.ts";
+import { SOLANA_PAYOUT_ADDRESS, lockedSolanaUsdcRecipient, type PayChain } from "./solana-pay.ts";
 import { APP_ORIGIN, absoluteAppUrl } from "./warning-alert.ts";
 
 /** Locked product line: human is customer of record. */
@@ -44,12 +44,15 @@ export type StorefrontPricing = {
   };
   plans: StorefrontPlan[];
   pay: {
-    method: "on-chain";
+    method: "solana-pay";
     asset: "USDC";
     chain: "solana";
     also: readonly string[];
+    match: "solana-pay-reference";
     no_card: true;
     no_virtual_card: true;
+    no_unique_amount: true;
+    recipient: string;
     note: string;
   };
   connect: {
@@ -104,13 +107,16 @@ export function getPricing(): StorefrontPricing {
     },
     plans: listPaidPlans(),
     pay: {
-      method: "on-chain",
+      method: "solana-pay",
       asset: "USDC",
       chain: "solana",
       also: ["SOL", "ETH"],
+      match: "solana-pay-reference",
       no_card: true,
       no_virtual_card: true,
-      note: "DIY on-chain USDC (Solana) from Billing. A human principal pays. Agents cannot decide Approval Inbox.",
+      no_unique_amount: true,
+      recipient: SOLANA_PAYOUT_ADDRESS,
+      note: "Send $29 USDC on Solana. Scan or tap Pay. We unlock when it lands.",
     },
     connect: {
       check: "POST /api/v1/check",
@@ -436,8 +442,9 @@ export const CHECKOUT_USAGE = {
     plan: "starter" as const,
     asset: "usdc" as const,
     chain: "solana" as const,
+    human_email: "ops@example.com",
   },
-  note: "Opens a pay request on the human account that owns this agent. The human pays at pay_url. The plan credits the human account. Not automatic payment. Agents cannot decide Approval Inbox.",
+  note: "Opens a pay request on the human account that owns this agent. The human pays at pay_url. Not automatic payment. Not the human front door — humans use /billing/pay. Agents cannot decide Approval Inbox.",
   wraps: "POST /api/v1/billing/checkout — agent key → pay request for the human principal.",
 };
 
@@ -534,14 +541,20 @@ export function isReusableOpenPayRequest(
 }
 
 export function toCheckoutResponse(row: CheckoutPayRequest): CheckoutResponse {
+  const asset = asPayAsset(row.asset);
+  const chain = asPayChain(row.chain);
+  const recipient =
+    asset === "usdc" && chain === "solana"
+      ? lockedSolanaUsdcRecipient(row.recipient)
+      : row.recipient;
   return {
     pay_request_id: row.id,
     plan: row.plan,
-    asset: asPayAsset(row.asset),
-    chain: asPayChain(row.chain),
+    asset,
+    chain,
     amount_usdc: Number(row.amount_usdc),
     amount_base_units: String(row.amount_base_units),
-    recipient: row.recipient,
+    recipient,
     reference: row.reference,
     expires_at: row.expires_at,
     pay_url: checkoutPayUrl(row.id),

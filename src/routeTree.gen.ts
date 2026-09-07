@@ -39,6 +39,12 @@ import { Route as ApiV1StorefrontAttachRouteImport } from './routes/api/v1/store
 import { Route as ApiV1StorefrontStatusRouteImport } from './routes/api/v1/storefront.status'
 import { Route as ApiV1StorefrontCheckoutRouteImport } from './routes/api/v1/storefront.checkout'
 import { Route as ApiV1BillingCheckoutRouteImport } from './routes/api/v1/billing.checkout'
+import { Route as ApiV1BillingInvoiceRouteImport } from './routes/api/v1/billing.invoice'
+import { Route as ApiV1BillingWatchRouteImport } from './routes/api/v1/billing.watch'
+import { Route as ApiV1BillingConfigRouteImport } from './routes/api/v1/billing.config'
+import { Route as ApiV1BillingHeliusRouteImport } from './routes/api/v1/billing.helius'
+import { Route as ApiV1BillingHeliusSetupRouteImport } from './routes/api/v1/billing.helius-setup'
+import { Route as ApiV1InternalTrialMailRouteImport } from './routes/api/v1/internal/trial-mail'
 import { Route as ApiV1InternalStatsRouteImport } from './routes/api/v1/internal/stats'
 
 const IndexRoute = IndexRouteImport.update({
@@ -190,6 +196,36 @@ const ApiV1BillingCheckoutRoute = ApiV1BillingCheckoutRouteImport.update({
   path: '/api/v1/billing/checkout',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1BillingInvoiceRoute = ApiV1BillingInvoiceRouteImport.update({
+  id: '/api/v1/billing/invoice',
+  path: '/api/v1/billing/invoice',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1BillingWatchRoute = ApiV1BillingWatchRouteImport.update({
+  id: '/api/v1/billing/watch',
+  path: '/api/v1/billing/watch',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1BillingConfigRoute = ApiV1BillingConfigRouteImport.update({
+  id: '/api/v1/billing/config',
+  path: '/api/v1/billing/config',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1BillingHeliusRoute = ApiV1BillingHeliusRouteImport.update({
+  id: '/api/v1/billing/helius',
+  path: '/api/v1/billing/helius',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1BillingHeliusSetupRoute = ApiV1BillingHeliusSetupRouteImport.update({
+  id: '/api/v1/billing/helius-setup',
+  path: '/api/v1/billing/helius-setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1InternalTrialMailRoute = ApiV1InternalTrialMailRouteImport.update({
+  id: '/api/v1/internal/trial-mail',
+  path: '/api/v1/internal/trial-mail',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1InternalStatsRoute = ApiV1InternalStatsRouteImport.update({
   id: '/api/v1/internal/stats',
   path: '/api/v1/internal/stats',
@@ -226,6 +262,12 @@ export interface FileRoutesByFullPath {
   '/api/v1/storefront/status': typeof ApiV1StorefrontStatusRoute
   '/api/v1/storefront/checkout': typeof ApiV1StorefrontCheckoutRoute
   '/api/v1/billing/checkout': typeof ApiV1BillingCheckoutRoute
+  '/api/v1/billing/invoice': typeof ApiV1BillingInvoiceRoute
+  '/api/v1/billing/watch': typeof ApiV1BillingWatchRoute
+  '/api/v1/billing/config': typeof ApiV1BillingConfigRoute
+  '/api/v1/billing/helius': typeof ApiV1BillingHeliusRoute
+  '/api/v1/billing/helius-setup': typeof ApiV1BillingHeliusSetupRoute
+  '/api/v1/internal/trial-mail': typeof ApiV1InternalTrialMailRoute
   '/api/v1/internal/stats': typeof ApiV1InternalStatsRoute
 }
 export interface FileRoutesByTo {
@@ -256,6 +298,12 @@ export interface FileRoutesByTo {
   '/api/v1/storefront/status': typeof ApiV1StorefrontStatusRoute
   '/api/v1/storefront/checkout': typeof ApiV1StorefrontCheckoutRoute
   '/api/v1/billing/checkout': typeof ApiV1BillingCheckoutRoute
+  '/api/v1/billing/invoice': typeof ApiV1BillingInvoiceRoute
+  '/api/v1/billing/watch': typeof ApiV1BillingWatchRoute
+  '/api/v1/billing/config': typeof ApiV1BillingConfigRoute
+  '/api/v1/billing/helius': typeof ApiV1BillingHeliusRoute
+  '/api/v1/billing/helius-setup': typeof ApiV1BillingHeliusSetupRoute
+  '/api/v1/internal/trial-mail': typeof ApiV1InternalTrialMailRoute
   '/api/v1/internal/stats': typeof ApiV1InternalStatsRoute
 }
 export interface FileRoutesById {
@@ -290,6 +338,12 @@ export interface FileRoutesById {
   '/api/v1/storefront/status': typeof ApiV1StorefrontStatusRoute
   '/api/v1/storefront/checkout': typeof ApiV1StorefrontCheckoutRoute
   '/api/v1/billing/checkout': typeof ApiV1BillingCheckoutRoute
+  '/api/v1/billing/invoice': typeof ApiV1BillingInvoiceRoute
+  '/api/v1/billing/watch': typeof ApiV1BillingWatchRoute
+  '/api/v1/billing/config': typeof ApiV1BillingConfigRoute
+  '/api/v1/billing/helius': typeof ApiV1BillingHeliusRoute
+  '/api/v1/billing/helius-setup': typeof ApiV1BillingHeliusSetupRoute
+  '/api/v1/internal/trial-mail': typeof ApiV1InternalTrialMailRoute
   '/api/v1/internal/stats': typeof ApiV1InternalStatsRoute
 }
 export interface FileRouteTypes {
@@ -324,6 +378,12 @@ export interface FileRouteTypes {
     | '/api/v1/storefront/status'
     | '/api/v1/storefront/checkout'
     | '/api/v1/billing/checkout'
+    | '/api/v1/billing/invoice'
+    | '/api/v1/billing/watch'
+    | '/api/v1/billing/config'
+    | '/api/v1/billing/helius'
+    | '/api/v1/billing/helius-setup'
+    | '/api/v1/internal/trial-mail'
     | '/api/v1/internal/stats'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -354,6 +414,12 @@ export interface FileRouteTypes {
     | '/api/v1/storefront/status'
     | '/api/v1/storefront/checkout'
     | '/api/v1/billing/checkout'
+    | '/api/v1/billing/invoice'
+    | '/api/v1/billing/watch'
+    | '/api/v1/billing/config'
+    | '/api/v1/billing/helius'
+    | '/api/v1/billing/helius-setup'
+    | '/api/v1/internal/trial-mail'
     | '/api/v1/internal/stats'
   id:
     | '__root__'
@@ -387,6 +453,12 @@ export interface FileRouteTypes {
     | '/api/v1/storefront/status'
     | '/api/v1/storefront/checkout'
     | '/api/v1/billing/checkout'
+    | '/api/v1/billing/invoice'
+    | '/api/v1/billing/watch'
+    | '/api/v1/billing/config'
+    | '/api/v1/billing/helius'
+    | '/api/v1/billing/helius-setup'
+    | '/api/v1/internal/trial-mail'
     | '/api/v1/internal/stats'
   fileRoutesById: FileRoutesById
 }
@@ -408,6 +480,12 @@ export interface RootRouteChildren {
   ApiV1StorefrontStatusRoute: typeof ApiV1StorefrontStatusRoute
   ApiV1StorefrontCheckoutRoute: typeof ApiV1StorefrontCheckoutRoute
   ApiV1BillingCheckoutRoute: typeof ApiV1BillingCheckoutRoute
+  ApiV1BillingInvoiceRoute: typeof ApiV1BillingInvoiceRoute
+  ApiV1BillingWatchRoute: typeof ApiV1BillingWatchRoute
+  ApiV1BillingConfigRoute: typeof ApiV1BillingConfigRoute
+  ApiV1BillingHeliusRoute: typeof ApiV1BillingHeliusRoute
+  ApiV1BillingHeliusSetupRoute: typeof ApiV1BillingHeliusSetupRoute
+  ApiV1InternalTrialMailRoute: typeof ApiV1InternalTrialMailRoute
   ApiV1ApprovalsIdRoute: typeof ApiV1ApprovalsIdRoute
   ApiV1InternalStatsRoute: typeof ApiV1InternalStatsRoute
 }
@@ -624,6 +702,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1BillingCheckoutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/billing/invoice': {
+      id: '/api/v1/billing/invoice'
+      path: '/api/v1/billing/invoice'
+      fullPath: '/api/v1/billing/invoice'
+      preLoaderRoute: typeof ApiV1BillingInvoiceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/billing/watch': {
+      id: '/api/v1/billing/watch'
+      path: '/api/v1/billing/watch'
+      fullPath: '/api/v1/billing/watch'
+      preLoaderRoute: typeof ApiV1BillingWatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/billing/config': {
+      id: '/api/v1/billing/config'
+      path: '/api/v1/billing/config'
+      fullPath: '/api/v1/billing/config'
+      preLoaderRoute: typeof ApiV1BillingConfigRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/billing/helius': {
+      id: '/api/v1/billing/helius'
+      path: '/api/v1/billing/helius'
+      fullPath: '/api/v1/billing/helius'
+      preLoaderRoute: typeof ApiV1BillingHeliusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/billing/helius-setup': {
+      id: '/api/v1/billing/helius-setup'
+      path: '/api/v1/billing/helius-setup'
+      fullPath: '/api/v1/billing/helius-setup'
+      preLoaderRoute: typeof ApiV1BillingHeliusSetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/internal/trial-mail': {
+      id: '/api/v1/internal/trial-mail'
+      path: '/api/v1/internal/trial-mail'
+      fullPath: '/api/v1/internal/trial-mail'
+      preLoaderRoute: typeof ApiV1InternalTrialMailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/internal/stats': {
       id: '/api/v1/internal/stats'
       path: '/api/v1/internal/stats'
@@ -704,6 +824,12 @@ const rootRouteChildren: RootRouteChildren = {
   ApiV1StorefrontStatusRoute: ApiV1StorefrontStatusRoute,
   ApiV1StorefrontCheckoutRoute: ApiV1StorefrontCheckoutRoute,
   ApiV1BillingCheckoutRoute: ApiV1BillingCheckoutRoute,
+  ApiV1BillingInvoiceRoute: ApiV1BillingInvoiceRoute,
+  ApiV1BillingWatchRoute: ApiV1BillingWatchRoute,
+  ApiV1BillingConfigRoute: ApiV1BillingConfigRoute,
+  ApiV1BillingHeliusRoute: ApiV1BillingHeliusRoute,
+  ApiV1BillingHeliusSetupRoute: ApiV1BillingHeliusSetupRoute,
+  ApiV1InternalTrialMailRoute: ApiV1InternalTrialMailRoute,
   ApiV1ApprovalsIdRoute: ApiV1ApprovalsIdRoute,
   ApiV1InternalStatsRoute: ApiV1InternalStatsRoute,
 }
