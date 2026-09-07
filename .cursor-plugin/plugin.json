@@ -1,0 +1,26 @@
+{
+  "name": "agent-control",
+  "displayName": "Agent Control",
+  "version": "1.0.0",
+  "description": "External audit for your agents. Connect your agent so it asks before every send. Hold vs block. You keep the keys.",
+  "author": {
+    "name": "Agent Control",
+    "email": "support@agent-control.net"
+  },
+  "homepage": "https://agent-control.net/docs#connectors",
+  "repository": "https://github.com/Cobra-bit-prog/agent-guard",
+  "keywords": ["mcp", "agent-control", "spend-limits", "approval-inbox"],
+  "logo": "assets/logo.svg",
+  "mcpServers": "./mcp.json",
+  "variables": {
+    "type": "object",
+    "properties": {
+      "AGENT_CONTROL_API_KEY": {
+        "type": "string",
+        "title": "Agent Control API key",
+        "description": "Bearer agent API key from the Agent Control console. Required for spend checks, checkout, and status. get_pricing is public."
+      }
+    },
+    "required": ["AGENT_CONTROL_API_KEY"]
+  }
+}

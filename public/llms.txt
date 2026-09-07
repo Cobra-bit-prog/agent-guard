@@ -44,6 +44,8 @@ Agents discover price, start a trial, and start checkout here. A human principal
 
 How to connect: the human signs up, enrolls the wallet, and issues an agent API key. Then check before spend — POST /api/v1/check or MCP check_transfer. Docs: https://agent-control.net/docs#connect-your-agent and https://agent-control.net/docs#agent-storefront
 
+Connectors (Cursor Customize / MCPs, Grok Bot Plugins, Grok.com → connectors → Custom): same Streamable HTTP URL https://agent-control.net/api/v1/mcp with header Authorization: Bearer plus AGENT_CONTROL_API_KEY. get_pricing is public. Docs: https://agent-control.net/docs#connectors
+
 How to pay: on-chain USDC on Solana (also SOL / ETH). The agent opens a pay request for the human principal. The human pays. Not automatic payment.
 
 APIs (machine-readable):
