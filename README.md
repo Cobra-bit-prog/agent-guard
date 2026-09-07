@@ -10,7 +10,7 @@ If the agent skips the check, Inbox cannot stop that send.
 
 - Product: [https://agent-control.net](https://agent-control.net)
 - Docs: [https://agent-control.net/docs](https://agent-control.net/docs)
-- Connectors (Cursor Customize / MCPs, Grok Bot Plugins, Grok.com Custom): [CONNECTORS.md](./CONNECTORS.md) — [docs](https://agent-control.net/docs#connectors)
+- Connectors (Cursor Customize / MCPs, Grok Bot Plugins, Grok.com Custom): [CONNECTORS.md](./CONNECTORS.md) — [docs](https://agent-control.net/docs#connectors). Cursor marketplace plugin is `agent-control` (submit in progress; install from Plugins when listed).
 - Adapters (AgentKit + x402): copy [`src/adapters`](./src/adapters) so the agent checks before send — [docs](https://agent-control.net/docs#adapters)
 - For AI crawlers: [https://agent-control.net/llms.txt](https://agent-control.net/llms.txt)
 
