@@ -155,6 +155,9 @@ function DocsPage() {
           <a href="#connect-your-agent" className="text-muted hover:text-fg">
             Connect your agent
           </a>
+          <a href="#connectors" className="text-muted hover:text-fg">
+            Connectors
+          </a>
           <a href="#agent-storefront" className="text-muted hover:text-fg">
             Agent storefront
           </a>
@@ -296,7 +299,10 @@ function DocsPage() {
                 Policy recipe
               </a>
               . Partner signup with{" "}
-              <a href="/partners?partner=agentkit" className="font-medium text-navy hover:text-coral">
+              <a
+                href="/partners?partner=agentkit"
+                className="font-medium text-navy hover:text-coral"
+              >
                 ?partner=agentkit
               </a>
               .
@@ -347,8 +353,8 @@ client.onBeforePaymentCreation(
           >
             <h3 className="text-lg font-medium">Hold notifications</h3>
             <p className="mt-2 text-sm text-muted">
-              When a spend is held, we reuse the same email and Slack paths already in Settings.
-              No extra vendor.
+              When a spend is held, we reuse the same email and Slack paths already in Settings. No
+              extra vendor.
             </p>
             <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-muted">
               <li>Email alerts (on by default) send a link to Approval Inbox.</li>
@@ -369,8 +375,47 @@ client.onBeforePaymentCreation(
             <code className="font-mono text-fg">attach_human</code>,{" "}
             <code className="font-mono text-fg">create_checkout</code>, and{" "}
             <code className="font-mono text-fg">get_status</code>. If the check says stop, do not
-            send. If the agent skips the check, Inbox cannot stop that send — funds can move.
+            send. If the agent skips the check, Inbox cannot stop that send — funds can move. How to
+            add the connector in Cursor or Grok:{" "}
+            <a href="#connectors" className="font-medium text-navy hover:text-coral">
+              Connectors
+            </a>
+            .
           </p>
+          <article
+            id="connectors"
+            className="mt-8 scroll-mt-6 rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]"
+          >
+            <h3 className="text-lg font-medium">Connectors</h3>
+            <p className="mt-2 text-sm text-muted">
+              External audit for your agents. Connect your agent from Cursor or Grok so it can ask
+              before a send. You keep the keys. The live MCP is Streamable HTTP at
+              https://agent-control.net/api/v1/mcp. get_pricing is public. Spend, checkout, and
+              status need header Authorization: Bearer plus your agent API key (env{" "}
+              <code className="font-mono text-fg">AGENT_CONTROL_API_KEY</code>).
+            </p>
+            <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm text-muted">
+              <li>
+                <span className="font-medium text-fg">Cursor Customize / MCPs.</span> Open
+                Customize, then MCPs. Add a remote server. Paste the URL. Add the Bearer header. Or
+                load this repo as a local plugin and set the key under Plugins → Configure.
+              </li>
+              <li>
+                <span className="font-medium text-fg">Grok Bot Plugins.</span> Once listed, add
+                Agent Control from Settings → Plugins. Until then, custom add: same URL and Bearer
+                header.
+              </li>
+              <li>
+                <span className="font-medium text-fg">Grok.com → connectors → Custom.</span> New
+                Connector, then Custom. Paste the same URL. When asked for auth, use Authorization:
+                Bearer plus the agent API key.
+              </li>
+            </ol>
+            <p className="mt-3 text-sm text-muted">
+              After connect: check before spend. Hold vs block waits in Approval Inbox. If the agent
+              skips the check, Inbox cannot stop that send.
+            </p>
+          </article>
         </section>
 
         <section id="agent-storefront" className="mt-16 scroll-mt-6">
@@ -540,8 +585,7 @@ client.onBeforePaymentCreation(
             <a href="#adapters" className="font-medium text-navy hover:text-coral">
               Connect your agent
             </a>
-            . First-touch links use{" "}
-            <span className="font-mono text-fg">?partner=</span> on signup.
+            . First-touch links use <span className="font-mono text-fg">?partner=</span> on signup.
           </p>
         </section>
 

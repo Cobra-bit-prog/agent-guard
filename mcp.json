@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "agent-control": {
+      "url": "https://agent-control.net/api/v1/mcp",
+      "headers": {
+        "Authorization": "Bearer ${AGENT_CONTROL_API_KEY}"
+      }
+    }
+  }
+}
