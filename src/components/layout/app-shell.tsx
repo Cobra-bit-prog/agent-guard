@@ -16,6 +16,7 @@ import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { Logo } from "@/components/brand";
 import { ExpiredPaywall } from "@/components/expired-paywall";
 import { TrialBanner } from "@/components/trial-banner";
+import { MarketingFooter, MarketingHeader } from "@/components/marketing/chrome";
 import { useQuery } from "@tanstack/react-query";
 import { getProfile, getHoldCount } from "@/lib/server/guard";
 import { PLANS, type PlanId } from "@/lib/plans";
@@ -55,8 +56,18 @@ export function AppShell({ children }: { children: ReactNode }) {
   const holdCount = holds.data?.count ?? 0;
   const expired = Boolean(profile.data?.expired);
   const lockConsole = isLockedPath(pathname);
+  const isPay = pathname === "/billing/pay";
 
   if (isPending) {
+    if (isPay) {
+      return (
+        <div className="sky min-h-screen bg-bg text-fg">
+          <div className="mx-auto max-w-lg px-5 py-16">
+            <div className="h-80 animate-pulse rounded-[20px] bg-white" />
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="flex min-h-screen bg-bg">
         <aside className="hidden w-60 border-r border-border bg-surface md:block" />
@@ -69,6 +80,15 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
           <div className="h-72 animate-pulse rounded-[16px] bg-elevated" />
         </div>
+      </div>
+    );
+  }
+  if (isPay) {
+    return (
+      <div className="sky min-h-screen bg-bg text-fg">
+        <MarketingHeader />
+        <main className="mx-auto max-w-lg px-5 py-10">{children}</main>
+        <MarketingFooter />
       </div>
     );
   }

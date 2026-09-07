@@ -54,11 +54,11 @@ const FAQS = [
   },
   {
     q: "Is the trial free? Do I need a card or KYC?",
-    a: "Yes. One day (24 hours) of the full console. No card. No KYC. After that pay Starter, Pro, or Team in USDC, SOL, or ETH from Billing. You pay your own gas on ETH. We never see your funds and we do not auto-charge next month.",
+    a: "Yes. One day (24 hours) of the full console. No card. No KYC. After that pay Starter $29, Pro $49, or Team $149 in USDC on Solana. We never see your funds and we do not auto-charge next month.",
   },
   {
     q: "How do I pay? Is there KYC?",
-    a: "No KYC and no card. Default is USDC on Solana; you can also pay native SOL or ETH. Scan the QR or copy amount + address from Billing. Do not send from an exchange — they drop the memo / unique amount.",
+    a: "No KYC and no card. Default is $29 USDC on Solana. Scan or tap Pay. We unlock when it lands. Use a wallet. Do not send from Coinbase or Binance.",
   },
   {
     q: "Is this insurance?",

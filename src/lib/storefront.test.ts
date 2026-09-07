@@ -132,12 +132,19 @@ describe("getPricing", () => {
     );
     assert.equal(pricing.pay.asset, "USDC");
     assert.equal(pricing.pay.chain, "solana");
+    assert.equal(pricing.pay.method, "solana-pay");
+    assert.equal(pricing.pay.match, "solana-pay-reference");
+    assert.equal(pricing.pay.no_unique_amount, true);
+    assert.equal(pricing.pay.recipient, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
     assert.equal(pricing.pay.no_virtual_card, true);
+    assert.match(pricing.pay.note, /Send \$29 USDC on Solana/);
     assert.equal(pricing.storefront.checkout, "POST /api/v1/billing/checkout");
     assert.ok(pricing.storefront.mcp_tools.includes("get_pricing"));
     assert.ok(pricing.storefront.mcp_tools.includes("create_checkout"));
     assert.doesNotMatch(JSON.stringify(pricing), /\bbroadcast/i);
     assert.doesNotMatch(JSON.stringify(pricing), /virtual card/i);
+    assert.doesNotMatch(JSON.stringify(pricing), /\bwatcher\b/i);
+    assert.doesNotMatch(JSON.stringify(pricing), /unique amount/i);
   });
 });
 
@@ -329,6 +336,7 @@ describe("create_checkout — agent key pays for the principal", () => {
     if (!first.ok || !second.ok) return;
     assert.equal(first.result.pay_request_id, "pay_existing");
     assert.equal(second.result.pay_request_id, "pay_existing");
+    assert.equal(first.result.recipient, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
     assert.equal(deps.createCalls, 0);
   });
 

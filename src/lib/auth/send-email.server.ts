@@ -420,3 +420,76 @@ export async function sendWarningAlertEmail(opts: {
     return false;
   }
 }
+
+export const TRIAL_ENDING_SUBJECT = "Your day is almost up";
+export const TRIAL_ENDING_BODY =
+  "Your day is almost up. Pay $29 USDC on Solana to keep the console.";
+export const TRIAL_ENDING_CTA_PATH = "/billing/pay?plan=starter";
+
+export function trialEndingEmailCopy(): {
+  subject: string;
+  title: string;
+  bodyLines: string[];
+  ctaPath: string;
+  ctaLabel: string;
+} {
+  return {
+    subject: TRIAL_ENDING_SUBJECT,
+    title: TRIAL_ENDING_SUBJECT,
+    bodyLines: [
+      TRIAL_ENDING_BODY,
+      "Send $29 USDC on Solana. Scan or tap Pay. We unlock when it lands.",
+      "Use a wallet. Do not send from Coinbase or Binance.",
+    ],
+    ctaPath: TRIAL_ENDING_CTA_PATH,
+    ctaLabel: "Pay $29",
+  };
+}
+
+/** Hour-20 trial mail. Missing Resend key skips. Never throws. */
+export async function sendTrialEndingEmail(opts: { to: string }): Promise<boolean> {
+  try {
+    const apiKey = env("RESEND_API_KEY");
+    if (!apiKey) {
+      console.error("[billing] RESEND_API_KEY is not set; trial-ending email skipped");
+      return false;
+    }
+    const to = opts.to.trim();
+    if (!to) return false;
+    const copy = trialEndingEmailCopy();
+    const from = env("EMAIL_FROM") ?? "Agent Control <noreply@agent-control.net>";
+    const payUrl = `https://agent-control.net${copy.ctaPath}`;
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from,
+        to: [to],
+        subject: copy.subject,
+        text: [...copy.bodyLines, "", `${copy.ctaLabel}: ${payUrl}`].join("\n"),
+        html: `<div style="font-family:ui-sans-serif,system-ui,sans-serif;max-width:480px;margin:0 auto;padding:32px 20px;color:#12263f;background:#eef3f8">
+  <div style="background:#fff;border:1px solid #dce4ee;border-radius:20px;padding:28px">
+    <p style="font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#1e3a5f;font-weight:700">Agent Control</p>
+    <h1 style="font-size:28px;letter-spacing:-.03em;margin:12px 0 8px">${escapeHtml(copy.title)}</h1>
+    <p style="font-size:15px;line-height:1.55">${escapeHtml(copy.bodyLines[0] ?? "")}</p>
+    <p style="font-size:15px;line-height:1.55">${escapeHtml(copy.bodyLines[1] ?? "")}</p>
+    <p style="font-size:13px;color:#3a4d63">${escapeHtml(copy.bodyLines[2] ?? "")}</p>
+    <p style="margin:24px 0 0"><a href="${escapeHtml(payUrl)}" style="display:inline-flex;align-items:center;justify-content:center;height:44px;padding:0 20px;border-radius:999px;background:#e85d4c;color:#fff;font-weight:600;text-decoration:none">${escapeHtml(copy.ctaLabel)}</a></p>
+  </div>
+</div>`,
+      }),
+    });
+    if (!response.ok) {
+      const body = await response.text();
+      console.error("[billing] Resend trial-ending failed", response.status, body);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("[billing] trial-ending email failed", err);
+    return false;
+  }
+}

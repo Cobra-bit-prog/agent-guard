@@ -5,6 +5,10 @@
     {
       "path": "/api/v1/internal/stats",
       "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/v1/internal/trial-mail",
+      "schedule": "0 * * * *"
     }
   ],
   "redirects": [

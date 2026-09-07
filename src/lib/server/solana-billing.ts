@@ -6,7 +6,6 @@ import { PLANS, type PlanId } from "@/lib/plans";
 import { uid } from "@/lib/utils";
 import {
   PAY_EXPIRY_MS,
-  PERIOD_DAYS,
   buildSolanaPayUrl,
   formatUsdcExact,
   usdcBaseUnits,
@@ -38,9 +37,17 @@ import {
   findMatchingNativeSolPayment,
   quoteSolEthUsd,
 } from "@/lib/native-pay.server";
-import { sendInvoiceEmail, sendNewSubscriberNotifyEmail } from "@/lib/auth/send-email.server";
+import { sendNewSubscriberNotifyEmail } from "@/lib/auth/send-email.server";
 import { ensureSchema } from "@/lib/server/guard";
 import { rpc, solanaRpcUrls } from "@/lib/onchain";
+import {
+  applyPaidPlan,
+  asPayChain,
+  lookupUserEmail,
+  sendInvoiceIfNeeded,
+  type PayRow,
+} from "@/lib/server/billing-core.server";
+import { SOLANA_PAYOUT_ADDRESS } from "@/lib/pay-invoice";
 
 const PaidPlan = z.enum(["starter", "pro", "team"]);
 const PayChainZ = z.enum(["solana", "ethereum", "base"]);
@@ -52,32 +59,9 @@ const CHAIN_LABEL: Record<PayChain, string> = {
   base: "Base",
 };
 
-type PayRow = {
-  id: string;
-  plan: string;
-  chain: string | null;
-  asset: string | null;
-  amount_usdc: number;
-  amount_base_units: string;
-  reference: string;
-  recipient: string;
-  status: string;
-  signature: string | null;
-  paid_amount_usdc: number | null;
-  expires_at: string;
-  created_at?: string;
-  paid_at?: string | null;
-  invoice_email_sent_at?: string | null;
-};
-
 function truncRecipient(value: string) {
   if (value.length <= 10) return value;
   return `${value.slice(0, 4)}...${value.slice(-4)}`;
-}
-
-function asPayChain(value: string | null | undefined): PayChain {
-  if (value === "ethereum" || value === "base" || value === "solana") return value;
-  return "solana";
 }
 
 function view(row: PayRow): PayRequestView {
@@ -93,11 +77,12 @@ function view(row: PayRow): PayRequestView {
       ? formatUsdcExact(amountBaseUnits)
       : formatExactAmount(amountBaseUnits, decimals);
   const isEvmUsdc = asset === "usdc" && (chain === "ethereum" || chain === "base");
+  const solanaRecipient = chain === "solana" ? SOLANA_PAYOUT_ADDRESS : row.recipient;
   let payUrl = "";
   let metamaskUrl: string | null = null;
   if (asset === "sol") {
     payUrl = buildNativeSolanaPayUrl({
-      recipient: row.recipient,
+      recipient: solanaRecipient,
       amountSol: exactAmount,
       reference: row.reference,
       planName,
@@ -118,7 +103,7 @@ function view(row: PayRow): PayRequestView {
     });
   } else {
     payUrl = buildSolanaPayUrl({
-      recipient: row.recipient,
+      recipient: solanaRecipient,
       amountUsdc,
       reference: row.reference,
       planName,
@@ -135,7 +120,7 @@ function view(row: PayRow): PayRequestView {
     exactAmountUsdc: exactAmount,
     exactAmount,
     reference: row.reference,
-    recipient: row.recipient,
+    recipient: solanaRecipient,
     status: row.status as PayStatus,
     signature: row.signature,
     paidAmountUsdc: row.paid_amount_usdc == null ? null : Number(row.paid_amount_usdc),
@@ -144,82 +129,6 @@ function view(row: PayRow): PayRequestView {
     metamaskUrl,
     checkoutConfigured: true,
   };
-}
-
-async function applyPaidPlan(userId: string, plan: "starter" | "pro" | "team", chain: PayChain) {
-  const sql = await getSql();
-  const period = new Date(Date.now() + PERIOD_DAYS * 86400000).toISOString();
-  await sql`
-    insert into subscriptions (user_id, plan, status, trial_ends_at, period_ends_at, updated_at)
-    values (${userId}, ${plan}, ${"active"}, ${null}, ${period}, ${new Date().toISOString()})
-    on conflict (user_id) do update
-      set plan = ${plan},
-          status = ${"active"},
-          trial_ends_at = ${null},
-          period_ends_at = ${period},
-          updated_at = ${new Date().toISOString()}
-  `;
-  await sql`update agents set is_paused = false where user_id = ${userId}`;
-  await sql`
-    insert into audit_events (id, user_id, agent_id, action, detail)
-    values (
-      ${uid()}, ${userId}, ${null}, ${"plan_paid"},
-      ${`Received ${PLANS[plan].price} USDC on ${CHAIN_LABEL[chain]}. ${PLANS[plan].name} active for ${PERIOD_DAYS} days.`}
-    )
-  `;
-}
-
-async function lookupUserEmail(userId: string): Promise<string | null> {
-  try {
-    const sql = await getSql();
-    const rows = await sql<{ email: string }>`
-      select email from "user" where id = ${userId} limit 1
-    `;
-    const email = rows[0]?.email?.trim();
-    return email || null;
-  } catch (err) {
-    console.error("[billing] user email lookup failed", err);
-    return null;
-  }
-}
-
-/** Paid only. Missing Resend key skips. Never throws — unlock already happened. */
-async function sendInvoiceIfNeeded(userId: string, row: PayRow): Promise<void> {
-  if (row.status !== "paid") return;
-  if (row.invoice_email_sent_at) return;
-  try {
-    const to = await lookupUserEmail(userId);
-    if (!to) {
-      console.error("[billing] invoice email skipped: no email for user");
-      return;
-    }
-    const chain = asPayChain(row.chain);
-    const planName = PLANS[(row.plan as PlanId) in PLANS ? (row.plan as PlanId) : "starter"].name;
-    const asset = asPayAsset(row.asset);
-    const amountUsdc = `${formatExactAmount(
-      String(row.amount_base_units ?? usdcBaseUnits(Number(row.amount_usdc))),
-      PAY_ASSET_DECIMALS[asset],
-    )} ${PAY_ASSET_LABEL[asset]}`;
-    const sent = await sendInvoiceEmail({
-      to,
-      invoiceId: row.id,
-      date: row.paid_at || new Date().toISOString(),
-      planName,
-      amountUsdc,
-      chain: CHAIN_LABEL[chain],
-    });
-    if (!sent) return;
-    const sql = await getSql();
-    const now = new Date().toISOString();
-    await sql`
-      update pay_requests
-      set invoice_email_sent_at = ${now}
-      where id = ${row.id} and invoice_email_sent_at is null
-    `;
-    row.invoice_email_sent_at = now;
-  } catch (err) {
-    console.error("[billing] invoice email failed", err);
-  }
 }
 
 export const getCheckoutConfig = createServerFn({ method: "GET" })
@@ -344,7 +253,7 @@ export const createPayRequest = createServerFn({ method: "POST" })
       )
     `;
     const rows = await sql<PayRow>`
-      select id, plan, chain, asset, amount_usdc, amount_base_units, reference, recipient, status, signature, paid_amount_usdc, expires_at, created_at, paid_at, invoice_email_sent_at
+      select id, user_id, plan, chain, asset, amount_usdc, amount_base_units, reference, recipient, status, signature, paid_amount_usdc, expires_at, created_at, paid_at, invoice_email_sent_at, guest_email
       from pay_requests where id = ${id} and user_id = ${context.userId}
     `;
     return view(rows[0]);
@@ -357,7 +266,7 @@ export const getPayRequest = createServerFn({ method: "GET" })
     await ensureSchema();
     const sql = await getSql();
     const rows = await sql<PayRow>`
-      select id, plan, chain, asset, amount_usdc, amount_base_units, reference, recipient, status, signature, paid_amount_usdc, expires_at, created_at, paid_at, invoice_email_sent_at
+      select id, user_id, plan, chain, asset, amount_usdc, amount_base_units, reference, recipient, status, signature, paid_amount_usdc, expires_at, created_at, paid_at, invoice_email_sent_at, guest_email
       from pay_requests where id = ${data.id} and user_id = ${context.userId}
     `;
     const row = rows[0];
@@ -377,7 +286,7 @@ export const watchPayRequest = createServerFn({ method: "POST" })
     await ensureSchema();
     const sql = await getSql();
     const rows = await sql<PayRow>`
-      select id, plan, chain, asset, amount_usdc, amount_base_units, reference, recipient, status, signature, paid_amount_usdc, expires_at, created_at, paid_at, invoice_email_sent_at
+      select id, user_id, plan, chain, asset, amount_usdc, amount_base_units, reference, recipient, status, signature, paid_amount_usdc, expires_at, created_at, paid_at, invoice_email_sent_at, guest_email
       from pay_requests where id = ${data.id} and user_id = ${context.userId}
     `;
     const row = rows[0];

@@ -98,7 +98,7 @@ const HOME_FAQ_LD = [
     name: "Is the trial free? Do I need a card or KYC?",
     acceptedAnswer: {
       "@type": "Answer",
-      text: "Yes. One day (24 hours) of the full console. No card. No KYC. After that pay Starter, Pro, or Team in USDC, SOL, or ETH from Billing. You pay your own gas on ETH. We never see your funds and we do not auto-charge next month.",
+      text: "Yes. One day (24 hours) of the full console. No card. No KYC. After that pay Starter $29, Pro $49, or Team $149 in USDC on Solana. We never see your funds and we do not auto-charge next month.",
     },
   },
   {
@@ -106,7 +106,7 @@ const HOME_FAQ_LD = [
     name: "How do I pay? Is there KYC?",
     acceptedAnswer: {
       "@type": "Answer",
-      text: "No KYC and no card. Default is USDC on Solana; you can also pay native SOL or ETH. Scan the QR or copy amount + address from Billing. Do not send from an exchange — they drop the memo / unique amount.",
+      text: "No KYC and no card. Default is $29 USDC on Solana. Scan or tap Pay. We unlock when it lands. Use a wallet. Do not send from Coinbase or Binance.",
     },
   },
   {
@@ -290,8 +290,8 @@ function Home() {
             1-day trial, then on-chain.
           </h2>
           <p className="mt-2 text-muted">
-            24 hours free. No card. No KYC. USDC on Solana, or native SOL / ETH. Unique amount so
-            the watcher can match.
+            24 hours free. No card. No KYC. Default is $29 USDC on Solana. Scan or tap Pay. We
+            unlock when it lands.
           </p>
           <div className="mt-8 grid gap-4 md:grid-cols-4">
             {Object.values(PLANS).map((p) => (
@@ -330,12 +330,10 @@ function Home() {
                   variant={p.id === "pro" ? "default" : "secondary"}
                   asChild
                 >
-                  <a href={p.price === 0 ? "/signup" : "/billing"}>
+                  <a href={p.price === 0 ? "/signup" : `/billing/pay?plan=${p.id}`}>
                     {p.price === 0
                       ? "Start free trial"
-                      : p.id === "starter"
-                        ? "Pay USDC"
-                        : "Pay on-chain"}
+                      : `Pay $${p.price}`}
                   </a>
                 </Button>
               </div>
