@@ -14,6 +14,7 @@ import {
   type PaidPlanId,
 } from "@/lib/pay-invoice";
 import { sendInvoiceEmail, sendNewSubscriberNotifyEmail } from "@/lib/auth/send-email.server";
+import { heliusConfigured } from "@/lib/server/helius.server";
 import { ensureSchema } from "@/lib/server/guard";
 import { PAY_ASSET_DECIMALS, PAY_ASSET_LABEL, asPayAsset, formatExactAmount } from "@/lib/pay-asset";
 
@@ -368,6 +369,9 @@ export async function applyHeliusPayload(body: unknown): Promise<Array<{ id: str
         paid.push({ id: next.id, signature: pay.signature });
       }
     }
+    if (!pay.references.length) {
+      /* Do not match by amount alone — skip unless the Solana Pay reference is present. */
+    }
   }
   return paid;
 }
@@ -422,7 +426,7 @@ export function publicCheckoutConfig() {
     match: "solana-pay-reference" as const,
     no_unique_amount: true as const,
     recipient: addr,
-    helius: Boolean(process.env.HELIUS_API_KEY?.trim()),
+    helius: heliusConfigured(),
     note: "Recipient is hard-locked to Vercel Production SOLANA_PAYOUT_ADDRESS.",
   };
 }

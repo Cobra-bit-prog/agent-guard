@@ -1,23 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CORS, json } from "@/lib/server/http";
 import { applyHeliusPayload } from "@/lib/server/billing-core.server";
+import { heliusWebhookAuthorized } from "@/lib/server/helius.server";
 
-function webhookAuthorized(request: Request): boolean {
-  const secret = process.env.HELIUS_WEBHOOK_SECRET?.trim();
-  if (!secret) return true;
-  const got =
-    request.headers.get("authorization") ||
-    request.headers.get("x-helius-secret") ||
-    "";
-  return got.includes(secret);
-}
-
+/** Port of lab `api/v1/billing/helius.js` — POST webhook. Pay UI does not need this key. */
 export const Route = createFileRoute("/api/v1/billing/helius")({
   server: {
     handlers: {
       OPTIONS: () => new Response(null, { status: 204, headers: CORS }),
+      GET: () => json({ error: "Helius webhook is POST only." }, 405),
       POST: async ({ request }) => {
-        if (!webhookAuthorized(request)) {
+        if (!heliusWebhookAuthorized(request)) {
           return json({ error: "Unauthorized webhook." }, 401);
         }
         let body: unknown = {};

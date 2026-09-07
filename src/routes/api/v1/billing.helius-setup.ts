@@ -2,12 +2,22 @@ import { createFileRoute } from "@tanstack/react-router";
 import { CORS, json, originFromRequest } from "@/lib/server/http";
 import { payoutAddress } from "@/lib/solana-pay.server";
 import { SOLANA_PAYOUT_ADDRESS } from "@/lib/pay-invoice";
+import { heliusConfigured, heliusWebhookUrl } from "@/lib/server/helius.server";
 
-/** Register (or reuse) a Helius enhanced webhook on the USDC receive wallet. */
+/** Port of lab `api/v1/billing/helius-setup.js`. Registers a Helius webhook on the locked USDC wallet. */
 export const Route = createFileRoute("/api/v1/billing/helius-setup")({
   server: {
     handlers: {
       OPTIONS: () => new Response(null, { status: 204, headers: CORS }),
+      GET: () =>
+        json(
+          {
+            error: "POST to register the Helius webhook.",
+            helius: heliusConfigured(),
+            recipient: SOLANA_PAYOUT_ADDRESS,
+          },
+          405,
+        ),
       POST: async ({ request }) => {
         const apiKey = process.env.HELIUS_API_KEY?.trim();
         const recipient = payoutAddress();
@@ -15,13 +25,13 @@ export const Route = createFileRoute("/api/v1/billing/helius-setup")({
           return json(
             {
               error: `Need HELIUS_API_KEY. SOLANA_PAYOUT_ADDRESS is ${SOLANA_PAYOUT_ADDRESS}. Pay UI still works by polling /api/v1/billing/watch.`,
+              helius: false,
+              recipient,
             },
             503,
           );
         }
-        const webhookURL =
-          process.env.HELIUS_WEBHOOK_URL?.trim() ||
-          `${originFromRequest(request)}/api/v1/billing/helius`;
+        const webhookURL = heliusWebhookUrl(originFromRequest(request));
         try {
           const existing = await fetch(`https://api.helius.xyz/v0/webhooks?api-key=${apiKey}`);
           const list: unknown = existing.ok ? await existing.json() : [];
@@ -49,7 +59,7 @@ export const Route = createFileRoute("/api/v1/billing/helius-setup")({
           const body: unknown = await created.json();
           if (!created.ok) {
             const rec = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
-            return json({ error: rec.error || body, webhookURL }, created.status);
+            return json({ error: rec.error || body, webhookURL, recipient }, created.status);
           }
           const rec = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
           return json({
@@ -61,7 +71,7 @@ export const Route = createFileRoute("/api/v1/billing/helius-setup")({
           });
         } catch (err) {
           const message = err instanceof Error ? err.message : "Helius setup failed.";
-          return json({ error: message }, 502);
+          return json({ error: message, recipient }, 502);
         }
       },
     },

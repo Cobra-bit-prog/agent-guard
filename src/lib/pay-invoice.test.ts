@@ -139,6 +139,28 @@ describe("Helius webhook", () => {
     assert.equal(payments[0]?.amountUsdc, 29);
     assert.ok(payments[0]?.references.includes(reference));
   });
+
+  it("does not match by USDC amount alone without the Solana Pay reference", () => {
+    const payments = paymentsFromHeliusPayload(
+      [
+        {
+          signature: "amtOnly",
+          accountData: [{ account: SOLANA_PAYOUT_ADDRESS }],
+          tokenTransfers: [
+            {
+              mint: USDC_MINT,
+              toUserAccount: SOLANA_PAYOUT_ADDRESS,
+              tokenAmount: 29,
+            },
+          ],
+        },
+      ],
+      SOLANA_PAYOUT_ADDRESS,
+    );
+    assert.equal(payments[0]?.amountUsdc, 29);
+    assert.deepEqual(payments[0]?.references, [SOLANA_PAYOUT_ADDRESS]);
+    assert.equal(payments[0]?.references.includes("HelRef11111111111111111111111111111111111"), false);
+  });
 });
 
 describe("invoice view", () => {
