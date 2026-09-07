@@ -201,6 +201,13 @@ describe("initialized notification and session reuse", () => {
     assert.deepEqual(names, MCP_TOOLS.map((tool) => tool.name));
     assert.ok(names.includes("check_transfer"));
     assert.ok(names.includes("get_pricing"));
+    for (const tool of MCP_TOOLS) {
+      assert.ok(tool.title, `${tool.name} needs a human title`);
+      assert.equal(typeof tool.annotations.readOnlyHint, "boolean");
+      assert.equal(tool.annotations.destructiveHint, false);
+    }
+    assert.equal(MCP_TOOLS.find((tool) => tool.name === "get_pricing")?.annotations.readOnlyHint, true);
+    assert.equal(MCP_TOOLS.find((tool) => tool.name === "check_transfer")?.annotations.readOnlyHint, false);
   });
 
   it("returns 404 for a malformed session id", async () => {

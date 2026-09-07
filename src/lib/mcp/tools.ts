@@ -1,8 +1,13 @@
+const readOnly = { readOnlyHint: true, destructiveHint: false } as const;
+const writes = { readOnlyHint: false, destructiveHint: false } as const;
+
 export const MCP_TOOLS = [
   {
     name: "check_transfer",
+    title: "Check a transfer",
     description:
       "MUST be called before the agent signs or sends a transfer. Returns allow, alert, hold, or block. If must_abort is true, do not sign. If decision is hold, poll get_approval until allow or block.",
+    annotations: writes,
     inputSchema: {
       type: "object",
       properties: {
@@ -14,13 +19,17 @@ export const MCP_TOOLS = [
   },
   {
     name: "get_agent_status",
+    title: "Get agent status",
     description: "Returns whether this agent is paused, expired, or healthy.",
+    annotations: readOnly,
     inputSchema: { type: "object", properties: {} },
   },
   {
     name: "get_approval",
+    title: "Get approval decision",
     description:
       "Poll a held pre-sign check. Pass approval_id from check_transfer. Repeat until decision is allow or block.",
+    annotations: readOnly,
     inputSchema: {
       type: "object",
       properties: {
@@ -34,14 +43,18 @@ export const MCP_TOOLS = [
   },
   {
     name: "get_pricing",
+    title: "Get pricing",
     description:
       "List Agent Control plans and trial truth. Starter $29 / Pro $49 / Team $149. 1-day trial, no card, no KYC. Pay on-chain USDC on Solana. A human principal owns billing and Approval Inbox.",
+    annotations: readOnly,
     inputSchema: { type: "object", properties: {} },
   },
   {
     name: "start_trial",
+    title: "Start a trial",
     description:
       "Invite a human to start the 1-day trial. Provide human_email or an existing principal_id. Agents cannot open a root account. The human owns billing and Approval Inbox.",
+    annotations: writes,
     inputSchema: {
       type: "object",
       properties: {
@@ -52,8 +65,10 @@ export const MCP_TOOLS = [
   },
   {
     name: "attach_human",
+    title: "Attach a human",
     description:
       "Attach this agent to a human principal (email or existing principal_id). Does not move the agent to a different human. Agents cannot decide Approval Inbox.",
+    annotations: writes,
     inputSchema: {
       type: "object",
       properties: {
@@ -64,8 +79,10 @@ export const MCP_TOOLS = [
   },
   {
     name: "create_checkout",
+    title: "Create checkout",
     description:
       "Open a pay request on the human principal that owns this agent. Wraps POST /api/v1/billing/checkout. The human pays on-chain USDC (Solana). Not automatic payment. Agents cannot decide Approval Inbox.",
+    annotations: writes,
     inputSchema: {
       type: "object",
       properties: {
@@ -78,8 +95,10 @@ export const MCP_TOOLS = [
   },
   {
     name: "get_status",
+    title: "Get subscription status",
     description:
       "Subscription or trial status for the human principal that owns this agent. Does not return Approval Inbox items and cannot approve holds.",
+    annotations: readOnly,
     inputSchema: { type: "object", properties: {} },
   },
 ] as const;
