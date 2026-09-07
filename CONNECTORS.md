@@ -10,16 +10,24 @@ External audit for your agents. Point Cursor or Grok at the live MCP so the agen
 
 If the agent skips the check, Inbox cannot stop that send. Hold vs block waits in Approval Inbox.
 
+## Cursor marketplace
+
+Plugin id: `agent-control`. Submit / review is in progress — not listed yet.
+
+When listed, all Cursor users can install from **Customize → Plugins → Agent Control** (not a personal MCP add). Then **Plugins → Configure** and set `AGENT_CONTROL_API_KEY` from the Agent Control console. You keep the keys.
+
+Until then, use Customize / MCPs or the local plugin path below.
+
 ## Cursor Customize / MCPs
+
+Fallback if the marketplace listing is not available yet:
 
 1. Open **Customize**, then **MCPs**.
 2. Add a remote server.
 3. Paste `https://agent-control.net/api/v1/mcp`.
 4. Add header `Authorization` with value `Bearer` plus your agent API key. You can store the key as env `AGENT_CONTROL_API_KEY` and use `Bearer ${env:AGENT_CONTROL_API_KEY}` in a project `.cursor/mcp.json`.
 
-To load this repo as a Cursor plugin instead: copy it under `~/.cursor/plugins/local/agent-control` (keep `.cursor-plugin/plugin.json` and `mcp.json`). In **Plugins → Configure**, set `AGENT_CONTROL_API_KEY`. The plugin uses `Bearer ${AGENT_CONTROL_API_KEY}` — a plugin variable, not a committed secret.
-
-This package is not submitted to the Cursor marketplace from this change.
+Local-plugin fallback: copy this repo under `~/.cursor/plugins/local/agent-control` (keep `.cursor-plugin/plugin.json` and `mcp.json`). In **Plugins → Configure**, set `AGENT_CONTROL_API_KEY`. The plugin uses `Bearer ${AGENT_CONTROL_API_KEY}` — a plugin variable, not a committed secret.
 
 ## Grok Bot Plugins
 
