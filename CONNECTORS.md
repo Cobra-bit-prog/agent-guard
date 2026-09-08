@@ -56,3 +56,6 @@ On a team plan, an admin may need to add the connector first. After connect, ask
 Create an account, enroll the wallet, set policy, then issue the API key. Connect your agent so every send asks first. You keep the keys.
 
 Short site version: https://agent-control.net/docs#connectors
+
+Connect AgentKit / x402 (trial → Pay $29): https://agent-control.net/connect
+

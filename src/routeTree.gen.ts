@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as DocsRouteImport } from './routes/docs'
+import { Route as ConnectRouteImport } from './routes/connect'
 import { Route as PartnersRouteImport } from './routes/partners'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LogosRouteImport } from './routes/logos'
@@ -59,6 +60,11 @@ const AppRoute = AppRouteImport.update({
 const DocsRoute = DocsRouteImport.update({
   id: '/docs',
   path: '/docs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConnectRoute = ConnectRouteImport.update({
+  id: '/connect',
+  path: '/connect',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PartnersRoute = PartnersRouteImport.update({
@@ -235,6 +241,7 @@ const ApiV1InternalStatsRoute = ApiV1InternalStatsRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/docs': typeof DocsRoute
+  '/connect': typeof ConnectRoute
   '/partners': typeof PartnersRoute
   '/login': typeof LoginRoute
   '/logos': typeof LogosRoute
@@ -273,6 +280,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/docs': typeof DocsRoute
+  '/connect': typeof ConnectRoute
   '/partners': typeof PartnersRoute
   '/login': typeof LoginRoute
   '/logos': typeof LogosRoute
@@ -311,6 +319,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/docs': typeof DocsRoute
+  '/connect': typeof ConnectRoute
   '/partners': typeof PartnersRoute
   '/login': typeof LoginRoute
   '/logos': typeof LogosRoute
@@ -351,6 +360,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/docs'
+    | '/connect'
     | '/partners'
     | '/login'
     | '/logos'
@@ -389,6 +399,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/docs'
+    | '/connect'
     | '/partners'
     | '/login'
     | '/logos'
@@ -426,6 +437,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_app'
     | '/docs'
+    | '/connect'
     | '/partners'
     | '/login'
     | '/logos'
@@ -466,6 +478,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   DocsRoute: typeof DocsRoute
+  ConnectRoute: typeof ConnectRoute
   PartnersRoute: typeof PartnersRoute
   LoginRoute: typeof LoginRoute
   LogosRoute: typeof LogosRoute
@@ -511,6 +524,13 @@ declare module '@tanstack/react-router' {
       path: '/docs'
       fullPath: '/docs'
       preLoaderRoute: typeof DocsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/connect': {
+      id: '/connect'
+      path: '/connect'
+      fullPath: '/connect'
+      preLoaderRoute: typeof ConnectRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/partners': {
@@ -810,6 +830,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   DocsRoute: DocsRoute,
+  ConnectRoute: ConnectRoute,
   PartnersRoute: PartnersRoute,
   LoginRoute: LoginRoute,
   LogosRoute: LogosRoute,

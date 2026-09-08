@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CopyCode } from "@/components/copy-code";
 import { SkyShell, SUPPORT_MAIL } from "@/components/marketing/chrome";
+import { ConnectCtas } from "@/components/marketing/connect-path";
 import { SupportedChains } from "@/components/chain-icons";
-import { Button } from "@/components/ui/button";
 import { AGENTKIT_RECIPE_CODE, AGENTKIT_RECIPE_STEPS } from "@/lib/agentkit-recipe";
+import { CONNECT_STEPS as CONNECT_PATH_STEPS } from "@/lib/connect-path";
 
 const STEPS = [
   {
@@ -155,6 +156,12 @@ function DocsPage() {
           <a href="#connect-your-agent" className="text-muted hover:text-fg">
             Connect your agent
           </a>
+          <a href="#connect-agentkit" className="text-muted hover:text-fg">
+            AgentKit / x402
+          </a>
+          <a href="/connect" className="text-muted hover:text-fg">
+            Connect path
+          </a>
           <a href="#connectors" className="text-muted hover:text-fg">
             Connectors
           </a>
@@ -231,6 +238,35 @@ function DocsPage() {
           <p className="mt-3 max-w-[52ch] text-muted">
             Works with Coinbase AgentKit and any agent that can ask before it sends.
           </p>
+          <article
+            id="connect-agentkit"
+            className="mt-8 scroll-mt-6 rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]"
+          >
+            <h3 className="text-lg font-medium">Connect AgentKit / x402</h3>
+            <p className="mt-2 text-sm text-muted">
+              About three minutes. They ask before they pay. You keep the keys. External audit for
+              your agents. Starter $29.
+            </p>
+            <ol className="mt-4 space-y-3">
+              {CONNECT_PATH_STEPS.map((step) => (
+                <li key={step.n}>
+                  <p className="font-mono text-xs text-navy">{step.n}</p>
+                  <p className="mt-1 font-medium text-fg">{step.t}</p>
+                  <p className="mt-1 text-sm text-muted">{step.d}</p>
+                </li>
+              ))}
+            </ol>
+            <div className="mt-6">
+              <ConnectCtas size="default" />
+            </div>
+            <p className="mt-3 text-sm text-muted">
+              Same POST /api/v1/check — MCP{" "}
+              <code className="font-mono text-fg">check_transfer</code> and the adapters wrap it.{" "}
+              <a href="/connect" className="font-medium text-navy hover:text-coral">
+                Open the connect path →
+              </a>
+            </p>
+          </article>
           <ol className="mt-8 space-y-3">
             {CONNECT_STEPS.map((s) => (
               <li
@@ -590,12 +626,7 @@ client.onBeforePaymentCreation(
         </section>
 
         <div className="mt-10 flex flex-wrap items-center gap-3">
-          <Button size="lg" asChild className="rounded-full">
-            <a href="/signup">
-              Start free trial
-              <span aria-hidden>→</span>
-            </a>
-          </Button>
+          <ConnectCtas />
           <a href={SUPPORT_MAIL} className="text-sm text-muted hover:text-fg">
             Contact · support@agent-control.net
           </a>

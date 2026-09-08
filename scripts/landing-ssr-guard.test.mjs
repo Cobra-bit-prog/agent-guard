@@ -20,6 +20,7 @@ test("marketing landing never imports pay-extension (SSR-unsafe wallet send)", (
   const files = [
     join(ROOT, "src/routes/index.tsx"),
     join(ROOT, "src/routes/docs.tsx"),
+    join(ROOT, "src/routes/connect.tsx"),
     join(ROOT, "src/routes/partners.tsx"),
     join(ROOT, "src/routes/login.tsx"),
     join(ROOT, "src/routes/signup.tsx"),
@@ -135,7 +136,7 @@ test("homepage copy ships three product tabs and 24-hour trial truth", () => {
   assert.doesNotMatch(src, /\/api\/v1\/verify/);
   assert.match(
     home,
-    /LandingVerdict[\s\S]*LandingProductTabs[\s\S]*LandingCatch[\s\S]*id="how"[\s\S]*id="pricing"[\s\S]*LandingGate[\s\S]*LandingFaq/,
+    /LandingVerdict[\s\S]*LandingProductTabs[\s\S]*LandingCatch[\s\S]*id="how"[\s\S]*id="connect"[\s\S]*id="pricing"[\s\S]*LandingGate[\s\S]*LandingFaq/,
   );
 });
 
@@ -152,7 +153,7 @@ test("homepage FAQ covers Inbox, Audit, hold vs block, and skipped-check limits"
   const faq = readFileSync(join(ROOT, "src/components/landing-faq.tsx"), "utf8");
   const home = readFileSync(join(ROOT, "src/routes/index.tsx"), "utf8");
   const src = `${faq}\n${home}`;
-  assert.match(src, /How does the pre-sign hook work\?/);
+  assert.match(src, /How do I connect my agent\?/);
   assert.match(src, /What if the agent skips the check\?/);
   assert.match(src, /What is Approval Inbox\?/);
   assert.match(src, /What is Agent Audit\?/);
@@ -201,7 +202,8 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
   assert.doesNotMatch(docs, /Before it sends money/);
   assert.doesNotMatch(docs, /If the answer is no, it must not send/);
   assert.match(docs, /Watch the console/);
-  assert.match(docs, /Start free trial/);
+  assert.match(docs, /ConnectCtas/);
+  assert.match(docs, /Start free trial|ConnectCtas/);
   assert.match(docs, /SupportedChains/);
   assert.match(docs, /<details/);
   assert.match(docs, /For builders/);
@@ -222,6 +224,9 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
   assert.match(docs, /If the check says stop, do not send/);
   assert.match(docs, /<code className="font-mono text-fg">must_abort<\/code>/);
   assert.match(docs, /id=["']connect-your-agent["']/);
+  assert.match(docs, /id=["']connect-agentkit["']/);
+  assert.match(docs, /href=["']#connect-agentkit["']/);
+  assert.match(docs, /href=["']\/connect["']/);
   assert.match(docs, /id=["']compare["']/);
   assert.match(docs, /id=["']skill-mcp["']/);
   assert.match(docs, /href=["']\/llms\.txt["']/);
@@ -267,7 +272,7 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
   assert.match(docs, /Agentspay/);
   assert.match(docs, /control plane or cards/);
   assert.match(docs, /You can use both/);
-  assert.match(docs, /No extra vendor/);
+  assert.match(docs, /No extra vendor|No\s+extra vendor/);
   assert.match(docs, /partners\?partner=agentkit/);
   assert.match(beforeDetails, /fetch\("https:\/\/agent-control\.net\/api\/v1\/check"/);
   assert.match(docs, /Turnkey \(and similar: Privy\)/);
@@ -291,6 +296,7 @@ test("llms.txt is the public AI-crawler brief", () => {
   assert.match(llms, /Approval Inbox/);
   assert.match(llms, /Agent Audit/);
   assert.match(llms, /https:\/\/agent-control\.net\/docs/);
+  assert.match(llms, /https:\/\/agent-control\.net\/connect/);
   assert.match(llms, /https:\/\/agent-control\.net\/inbox/);
   assert.match(llms, /https:\/\/agent-control\.net\/audit/);
   assert.match(llms, /POST \/api\/v1\/check/);
@@ -304,6 +310,7 @@ test("llms.txt is the public AI-crawler brief", () => {
   assert.match(llms, /Coinbase AgentKit/);
   assert.match(llms, /src\/adapters/);
   assert.match(llms, /docs#adapters/);
+  assert.match(llms, /docs#connect-agentkit/);
   assert.match(llms, /docs#policy-recipe/);
   assert.match(llms, /createAgentKitPolicyProvider/);
   assert.match(llms, /Agentspay/);
@@ -393,6 +400,37 @@ test("partners page is wallet-complement copy; sitemap and docs link it", () => 
   assert.match(docs, /id=["']partners["']/);
   assert.match(sitemap, /https:\/\/agent-control\.net\/partners/);
   assert.match(chrome, /href: "\/partners"/);
+  assert.match(chrome, /href: "\/connect"/);
   assert.match(chrome, /partnerAwarePath/);
   assert.match(partners, /partnerAwarePath/);
+});
+
+test("Connect AgentKit / x402 path is trial then Pay $29 on the same check", () => {
+  const home = readFileSync(join(ROOT, "src/routes/index.tsx"), "utf8");
+  const connect = readFileSync(join(ROOT, "src/routes/connect.tsx"), "utf8");
+  const docs = readFileSync(join(ROOT, "src/routes/docs.tsx"), "utf8");
+  const ctas = readFileSync(join(ROOT, "src/components/marketing/connect-path.tsx"), "utf8");
+  const copy = readFileSync(join(ROOT, "src/lib/connect-path.ts"), "utf8");
+  const sitemap = readFileSync(join(ROOT, "public/sitemap.xml"), "utf8");
+  const src = `${home}\n${connect}\n${docs}\n${ctas}\n${copy}`;
+  assert.match(home, /id=["']connect["']/);
+  assert.match(home, /href=["']\/connect["']/);
+  assert.match(connect, /createFileRoute\("\/connect"\)/);
+  assert.match(docs, /id=["']connect-agentkit["']/);
+  assert.match(copy, /CONNECT_TRIAL_HREF = "\/signup"/);
+  assert.match(copy, /CONNECT_PAY_HREF = "\/billing\/pay\?plan=starter"/);
+  assert.match(copy, /CONNECT_TRIAL_CTA = "Start free trial"/);
+  assert.match(copy, /CONNECT_PAY_CTA = "Pay \$29"/);
+  assert.match(copy, /\/api\/v1\/check/);
+  assert.match(copy, /check_transfer/);
+  assert.match(src, /ConnectCtas/);
+  assert.match(src, /They ask before they pay/);
+  assert.match(src, /You keep the keys/);
+  assert.match(src, /External audit for your agents/);
+  assert.match(sitemap, /https:\/\/agent-control\.net\/connect/);
+  assert.doesNotMatch(copy, /\bpre-sign hook\b/i);
+  assert.doesNotMatch(connect, /\bpre-sign hook\b/i);
+  assert.doesNotMatch(src, /\bHelius\b/);
+  assert.doesNotMatch(src, /skipped check = money cannot move/i);
+  assert.doesNotMatch(copy, /\/api\/v2\//);
 });

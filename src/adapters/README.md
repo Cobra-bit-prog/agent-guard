@@ -30,3 +30,6 @@ client.onBeforePaymentCreation(
 ```
 
 If the check says stop, do not send. Docs: https://agent-control.net/docs#adapters
+
+Human path: get an API key → call check before they pay → 1-day trial → Pay $29 USDC on Solana. https://agent-control.net/connect
+

@@ -10,8 +10,9 @@ If the agent skips the check, Inbox cannot stop that send.
 
 - Product: [https://agent-control.net](https://agent-control.net)
 - Docs: [https://agent-control.net/docs](https://agent-control.net/docs)
+- Connect AgentKit / x402: [https://agent-control.net/connect](https://agent-control.net/connect)
 - Connectors (Cursor Customize / MCPs, Grok Bot Plugins, Grok.com Custom): [CONNECTORS.md](./CONNECTORS.md) — [docs](https://agent-control.net/docs#connectors). Cursor marketplace plugin is `agent-control` (submit in progress; install from Plugins when listed).
-- Adapters (AgentKit + x402): copy [`src/adapters`](./src/adapters) so the agent checks before send — [docs](https://agent-control.net/docs#adapters)
+- Adapters (AgentKit + x402): copy [`src/adapters`](./src/adapters) so the agent checks before send — [docs](https://agent-control.net/docs#adapters) — [connect path](https://agent-control.net/connect)
 - For AI crawlers: [https://agent-control.net/llms.txt](https://agent-control.net/llms.txt)
 
 1-day full console trial, no card, no KYC. Then Starter $29 / Pro $49 / Team $149 from Billing (on-chain USDC, SOL, or ETH).
