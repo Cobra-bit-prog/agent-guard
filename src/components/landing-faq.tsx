@@ -31,26 +31,16 @@ const FAQS = [
     a: "On-demand Excel, PDF, or CSV in /audit. Generate when you want it — nothing is auto-emailed. This is the Agent Control check and decision trail, not a full chain explorer or ghost replay.",
   },
   {
-    q: "Is this like agentaudit.dev?",
-    a: "No. They scan packages. We are agent payments control — Approval Inbox and spend limits for agent wallets. Not a package scanner.",
+    q: "Is this a package scanner?",
+    a: "No. Agent Control is spend control for agent wallets — Approval Inbox and spend limits you set. Not a package scanner.",
   },
   {
     q: "Do you email me when something looks off?",
     a: "If Email alerts is on in Settings (on by default), we send optional pings for a policy alert, spend near the daily cap, a hold waiting in Inbox (/inbox), or a hard block. When a spend is held, that email (and Slack, if you saved an incoming webhook URL in Settings) includes a link to Approval Inbox. No action within 10 minutes = block — the agent must abort. Console alerts still list at /alerts. Turn Email alerts off to keep policy pings in the console only. If the agent skips the check, Inbox cannot stop that send.",
   },
   {
-    q: "How is this different from agentaudit.dev, SpendGuard, or Turnkey?",
-    a: (
-      <>
-        Agent Control is agent payments control for agent wallets — spend limits, approval before
-        agent send, hold vs block. Not a package scanner. SpendGuard (x402-spendguard) is a firewall
-        you run yourself. We host Approval Inbox and Agent Audit. You keep the keys.{" "}
-        <a href="/docs#compare" className="text-fg underline underline-offset-4">
-          Compare on docs
-        </a>
-        .
-      </>
-    ),
+    q: "Do you host this, or do I run it myself?",
+    a: "We host Approval Inbox and Agent Audit. You keep the keys. Agent wallets get checked before they pay — spend limits, hold vs block. Not a package scanner.",
   },
   {
     q: "Is the trial free? Do I need a card or KYC?",
@@ -88,8 +78,7 @@ export function LandingFaq() {
           Questions operators ask
         </h2>
         <p className="mt-2 text-muted">
-          Straight answers. Custody, Inbox, Audit, warning emails, compare, billing, and the signup
-          email.
+          Straight answers. Custody, Inbox, Audit, warning emails, billing, and the signup email.
         </p>
         <div className="faq mt-8 divide-y divide-border rounded-[22px] border border-border bg-surface">
           {FAQS.map((item, i) => {

@@ -157,8 +157,11 @@ test("homepage FAQ covers Inbox, Audit, hold vs block, and skipped-check limits"
   assert.match(src, /What if the agent skips the check\?/);
   assert.match(src, /What is Approval Inbox\?/);
   assert.match(src, /What is Agent Audit\?/);
-  assert.match(src, /Is this like agentaudit\.dev\?/);
-  assert.match(src, /They scan packages/);
+  assert.match(src, /Is this a package scanner\?/);
+  assert.match(src, /spend control for agent wallets/);
+  assert.doesNotMatch(src, /agentaudit/i);
+  assert.doesNotMatch(src, /spendguard/i);
+  assert.doesNotMatch(src, /agentspay/i);
   assert.match(src, /Do you email me when something looks off\?/);
   assert.match(src, /Email alerts is on in Settings/);
   assert.match(src, /near the daily cap/);
@@ -250,12 +253,15 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
     docs,
     /A human principal signs up and owns billing and Approval Inbox; agents connect\s+under that account/,
   );
-  assert.match(docs, /agentaudit\.dev/);
-  assert.match(docs, /SpendGuard/);
-  assert.match(docs, /x402-spendguard/);
+  assert.match(docs, /themName: "a package scanner"/);
+  assert.match(docs, /themName: "a firewall you run yourself"/);
+  assert.match(docs, /themName: "a wallet or key host"/);
   assert.match(docs, /firewall you run on your own machine/);
   assert.match(docs, /Hosted Approval Inbox and Agent Audit/);
   assert.match(docs, /You can use both/);
+  assert.doesNotMatch(docs, /agentaudit/i);
+  assert.doesNotMatch(docs, /spendguard/i);
+  assert.doesNotMatch(docs, /agentspay/i);
   assert.match(docs, /Coinbase AgentKit/);
   assert.match(docs, /id=["']agentkit["']/);
   assert.match(docs, /id=["']adapters["']/);
@@ -269,13 +275,13 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
   assert.match(docs, /src\/adapters/);
   assert.match(docs, /Over the line/);
   assert.match(docs, /Daily cap \+ approval threshold/);
-  assert.match(docs, /Agentspay/);
+  assert.match(docs, /themName: "a control plane or cards"/);
   assert.match(docs, /control plane or cards/);
   assert.match(docs, /You can use both/);
   assert.match(docs, /No extra vendor|No\s+extra vendor/);
   assert.match(docs, /partners\?partner=agentkit/);
   assert.match(beforeDetails, /fetch\("https:\/\/agent-control\.net\/api\/v1\/check"/);
-  assert.match(docs, /Turnkey \(and similar: Privy\)/);
+  assert.match(docs, /themName: "a wallet or key host"/);
   assert.match(docs, /When to use us/);
   assert.match(docs, /without giving up custody/);
   assert.match(docs, /funds can move/);
@@ -344,20 +350,30 @@ test("llms.txt is the public AI-crawler brief", () => {
   assert.doesNotMatch(llms, /\bbroadcast/i);
 });
 
-test("FAQ links to docs compare; homepage H1 stays External audit for your agents", () => {
+test("FAQ and Compare drop competitor names; homepage H1 stays External audit for your agents", () => {
   const faq = readFileSync(join(ROOT, "src/components/landing-faq.tsx"), "utf8");
   const home = readFileSync(join(ROOT, "src/routes/index.tsx"), "utf8");
-  assert.match(faq, /How is this different from agentaudit\.dev, SpendGuard, or Turnkey\?/);
-  assert.match(faq, /Is this like agentaudit\.dev\?/);
-  assert.match(faq, /They scan packages/);
-  assert.match(faq, /href=["']\/docs#compare["']/);
-  assert.match(faq, /x402-spendguard/);
+  const docs = readFileSync(join(ROOT, "src/routes/docs.tsx"), "utf8");
+  const compare = docs.split('id="compare"')[1]?.split('id="partners"')[0] ?? "";
+  const surfaces = `${faq}\n${home}\n${compare}`;
+  assert.match(faq, /Is this a package scanner\?/);
+  assert.match(faq, /Do you host this, or do I run it myself\?/);
+  assert.match(faq, /checked before they pay/);
+  assert.match(home, /Checks before they pay/);
+  assert.match(home, /Do you host this, or do I run it myself\?/);
   assert.match(home, /<h1[^>]*>\s*External audit for your agents\s*<\/h1>/);
   assert.match(
     home,
     /<h1[^>]*>\s*External audit for your agents\s*<\/h1>\s*<p[^>]*>\s*Not a package scanner — this is spend control for agent wallets\.\s*<\/p>/,
   );
-  assert.match(home, /How is this different from agentaudit\.dev, SpendGuard, or Turnkey\?/);
+  assert.doesNotMatch(surfaces, /agentaudit/i);
+  assert.doesNotMatch(surfaces, /spendguard/i);
+  assert.doesNotMatch(surfaces, /agentspay/i);
+  assert.doesNotMatch(faq, /turnkey/i);
+  assert.doesNotMatch(compare, /turnkey/i);
+  assert.doesNotMatch(home, /turnkey/i);
+  assert.doesNotMatch(home, /Policy \+ pre-sign/i);
+  assert.doesNotMatch(home, /Policy \+ check before they pay/);
 });
 
 test("partners page is wallet-complement copy; sitemap and docs link it", () => {
