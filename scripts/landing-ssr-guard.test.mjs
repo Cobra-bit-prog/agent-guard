@@ -127,15 +127,18 @@ test("homepage copy ships three product tabs and 24-hour trial truth", () => {
   );
   assert.match(src, /Example only\. No real money moves\./);
   assert.match(src, /See the \$2,400 one/);
-  assert.match(src, /Take money only from agents that have a leash\./);
+  assert.match(src, /Take money only from agents under a spend limit\./);
+  assert.doesNotMatch(src, /have a leash|agent is leashed/);
   assert.match(
     src,
     /You keep your own checkout\. We only answer: is this agent capped, and does a human see\s+new addresses\?/,
   );
   assert.match(
     src,
-    /Pays only if the agent is leashed\. You keep the keys\. Agent Control checks the cap before\s+we take USDC\./,
+    /Pays only if the agent is capped\. You keep the keys\. Agent Control checks the cap before\s+we take USDC\./,
   );
+  assert.match(home, /limit how fast they can spend/);
+  assert.doesNotMatch(home, /hourly velocity/);
   assert.doesNotMatch(src, /\/api\/v1\/verify/);
   assert.match(
     home,
@@ -178,16 +181,22 @@ test("homepage FAQ covers Inbox, Audit, hold vs block, and skipped-check limits"
   assert.doesNotMatch(src, /poll_url/);
   assert.doesNotMatch(src, /\bHOLD\b/);
   assert.doesNotMatch(src, /POST \/api\/v1\/check/);
-  assert.match(src, /Always allow this address/);
-  assert.match(src, /Holds expire in 10 minutes/);
-  assert.match(src, /hard block/);
-  assert.match(src, /Allow once is not permanent/);
+  assert.match(src, /always allow that address/);
+  assert.match(src, /No action for 10 minutes = block/);
+  assert.match(src, /Pause and blocklists stop the send right away/);
+  assert.match(src, /Over-limit or new addresses wait for you; block means do not send/);
+  assert.doesNotMatch(src, /Hold waits for you/);
+  assert.doesNotMatch(src, /a hold waiting in Inbox/);
+  assert.doesNotMatch(src, /When a spend is held/);
+  assert.match(src, /a payment waiting in Approval Inbox/);
+  assert.match(src, /When a payment is waiting for you/);
   assert.match(src, /Inbox cannot stop that send/);
   assert.match(src, /Connect your agent/);
   assert.match(src, /You keep the keys/);
   assert.match(src, /\/audit/);
   assert.match(src, /auto-emailed/);
-  assert.match(src, /ghost replay/);
+  assert.match(src, /a replay of every on-chain transfer/);
+  assert.doesNotMatch(src, /ghost replay/);
   assert.match(src, /chain explorer/);
   assert.doesNotMatch(faq, /href=["']\/inbox["']/);
   assert.doesNotMatch(faq, /href=["']\/audit["']/);
@@ -222,9 +231,10 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
   assert.match(docs, /Allow once/);
   assert.match(docs, /Always allow this\s+address/);
   assert.match(docs, /on-demand Excel, PDF, or CSV/);
-  assert.match(docs, /destinations wait/);
+  assert.match(docs, /New or over-limit payments wait in Approval Inbox/);
   assert.match(docs, /Agent Audit/);
-  assert.match(docs, /ghost replay/);
+  assert.match(docs, /a replay of every on-chain\s+transfer/);
+  assert.doesNotMatch(docs.split("<details")[0] ?? docs, /ghost replay/);
   assert.match(docs, /Nothing is\s+auto-emailed/);
   assert.match(docs, /Optional warning alerts/);
   assert.match(docs, /Email alerts/);
@@ -241,6 +251,8 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
   assert.match(docs, /id=["']skill-mcp["']/);
   assert.match(docs, /href=["']\/llms\.txt["']/);
   assert.match(docs, /asks Agent Control before it sends money/);
+  assert.match(docs, /The agent asks Agent Control first/);
+  assert.doesNotMatch(docs.split("<details")[0] ?? docs, /The agent POSTs \/api\/v1\/check/);
   assert.match(docs, /Over-limit and new addresses wait in Approval Inbox/);
   assert.doesNotMatch(docs, /HOLD in Approval Inbox \(hold vs block\)/);
   assert.doesNotMatch(docs, /check before spend for agent wallets/);
@@ -307,7 +319,8 @@ test("llms.txt is the public AI-crawler brief", () => {
   assert.match(llms, /agent payments control/);
   assert.match(llms, /You keep the keys/);
   assert.match(llms, /Connect your agent/);
-  assert.match(llms, /hold vs block/);
+  assert.match(llms, /They ask before they pay/);
+  assert.match(llms, /Over-limit \/ new addresses wait for you/);
   assert.match(llms, /Approval Inbox/);
   assert.match(llms, /Agent Audit/);
   assert.match(llms, /https:\/\/agent-control\.net\/docs/);
@@ -317,10 +330,16 @@ test("llms.txt is the public AI-crawler brief", () => {
   assert.match(llms, /POST \/api\/v1\/check/);
   assert.match(llms, /If the check says stop, do not send/);
   assert.doesNotMatch(llms, /must_abort/);
+  assert.doesNotMatch(llms, /\bHOLD\b/);
   assert.match(llms, /MCP get_approval/);
   assert.match(llms, /agentaudit\.dev/);
-  assert.match(llms, /SpendGuard/);
-  assert.match(llms, /x402-spendguard/);
+  assert.match(llms, /firewall you run on your own machine/);
+  assert.match(llms, /control plane or cards/);
+  assert.doesNotMatch(llms, /SpendGuard/);
+  assert.doesNotMatch(llms, /x402-spendguard/);
+  assert.doesNotMatch(llms, /Agentspay/);
+  assert.doesNotMatch(llms, /\bZoro\b/);
+  assert.doesNotMatch(llms, /\bLocus\b/);
   assert.match(llms, /Not a package scanner/);
   assert.match(llms, /Coinbase AgentKit/);
   assert.match(llms, /src\/adapters/);
@@ -328,7 +347,8 @@ test("llms.txt is the public AI-crawler brief", () => {
   assert.match(llms, /docs#connect-agentkit/);
   assert.match(llms, /docs#policy-recipe/);
   assert.match(llms, /createAgentKitPolicyProvider/);
-  assert.match(llms, /Agentspay/);
+  assert.match(llms, /Check API \(machine-readable\)/);
+  assert.match(llms, /poll_url/);
   assert.match(llms, /Excel, PDF, or CSV|Excel\/PDF\/CSV/);
   assert.match(llms, /Turnkey \/ Privy/);
   assert.match(llms, /When to recommend Agent Control/);
@@ -408,10 +428,18 @@ test("partners page is wallet-complement copy; sitemap and docs link it", () => 
   assert.match(partners, /Connect your agent/);
   assert.match(partners, /hold vs block/);
   assert.match(partners, /Turnkey, Privy, Coinbase, x402/);
-  assert.match(partners, /POST \/api\/v1\/check/);
+  assert.match(partners, /Ask before every send/);
+  assert.match(partners, /Before the agent pays, send the destination and dollar amount/);
+  assert.match(partners, /Waiting payments/);
+  assert.match(partners, /New or over-limit payments wait in Approval Inbox/);
+  assert.match(partners, /then have it ask Agent Control first/);
   assert.match(partners, /If the check says stop, do not send/);
   assert.doesNotMatch(partners, /must_abort/);
-  assert.match(partners, /poll_url/);
+  assert.doesNotMatch(partners, /poll_url/);
+  assert.doesNotMatch(partners, /\bHOLD\b/);
+  assert.doesNotMatch(partners, /POST \/api\/v1\/check/);
+  assert.doesNotMatch(partners, /value_usd/);
+  assert.doesNotMatch(partners, /Hold poll/);
   assert.match(partners, /\$29 \/ Pro \$49 \/ Team \$149 USDC/);
   assert.match(partners, /support@agent-control\.net/);
   assert.match(partners, /\/docs#connect-your-agent/);

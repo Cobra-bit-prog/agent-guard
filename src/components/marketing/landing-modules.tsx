@@ -324,12 +324,12 @@ function InboxPanel() {
       <div>
         <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">Approval Inbox</h2>
         <p className="mt-2 max-w-[42ch] text-muted">
-          Off-policy and first-time destinations wait here. Allow once, always allow that
+          New or over-limit payments wait here. Allow once, always allow that
           address, or block. Requires the agent hook — a skipped check still goes through.
         </p>
         <p className="mt-3 text-sm text-muted">
-          Pause and denylist still block. Holds expire in 10 minutes if you do not decide.
-          Optional email and Slack can ping you when a spend is held.
+          Pause and blocklists stop the send right away. No action for 10 minutes = block.
+          Optional email and Slack can ping you when a payment is waiting for you.
         </p>
         <a
           href="/signup"

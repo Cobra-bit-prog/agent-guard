@@ -60,7 +60,7 @@ const HOME_FAQ_LD = [
     name: "What if the agent skips the check?",
     acceptedAnswer: {
       "@type": "Answer",
-      text: "Connect your agent so it asks before every send. You keep the keys. If the agent skips the check, Inbox cannot stop that send. Pause the agent from the console for a hard stop on your side. Hold waits for you; block means do not send.",
+      text: "Connect your agent so it asks before every send. You keep the keys. If the agent skips the check, Inbox cannot stop that send. Pause the agent from the console for a hard stop on your side. Over-limit or new addresses wait for you; block means do not send.",
     },
   },
   {
@@ -68,7 +68,7 @@ const HOME_FAQ_LD = [
     name: "What is Approval Inbox?",
     acceptedAnswer: {
       "@type": "Answer",
-      text: "Off-policy and first-time destinations wait in /inbox. Allow once for this send only, Always allow this address to write the allowlist, or Block. Holds expire in 10 minutes and are then treated as a block. Allow once is not permanent. Pause and denylist never wait here — they are a hard block.",
+      text: "New or over-limit payments wait in Approval Inbox. Allow once, always allow that address, or block. No action for 10 minutes = block. Pause and blocklists stop the send right away.",
     },
   },
   {
@@ -76,7 +76,7 @@ const HOME_FAQ_LD = [
     name: "What is Agent Audit?",
     acceptedAnswer: {
       "@type": "Answer",
-      text: "On-demand Excel, PDF, or CSV in /audit. Generate when you want it — nothing is auto-emailed. This is the Agent Control check and decision trail, not a full chain explorer or ghost replay.",
+      text: "On-demand Excel, PDF, or CSV in /audit. Generate when you want it — nothing is auto-emailed. This is the Agent Control check and decision trail, not a full chain explorer or a replay of every on-chain transfer.",
     },
   },
   {
@@ -92,7 +92,7 @@ const HOME_FAQ_LD = [
     name: "Do you email me when something looks off?",
     acceptedAnswer: {
       "@type": "Answer",
-      text: "If Email alerts is on in Settings (on by default), we send optional pings for a policy alert, spend near the daily cap, a hold waiting in Inbox (/inbox), or a hard block. When a spend is held, that email (and Slack, if you saved an incoming webhook URL in Settings) includes a link to Approval Inbox. No action within 10 minutes = block — the agent must abort. Console alerts still list at /alerts. Turn Email alerts off to keep policy pings in the console only. If the agent skips the check, Inbox cannot stop that send.",
+      text: "If Email alerts is on in Settings (on by default), we send optional pings for a policy alert, spend near the daily cap, a payment waiting in Approval Inbox (/inbox), or a hard block. When a payment is waiting for you, that email (and Slack, if you saved an incoming webhook URL in Settings) includes a link to Approval Inbox. No action within 10 minutes = block — the agent must abort. Console alerts still list at /alerts. Turn Email alerts off to keep policy pings in the console only. If the agent skips the check, Inbox cannot stop that send.",
     },
   },
   {
@@ -271,7 +271,7 @@ function Home() {
               {
                 n: "02",
                 t: "Set policy",
-                d: "Cap daily spend, restrict destinations, set hourly velocity.",
+                d: "Cap daily spend, restrict destinations, limit how fast they can spend.",
               },
               {
                 n: "03",

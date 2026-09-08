@@ -39,7 +39,7 @@ const STEPS = [
   {
     n: "05",
     t: "Watch the console",
-    d: "Inbox is where holds wait for you. Agent Audit builds an on-demand Excel, PDF, or CSV of the check trail. Pause if something looks wrong.",
+    d: "New or over-limit payments wait in Approval Inbox. Agent Audit builds an on-demand Excel, PDF, or CSV of the check trail. Pause if something looks wrong.",
   },
 ] as const;
 
@@ -67,12 +67,12 @@ const CONNECT_STEPS = [
   {
     n: "5",
     t: "They ask before they pay",
-    d: "The agent POSTs /api/v1/check (or MCP check_transfer, then get_approval on hold). If the check says stop, do not send.",
+    d: "The agent asks Agent Control first. If the check says stop, do not send.",
   },
   {
     n: "6",
     t: "Inbox and Audit",
-    d: "Open /inbox for holds (Allow once / Always allow this address / Block). Open /audit for an on-demand Excel, PDF, or CSV trail.",
+    d: "Open Approval Inbox for waiting payments (Allow once / Always allow this address / Block). Open /audit for an on-demand Excel, PDF, or CSV trail.",
   },
 ] as const;
 
@@ -220,14 +220,14 @@ function DocsPage() {
           that send.
         </p>
         <p className="mt-3 text-sm leading-relaxed text-muted">
-          Inbox is where off-policy and first-time destinations wait: Allow once, Always allow this
-          address, or Block. Holds expire in 10 minutes and are then treated as a block. When a
-          spend is held, optional email (Settings → Email alerts) and a Slack incoming webhook (if
-          you set the URL in Settings) can ping you with a link to Approval Inbox. No action within
-          10 minutes = block — the agent must abort. Agent Audit generates an on-demand Excel, PDF,
-          or CSV of the Agent Control trail — not a full chain explorer or ghost replay. Nothing is
-          auto-emailed from Agent Audit. Optional warning alerts can also ping you for a policy
-          alert or spend near the daily cap.
+          New or over-limit payments wait in Approval Inbox: Allow once, always allow that
+          address, or block. No action for 10 minutes = block — the agent must abort. When a
+          payment is waiting for you, optional email (Settings → Email alerts) and a Slack incoming
+          webhook (if you set the URL in Settings) can ping you with a link to Approval Inbox. Pause
+          and blocklists stop the send right away. Agent Audit generates an on-demand Excel, PDF, or
+          CSV of the Agent Control trail — not a full chain explorer or a replay of every on-chain transfer.
+          Nothing is auto-emailed from Agent Audit. Optional warning alerts can also ping you for a
+          policy alert or spend near the daily cap.
         </p>
 
         <section id="connect-your-agent" className="mt-16 scroll-mt-6">
@@ -297,7 +297,7 @@ function DocsPage() {
               <li>You set the spend limit in Agent Control.</li>
               <li>The agent asks before every send.</li>
               <li>Under the limit, it can send.</li>
-              <li>Over the line: hold waits in Approval Inbox. Block means do not send.</li>
+              <li>Over the line: over-limit or new addresses wait for you. Block means do not send.</li>
               <li>You keep the keys.</li>
             </ul>
             <p className="mt-4 text-sm text-muted">That ask is POST /api/v1/check:</p>
@@ -394,8 +394,8 @@ client.onBeforePaymentCreation(
           >
             <h3 className="text-lg font-medium">Hold notifications</h3>
             <p className="mt-2 text-sm text-muted">
-              When a spend is held, we reuse the same email and Slack paths already in Settings. No
-              extra vendor.
+              When a payment is waiting for you, we reuse the same email and Slack paths already in
+              Settings. No extra vendor.
             </p>
             <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-muted">
               <li>Email alerts (on by default) send a link to Approval Inbox.</li>
@@ -405,9 +405,9 @@ client.onBeforePaymentCreation(
           </article>
           <p id="skill-mcp" className="mt-6 scroll-mt-6 text-sm leading-relaxed text-muted">
             Coding agents (Cursor and similar) connect the same way: give the agent the API key,
-            then check before spend. HTTP today: POST /api/v1/check with the Bearer key. The MCP
-            path is Streamable HTTP: POST JSON-RPC to /api/v1/mcp and the server answers as JSON or
-            as a short event stream, with a session header on initialize. Tools:{" "}
+            then have it ask Agent Control first. The MCP path is Streamable HTTP: POST JSON-RPC to
+            /api/v1/mcp and the server answers as JSON or as a short event stream, with a session
+            header on initialize. Tools:{" "}
             <code className="font-mono text-fg">check_transfer</code>,{" "}
             <code className="font-mono text-fg">get_approval</code>,{" "}
             <code className="font-mono text-fg">get_agent_status</code>, plus storefront{" "}
@@ -453,8 +453,8 @@ client.onBeforePaymentCreation(
               </li>
             </ol>
             <p className="mt-3 text-sm text-muted">
-              After connect: check before spend. Hold vs block waits in Approval Inbox. If the agent
-              skips the check, Inbox cannot stop that send.
+              After connect: have it ask Agent Control first. Over-limit and new addresses wait in
+              Approval Inbox. If the agent skips the check, Inbox cannot stop that send.
             </p>
           </article>
         </section>
