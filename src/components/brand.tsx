@@ -31,7 +31,7 @@ export function Logo({
       <ShieldMark className={cn("shrink-0", large ? "size-10" : "size-7", markClassName)} />
       {!compact && (
         <span
-          className={cn("font-semibold tracking-tight", large ? "text-xl md:text-2xl" : "text-sm")}
+          className={cn("font-semibold tracking-tight", large ? "text-title" : "text-sm")}
         >
           Agent Control
         </span>

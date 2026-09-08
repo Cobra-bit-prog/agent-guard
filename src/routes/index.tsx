@@ -197,17 +197,17 @@ function Home() {
       <section className="landing-hero mx-auto max-w-[1140px] px-5 pb-7 pt-6 md:px-6">
         <div className="grid items-center gap-8 lg:grid-cols-[1.14fr_0.96fr]">
           <div>
-            <h1 className="landing-rise text-[clamp(32px,4.6vw,54px)] font-semibold leading-[1.08] tracking-[-0.035em] text-balance text-fg">
+            <h1 className="landing-rise text-display font-semibold text-balance text-fg">
               External audit for your agents
             </h1>
-            <p className="landing-rise mt-3 max-w-[44ch] text-base font-medium leading-snug text-navy">
+            <p className="landing-rise mt-3 max-w-[44ch] text-body font-medium leading-snug text-navy">
               Not a package scanner — this is spend control for agent wallets.
             </p>
-            <p className="landing-rise mt-3 max-w-[44ch] text-lg leading-snug text-muted">
+            <p className="landing-rise mt-3 max-w-[44ch] text-card leading-snug text-muted">
               Keep control of your agents’ spending. You set the limits. Suspicious transactions
               show up as alerts.
             </p>
-            <p className="landing-rise mt-2.5 max-w-[44ch] text-[15px] leading-snug text-muted">
+            <p className="landing-rise mt-2.5 max-w-[44ch] text-body leading-snug text-muted">
               Agent payments control — spend limits you set, and you keep the keys.
             </p>
             <div className="landing-rise mt-5 flex flex-wrap items-center gap-3">
@@ -218,24 +218,24 @@ function Home() {
                 </a>
               </Button>
             </div>
-            <p className="landing-rise mt-2 text-xs font-medium leading-snug text-muted">
+            <p className="landing-rise mt-2 text-meta font-medium leading-snug text-muted">
               1-day (24 hour) trial, then pay on-chain. No card. No KYC.
             </p>
             <div className="landing-rise mt-4 flex flex-wrap gap-1">
-              <span className="mt-1 mr-1 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-white px-2.5 py-1.5 text-[12.5px] text-fg shadow-[0_1px_0_rgb(18_38_63/0.04)]">
-                <i className="inline-grid size-[18px] place-items-center rounded-full bg-[#dcfce7] text-[10px] font-bold not-italic text-[#166534]">
+              <span className="mt-1 mr-1 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-white px-2.5 py-1.5 text-meta text-fg shadow-[0_1px_0_rgb(18_38_63/0.04)]">
+                <i className="inline-grid size-5 place-items-center rounded-full bg-[#dcfce7] text-meta font-bold not-italic leading-none text-[#166534]">
                   ✓
                 </i>
                 Within policy = auto
               </span>
-              <span className="mt-1 mr-1 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-white px-2.5 py-1.5 text-[12.5px] text-fg shadow-[0_1px_0_rgb(18_38_63/0.04)]">
-                <i className="inline-grid size-[18px] place-items-center rounded-full bg-[#fde8e6] text-[10px] font-bold not-italic text-danger">
+              <span className="mt-1 mr-1 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-white px-2.5 py-1.5 text-meta text-fg shadow-[0_1px_0_rgb(18_38_63/0.04)]">
+                <i className="inline-grid size-5 place-items-center rounded-full bg-[#fde8e6] text-meta font-bold not-italic leading-none text-danger">
                   ✕
                 </i>
                 Outside policy = stop
               </span>
-              <span className="mt-1 mr-1 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-white px-2.5 py-1.5 text-[12.5px] text-fg shadow-[0_1px_0_rgb(18_38_63/0.04)]">
-                <i className="inline-grid size-[18px] place-items-center rounded-full bg-[#e8eef6] text-[10px] font-bold not-italic text-navy">
+              <span className="mt-1 mr-1 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-white px-2.5 py-1.5 text-meta text-fg shadow-[0_1px_0_rgb(18_38_63/0.04)]">
+                <i className="inline-grid size-5 place-items-center rounded-full bg-[#e8eef6] text-meta font-bold not-italic leading-none text-navy">
                   🔑
                 </i>
                 Keys stay with you
@@ -257,8 +257,8 @@ function Home() {
 
       <section id="how" className="border-t border-border">
         <div className="mx-auto max-w-[1140px] px-5 py-16 md:px-6">
-          <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">How it works</h2>
-          <p className="mt-2 max-w-2xl text-muted">
+          <h2 className="text-title font-semibold tracking-tight">How it works</h2>
+          <p className="mt-2 max-w-2xl text-body text-muted">
             Four steps. No custody. The agent has to ask before it sends.
           </p>
           <ol className="mt-8 grid gap-4 md:grid-cols-4">
@@ -285,9 +285,9 @@ function Home() {
               },
             ].map((s) => (
               <li key={s.n} className="rounded-[20px] border border-border bg-surface p-5">
-                <p className="font-mono text-xs text-navy">{s.n}</p>
-                <h3 className="mt-3 font-medium">{s.t}</h3>
-                <p className="mt-1 text-sm text-muted">{s.d}</p>
+                <p className="font-mono text-meta text-navy">{s.n}</p>
+                <h3 className="mt-3 text-card font-medium">{s.t}</h3>
+                <p className="mt-1 text-body text-muted">{s.d}</p>
               </li>
             ))}
           </ol>
@@ -296,19 +296,19 @@ function Home() {
 
       <section id="connect" className="border-t border-border">
         <div className="mx-auto max-w-[1140px] px-5 py-16 md:px-6">
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-coral">
+          <p className="text-meta font-medium uppercase tracking-[0.18em] text-coral">
             {CONNECT_EYEBROW}
           </p>
-          <h2 className="mt-3 text-2xl font-semibold tracking-tight md:text-3xl">
+          <h2 className="mt-3 text-title font-semibold tracking-tight">
             {CONNECT_HEADLINE}
           </h2>
-          <p className="mt-2 max-w-2xl text-muted">{CONNECT_LEDE}</p>
-          <p className="mt-2 max-w-2xl text-sm text-fg">{CONNECT_STARTER_LINE}</p>
+          <p className="mt-2 max-w-2xl text-body text-muted">{CONNECT_LEDE}</p>
+          <p className="mt-2 max-w-2xl text-body text-fg">{CONNECT_STARTER_LINE}</p>
           <ConnectSteps />
           <div className="mt-8">
             <ConnectCtas />
           </div>
-          <p className="mt-3 text-sm text-muted">
+          <p className="mt-3 text-body text-muted">
             Works with AgentKit, x402, or MCP — popular agent payment tools.{" "}
             <a href="/connect" className="font-medium text-navy hover:text-coral">
               {CONNECT_PAGE_LINK_LABEL}
@@ -319,10 +319,10 @@ function Home() {
 
       <section id="pricing" className="border-t border-border">
         <div className="mx-auto max-w-[1140px] px-5 py-16 md:px-6">
-          <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">
+          <h2 className="text-title font-semibold tracking-tight">
             1-day trial, then on-chain.
           </h2>
-          <p className="mt-2 text-muted">
+          <p className="mt-2 text-body text-muted">
             24 hours free. No card. No KYC. Default is $29 USDC on Solana. Scan or tap Pay. We
             unlock when it lands.
           </p>
@@ -335,16 +335,16 @@ function Home() {
                   p.id === "pro" ? "border-coral/50" : "border-border",
                 )}
               >
-                <p className="text-sm text-muted">{p.id === "free" ? "Trial" : p.name}</p>
-                <p className="mt-3 text-3xl font-semibold tracking-tight">
+                <p className="text-body text-muted">{p.id === "free" ? "Trial" : p.name}</p>
+                <p className="mt-3 text-title font-semibold tracking-tight">
                   {p.price === 0 ? "1 day" : `$${p.price}`}
-                  {p.price > 0 && <span className="text-sm font-normal text-muted">/mo</span>}
+                  {p.price > 0 && <span className="text-body font-normal text-muted">/mo</span>}
                 </p>
                 {p.id === "free" && (
-                  <p className="mt-1 text-xs font-medium text-coral">24 hours · no card · no KYC</p>
+                  <p className="mt-1 text-meta font-medium text-coral">24 hours · no card · no KYC</p>
                 )}
-                <p className="mt-2 text-sm text-muted">{p.blurb}</p>
-                <ul className="mt-4 flex-1 space-y-2 text-sm text-muted">
+                <p className="mt-2 text-body text-muted">{p.blurb}</p>
+                <ul className="mt-4 flex-1 space-y-2 text-body text-muted">
                   <li className="flex gap-2">
                     <Check className="size-4 text-success" />
                     {p.agents} agent wallets
@@ -372,7 +372,7 @@ function Home() {
               </div>
             ))}
           </div>
-          <p className="mt-6 text-center text-sm text-muted">
+          <p className="mt-6 text-center text-body text-muted">
             External audit for your agents — you keep the keys.
           </p>
         </div>

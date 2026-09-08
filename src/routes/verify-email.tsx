@@ -57,8 +57,8 @@ function VerifyEmail() {
         <Link to="/" className="inline-flex">
           <Logo markClassName="text-navy" />
         </Link>
-        <h1 className="mt-6 text-2xl font-semibold tracking-tight">Check your email</h1>
-        <p className="mt-2 text-sm text-muted">
+        <h1 className="mt-6 text-title font-semibold tracking-tight">Check your email</h1>
+        <p className="mt-2 text-body text-muted">
           Confirm the address to open the dashboard. The link expires in one hour. Unconfirmed
           accounts cannot use the console.
         </p>
@@ -73,13 +73,13 @@ function VerifyEmail() {
               readOnly={Boolean(user?.primaryEmail)}
             />
           </div>
-          {notice && <p className="text-sm text-success">{notice}</p>}
-          {error && <p className="text-sm text-danger">{error}</p>}
+          {notice && <p className="text-body text-success">{notice}</p>}
+          {error && <p className="text-body text-danger">{error}</p>}
           <Button className="w-full" disabled={busy} type="button" onClick={() => void resend()}>
             {busy ? "Sending…" : "Resend confirmation link"}
           </Button>
         </div>
-        <p className="mt-6 text-xs text-subtle">
+        <p className="mt-6 text-meta text-subtle">
           Wrong account?{" "}
           <button
             type="button"

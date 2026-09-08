@@ -83,10 +83,10 @@ export function LandingFaq() {
   return (
     <section id="faq" className="border-t border-border">
       <div className="mx-auto max-w-3xl px-6 py-16 md:px-10">
-        <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">
+        <h2 className="text-title font-semibold tracking-tight">
           Questions operators ask
         </h2>
-        <p className="mt-2 text-muted">
+        <p className="mt-2 text-body text-muted">
           Straight answers. Custody, Inbox, Audit, warning emails, billing, and the signup email.
         </p>
         <div className="faq mt-8 divide-y divide-border rounded-[22px] border border-border bg-surface">
@@ -103,7 +103,7 @@ export function LandingFaq() {
                   <span className="font-medium">{item.q}</span>
                   <span className="mt-0.5 text-muted">{isOpen ? "–" : "+"}</span>
                 </button>
-                <div className={cn("px-5 pb-4 text-sm text-muted", !isOpen && "hidden")}>
+                <div className={cn("px-5 pb-4 text-body text-muted", !isOpen && "hidden")}>
                   {item.a}
                 </div>
               </div>

@@ -11,7 +11,7 @@ const CATCH_LOG: Record<CatchStep, string> = {
 };
 
 const ACTION_BTN =
-  "inline-flex h-10 items-center rounded-full px-4 text-sm font-semibold";
+  "inline-flex h-10 items-center rounded-full px-4 text-body font-semibold";
 
 export function LandingCatch() {
   const [step, setStep] = useState<CatchStep>("idle");
@@ -20,21 +20,21 @@ export function LandingCatch() {
     <section id="catch" className="border-t border-border">
       <div className="mx-auto grid max-w-[1140px] items-center gap-8 px-5 py-16 md:grid-cols-2 md:px-6">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-navy">New</p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">
+          <p className="text-meta font-semibold uppercase tracking-[0.16em] text-navy">New</p>
+          <h2 className="mt-2 text-title font-semibold tracking-tight">
             A new address waits on you.
           </h2>
-          <p className="mt-2 max-w-[42ch] text-muted">
+          <p className="mt-2 max-w-[42ch] text-body text-muted">
             The agent wants to pay. You have not seen this address. Money does not leave until you
             tap.
           </p>
-          <p className="mt-3 text-xs text-subtle">Example only. No real money moves.</p>
+          <p className="mt-3 text-meta text-subtle">Example only. No real money moves.</p>
         </div>
         <div className="rounded-[20px] border border-border bg-surface p-[22px] shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]">
-          <p className="text-[13px] text-muted">Research agent · $80 per pay · $400 a day</p>
+          <p className="text-meta text-muted">Research agent · $80 per pay · $400 a day</p>
           <pre
             aria-live="polite"
-            className="mt-4 min-h-[6.5em] whitespace-pre-wrap font-mono text-[13px] leading-relaxed text-fg"
+            className="mt-4 min-h-[6.5em] whitespace-pre-wrap font-mono text-meta leading-relaxed text-fg"
           >
             {CATCH_LOG[step]}
           </pre>

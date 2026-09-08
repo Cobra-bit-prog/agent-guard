@@ -149,16 +149,16 @@ function DocsPage() {
   return (
     <SkyShell current="docs">
       <main className="mx-auto max-w-3xl px-6 pb-20 pt-8 md:px-10">
-        <p className="text-xs font-medium uppercase tracking-[0.18em] text-coral">Quick start</p>
-        <h1 className="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">
+        <p className="text-meta font-medium uppercase tracking-[0.18em] text-coral">Quick start</p>
+        <h1 className="mt-3 text-display font-semibold">
           Get set up in a few minutes
         </h1>
-        <p className="mt-4 max-w-[46ch] text-lg text-muted">
+        <p className="mt-4 max-w-[46ch] text-card text-muted">
           1-day trial. Agent payments control with spend limits you set. You keep the keys.
         </p>
         <SupportedChains className="mt-5" />
 
-        <nav aria-label="On this page" className="mt-8 flex flex-wrap gap-x-4 gap-y-2 text-sm">
+        <nav aria-label="On this page" className="mt-8 flex flex-wrap gap-x-4 gap-y-2 text-body">
           <a href="#quick-start" className="text-muted hover:text-fg">
             Quick start
           </a>
@@ -200,13 +200,13 @@ function DocsPage() {
               key={s.n}
               className="rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]"
             >
-              <p className="font-mono text-xs text-navy">{s.n}</p>
-              <h2 className="mt-2 text-xl font-medium">{s.t}</h2>
+              <p className="font-mono text-meta text-navy">{s.n}</p>
+              <h2 className="mt-2 text-card font-medium">{s.t}</h2>
               <p className="mt-1 text-muted">{s.d}</p>
               {s.n === "04" ? (
                 <a
                   href="#connect-your-agent"
-                  className="mt-3 inline-flex text-sm font-medium text-navy hover:text-coral"
+                  className="mt-3 inline-flex text-body font-medium text-navy hover:text-coral"
                 >
                   How to connect →
                 </a>
@@ -215,11 +215,11 @@ function DocsPage() {
           ))}
         </ol>
 
-        <p className="mt-8 text-sm leading-relaxed text-muted">
+        <p className="mt-8 text-body leading-relaxed text-muted">
           The check only works if you connect your agent. If it skips the check, Inbox cannot stop
           that send.
         </p>
-        <p className="mt-3 text-sm leading-relaxed text-muted">
+        <p className="mt-3 text-body leading-relaxed text-muted">
           New or over-limit payments wait in Approval Inbox: Allow once, always allow that
           address, or block. No action for 10 minutes = block — the agent must abort. When a
           payment is waiting for you, optional email (Settings → Email alerts) and a Slack incoming
@@ -231,10 +231,10 @@ function DocsPage() {
         </p>
 
         <section id="connect-your-agent" className="mt-16 scroll-mt-6">
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-coral">
+          <p className="text-meta font-medium uppercase tracking-[0.18em] text-coral">
             {CONNECT_EYEBROW}
           </p>
-          <h2 className="mt-3 text-2xl font-semibold tracking-tight md:text-3xl">
+          <h2 className="mt-3 text-title font-semibold tracking-tight">
             {CONNECT_HEADLINE}
           </h2>
           <p className="mt-3 max-w-[52ch] text-muted">
@@ -249,23 +249,23 @@ function DocsPage() {
             id="connect-agentkit"
             className="mt-8 scroll-mt-6 rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]"
           >
-            <h3 className="text-lg font-medium">{CONNECT_HOW_HEADING}</h3>
-            <p className="mt-2 text-sm text-muted">
+            <h3 className="text-card font-medium">{CONNECT_HOW_HEADING}</h3>
+            <p className="mt-2 text-body text-muted">
               {CONNECT_LEDE} {CONNECT_STARTER_LINE}
             </p>
             <ol className="mt-4 space-y-3">
               {CONNECT_PATH_STEPS.map((step) => (
                 <li key={step.n}>
-                  <p className="font-mono text-xs text-navy">{step.n}</p>
+                  <p className="font-mono text-meta text-navy">{step.n}</p>
                   <p className="mt-1 font-medium text-fg">{step.t}</p>
-                  <p className="mt-1 text-sm text-muted">{step.d}</p>
+                  <p className="mt-1 text-body text-muted">{step.d}</p>
                 </li>
               ))}
             </ol>
             <div className="mt-6">
               <ConnectCtas size="default" />
             </div>
-            <p className="mt-3 text-sm text-muted">
+            <p className="mt-3 text-body text-muted">
               {CONNECT_BUILDERS_HEADING}.{" "}
               <a href="/connect" className="font-medium text-navy hover:text-coral">
                 {CONNECT_PAGE_LINK_LABEL}
@@ -278,8 +278,8 @@ function DocsPage() {
                 key={s.n}
                 className="rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]"
               >
-                <p className="font-mono text-xs text-navy">{s.n}</p>
-                <h3 className="mt-2 text-lg font-medium">{s.t}</h3>
+                <p className="font-mono text-meta text-navy">{s.n}</p>
+                <h3 className="mt-2 text-card font-medium">{s.t}</h3>
                 <p className="mt-1 text-muted">{s.d}</p>
               </li>
             ))}
@@ -288,20 +288,20 @@ function DocsPage() {
             id="agentkit"
             className="mt-8 scroll-mt-6 rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]"
           >
-            <h3 className="text-lg font-medium">Coinbase AgentKit (and similar)</h3>
-            <p className="mt-2 text-sm text-muted">
+            <h3 className="text-card font-medium">Coinbase AgentKit (and similar)</h3>
+            <p className="mt-2 text-body text-muted">
               If your agent already asks before it sends — like Coinbase AgentKit — send that ask to
               Agent Control. You set the limit. Over the line → hold vs block.
             </p>
-            <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-muted">
+            <ul className="mt-3 list-disc space-y-1 pl-5 text-body text-muted">
               <li>You set the spend limit in Agent Control.</li>
               <li>The agent asks before every send.</li>
               <li>Under the limit, it can send.</li>
               <li>Over the line: over-limit or new addresses wait for you. Block means do not send.</li>
               <li>You keep the keys.</li>
             </ul>
-            <p className="mt-4 text-sm text-muted">That ask is POST /api/v1/check:</p>
-            <pre className="mt-2 overflow-x-auto rounded-[16px] bg-[#12263f] p-4 font-mono text-xs leading-relaxed text-[#e8eef6]">
+            <p className="mt-4 text-body text-muted">That ask is POST /api/v1/check:</p>
+            <pre className="mt-2 overflow-x-auto rounded-[16px] bg-[#12263f] p-4 font-mono text-meta leading-relaxed text-[#e8eef6]">
               {`fetch("https://agent-control.net/api/v1/check", {
   method: "POST",
   headers: {
@@ -311,7 +311,7 @@ function DocsPage() {
   body: JSON.stringify({ to: destination, value_usd: amount }),
 })`}
             </pre>
-            <p className="mt-3 text-sm text-muted">
+            <p className="mt-3 text-body text-muted">
               If the check says stop, do not send. Prefer the{" "}
               <a href="#adapters" className="font-medium text-navy hover:text-coral">
                 adapter
@@ -323,18 +323,18 @@ function DocsPage() {
             id="adapters"
             className="mt-8 scroll-mt-6 rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]"
           >
-            <h3 className="text-lg font-medium">Adapters</h3>
-            <p className="mt-2 text-sm text-muted">
+            <h3 className="text-card font-medium">Adapters</h3>
+            <p className="mt-2 text-body text-muted">
               Drop-in helpers so you do not write fetch yourself. They only call the same check.
               Connect your agent. You keep the keys.
             </p>
-            <p className="mt-3 text-sm text-muted">
+            <p className="mt-3 text-body text-muted">
               Allow means send. Wait is a hold — you decide in Approval Inbox (hold vs block). Stop
               means do not send.
             </p>
-            <p className="mt-4 text-sm text-muted">Coinbase AgentKit — pass the policy helper:</p>
+            <p className="mt-4 text-body text-muted">Coinbase AgentKit — pass the policy helper:</p>
             <CopyCode code={AGENTKIT_RECIPE_CODE} label="Copy" />
-            <p className="mt-3 text-sm text-muted">
+            <p className="mt-3 text-body text-muted">
               Daily cap + approval threshold recipe:{" "}
               <a href="#policy-recipe" className="font-medium text-navy hover:text-coral">
                 Policy recipe
@@ -348,15 +348,15 @@ function DocsPage() {
               </a>
               .
             </p>
-            <p className="mt-4 text-sm text-muted">x402 — run the same check before money moves:</p>
-            <pre className="mt-2 overflow-x-auto rounded-[16px] bg-[#12263f] p-4 font-mono text-xs leading-relaxed text-[#e8eef6]">
+            <p className="mt-4 text-body text-muted">x402 — run the same check before money moves:</p>
+            <pre className="mt-2 overflow-x-auto rounded-[16px] bg-[#12263f] p-4 font-mono text-meta leading-relaxed text-[#e8eef6]">
               {`import { createX402BeforePaymentHook } from "./src/adapters/x402.ts";
 
 client.onBeforePaymentCreation(
   createX402BeforePaymentHook({ apiKey: process.env.AGENT_CONTROL_API_KEY }),
 );`}
             </pre>
-            <p className="mt-3 text-sm text-muted">
+            <p className="mt-3 text-body text-muted">
               Copy <code className="font-mono text-fg">src/adapters</code> from the repo. If the
               check says stop, do not send. Wallet and runtime partners:{" "}
               <a href="/partners" className="font-medium text-navy hover:text-coral">
@@ -369,18 +369,18 @@ client.onBeforePaymentCreation(
             id="policy-recipe"
             className="mt-8 scroll-mt-6 rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]"
           >
-            <h3 className="text-lg font-medium">AgentKit policy recipe</h3>
-            <p className="mt-2 text-sm text-muted">
+            <h3 className="text-card font-medium">AgentKit policy recipe</h3>
+            <p className="mt-2 text-body text-muted">
               Daily cap + approval threshold, then Connect your agent. Copy this tiny
               createAgentKitPolicyProvider helper. You keep the keys.
             </p>
-            <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm text-muted">
+            <ol className="mt-4 list-decimal space-y-2 pl-5 text-body text-muted">
               {AGENTKIT_RECIPE_STEPS.map((step) => (
                 <li key={step}>{step}</li>
               ))}
             </ol>
             <CopyCode code={AGENTKIT_RECIPE_CODE} label="Copy recipe" />
-            <p className="mt-3 text-sm text-muted">
+            <p className="mt-3 text-body text-muted">
               Same check as{" "}
               <a href="#adapters" className="font-medium text-navy hover:text-coral">
                 adapters
@@ -392,18 +392,18 @@ client.onBeforePaymentCreation(
             id="hold-notifications"
             className="mt-8 scroll-mt-6 rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]"
           >
-            <h3 className="text-lg font-medium">Hold notifications</h3>
-            <p className="mt-2 text-sm text-muted">
+            <h3 className="text-card font-medium">Hold notifications</h3>
+            <p className="mt-2 text-body text-muted">
               When a payment is waiting for you, we reuse the same email and Slack paths already in
               Settings. No extra vendor.
             </p>
-            <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-muted">
+            <ul className="mt-3 list-disc space-y-1 pl-5 text-body text-muted">
               <li>Email alerts (on by default) send a link to Approval Inbox.</li>
               <li>Paste a Slack incoming webhook URL in Settings to get the same ping there.</li>
               <li>No action within 10 minutes = block — the agent must abort.</li>
             </ul>
           </article>
-          <p id="skill-mcp" className="mt-6 scroll-mt-6 text-sm leading-relaxed text-muted">
+          <p id="skill-mcp" className="mt-6 scroll-mt-6 text-body leading-relaxed text-muted">
             Coding agents (Cursor and similar) connect the same way: give the agent the API key,
             then have it ask Agent Control first. The MCP path is Streamable HTTP: POST JSON-RPC to
             /api/v1/mcp and the server answers as JSON or as a short event stream, with a session
@@ -427,15 +427,15 @@ client.onBeforePaymentCreation(
             id="connectors"
             className="mt-8 scroll-mt-6 rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]"
           >
-            <h3 className="text-lg font-medium">Connectors</h3>
-            <p className="mt-2 text-sm text-muted">
+            <h3 className="text-card font-medium">Connectors</h3>
+            <p className="mt-2 text-body text-muted">
               External audit for your agents. Connect your agent from Cursor or Grok so it can ask
               before a send. You keep the keys. The live MCP is Streamable HTTP at
               https://agent-control.net/api/v1/mcp. get_pricing is public. Spend, checkout, and
               status need header Authorization: Bearer plus your agent API key (env{" "}
               <code className="font-mono text-fg">AGENT_CONTROL_API_KEY</code>).
             </p>
-            <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm text-muted">
+            <ol className="mt-4 list-decimal space-y-2 pl-5 text-body text-muted">
               <li>
                 <span className="font-medium text-fg">Cursor Customize / MCPs.</span> Open
                 Customize, then MCPs. Add a remote server. Paste the URL. Add the Bearer header. Or
@@ -452,7 +452,7 @@ client.onBeforePaymentCreation(
                 Bearer plus the agent API key.
               </li>
             </ol>
-            <p className="mt-3 text-sm text-muted">
+            <p className="mt-3 text-body text-muted">
               After connect: have it ask Agent Control first. Over-limit and new addresses wait in
               Approval Inbox. If the agent skips the check, Inbox cannot stop that send.
             </p>
@@ -460,10 +460,10 @@ client.onBeforePaymentCreation(
         </section>
 
         <section id="agent-storefront" className="mt-16 scroll-mt-6">
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-coral">
+          <p className="text-meta font-medium uppercase tracking-[0.18em] text-coral">
             Agent storefront
           </p>
-          <h2 className="mt-3 text-2xl font-semibold tracking-tight md:text-3xl">
+          <h2 className="mt-3 text-title font-semibold tracking-tight">
             Price, trial, and checkout for agents
           </h2>
           <p className="mt-3 max-w-[52ch] text-muted">
@@ -480,23 +480,23 @@ client.onBeforePaymentCreation(
           </p>
           <ol className="mt-8 space-y-3">
             <li className="rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]">
-              <p className="font-mono text-xs text-navy">1</p>
-              <h3 className="mt-2 text-lg font-medium">Read pricing</h3>
+              <p className="font-mono text-meta text-navy">1</p>
+              <h3 className="mt-2 text-card font-medium">Read pricing</h3>
               <p className="mt-1 text-muted">
                 GET /api/v1/storefront/pricing or MCP get_pricing. No API key.
               </p>
-              <pre className="mt-3 overflow-x-auto rounded-[16px] bg-[#12263f] p-4 font-mono text-xs leading-relaxed text-[#e8eef6]">
+              <pre className="mt-3 overflow-x-auto rounded-[16px] bg-[#12263f] p-4 font-mono text-meta leading-relaxed text-[#e8eef6]">
                 {`fetch("https://agent-control.net/api/v1/storefront/pricing")`}
               </pre>
             </li>
             <li className="rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]">
-              <p className="font-mono text-xs text-navy">2</p>
-              <h3 className="mt-2 text-lg font-medium">Start a trial for a human</h3>
+              <p className="font-mono text-meta text-navy">2</p>
+              <h3 className="mt-2 text-card font-medium">Start a trial for a human</h3>
               <p className="mt-1 text-muted">
                 POST /api/v1/storefront/trial with that person&apos;s email. Agents cannot open a
                 root account. attach_human is the same idea when you already have a principal.
               </p>
-              <pre className="mt-3 overflow-x-auto rounded-[16px] bg-[#12263f] p-4 font-mono text-xs leading-relaxed text-[#e8eef6]">
+              <pre className="mt-3 overflow-x-auto rounded-[16px] bg-[#12263f] p-4 font-mono text-meta leading-relaxed text-[#e8eef6]">
                 {`fetch("https://agent-control.net/api/v1/storefront/trial", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
@@ -505,13 +505,13 @@ client.onBeforePaymentCreation(
               </pre>
             </li>
             <li className="rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]">
-              <p className="font-mono text-xs text-navy">3</p>
-              <h3 className="mt-2 text-lg font-medium">Start checkout</h3>
+              <p className="font-mono text-meta text-navy">3</p>
+              <h3 className="mt-2 text-card font-medium">Start checkout</h3>
               <p className="mt-1 text-muted">
                 POST /api/v1/billing/checkout with the agent API key. That opens a pay request for
                 the human principal — Solana USDC by default.
               </p>
-              <pre className="mt-3 overflow-x-auto rounded-[16px] bg-[#12263f] p-4 font-mono text-xs leading-relaxed text-[#e8eef6]">
+              <pre className="mt-3 overflow-x-auto rounded-[16px] bg-[#12263f] p-4 font-mono text-meta leading-relaxed text-[#e8eef6]">
                 {`fetch("https://agent-control.net/api/v1/billing/checkout", {
   method: "POST",
   headers: {
@@ -523,7 +523,7 @@ client.onBeforePaymentCreation(
               </pre>
             </li>
           </ol>
-          <p className="mt-6 text-sm leading-relaxed text-muted">
+          <p className="mt-6 text-body leading-relaxed text-muted">
             GET /api/v1/storefront/status returns that human&apos;s trial or plan. MCP tools:{" "}
             <code className="font-mono text-fg">get_pricing</code>,{" "}
             <code className="font-mono text-fg">start_trial</code>,{" "}
@@ -538,8 +538,8 @@ client.onBeforePaymentCreation(
         </section>
 
         <section id="compare" className="mt-16 scroll-mt-6">
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-coral">Compare</p>
-          <h2 className="mt-3 text-2xl font-semibold tracking-tight md:text-3xl">
+          <p className="text-meta font-medium uppercase tracking-[0.18em] text-coral">Compare</p>
+          <h2 className="mt-3 text-title font-semibold tracking-tight">
             When to use Agent Control
           </h2>
           <p className="mt-3 max-w-[52ch] text-muted">
@@ -553,44 +553,44 @@ client.onBeforePaymentCreation(
                 key={row.themName}
                 className="rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]"
               >
-                <h3 className="text-lg font-medium">vs {row.themName}</h3>
+                <h3 className="text-card font-medium">vs {row.themName}</h3>
                 {row.themList ? (
                   <>
-                    <p className="mt-2 text-sm font-medium text-fg">Them.</p>
-                    <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-muted">
+                    <p className="mt-2 text-body font-medium text-fg">Them.</p>
+                    <ul className="mt-1 list-disc space-y-1 pl-5 text-body text-muted">
                       {row.themList.map((item) => (
                         <li key={item}>{item}</li>
                       ))}
                     </ul>
                   </>
                 ) : (
-                  <p className="mt-2 text-sm text-muted">
+                  <p className="mt-2 text-body text-muted">
                     <span className="font-medium text-fg">Them.</span> {row.them}
                   </p>
                 )}
                 {row.usList ? (
                   <>
-                    <p className="mt-2 text-sm font-medium text-fg">Us.</p>
-                    <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-muted">
+                    <p className="mt-2 text-body font-medium text-fg">Us.</p>
+                    <ul className="mt-1 list-disc space-y-1 pl-5 text-body text-muted">
                       {row.usList.map((item) => (
                         <li key={item}>{item}</li>
                       ))}
                     </ul>
                   </>
                 ) : (
-                  <p className="mt-2 text-sm text-muted">
+                  <p className="mt-2 text-body text-muted">
                     <span className="font-medium text-fg">Us.</span> {row.us}
                   </p>
                 )}
-                <p className="mt-2 text-sm text-muted">{row.pick}</p>
+                <p className="mt-2 text-body text-muted">{row.pick}</p>
               </article>
             ))}
           </div>
           <div className="mt-6 rounded-[20px] border border-border bg-[#12263f] p-5 text-[#e8eef6] shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]">
-            <p className="text-xs font-medium uppercase tracking-[0.18em] text-[#9bb0c7]">
+            <p className="text-meta font-medium uppercase tracking-[0.18em] text-[#9bb0c7]">
               When to use us
             </p>
-            <p className="mt-2 text-sm leading-relaxed">
+            <p className="mt-2 text-body leading-relaxed">
               Use Agent Control when an operator runs agent wallets that can send crypto and needs
               spend limits, approval before agent send, and an agent wallet audit trail — External
               audit for your agents — without giving up custody.
@@ -599,8 +599,8 @@ client.onBeforePaymentCreation(
         </section>
 
         <section id="partners" className="mt-16 scroll-mt-6">
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-coral">Partners</p>
-          <h2 className="mt-3 text-2xl font-semibold tracking-tight md:text-3xl">
+          <p className="text-meta font-medium uppercase tracking-[0.18em] text-coral">Partners</p>
+          <h2 className="mt-3 text-title font-semibold tracking-tight">
             Wallet and runtime partners
           </h2>
           <p className="mt-3 max-w-[52ch] text-muted">
@@ -620,7 +620,7 @@ client.onBeforePaymentCreation(
 
         <div className="mt-10 flex flex-wrap items-center gap-3">
           <ConnectCtas />
-          <a href={SUPPORT_MAIL} className="text-sm text-muted hover:text-fg">
+          <a href={SUPPORT_MAIL} className="text-body text-muted hover:text-fg">
             Contact · support@agent-control.net
           </a>
         </div>
@@ -629,7 +629,7 @@ client.onBeforePaymentCreation(
           <summary className="cursor-pointer px-5 py-4 font-medium">
             For builders · API details
           </summary>
-          <div className="space-y-3 border-t border-border px-5 py-4 text-sm text-muted">
+          <div className="space-y-3 border-t border-border px-5 py-4 text-body text-muted">
             <p>
               Give the agent its API key. Before every send it should call the check. If{" "}
               <code className="font-mono text-fg">must_abort</code> is true, do not send. Pause and
@@ -638,7 +638,7 @@ client.onBeforePaymentCreation(
               <code className="font-mono text-fg">poll_url</code> — poll until allow or block
               (10-minute TTL; expired holds are a block).
             </p>
-            <pre className="overflow-x-auto rounded-[16px] bg-[#12263f] p-4 font-mono text-xs leading-relaxed text-[#e8eef6]">
+            <pre className="overflow-x-auto rounded-[16px] bg-[#12263f] p-4 font-mono text-meta leading-relaxed text-[#e8eef6]">
               {`curl -s https://agent-control.net/api/v1/check \\
   -H "Authorization: Bearer YOUR_AGENT_API_KEY" \\
   -H "Content-Type: application/json" \\
@@ -661,7 +661,7 @@ client.onBeforePaymentCreation(
           </div>
         </details>
 
-        <p className="mt-8 text-sm text-muted">
+        <p className="mt-8 text-body text-muted">
           Machine-readable product brief:{" "}
           <a href="/llms.txt" className="font-medium text-navy hover:text-coral">
             /llms.txt

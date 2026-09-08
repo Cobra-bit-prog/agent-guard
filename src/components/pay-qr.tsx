@@ -16,14 +16,14 @@ export function PayQr({ value, alt }: { value: string; alt?: string }) {
 
   if (encoded.error === "missing") {
     return (
-      <p className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
+      <p className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-body text-danger">
         Payment QR is missing. Go back to Billing and tap Pay again.
       </p>
     );
   }
   if (encoded.error === "draw") {
     return (
-      <p className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
+      <p className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-body text-danger">
         Could not draw this payment QR. Copy the amount and address instead.
       </p>
     );

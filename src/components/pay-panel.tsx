@@ -79,18 +79,18 @@ export function PayPanel({ req }: { req: PayRequestView }) {
       <div className="mx-auto w-full max-w-[280px]">
         <PayQr value={qrValue} alt={evm ? `${chainName} USDC payment QR` : "Solana Pay QR"} />
       </div>
-      <div className="space-y-3 text-sm">
+      <div className="space-y-3 text-body">
         <div className="rounded-[12px] border border-border bg-elevated/50 px-3 py-2.5">
-          <p className="text-xs text-muted">Amount</p>
+          <p className="text-meta text-muted">Amount</p>
           <p className="font-medium">
             {displayAmount} {symbol}
           </p>
           {sendExact ? (
-            <p className="mt-0.5 text-xs text-muted">
+            <p className="mt-0.5 text-meta text-muted">
               Send exactly {displayAmount} {symbol}
             </p>
           ) : null}
-          <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-muted">
+          <p className="mt-1 inline-flex items-center gap-1.5 text-meta text-muted">
             <ChainMark chain={chain} className="size-3.5" />
             {chainName} · {symbol}
           </p>
@@ -100,8 +100,8 @@ export function PayPanel({ req }: { req: PayRequestView }) {
           className="w-full rounded-[12px] border border-border bg-elevated/50 px-3 py-2.5 text-left"
           onClick={() => void copy("address", req.recipient)}
         >
-          <p className="text-xs text-muted">To</p>
-          <p className="break-all font-mono text-xs leading-relaxed">{req.recipient}</p>
+          <p className="text-meta text-muted">To</p>
+          <p className="break-all font-mono text-meta leading-relaxed">{req.recipient}</p>
         </button>
         <Button type="button" className="w-full" onClick={() => void copy("amount", displayAmount)}>
           <Copy />

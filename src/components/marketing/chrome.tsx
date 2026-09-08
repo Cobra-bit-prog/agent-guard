@@ -50,7 +50,7 @@ export function MarketingHeader({
     <>
       <header className="mx-auto flex max-w-[1140px] items-center justify-between gap-3 px-5 py-[18px] md:px-6">
         <Logo size="lg" href="/" markClassName="text-navy" />
-        <nav className="hidden items-center text-sm font-medium text-muted md:flex">
+        <nav className="hidden items-center text-body font-medium text-muted md:flex">
           {NAV.map((item) => (
             <a
               key={item.label}
@@ -89,7 +89,7 @@ export function MarketingHeader({
       </header>
       {menuOpen && (
         <div className="border-b border-border px-5 py-3 md:hidden">
-          <div className="flex flex-col gap-3 text-sm text-muted">
+          <div className="flex flex-col gap-3 text-body text-muted">
             {NAV.map((item) => (
               <a
                 key={item.label}
@@ -124,10 +124,10 @@ function navHref(
 export function MarketingFooter() {
   return (
     <footer className="border-t border-border">
-      <div className="mx-auto flex max-w-[1140px] flex-col gap-3 px-5 py-8 text-sm text-subtle md:flex-row md:items-center md:justify-between md:px-6">
+      <div className="mx-auto flex max-w-[1140px] flex-col gap-3 px-5 py-8 text-body text-subtle md:flex-row md:items-center md:justify-between md:px-6">
         <Logo size="lg" href="/" markClassName="text-navy" />
         <p>Monitoring and policy checks. Not a custodian. Not insurance.</p>
-        <p className="flex flex-col gap-1 text-xs md:items-end">
+        <p className="flex flex-col gap-1 text-meta md:items-end">
           <a href="/connect" className="text-muted hover:text-fg">
             Connect
           </a>

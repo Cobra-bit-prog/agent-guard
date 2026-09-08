@@ -42,14 +42,14 @@ function ConnectPage() {
   return (
     <SkyShell current="connect">
       <main className="mx-auto max-w-3xl px-6 pb-20 pt-8 md:px-10">
-        <p className="text-xs font-medium uppercase tracking-[0.18em] text-coral">
+        <p className="text-meta font-medium uppercase tracking-[0.18em] text-coral">
           {CONNECT_EYEBROW}
         </p>
-        <h1 className="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">
+        <h1 className="mt-3 text-display font-semibold">
           {CONNECT_HEADLINE}
         </h1>
-        <p className="mt-4 max-w-[46ch] text-lg text-muted">{CONNECT_LEDE}</p>
-        <p className="mt-3 max-w-[46ch] text-[15px] leading-snug text-fg">
+        <p className="mt-4 max-w-[46ch] text-card text-muted">{CONNECT_LEDE}</p>
+        <p className="mt-3 max-w-[46ch] text-body leading-snug text-fg">
           {CONNECT_STARTER_LINE}
         </p>
         <SupportedChains className="mt-5" />
@@ -57,26 +57,26 @@ function ConnectPage() {
         <div className="mt-8">
           <ConnectCtas />
         </div>
-        <p className="mt-2 text-xs font-medium leading-snug text-muted">
+        <p className="mt-2 text-meta font-medium leading-snug text-muted">
           1-day (24 hour) trial, then $29 USDC on Solana. No card. No KYC.
         </p>
 
-        <h2 className="mt-14 text-2xl font-semibold tracking-tight md:text-3xl">
+        <h2 className="mt-14 text-title font-semibold tracking-tight">
           {CONNECT_HOW_HEADING}
         </h2>
-        <p className="mt-2 max-w-[52ch] text-muted">{CONNECT_HOW_LEDE}</p>
+        <p className="mt-2 max-w-[52ch] text-body text-muted">{CONNECT_HOW_LEDE}</p>
         <ConnectSteps className="mt-8 space-y-3" />
 
         <section className="mt-14">
-          <h2 className="text-2xl font-semibold tracking-tight">{CONNECT_BUILDERS_HEADING}</h2>
-          <p className="mt-3 max-w-[52ch] text-muted">{CONNECT_BUILDERS_LEDE}</p>
-          <p className="mt-3 text-sm text-muted">Direct call:</p>
+          <h2 className="text-title font-semibold tracking-tight">{CONNECT_BUILDERS_HEADING}</h2>
+          <p className="mt-3 max-w-[52ch] text-body text-muted">{CONNECT_BUILDERS_LEDE}</p>
+          <p className="mt-3 text-body text-muted">Direct call:</p>
           <CopyCode code={CONNECT_CHECK_CODE} label="Copy" />
         </section>
 
         <section className="mt-10">
-          <h2 className="text-xl font-medium">AgentKit</h2>
-          <p className="mt-2 text-sm text-muted">
+          <h2 className="text-card font-medium">AgentKit</h2>
+          <p className="mt-2 text-body text-muted">
             Works with AgentKit, a popular agent payment tool. They ask before they pay. You keep
             the keys.
           </p>
@@ -84,15 +84,15 @@ function ConnectPage() {
         </section>
 
         <section className="mt-10">
-          <h2 className="text-xl font-medium">x402</h2>
-          <p className="mt-2 text-sm text-muted">
+          <h2 className="text-card font-medium">x402</h2>
+          <p className="mt-2 text-body text-muted">
             Works with x402, a popular agent payment tool. Before it sends, it asks Agent Control.
             Copy <code className="font-mono text-fg">src/adapters</code> from the repo.
           </p>
           <CopyCode code={CONNECT_X402_CODE} label="Copy" />
         </section>
 
-        <p className="mt-8 text-sm leading-relaxed text-muted">
+        <p className="mt-8 text-body leading-relaxed text-muted">
           If we say stop, it does not send. If the agent skips the ask, Inbox cannot stop that send.
           More detail:{" "}
           <a href="/docs#connect-agentkit" className="font-medium text-navy hover:text-coral">

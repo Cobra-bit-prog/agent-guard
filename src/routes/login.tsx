@@ -94,10 +94,10 @@ function Login() {
     <main className="sky grid min-h-screen place-items-center bg-bg px-5 py-10">
       <div className="w-full max-w-md rounded-[28px] border border-border bg-surface p-8 shadow-[var(--shadow-panel)]">
         <Logo href="/" markClassName="text-navy" />
-        <h1 className="mt-6 text-2xl font-semibold tracking-tight">
+        <h1 className="mt-6 text-title font-semibold tracking-tight">
           {mode === "signup" ? "Create your Agent Control account" : "Sign in to Agent Control"}
         </h1>
-        <p className="mt-1 text-sm text-muted">Protect the wallets your agents control.</p>
+        <p className="mt-1 text-body text-muted">Protect the wallets your agents control.</p>
 
         {authEnabled ? (
           <>
@@ -116,7 +116,7 @@ function Login() {
                     </Button>
                   ))}
                 </div>
-                <p className="my-5 text-center text-xs text-subtle">or email</p>
+                <p className="my-5 text-center text-meta text-subtle">or email</p>
               </>
             )}
             <Tabs
@@ -162,13 +162,13 @@ function Login() {
                     />
                   </div>
                   {mode === "signup" && (
-                    <p className="text-xs text-muted">
+                    <p className="text-meta text-muted">
                       We send a confirmation link to this address. You stay on a waiting screen
                       until you click it. Then the dashboard opens.
                     </p>
                   )}
-                  {notice && <p className="text-sm text-success">{notice}</p>}
-                  {error && <p className="text-sm text-danger">{error}</p>}
+                  {notice && <p className="text-body text-success">{notice}</p>}
+                  {error && <p className="text-body text-danger">{error}</p>}
                   <Button className="w-full" disabled={busy}>
                     {busy ? "Please wait…" : mode === "signup" ? "Create account" : "Sign in"}
                   </Button>
@@ -177,7 +177,7 @@ function Login() {
             </Tabs>
           </>
         ) : (
-          <p className="mt-6 text-sm text-muted">Sign-in is disabled.</p>
+          <p className="mt-6 text-body text-muted">Sign-in is disabled.</p>
         )}
       </div>
     </main>

@@ -39,9 +39,9 @@ export function ConnectSteps({
           key={step.n}
           className="rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]"
         >
-          <p className="font-mono text-xs text-navy">{step.n}</p>
-          <h3 className="mt-3 font-medium">{step.t}</h3>
-          <p className="mt-1 text-sm text-muted">{step.d}</p>
+          <p className="font-mono text-meta text-navy">{step.n}</p>
+          <h3 className="mt-3 text-card font-medium">{step.t}</h3>
+          <p className="mt-1 text-body text-muted">{step.d}</p>
         </li>
       ))}
     </ol>
