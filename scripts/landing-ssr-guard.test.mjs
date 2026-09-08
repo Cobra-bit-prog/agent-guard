@@ -411,6 +411,21 @@ test("FAQ and Compare drop competitor names; homepage H1 stays External audit fo
     home,
     /<h1[^>]*>\s*External audit for your agents\s*<\/h1>\s*<p[^>]*>\s*Not a package scanner — this is spend control for agent wallets\.\s*<\/p>/,
   );
+  assert.match(home, /text-display font-semibold text-balance text-fg/);
+  assert.match(
+    home,
+    /<p className="landing-rise mt-3 max-w-\[44ch\] text-body leading-snug text-muted">\s*Not a package scanner — this is spend control for agent wallets\.\s*<\/p>\s*<p className="landing-rise mt-3 max-w-\[44ch\] text-body leading-snug text-muted">\s*Keep control of your agents/,
+  );
+  assert.match(
+    home,
+    /<p className="landing-rise mt-2\.5 max-w-\[44ch\] text-body leading-snug text-muted">\s*Agent payments control/,
+  );
+  assert.doesNotMatch(home, /text-body font-medium leading-snug text-navy/);
+  assert.doesNotMatch(home, /text-card leading-snug text-muted/);
+  assert.match(
+    home,
+    /text-body text-muted">\{CONNECT_LEDE\}<\/p>\s*<p className="mt-2 max-w-2xl text-body text-muted">\{CONNECT_STARTER_LINE\}/,
+  );
   assert.doesNotMatch(surfaces, /agentaudit/i);
   assert.doesNotMatch(surfaces, /spendguard/i);
   assert.doesNotMatch(surfaces, /agentspay/i);
