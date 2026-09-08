@@ -77,10 +77,10 @@ const HOME_FAQ_LD = [
   },
   {
     "@type": "Question",
-    name: "Is this like agentaudit.dev?",
+    name: "Is this a package scanner?",
     acceptedAnswer: {
       "@type": "Answer",
-      text: "No. They scan packages. We are agent payments control — Approval Inbox and spend limits for agent wallets. Not a package scanner.",
+      text: "No. Agent Control is spend control for agent wallets — Approval Inbox and spend limits you set. Not a package scanner.",
     },
   },
   {
@@ -93,10 +93,10 @@ const HOME_FAQ_LD = [
   },
   {
     "@type": "Question",
-    name: "How is this different from agentaudit.dev, SpendGuard, or Turnkey?",
+    name: "Do you host this, or do I run it myself?",
     acceptedAnswer: {
       "@type": "Answer",
-      text: "Agent Control is agent payments control for agent wallets — spend limits, approval before agent send, hold vs block. Not a package scanner. SpendGuard (x402-spendguard) is a firewall you run yourself. We host Approval Inbox and Agent Audit. You keep the keys. See agent-control.net/docs#compare.",
+      text: "We host Approval Inbox and Agent Audit. You keep the keys. Agent wallets get checked before they pay — spend limits, hold vs block. Not a package scanner.",
     },
   },
   {
@@ -277,7 +277,7 @@ function Home() {
               {
                 n: "04",
                 t: "Watch + pause",
-                d: "On-chain sync and check decisions land in one feed. Pause from the console.",
+                d: "On-chain sync and checks before they pay land in one feed. Pause from the console.",
               },
             ].map((s) => (
               <li key={s.n} className="rounded-[20px] border border-border bg-surface p-5">
@@ -352,7 +352,7 @@ function Home() {
                   </li>
                   <li className="flex gap-2">
                     <Check className="size-4 text-success" />
-                    Policy + check before they pay
+                    Checks before they pay
                   </li>
                 </ul>
                 <Button

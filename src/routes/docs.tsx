@@ -78,14 +78,14 @@ type CompareRow = {
 
 const COMPARE: readonly CompareRow[] = [
   {
-    themName: "agentaudit.dev",
+    themName: "a package scanner",
     them: "They scan code packages.",
     us: "Agent payments control — spend limits, approval before agent send, Approval Inbox, Agent Audit on wallet sends.",
     pick: "Pick us when the risk is an agent spending crypto, not a code package.",
   },
   {
-    themName: "SpendGuard",
-    them: "x402-spendguard: a firewall you run on your own machine. For EVM and x402. You run it yourself.",
+    themName: "a firewall you run yourself",
+    them: "A firewall you run on your own machine. For EVM and x402. You run it yourself.",
     us: "Hosted Approval Inbox and Agent Audit. Solana, Ethereum, and Base. You set the limits. You keep the keys.",
     pick: "They run on your machine. We host the human inbox. You can use both.",
     themList: ["A firewall you run on your own machine", "For EVM and x402", "You run it yourself"],
@@ -96,7 +96,7 @@ const COMPARE: readonly CompareRow[] = [
     ],
   },
   {
-    themName: "Agentspay",
+    themName: "a control plane or cards",
     them: "A control plane or cards. Some teams use DIY libs.",
     us: "Hosted Approval Inbox and Agent Audit on Solana, Ethereum, and Base. You keep the keys.",
     pick: "You can use both. They are a control plane or cards. We sit beside the wallet you already have.",
@@ -108,7 +108,7 @@ const COMPARE: readonly CompareRow[] = [
     ],
   },
   {
-    themName: "Turnkey (and similar: Privy)",
+    themName: "a wallet or key host",
     them: "Wallets and keys.",
     us: "Connect your agent. We answer allow / hold vs block. You keep the keys.",
     pick: "Pick us when you already have keys and need hold vs block plus an agent wallet audit.",
@@ -539,8 +539,8 @@ client.onBeforePaymentCreation(
           </h2>
           <p className="mt-3 max-w-[52ch] text-muted">
             Agent payments control for agent wallets. Not a package scanner. Not a firewall you run
-            on your own machine. Not a control plane or cards. You keep the keys. You can use both
-            SpendGuard DIY and Agentspay beside us.
+            on your own machine. Not a control plane or cards. You keep the keys. You can use a DIY
+            firewall or a control plane beside us.
           </p>
           <div className="mt-8 space-y-3">
             {COMPARE.map((row) => (
@@ -548,19 +548,7 @@ client.onBeforePaymentCreation(
                 key={row.themName}
                 className="rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]"
               >
-                <h3 className="text-lg font-medium">
-                  vs {row.themName}
-                  {row.themName === "SpendGuard" ? (
-                    <span className="mt-1 block text-sm font-normal text-muted">
-                      x402-spendguard
-                    </span>
-                  ) : null}
-                  {row.themName === "Agentspay" ? (
-                    <span className="mt-1 block text-sm font-normal text-muted">
-                      control plane or cards
-                    </span>
-                  ) : null}
-                </h3>
+                <h3 className="text-lg font-medium">vs {row.themName}</h3>
                 {row.themList ? (
                   <>
                     <p className="mt-2 text-sm font-medium text-fg">Them.</p>
