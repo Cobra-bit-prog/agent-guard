@@ -5,7 +5,7 @@
 - Name: Agent Control
 - URL: https://agent-control.net
 - Docs: https://agent-control.net/docs
-- Connect AgentKit / x402: https://agent-control.net/connect
+- Connect your agent: https://agent-control.net/connect
 - Partners: https://agent-control.net/partners
 - Console: https://agent-control.net/login
 - Approval Inbox: https://agent-control.net/inbox

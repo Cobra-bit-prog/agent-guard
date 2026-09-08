@@ -11,8 +11,12 @@ import { ConnectCtas, ConnectSteps } from "@/components/marketing/connect-path";
 import { SupportedChains } from "@/components/chain-icons";
 import { Button } from "@/components/ui/button";
 import {
+  CONNECT_EYEBROW,
+  CONNECT_FAQ_ANSWER,
+  CONNECT_FAQ_DOCS_HREF,
   CONNECT_HEADLINE,
   CONNECT_LEDE,
+  CONNECT_PAGE_LINK_LABEL,
   CONNECT_STARTER_LINE,
 } from "@/lib/connect-path";
 import { PLANS } from "@/lib/plans";
@@ -48,7 +52,7 @@ const HOME_FAQ_LD = [
     name: "How do I connect my agent?",
     acceptedAnswer: {
       "@type": "Answer",
-      text: "Give the agent an API key. Before they pay, the agent POSTs /api/v1/check with the destination and value_usd — or MCP check_transfer, or the AgentKit / x402 adapter. If the check says stop, do not send. Off-policy and first-time destinations can HOLD with a poll_url — you decide in /inbox. Pause and denylist are a hard block (never a hold).",
+      text: `${CONNECT_FAQ_ANSWER} See https://agent-control.net${CONNECT_FAQ_DOCS_HREF} for how to plug it in.`,
     },
   },
   {
@@ -96,7 +100,7 @@ const HOME_FAQ_LD = [
     name: "Do you host this, or do I run it myself?",
     acceptedAnswer: {
       "@type": "Answer",
-      text: "We host Approval Inbox and Agent Audit. You keep the keys. Agent wallets get checked before they pay — spend limits, hold vs block. Not a package scanner.",
+      text: "We host Approval Inbox and Agent Audit. You keep the keys. They ask before they pay. Within policy = auto · Outside policy = stop. Not a package scanner.",
     },
   },
   {
@@ -272,12 +276,12 @@ function Home() {
               {
                 n: "03",
                 t: "Connect your agent",
-                d: "Connect your agent with an API key so it checks Agent Control before every spend — you keep the keys.",
+                d: "Give it an API key. They ask before they pay. You keep the keys.",
               },
               {
                 n: "04",
                 t: "Watch + pause",
-                d: "On-chain sync and checks before they pay land in one feed. Pause from the console.",
+                d: "On-chain sync and alerts land in one feed. Pause from the console.",
               },
             ].map((s) => (
               <li key={s.n} className="rounded-[20px] border border-border bg-surface p-5">
@@ -293,7 +297,7 @@ function Home() {
       <section id="connect" className="border-t border-border">
         <div className="mx-auto max-w-[1140px] px-5 py-16 md:px-6">
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-coral">
-            Connect your agent
+            {CONNECT_EYEBROW}
           </p>
           <h2 className="mt-3 text-2xl font-semibold tracking-tight md:text-3xl">
             {CONNECT_HEADLINE}
@@ -305,10 +309,9 @@ function Home() {
             <ConnectCtas />
           </div>
           <p className="mt-3 text-sm text-muted">
-            About three minutes. Same{" "}
-            <code className="font-mono text-fg">/api/v1/check</code>.{" "}
+            Works with AgentKit, x402, or MCP — popular agent payment tools.{" "}
             <a href="/connect" className="font-medium text-navy hover:text-coral">
-              Full AgentKit / x402 steps →
+              {CONNECT_PAGE_LINK_LABEL}
             </a>
           </p>
         </div>
@@ -352,7 +355,7 @@ function Home() {
                   </li>
                   <li className="flex gap-2">
                     <Check className="size-4 text-success" />
-                    Checks before they pay
+                    They ask before they pay
                   </li>
                 </ul>
                 <Button

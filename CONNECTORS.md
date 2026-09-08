@@ -57,5 +57,5 @@ Create an account, enroll the wallet, set policy, then issue the API key. Connec
 
 Short site version: https://agent-control.net/docs#connectors
 
-Connect AgentKit / x402 (trial → Pay $29): https://agent-control.net/connect
+Connect your agent (trial → Pay $29): https://agent-control.net/connect
 

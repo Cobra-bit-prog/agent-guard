@@ -5,8 +5,10 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   CONNECT_AGENTKIT_CODE,
+  CONNECT_BUILDERS_HEADING,
   CONNECT_CHECK_CODE,
   CONNECT_CHECK_PATH,
+  CONNECT_FAQ_ANSWER,
   CONNECT_HEADLINE,
   CONNECT_LEDE,
   CONNECT_MCP_TOOL,
@@ -34,9 +36,23 @@ const BANNED = [
   /\bHelius\b/,
   /skipped check = money cannot move/i,
   /money cannot move/i,
+  /poll_url/,
+  /\bHOLD\b/,
+  /POST \/api\/v1\/check/,
+  /check_transfer/,
+  /Connect AgentKit \/ x402/,
 ];
 
-describe("Connect AgentKit / x402 path", () => {
+const CUSTOMER_BLOB = [
+  CONNECT_HEADLINE,
+  CONNECT_LEDE,
+  CONNECT_STARTER_LINE,
+  CONNECT_BUILDERS_HEADING,
+  CONNECT_FAQ_ANSWER,
+  ...CONNECT_STEPS.map((s) => `${s.t} ${s.d}`),
+].join(" ");
+
+describe("Connect your agent path", () => {
   it("locks trial and Pay $29 destinations", () => {
     assert.equal(CONNECT_PATH, "/connect");
     assert.equal(CONNECT_TRIAL_HREF, "/signup");
@@ -49,9 +65,9 @@ describe("Connect AgentKit / x402 path", () => {
 
   it("uses the existing check and adapters, not a second API", () => {
     const steps = CONNECT_STEPS.map((s) => `${s.t} ${s.d}`).join(" ");
-    assert.match(steps, /POST \/api\/v1\/check/);
-    assert.match(steps, /check_transfer/);
-    assert.match(steps, /AgentKit \/ x402 adapter/);
+    assert.match(steps, /AgentKit/);
+    assert.match(steps, /x402/);
+    assert.match(steps, /MCP/);
     assert.match(CONNECT_AGENTKIT_CODE, /createAgentKitPolicyProvider/);
     assert.match(CONNECT_X402_CODE, /createX402BeforePaymentHook/);
     assert.match(CONNECT_CHECK_CODE, /agent-control\.net\/api\/v1\/check/);
@@ -60,22 +76,22 @@ describe("Connect AgentKit / x402 path", () => {
   });
 
   it("stays in plain conversion copy", () => {
-    const blob = [
-      CONNECT_HEADLINE,
-      CONNECT_LEDE,
-      CONNECT_STARTER_LINE,
-      ...CONNECT_STEPS.map((s) => `${s.t} ${s.d}`),
-    ].join(" ");
-    assert.match(blob, /Connect AgentKit \/ x402/);
-    assert.match(blob, /They ask before they pay/);
-    assert.match(blob, /You keep the keys/);
-    assert.match(blob, /External audit for your agents/);
-    assert.match(blob, /Pay \$29/);
-    assert.match(blob, /1-day trial/);
-    assert.match(blob, /No card/);
-    assert.match(blob, /No KYC/);
+    assert.equal(CONNECT_HEADLINE, "Connect your agent");
+    assert.equal(CONNECT_LEDE, "They ask before they pay. You keep the keys.");
+    assert.match(CUSTOMER_BLOB, /Connect your agent/);
+    assert.match(CUSTOMER_BLOB, /They ask before they pay/);
+    assert.match(CUSTOMER_BLOB, /You keep the keys/);
+    assert.match(CUSTOMER_BLOB, /External audit for your agents/);
+    assert.match(CUSTOMER_BLOB, /Pay \$29/);
+    assert.match(CUSTOMER_BLOB, /1-day trial/);
+    assert.match(CUSTOMER_BLOB, /No card/);
+    assert.match(CUSTOMER_BLOB, /No KYC/);
+    assert.match(CUSTOMER_BLOB, /popular agent payment tools/);
+    assert.doesNotMatch(CUSTOMER_BLOB, /Checks before they pay/);
+    assert.doesNotMatch(CUSTOMER_BLOB, /check before they pay/i);
+    assert.doesNotMatch(CUSTOMER_BLOB, /checked before they pay/);
     for (const re of BANNED) {
-      assert.doesNotMatch(blob, re);
+      assert.doesNotMatch(CUSTOMER_BLOB, re);
     }
   });
 
@@ -83,6 +99,7 @@ describe("Connect AgentKit / x402 path", () => {
     const home = read("src/routes/index.tsx");
     const connect = read("src/routes/connect.tsx");
     const docs = read("src/routes/docs.tsx");
+    const faq = read("src/components/landing-faq.tsx");
     const chrome = read("src/components/marketing/chrome.tsx");
     const sitemap = read("public/sitemap.xml");
     const llms = read("public/llms.txt");
@@ -98,17 +115,34 @@ describe("Connect AgentKit / x402 path", () => {
     assert.match(connect, /createFileRoute\("\/connect"\)/);
     assert.match(connect, /ConnectCtas/);
     assert.match(connect, /CONNECT_PAY_HREF|ConnectCtas/);
-    assert.match(connect, /check_transfer|CONNECT_MCP_TOOL/);
-    assert.match(connect, /\/api\/v1\/check|CONNECT_CHECK_PATH/);
+    assert.match(connect, /ConnectSteps/);
+    assert.match(connect, /CONNECT_BUILDERS_HEADING/);
+    assert.match(connect, /CONNECT_CHECK_CODE/);
+    assert.doesNotMatch(connect, /About three minutes/);
+    assert.doesNotMatch(connect, /Call the same check/);
+    assert.doesNotMatch(connect, /Connect AgentKit \/ x402/);
 
     assert.match(docs, /id=["']connect-agentkit["']/);
     assert.match(docs, /href=["']#connect-agentkit["']/);
     assert.match(docs, /ConnectCtas/);
     assert.match(docs, /href=["']\/connect["']/);
+    assert.doesNotMatch(docs, /Connect AgentKit \/ x402/);
 
     assert.match(chrome, /href: "\/connect"/);
     assert.match(sitemap, /https:\/\/agent-control\.net\/connect/);
     assert.match(llms, /https:\/\/agent-control\.net\/connect/);
+
+    assert.match(faq, /CONNECT_FAQ_ANSWER/);
+    assert.doesNotMatch(faq, /poll_url/);
+    assert.doesNotMatch(faq, /\bHOLD\b/);
+    assert.doesNotMatch(home, /poll_url/);
+    assert.doesNotMatch(home, /About three minutes/);
+    assert.doesNotMatch(home, /Full AgentKit \/ x402 steps/);
+    assert.doesNotMatch(home, /Checks before they pay/);
+    assert.doesNotMatch(home, /checked before they pay/);
+    assert.doesNotMatch(home, /checks before they pay/);
+    assert.doesNotMatch(faq, /checked before they pay/);
+    assert.doesNotMatch(connect, /Checks before they pay/);
 
     for (const src of [home, connect, docs]) {
       assert.match(src, /ConnectCtas/);

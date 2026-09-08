@@ -79,7 +79,7 @@ export function LandingPreview() {
             Keys
           </b>
           <p className="mt-0.5 text-xs leading-snug text-muted">
-            Held by you · Check before every send
+            Held by you · They ask before they pay
           </p>
         </div>
       </div>
