@@ -60,7 +60,7 @@ function PayRequestPage() {
 
   return (
     <div className="mx-auto max-w-lg space-y-6">
-      <Link to="/" className="text-sm text-muted hover:text-fg">
+      <Link to="/" className="text-body text-muted hover:text-fg">
         ← Home
       </Link>
       <SolanaPayBlock plan={plan ?? "starter"} id={id} email={email} />
@@ -97,7 +97,7 @@ function NativePayRequest({ id }: { id: string }) {
   if (q.isLoading) return <Skeleton className="h-80" />;
   if (q.isError) {
     return (
-      <p className="text-sm text-danger">
+      <p className="text-body text-danger">
         {(q.error as Error).message}{" "}
         <Link to="/billing" className="underline">
           Back to billing
@@ -121,28 +121,28 @@ function NativePayRequest({ id }: { id: string }) {
     return (
       <div className="mx-auto max-w-lg space-y-6">
         <div>
-          <Link to="/billing" className="text-sm text-muted hover:text-fg">
+          <Link to="/billing" className="text-body text-muted hover:text-fg">
             ← Billing
           </Link>
-          <h1 className="mt-3 inline-flex items-center gap-2 text-2xl font-semibold tracking-tight">
+          <h1 className="mt-3 inline-flex items-center gap-2 text-title font-semibold tracking-tight">
             Waiting for confirmation · <NetworkLabel chain={chain} />
           </h1>
-          <p className="mt-1 text-sm text-muted">
+          <p className="mt-1 text-body text-muted">
             Waiting for {displayAmount} {symbol} to confirm. This usually takes a few seconds.
           </p>
         </div>
         <Card>
           <CardContent className="space-y-4 p-6 text-center">
             <div className="mx-auto size-16 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            <p className="inline-flex items-center justify-center gap-2 text-lg font-semibold">
+            <p className="inline-flex items-center justify-center gap-2 text-card font-semibold">
               Waiting · <NetworkLabel chain={chain} />
             </p>
             {req.status === "underpaid" && (
-              <p className="text-sm text-warning">
+              <p className="text-body text-warning">
                 Received a partial payment. Send the rest to reach {displayAmount} {symbol}.
               </p>
             )}
-            <div className="border-t border-border pt-4 text-sm">
+            <div className="border-t border-border pt-4 text-body">
               <div className="flex justify-between">
                 <span className="text-muted">Amount</span>
                 <span>
@@ -152,7 +152,7 @@ function NativePayRequest({ id }: { id: string }) {
               {req.signature && (
                 <div className="mt-2 flex justify-between gap-3">
                   <span className="text-muted">Signature</span>
-                  <span className="font-mono text-xs">{shortAddress(req.signature, 4)}</span>
+                  <span className="font-mono text-meta">{shortAddress(req.signature, 4)}</span>
                 </div>
               )}
             </div>
@@ -165,8 +165,8 @@ function NativePayRequest({ id }: { id: string }) {
   if (req.status === "expired") {
     return (
       <div className="mx-auto max-w-lg space-y-4">
-        <h1 className="text-2xl font-semibold">Pay request expired</h1>
-        <p className="text-sm text-muted">Start a new one from Billing. Links last 30 minutes.</p>
+        <h1 className="text-title font-semibold">Pay request expired</h1>
+        <p className="text-body text-muted">Start a new one from Billing. Links last 30 minutes.</p>
         <Button asChild>
           <Link to="/billing">Back to billing</Link>
         </Button>
@@ -177,8 +177,8 @@ function NativePayRequest({ id }: { id: string }) {
   if (!req.payUrl) {
     return (
       <div className="mx-auto max-w-lg space-y-4">
-        <h1 className="text-2xl font-semibold">Payment QR is missing</h1>
-        <p className="text-sm text-danger">
+        <h1 className="text-title font-semibold">Payment QR is missing</h1>
+        <p className="text-body text-danger">
           This pay request has no QR payload. Go back and tap Pay again.
         </p>
         <Button asChild>
@@ -191,13 +191,13 @@ function NativePayRequest({ id }: { id: string }) {
   return (
     <div className="mx-auto max-w-lg space-y-6">
       <div>
-        <Link to="/billing" className="text-sm text-muted hover:text-fg">
+        <Link to="/billing" className="text-body text-muted hover:text-fg">
           ← Billing
         </Link>
-        <h1 className="mt-3 text-2xl font-semibold tracking-tight">
+        <h1 className="mt-3 text-title font-semibold tracking-tight">
           Send {displayAmount} {symbol}
         </h1>
-        <p className="mt-1 text-sm text-muted">
+        <p className="mt-1 text-body text-muted">
           {asset === "sol"
             ? "Send SOL from your wallet. Copy the exact amount and address, or scan the QR. The rate is locked on this invoice."
             : "Send ETH from your wallet. Copy the exact amount and address, or scan the QR. The rate is locked on this invoice."}
@@ -208,7 +208,7 @@ function NativePayRequest({ id }: { id: string }) {
           <PayPanel req={req} />
         </CardContent>
       </Card>
-      <p className="flex items-start gap-2 text-xs text-muted">
+      <p className="flex items-start gap-2 text-meta text-muted">
         <Info className="mt-0.5 size-3.5 shrink-0" />
         Use a wallet. Do not send from Coinbase or Binance.
       </p>

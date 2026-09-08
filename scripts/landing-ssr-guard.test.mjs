@@ -509,3 +509,42 @@ test("Connect your agent path is trial then Pay $29 on the same check", () => {
   assert.doesNotMatch(src, /skipped check = money cannot move/i);
   assert.doesNotMatch(copy, /\/api\/v2\//);
 });
+
+test("marketing surfaces use the five-step type scale, not ad-hoc px sizes", () => {
+  const css = readFileSync(join(ROOT, "src/styles.css"), "utf8");
+  assert.match(css, /--text-display:\s*2\.5rem/);
+  assert.match(css, /--text-title:\s*1\.5rem/);
+  assert.match(css, /--text-card:\s*1\.125rem/);
+  assert.match(css, /--text-body:\s*1rem/);
+  assert.match(css, /--text-meta:\s*0\.8125rem/);
+  assert.match(css, /--font-sans: "Instrument Sans"/);
+  assert.match(css, /--font-mono: "IBM Plex Mono"/);
+
+  const files = [
+    join(ROOT, "src/routes/index.tsx"),
+    join(ROOT, "src/routes/docs.tsx"),
+    join(ROOT, "src/routes/connect.tsx"),
+    join(ROOT, "src/routes/partners.tsx"),
+    join(ROOT, "src/routes/login.tsx"),
+    join(ROOT, "src/routes/verify-email.tsx"),
+    join(ROOT, "src/routes/_app/billing.pay.tsx"),
+    ...walk(join(ROOT, "src/components/marketing")),
+    join(ROOT, "src/components/landing-faq.tsx"),
+    join(ROOT, "src/components/landing-console.tsx"),
+    join(ROOT, "src/components/landing-demo-dashboard.tsx"),
+    join(ROOT, "src/components/copy-code.tsx"),
+    join(ROOT, "src/components/chain-icons.tsx"),
+    join(ROOT, "src/components/solana-pay-block.tsx"),
+    join(ROOT, "src/components/pay-panel.tsx"),
+    join(ROOT, "src/components/pay-qr.tsx"),
+  ];
+  const adHocPx = /text-\[(?:clamp\([^)]+\)|\d+(?:\.\d+)?px)\]/;
+  for (const file of files) {
+    const src = readFileSync(file, "utf8");
+    assert.doesNotMatch(
+      src,
+      adHocPx,
+      `${file} must use text-display/title/card/body/meta, not text-[Npx]`,
+    );
+  }
+});

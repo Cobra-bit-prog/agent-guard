@@ -20,11 +20,11 @@ export function LandingVerdict() {
   return (
     <section id="week" className="border-t border-border bg-white/40">
       <div className="mx-auto max-w-[1140px] px-5 py-12 md:px-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-navy">New</p>
-        <h2 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">
+        <p className="text-meta font-semibold uppercase tracking-[0.16em] text-navy">New</p>
+        <h2 className="mt-2 text-title font-semibold tracking-tight">
           Paste the wallet. See what would not have left.
         </h2>
-        <p className="mt-2 max-w-2xl text-muted">
+        <p className="mt-2 max-w-2xl text-body text-muted">
           Example week from a research agent — or paste yours. Read-only. We never hold the keys.
         </p>
         <form
@@ -38,7 +38,7 @@ export function LandingVerdict() {
             name="addr"
             placeholder="Paste a wallet"
             autoComplete="off"
-            className="h-11 flex-1 rounded-full border border-border bg-white px-4 text-sm text-fg outline-none"
+            className="h-11 flex-1 rounded-full border border-border bg-white px-4 text-body text-fg outline-none"
           />
           <Button type="submit" size="lg" className="rounded-full">
             Open an example
@@ -47,21 +47,21 @@ export function LandingVerdict() {
         {open ? (
           <div className="mt-5 max-w-2xl">
             <div className="rounded-[20px] border border-border bg-surface p-5">
-              <p className="text-xs text-muted">Example week · research agent</p>
-              <p className="mt-2 text-lg font-semibold">
+              <p className="text-meta text-muted">Example week · research agent</p>
+              <p className="mt-2 text-card font-semibold">
                 2 fine, 1 would wait, 1 would stop. $9,100 would not have left.
               </p>
               {EXAMPLE_ROWS.map((row) => (
                 <div key={`${row.tone}-${row.amount}`}>
-                  <div className="mt-3 flex items-center justify-between border-t border-border pt-3 text-sm">
+                  <div className="mt-3 flex items-center justify-between border-t border-border pt-3 text-body">
                     <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-semibold ${TONE_CHIP[row.tone]}`}
+                      className={`rounded-full px-2 py-0.5 text-meta font-semibold ${TONE_CHIP[row.tone]}`}
                     >
                       {row.tone}
                     </span>
                     <span className="tabular-nums">{row.amount}</span>
                   </div>
-                  <p className="mt-1 text-sm text-muted">{row.detail}</p>
+                  <p className="mt-1 text-body text-muted">{row.detail}</p>
                 </div>
               ))}
             </div>

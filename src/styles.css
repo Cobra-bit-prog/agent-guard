@@ -28,6 +28,20 @@
   --radius-xl: 24px;
 
   --shadow-panel: 0 18px 40px -24px rgb(0 0 0 / 0.7);
+
+  /* Marketing type scale — five steps. Use text-display / title / card / body / meta. */
+  --text-display: 2.5rem;
+  --text-display--line-height: 1.1;
+  --text-display--letter-spacing: -0.03em;
+  --text-title: 1.5rem;
+  --text-title--line-height: 1.2;
+  --text-title--letter-spacing: -0.02em;
+  --text-card: 1.125rem;
+  --text-card--line-height: 1.35;
+  --text-body: 1rem;
+  --text-body--line-height: 1.5;
+  --text-meta: 0.8125rem;
+  --text-meta--line-height: 1.45;
 }
 
 @layer base {
@@ -84,6 +98,8 @@
     --shadow-panel: 0 16px 40px -20px rgb(18 38 63 / 0.18);
     background: var(--color-bg);
     color: var(--color-fg);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
   }
 
   html:has(.sky),

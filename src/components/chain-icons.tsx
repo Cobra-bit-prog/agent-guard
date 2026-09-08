@@ -61,7 +61,7 @@ export function ChainMark({
 export function SupportedChains({ className }: { className?: string }) {
   return (
     <div className={cn("flex flex-wrap items-center gap-x-3 gap-y-2", className)}>
-      <p className="text-xs font-medium text-muted">Works on</p>
+      <p className="text-meta font-medium text-muted">Works on</p>
       <ul
         className="flex flex-wrap items-center gap-1.5"
         aria-label="Supported networks: Solana, Ethereum, and Base"
@@ -71,7 +71,7 @@ export function SupportedChains({ className }: { className?: string }) {
           return (
             <li
               key={c.id}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-white px-2.5 py-1 text-[13px] text-fg shadow-[0_1px_0_rgb(18_38_63/0.04)]"
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-white px-2.5 py-1 text-meta text-fg shadow-[0_1px_0_rgb(18_38_63/0.04)]"
             >
               <ChainMark chain={c.id} className="size-4" />
               {c.name}

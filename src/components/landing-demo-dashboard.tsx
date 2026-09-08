@@ -43,8 +43,8 @@ export function LandingDemoDashboard() {
         <span className="size-2.5 rounded-full bg-danger/80" />
         <span className="size-2.5 rounded-full bg-warning/80" />
         <span className="size-2.5 rounded-full bg-success/80" />
-        <p className="ml-3 font-mono text-[11px] text-subtle">agent-control · console</p>
-        <span className="ml-auto flex items-center gap-2 font-mono text-[11px] text-subtle">
+        <p className="ml-3 font-mono text-meta text-subtle">agent-control · console</p>
+        <span className="ml-auto flex items-center gap-2 font-mono text-meta text-subtle">
           Demo · sample
           <ChainMark chain="solana" className="size-5" />
           <ChainMark chain="ethereum" className="size-5" />
@@ -60,16 +60,16 @@ export function LandingDemoDashboard() {
             { l: "On-chain balance", v: "$61,200", h: "Demo · sample balance" },
           ].map((c) => (
             <div key={c.l} className="rounded-[var(--radius-lg)] bg-elevated px-4 py-3">
-              <p className="text-xs text-muted">{c.l}</p>
-              <p className="mt-1 font-mono text-xl font-medium tabular-nums">{c.v}</p>
-              <p className="mt-1 text-[11px] text-subtle">{c.h}</p>
+              <p className="text-meta text-muted">{c.l}</p>
+              <p className="mt-1 font-mono text-card font-medium tabular-nums">{c.v}</p>
+              <p className="mt-1 text-meta text-subtle">{c.h}</p>
             </div>
           ))}
         </div>
 
         <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-[560px] text-left text-sm">
-            <thead className="text-[11px] uppercase tracking-wide text-subtle">
+          <table className="w-full min-w-[560px] text-left text-body">
+            <thead className="text-meta uppercase tracking-wide text-subtle">
               <tr>
                 <th className="pb-2 font-medium">Agent</th>
                 <th className="pb-2 font-medium">Status</th>
@@ -82,7 +82,7 @@ export function LandingDemoDashboard() {
                 <tr key={a.name} className="border-t border-border">
                   <td className="py-3">
                     <p className="font-medium">{a.name}</p>
-                    <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-subtle">
+                    <p className="mt-0.5 flex items-center gap-1.5 text-meta text-subtle">
                       <ChainBadge chain={a.chain} />
                       <span className="rounded-full bg-elevated px-1.5 py-0.5">{a.tag}</span>
                     </p>
@@ -94,7 +94,7 @@ export function LandingDemoDashboard() {
                   <td className="w-44">
                     <div className="flex items-center gap-2">
                       <Progress value={a.pct} tone={a.pct > 60 ? "warning" : "success"} />
-                      <span className="w-8 text-right font-mono text-xs text-muted">
+                      <span className="w-8 text-right font-mono text-meta text-muted">
                         {a.pct}%
                       </span>
                     </div>
@@ -107,12 +107,12 @@ export function LandingDemoDashboard() {
 
         <div className="mt-4 rounded-[var(--radius-lg)] bg-bg p-4">
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-sm font-medium">Activity</p>
-            <p className="text-[11px] text-subtle">Demo · sample · blocked + allowed</p>
+            <p className="text-body font-medium">Activity</p>
+            <p className="text-meta text-subtle">Demo · sample · blocked + allowed</p>
           </div>
           <ul className="space-y-2.5">
             {FEED.map((f) => (
-              <li key={f.t + f.ev} className="flex items-center gap-3 text-sm">
+              <li key={f.t + f.ev} className="flex items-center gap-3 text-body">
                 <span
                   className={
                     f.tone === "bad"
@@ -120,12 +120,12 @@ export function LandingDemoDashboard() {
                       : "size-2 shrink-0 rounded-full bg-success"
                   }
                 />
-                <span className="w-10 shrink-0 font-mono text-[11px] text-subtle">{f.t}</span>
+                <span className="w-10 shrink-0 font-mono text-meta text-subtle">{f.t}</span>
                 <span className="min-w-0 flex-1 truncate">
                   <span className="text-fg">{f.ev}</span>
                   <span className="text-muted"> · {f.agent}</span>
                 </span>
-                <span className="font-mono text-xs tabular-nums text-muted">{f.amt}</span>
+                <span className="font-mono text-meta tabular-nums text-muted">{f.amt}</span>
               </li>
             ))}
           </ul>

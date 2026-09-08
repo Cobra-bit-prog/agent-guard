@@ -75,8 +75,8 @@ function ProductTabButton({
       aria-controls={`panel-${id}`}
       className={
         selected
-          ? "shrink-0 whitespace-nowrap rounded-full bg-navy px-3.5 py-2 text-sm font-semibold text-white sm:px-4"
-          : "shrink-0 whitespace-nowrap rounded-full px-3.5 py-2 text-sm font-semibold text-muted hover:text-fg sm:px-4"
+          ? "shrink-0 whitespace-nowrap rounded-full bg-navy px-3.5 py-2 text-body font-semibold text-white sm:px-4"
+          : "shrink-0 whitespace-nowrap rounded-full px-3.5 py-2 text-body font-semibold text-muted hover:text-fg sm:px-4"
       }
       onClick={() => onSelect(id)}
     >
@@ -100,46 +100,46 @@ function DashboardPanel({
       className="mt-4 grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-start"
     >
       <div>
-        <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">Dashboard</h2>
+        <h2 className="text-title font-semibold tracking-tight">Dashboard</h2>
         <p className="mt-2 max-w-[42ch] text-muted">
           Monitoring and spend overview for enrolled agents. See what is within policy, what is
           over a cap, and which alerts need a look.
         </p>
-        <p className="mt-3 text-sm text-muted">
+        <p className="mt-3 text-body text-muted">
           Warning alerts are optional. Turn them on if you want a ping for suspicious or
           over-limit activity — you can leave them off. After you sign in, Email alerts in
           Settings is the real switch (this preview does not send mail).
         </p>
         <a
           href="/signup"
-          className="mt-5 inline-flex items-center text-[13px] font-semibold text-navy hover:text-coral"
+          className="mt-5 inline-flex items-center text-meta font-semibold text-navy hover:text-coral"
         >
           Open the console →
         </a>
       </div>
       <PreviewCard>
         <div className="mb-2 flex items-center justify-between">
-          <p className="text-sm font-semibold">Overview</p>
-          <span className="rounded-full border border-border bg-white px-2.5 py-0.5 text-[11px] text-muted">
+          <p className="text-body font-semibold">Overview</p>
+          <span className="rounded-full border border-border bg-white px-2.5 py-0.5 text-meta text-muted">
             Today ▾
           </span>
         </div>
         <div className="grid grid-cols-3 gap-2 border-t border-border pt-3">
           <div>
-            <p className="text-[11px] text-muted">Spent today</p>
-            <p className="mt-0.5 text-lg font-semibold tracking-tight">$1,240</p>
+            <p className="text-meta text-muted">Spent today</p>
+            <p className="mt-0.5 text-card font-semibold tracking-tight">$1,240</p>
           </div>
           <div>
-            <p className="text-[11px] text-muted">Daily cap</p>
-            <p className="mt-0.5 text-lg font-semibold tracking-tight">$5,000</p>
+            <p className="text-meta text-muted">Daily cap</p>
+            <p className="mt-0.5 text-card font-semibold tracking-tight">$5,000</p>
           </div>
           <div>
-            <p className="text-[11px] text-muted">Open alerts</p>
-            <p className="mt-0.5 text-lg font-semibold tracking-tight text-danger">1</p>
+            <p className="text-meta text-muted">Open alerts</p>
+            <p className="mt-0.5 text-card font-semibold tracking-tight text-danger">1</p>
           </div>
         </div>
         <div className="mt-3">
-          <div className="mb-1.5 flex items-center justify-between text-[11px] text-muted">
+          <div className="mb-1.5 flex items-center justify-between text-meta text-muted">
             <span>Spend vs policy</span>
             <span className="font-medium text-success">Within policy</span>
           </div>
@@ -154,14 +154,14 @@ function DashboardPanel({
               className="flex items-center justify-between gap-2 border-t border-border py-2.5"
             >
               <div>
-                <b className="block text-[13px]">{row.name}</b>
-                <span className="text-xs text-muted">{row.spend} today</span>
+                <b className="block text-meta">{row.name}</b>
+                <span className="text-meta text-muted">{row.spend} today</span>
               </div>
               <span
                 className={
                   row.tone === "warn"
-                    ? "text-xs font-semibold text-warning"
-                    : "text-xs font-semibold text-success"
+                    ? "text-meta font-semibold text-warning"
+                    : "text-meta font-semibold text-success"
                 }
               >
                 {row.cap} of cap
@@ -171,8 +171,8 @@ function DashboardPanel({
         </ul>
         <div className="mt-1 flex items-start justify-between gap-3 rounded-[14px] border border-border bg-elevated px-3.5 py-3">
           <div className="min-w-0">
-            <p className="text-[13px] font-semibold">Warning alerts</p>
-            <p className="mt-0.5 text-xs leading-snug text-muted">
+            <p className="text-meta font-semibold">Warning alerts</p>
+            <p className="mt-0.5 text-meta leading-snug text-muted">
               Optional. Suspicious or over-limit activity — only if you want the ping.
             </p>
           </div>
@@ -199,22 +199,22 @@ function DashboardPanel({
         </div>
         {warningAlerts ? (
           <div className="mt-2.5 flex items-center gap-2.5 rounded-[14px] border border-[#f6c9c2] bg-[#fdecea] px-3.5 py-2.5">
-            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-coral text-xs font-bold text-white">
+            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-coral text-meta font-bold text-white">
               !
             </span>
             <div className="min-w-0">
-              <strong className="block text-[13px] text-danger">Warning alert</strong>
-              <p className="text-xs leading-snug text-fg">
+              <strong className="block text-meta text-danger">Warning alert</strong>
+              <p className="text-meta leading-snug text-fg">
                 Suspicious spend · Treasury Bot over limit
               </p>
             </div>
           </div>
         ) : (
-          <p className="mt-2.5 text-xs text-muted">
+          <p className="mt-2.5 text-meta text-muted">
             Alerts off. Over-limit activity still shows in the console — no extra ping.
           </p>
         )}
-        <p className="mt-2 text-[11px] text-subtle">
+        <p className="mt-2 text-meta text-subtle">
           Preview only — this toggle does not send email. After you sign in, Email alerts in
           Settings is the real switch.
         </p>
@@ -232,26 +232,26 @@ function AuditPanel() {
       className="mt-4 grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-start"
     >
       <div>
-        <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">Agent Audit</h2>
+        <h2 className="text-title font-semibold tracking-tight">Agent Audit</h2>
         <p className="mt-2 max-w-[42ch] text-muted">
           Generate an on-demand report of an enrolled agent’s Agent Control trail — checks,
           alerts, decisions, and recorded transfers. Download Excel, PDF, or CSV. Not a full
           on-chain replay.
         </p>
-        <p className="mt-3 text-sm text-muted">
+        <p className="mt-3 text-body text-muted">
           Reports are generated when you ask — nothing is auto-emailed.
         </p>
         <a
           href="/signup"
-          className="mt-5 inline-flex items-center text-[13px] font-semibold text-navy hover:text-coral"
+          className="mt-5 inline-flex items-center text-meta font-semibold text-navy hover:text-coral"
         >
           Generate a report →
         </a>
       </div>
       <PreviewCard>
-        <p className="text-sm font-semibold">Sample trail</p>
+        <p className="text-body font-semibold">Sample trail</p>
         <div className="miniwrap mt-3 overflow-x-auto">
-          <table className="mini w-full border-collapse text-[11px]">
+          <table className="mini w-full border-collapse text-meta">
             <thead>
               <tr className="text-left font-medium text-subtle">
                 <th className="border-b border-border py-2 pr-2">Time</th>
@@ -291,19 +291,19 @@ function AuditPanel() {
         <div className="mt-3 flex flex-wrap gap-2">
           <a
             href="/signup"
-            className="inline-flex items-center rounded-[10px] border border-border bg-white px-2.5 py-1.5 text-xs font-semibold text-navy"
+            className="inline-flex items-center rounded-[10px] border border-border bg-white px-2.5 py-1.5 text-meta font-semibold text-navy"
           >
             Download Excel
           </a>
           <a
             href="/signup"
-            className="inline-flex items-center rounded-[10px] border border-border bg-white px-2.5 py-1.5 text-xs font-semibold text-navy"
+            className="inline-flex items-center rounded-[10px] border border-border bg-white px-2.5 py-1.5 text-meta font-semibold text-navy"
           >
             Download PDF
           </a>
           <a
             href="/signup"
-            className="inline-flex items-center rounded-[10px] border border-border bg-white px-2.5 py-1.5 text-xs font-semibold text-navy"
+            className="inline-flex items-center rounded-[10px] border border-border bg-white px-2.5 py-1.5 text-meta font-semibold text-navy"
           >
             Download CSV
           </a>
@@ -322,55 +322,55 @@ function InboxPanel() {
       className="mt-4 grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-start"
     >
       <div>
-        <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">Approval Inbox</h2>
+        <h2 className="text-title font-semibold tracking-tight">Approval Inbox</h2>
         <p className="mt-2 max-w-[42ch] text-muted">
           New or over-limit payments wait here. Allow once, always allow that
           address, or block. Requires the agent hook — a skipped check still goes through.
         </p>
-        <p className="mt-3 text-sm text-muted">
+        <p className="mt-3 text-body text-muted">
           Pause and blocklists stop the send right away. No action for 10 minutes = block.
           Optional email and Slack can ping you when a payment is waiting for you.
         </p>
         <a
           href="/signup"
-          className="mt-5 inline-flex items-center text-[13px] font-semibold text-navy hover:text-coral"
+          className="mt-5 inline-flex items-center text-meta font-semibold text-navy hover:text-coral"
         >
           Open the console →
         </a>
       </div>
       <PreviewCard>
         <div className="mb-2 flex items-center justify-between">
-          <p className="text-sm font-semibold">Waiting for you</p>
-          <span className="inline-grid h-[22px] min-w-[22px] place-items-center rounded-full bg-coral px-1.5 text-[11px] font-bold text-white">
+          <p className="text-body font-semibold">Waiting for you</p>
+          <span className="inline-grid h-[22px] min-w-[22px] place-items-center rounded-full bg-coral px-1.5 text-meta font-bold text-white">
             2
           </span>
         </div>
-        <p className="mb-1 text-xs text-muted">Held · 10-minute hold if you do not decide</p>
+        <p className="mb-1 text-meta text-muted">Held · 10-minute hold if you do not decide</p>
         <ul>
           {INBOX_ROWS.map((row) => (
             <li key={row.title} className="border-t border-border py-2.5">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                  <b className="block text-[13px]">{row.title}</b>
-                  <span className="text-xs text-muted">{row.detail}</span>
+                  <b className="block text-meta">{row.title}</b>
+                  <span className="text-meta text-muted">{row.detail}</span>
                 </div>
               </div>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 <a
                   href="/signup"
-                  className="inline-flex items-center rounded-[10px] bg-coral px-2.5 py-1.5 text-xs font-semibold text-white"
+                  className="inline-flex items-center rounded-[10px] bg-coral px-2.5 py-1.5 text-meta font-semibold text-white"
                 >
                   Allow once
                 </a>
                 <a
                   href="/signup"
-                  className="inline-flex items-center rounded-[10px] border border-border bg-white px-2.5 py-1.5 text-xs font-semibold text-navy"
+                  className="inline-flex items-center rounded-[10px] border border-border bg-white px-2.5 py-1.5 text-meta font-semibold text-navy"
                 >
                   Always allow
                 </a>
                 <a
                   href="/signup"
-                  className="inline-flex items-center rounded-[10px] border border-[#f0c7c2] bg-white px-2.5 py-1.5 text-xs font-semibold text-danger"
+                  className="inline-flex items-center rounded-[10px] border border-[#f0c7c2] bg-white px-2.5 py-1.5 text-meta font-semibold text-danger"
                 >
                   Block
                 </a>

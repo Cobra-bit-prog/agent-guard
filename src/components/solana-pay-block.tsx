@@ -160,7 +160,7 @@ export function SolanaPayBlock(opts: {
   }
 
   if (error) {
-    return <p className="text-sm text-danger">{error}</p>;
+    return <p className="text-body text-danger">{error}</p>;
   }
   if (!row) {
     return <div className="h-80 animate-pulse rounded-[20px] bg-elevated" />;
@@ -173,7 +173,7 @@ export function SolanaPayBlock(opts: {
     <div className="space-y-5">
       {!opts.lock && (
         <form onSubmit={(e) => void onSaveEmail(e)} className="space-y-2">
-          <label className="block text-sm font-medium text-navy">Email</label>
+          <label className="block text-body font-medium text-navy">Email</label>
           <div className="flex flex-col gap-2 sm:flex-row">
             <input
               name="email"
@@ -181,21 +181,21 @@ export function SolanaPayBlock(opts: {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@company.com"
-              className="h-11 flex-1 rounded-full border border-border bg-white px-4 text-sm text-fg outline-none"
+              className="h-11 flex-1 rounded-full border border-border bg-white px-4 text-body text-fg outline-none"
             />
             <Button type="submit" variant="secondary" className="rounded-full" disabled={savingEmail}>
               {savingEmail ? "Saved" : "Save"}
             </Button>
           </div>
-          <p className="text-xs text-muted">Email only. No card. No KYC. Guest invoice is enough.</p>
+          <p className="text-meta text-muted">Email only. No card. No KYC. Guest invoice is enough.</p>
         </form>
       )}
 
       <div className="rounded-[20px] border border-border bg-surface p-6 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-navy">
+        <p className="text-meta font-semibold uppercase tracking-[0.16em] text-navy">
           {PLANS[parsePaidPlan(row.plan)].name}
         </p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">
+        <h1 className="mt-2 text-title font-semibold tracking-tight">
           {paid ? copy.done : copy.title}
         </h1>
         <p className="mt-2 text-muted">
@@ -203,7 +203,7 @@ export function SolanaPayBlock(opts: {
         </p>
         {paid ? (
           <>
-            <p className="mt-4 rounded-[14px] bg-[#dcfce7] px-3.5 py-3 text-sm font-medium text-[#166534]">
+            <p className="mt-4 rounded-[14px] bg-[#dcfce7] px-3.5 py-3 text-body font-medium text-[#166534]">
               {copy.done}
             </p>
             <Button asChild className="mt-5 h-11 w-full rounded-full">
@@ -214,12 +214,12 @@ export function SolanaPayBlock(opts: {
           <>
             <dl className="mt-5 grid gap-3 sm:grid-cols-2">
               <div className="rounded-[14px] border border-border bg-elevated px-3.5 py-3">
-                <dt className="text-xs text-muted">Amount</dt>
-                <dd className="mt-0.5 text-lg font-semibold tabular-nums">${price} USDC</dd>
+                <dt className="text-meta text-muted">Amount</dt>
+                <dd className="mt-0.5 text-card font-semibold tabular-nums">${price} USDC</dd>
               </div>
               <div className="rounded-[14px] border border-border bg-elevated px-3.5 py-3">
-                <dt className="text-xs text-muted">Network</dt>
-                <dd className="mt-0.5 text-lg font-semibold">Solana</dd>
+                <dt className="text-meta text-muted">Network</dt>
+                <dd className="mt-0.5 text-card font-semibold">Solana</dd>
               </div>
             </dl>
             <div className="mt-5 flex justify-center">
@@ -228,12 +228,12 @@ export function SolanaPayBlock(opts: {
               </div>
             </div>
             <div className="mt-4 rounded-[14px] border border-border bg-elevated px-3.5 py-3">
-              <p className="text-xs text-muted">Address</p>
-              <p className="mt-1 break-all font-mono text-xs leading-relaxed">{recipient}</p>
+              <p className="text-meta text-muted">Address</p>
+              <p className="mt-1 break-all font-mono text-meta leading-relaxed">{recipient}</p>
               <button
                 type="button"
                 onClick={() => void onCopy()}
-                className="mt-2 text-sm font-semibold text-navy"
+                className="mt-2 text-body font-semibold text-navy"
               >
                 {copied ? "Copied" : "Copy address"}
               </button>
@@ -241,15 +241,15 @@ export function SolanaPayBlock(opts: {
             <a
               href={row.pay_url}
               onClick={onPay}
-              className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-fg"
+              className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-full bg-primary px-5 text-body font-semibold text-primary-fg"
             >
               {copy.cta}
             </a>
-            <p className="mt-4 text-center text-sm font-medium text-navy">{copy.waiting}</p>
-            <p className="mt-3 text-center text-xs text-muted">{copy.warn}</p>
+            <p className="mt-4 text-center text-body font-medium text-navy">{copy.waiting}</p>
+            <p className="mt-3 text-center text-meta text-muted">{copy.warn}</p>
             <details className="mt-5 rounded-[14px] border border-border bg-elevated px-3.5 py-3">
-              <summary className="cursor-pointer text-sm font-medium text-navy">Other</summary>
-              <p className="mt-2 text-sm text-muted">
+              <summary className="cursor-pointer text-body font-medium text-navy">Other</summary>
+              <p className="mt-2 text-body text-muted">
                 SOL and ETH sit under Other. Default is ${price} USDC on Solana. Scan or tap Pay. We
                 unlock when it lands.
               </p>

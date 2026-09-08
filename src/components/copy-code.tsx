@@ -38,12 +38,12 @@ export function CopyCode({
 
   return (
     <div className="relative">
-      <pre className="mt-2 overflow-x-auto rounded-[16px] bg-[#12263f] p-4 pr-20 font-mono text-xs leading-relaxed text-[#e8eef6]">
+      <pre className="mt-2 overflow-x-auto rounded-[16px] bg-[#12263f] p-4 pr-20 font-mono text-meta leading-relaxed text-[#e8eef6]">
         {code}
       </pre>
       <button
         type="button"
-        className="absolute right-3 top-3 rounded-full border border-[#3a4d63] bg-[#1a314d] px-2.5 py-1 text-[11px] font-medium text-[#e8eef6] hover:border-coral hover:text-white"
+        className="absolute right-3 top-3 rounded-full border border-[#3a4d63] bg-[#1a314d] px-2.5 py-1 text-meta font-medium text-[#e8eef6] hover:border-coral hover:text-white"
         onClick={() => {
           void copyText(code).then((ok) => {
             if (!ok) return;
