@@ -9,6 +9,7 @@ import { parsePartnerSlug, partnerAwarePath } from "@/lib/partner";
 export const SUPPORT_MAIL = "mailto:support@agent-control.net";
 
 const NAV = [
+  { href: "/connect", label: "Connect" },
   { href: "/docs", label: "Docs" },
   { href: "/partners", label: "Partners" },
   { href: "/#pricing", label: "Pricing" },
@@ -20,7 +21,7 @@ export function SkyShell({
   current,
 }: {
   children: ReactNode;
-  current?: "home" | "docs" | "partners";
+  current?: "home" | "docs" | "partners" | "connect";
 }) {
   return (
     <div className="sky min-h-screen bg-bg text-fg">
@@ -31,7 +32,11 @@ export function SkyShell({
   );
 }
 
-export function MarketingHeader({ current }: { current?: "home" | "docs" | "partners" }) {
+export function MarketingHeader({
+  current,
+}: {
+  current?: "home" | "docs" | "partners" | "connect";
+}) {
   const { user } = useCurrentUserState();
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -107,7 +112,11 @@ export function MarketingHeader({ current }: { current?: "home" | "docs" | "part
   );
 }
 
-function navHref(href: string, pathname: string, current?: "home" | "docs" | "partners") {
+function navHref(
+  href: string,
+  pathname: string,
+  current?: "home" | "docs" | "partners" | "connect",
+) {
   if (href === "/#pricing" && (current === "home" || pathname === "/")) return "#pricing";
   return href;
 }
@@ -119,6 +128,9 @@ export function MarketingFooter() {
         <Logo size="lg" href="/" markClassName="text-navy" />
         <p>Monitoring and policy checks. Not a custodian. Not insurance.</p>
         <p className="flex flex-col gap-1 text-xs md:items-end">
+          <a href="/connect" className="text-muted hover:text-fg">
+            Connect
+          </a>
           <a href="/docs" className="text-muted hover:text-fg">
             Docs
           </a>

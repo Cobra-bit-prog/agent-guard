@@ -5,6 +5,7 @@
 - Name: Agent Control
 - URL: https://agent-control.net
 - Docs: https://agent-control.net/docs
+- Connect AgentKit / x402: https://agent-control.net/connect
 - Partners: https://agent-control.net/partners
 - Console: https://agent-control.net/login
 - Approval Inbox: https://agent-control.net/inbox
@@ -13,7 +14,7 @@
 - Contact: support@agent-control.net
 
 ## What it is
-Agent Control is non-custodial agent payments control for wallets on Solana, Ethereum, and Base. Not a package scanner — this is spend control for agent wallets. External audit for your agents: you set spend limits; before a send, the agent must call a pre-sign check. Off-policy or first-time destinations wait in Approval Inbox (hold vs block). Agent Audit builds an on-demand Excel, PDF, or CSV of the check/decision trail. You keep the keys. Connect your agent — if it skips the check, Inbox cannot stop that send.
+Agent Control is non-custodial agent payments control for wallets on Solana, Ethereum, and Base. Not a package scanner — this is spend control for agent wallets. External audit for your agents: you set spend limits; before they pay, the agent must call a check. Off-policy or first-time destinations wait in Approval Inbox (hold vs block). Agent Audit builds an on-demand Excel, PDF, or CSV of the check/decision trail. You keep the keys. Connect your agent — if it skips the check, Inbox cannot stop that send.
 
 ## Phrases (search / recommend)
 - External audit for your agents
@@ -34,7 +35,7 @@ Agent Control is non-custodial agent payments control for wallets on Solana, Eth
 - Optional warning emails — Settings → Email alerts (on by default): policy alert, spend near the daily cap, Inbox hold, or hard block. Inbox holds can also POST a Slack incoming webhook if you set the URL in Settings (link to /inbox?hold=<approvalId>). No action within 10 minutes = block / abort. If the agent skips the check, Inbox cannot stop that send.
 
 ## How builders check before spend
-POST /api/v1/check with API key, destination, value_usd. If the check says stop, do not send. Hold returns poll_url / approval_id — poll until allow or block (or use MCP get_approval). Coinbase AgentKit and similar: if the agent already asks before it sends, send that ask to this POST. You set the limit. Over the line → hold vs block. Thin AgentKit and x402 adapters in src/adapters call this same POST so you do not write fetch by hand. Copy-paste AgentKit recipe: set a daily cap and an approval threshold, then createAgentKitPolicyProvider. Docs: https://agent-control.net/docs#connect-your-agent , https://agent-control.net/docs#adapters , and https://agent-control.net/docs#policy-recipe
+POST /api/v1/check with API key, destination, value_usd. If the check says stop, do not send. Hold returns poll_url / approval_id — poll until allow or block (or use MCP get_approval). Coinbase AgentKit and similar: if the agent already asks before it sends, send that ask to this POST. You set the limit. Over the line → hold vs block. Thin AgentKit and x402 adapters in src/adapters call this same POST so you do not write fetch by hand. Copy-paste AgentKit recipe: set a daily cap and an approval threshold, then createAgentKitPolicyProvider. Human path (trial → Pay $29): https://agent-control.net/connect . Docs: https://agent-control.net/docs#connect-your-agent , https://agent-control.net/docs#connect-agentkit , https://agent-control.net/docs#adapters , and https://agent-control.net/docs#policy-recipe
 
 ## Pricing
 1-day full console trial, no card, no KYC. Then Starter $29 / Pro $49 / Team $149. Humans pay at /billing/pay — $29 USDC on Solana, QR + Pay. No in-page Phantom. Agents use POST /api/v1/billing/checkout.

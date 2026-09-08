@@ -15,8 +15,8 @@ const FAQS = [
     a: "Solana, Ethereum, and Base. Live wallets sync native balance and recent transfers. Demo wallets stay labeled so you can tour the console first.",
   },
   {
-    q: "How does the pre-sign hook work?",
-    a: "Give the agent an API key. Before it signs, it POSTs /api/v1/check with the destination and value_usd. If the check says stop, do not send. Off-policy and first-time destinations can HOLD with a poll_url — you decide in /inbox. Pause and denylist are a hard block (never a hold).",
+    q: "How do I connect my agent?",
+    a: "Give the agent an API key. Before they pay, the agent POSTs /api/v1/check with the destination and value_usd — or MCP check_transfer, or the AgentKit / x402 adapter. If the check says stop, do not send. Off-policy and first-time destinations can HOLD with a poll_url — you decide in /inbox. Pause and denylist are a hard block (never a hold).",
   },
   {
     q: "What if the agent skips the check?",
