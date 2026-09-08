@@ -29,15 +29,15 @@ const FAQS = [
   },
   {
     q: "What if the agent skips the check?",
-    a: "Connect your agent so it asks before every send. You keep the keys. If the agent skips the check, Inbox cannot stop that send. Pause the agent from the console for a hard stop on your side. Hold waits for you; block means do not send.",
+    a: "Connect your agent so it asks before every send. You keep the keys. If the agent skips the check, Inbox cannot stop that send. Pause the agent from the console for a hard stop on your side. Over-limit or new addresses wait for you; block means do not send.",
   },
   {
     q: "What is Approval Inbox?",
-    a: "Off-policy and first-time destinations wait in /inbox. Allow once for this send only, Always allow this address to write the allowlist, or Block. Holds expire in 10 minutes and are then treated as a block. Allow once is not permanent. Pause and denylist never wait here — they are a hard block.",
+    a: "New or over-limit payments wait in Approval Inbox. Allow once, always allow that address, or block. No action for 10 minutes = block. Pause and blocklists stop the send right away.",
   },
   {
     q: "What is Agent Audit?",
-    a: "On-demand Excel, PDF, or CSV in /audit. Generate when you want it — nothing is auto-emailed. This is the Agent Control check and decision trail, not a full chain explorer or ghost replay.",
+    a: "On-demand Excel, PDF, or CSV in /audit. Generate when you want it — nothing is auto-emailed. This is the Agent Control check and decision trail, not a full chain explorer or a replay of every on-chain transfer.",
   },
   {
     q: "Is this a package scanner?",
@@ -45,7 +45,7 @@ const FAQS = [
   },
   {
     q: "Do you email me when something looks off?",
-    a: "If Email alerts is on in Settings (on by default), we send optional pings for a policy alert, spend near the daily cap, a hold waiting in Inbox (/inbox), or a hard block. When a spend is held, that email (and Slack, if you saved an incoming webhook URL in Settings) includes a link to Approval Inbox. No action within 10 minutes = block — the agent must abort. Console alerts still list at /alerts. Turn Email alerts off to keep policy pings in the console only. If the agent skips the check, Inbox cannot stop that send.",
+    a: "If Email alerts is on in Settings (on by default), we send optional pings for a policy alert, spend near the daily cap, a payment waiting in Approval Inbox (/inbox), or a hard block. When a payment is waiting for you, that email (and Slack, if you saved an incoming webhook URL in Settings) includes a link to Approval Inbox. No action within 10 minutes = block — the agent must abort. Console alerts still list at /alerts. Turn Email alerts off to keep policy pings in the console only. If the agent skips the check, Inbox cannot stop that send.",
   },
   {
     q: "Do you host this, or do I run it myself?",

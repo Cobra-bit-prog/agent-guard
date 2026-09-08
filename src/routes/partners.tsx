@@ -12,7 +12,7 @@ const POSITIONING = [
   {
     them: "Agent Control",
     they: "Not a wallet. Not a custodian. Not another key store.",
-    we: "The operator-facing check before send — Connect your agent, then POST /api/v1/check.",
+    we: "The operator-facing check before send — Connect your agent, then have it ask Agent Control first.",
   },
 ] as const;
 
@@ -110,13 +110,13 @@ function PartnersPage() {
               },
               {
                 n: "3",
-                t: "POST /api/v1/check",
-                d: "Before send: destination + value_usd. If the check says stop, do not send.",
+                t: "Ask before every send",
+                d: "Before the agent pays, send the destination and dollar amount. If the check says stop, do not send.",
               },
               {
                 n: "4",
-                t: "Hold poll",
-                d: "Off-policy or first-time destinations HOLD. Poll poll_url until allow or block (10-minute TTL). Decide in Approval Inbox.",
+                t: "Waiting payments",
+                d: "New or over-limit payments wait in Approval Inbox. Allow once, always allow that address, or block. No action for 10 minutes = block.",
               },
             ].map((s) => (
               <li
