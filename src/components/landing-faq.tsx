@@ -49,7 +49,7 @@ const FAQS = [
   },
   {
     q: "Do you host this, or do I run it myself?",
-    a: "We host Approval Inbox and Agent Audit. You keep the keys. Agent wallets get checked before they pay — spend limits, hold vs block. Not a package scanner.",
+    a: "We host Approval Inbox and Agent Audit. You keep the keys. They ask before they pay. Within policy = auto · Outside policy = stop. Not a package scanner.",
   },
   {
     q: "Is the trial free? Do I need a card or KYC?",

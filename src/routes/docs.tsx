@@ -34,7 +34,7 @@ const STEPS = [
   {
     n: "04",
     t: "Connect your agent",
-    d: "Connect your agent with an API key so it checks Agent Control before every spend — you keep the keys.",
+    d: "Give it an API key. They ask before they pay. You keep the keys.",
   },
   {
     n: "05",
@@ -66,7 +66,7 @@ const CONNECT_STEPS = [
   },
   {
     n: "5",
-    t: "Check before every send",
+    t: "They ask before they pay",
     d: "The agent POSTs /api/v1/check (or MCP check_transfer, then get_approval on hold). If the check says stop, do not send.",
   },
   {

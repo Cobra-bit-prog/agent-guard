@@ -87,6 +87,9 @@ describe("Connect your agent path", () => {
     assert.match(CUSTOMER_BLOB, /No card/);
     assert.match(CUSTOMER_BLOB, /No KYC/);
     assert.match(CUSTOMER_BLOB, /popular agent payment tools/);
+    assert.doesNotMatch(CUSTOMER_BLOB, /Checks before they pay/);
+    assert.doesNotMatch(CUSTOMER_BLOB, /check before they pay/i);
+    assert.doesNotMatch(CUSTOMER_BLOB, /checked before they pay/);
     for (const re of BANNED) {
       assert.doesNotMatch(CUSTOMER_BLOB, re);
     }
@@ -135,6 +138,11 @@ describe("Connect your agent path", () => {
     assert.doesNotMatch(home, /poll_url/);
     assert.doesNotMatch(home, /About three minutes/);
     assert.doesNotMatch(home, /Full AgentKit \/ x402 steps/);
+    assert.doesNotMatch(home, /Checks before they pay/);
+    assert.doesNotMatch(home, /checked before they pay/);
+    assert.doesNotMatch(home, /checks before they pay/);
+    assert.doesNotMatch(faq, /checked before they pay/);
+    assert.doesNotMatch(connect, /Checks before they pay/);
 
     for (const src of [home, connect, docs]) {
       assert.match(src, /ConnectCtas/);

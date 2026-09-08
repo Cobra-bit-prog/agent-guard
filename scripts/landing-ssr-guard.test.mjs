@@ -82,11 +82,14 @@ test("homepage copy ships three product tabs and 24-hour trial truth", () => {
   assert.match(src, /Connect your agent/);
   assert.match(
     src,
-    /Connect your agent with an API key so it checks Agent Control before every spend — you keep the keys\./,
+    /Give it an API key\. They ask before they pay\. You keep the keys\./,
   );
   assert.doesNotMatch(src, /Before it sends money/);
   assert.doesNotMatch(src, /If the answer is no, it must not send/);
-  assert.match(src, /Held by you · Check before every send/);
+  assert.match(src, /Held by you · They ask before they pay/);
+  assert.doesNotMatch(src, /Checks before they pay/);
+  assert.doesNotMatch(src, /checked before they pay/);
+  assert.doesNotMatch(src, /Check before every send/);
   assert.match(src, /Outside policy = stop/);
   assert.match(src, /Warning alerts are optional/);
   assert.match(src, /suspicious or\s+over-limit\s+activity/);
@@ -204,7 +207,7 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
   assert.match(docs, /Connect your agent/);
   assert.match(
     docs,
-    /Connect your agent with an API key so it checks Agent Control before every spend — you keep the keys\./,
+    /Give it an API key\. They ask before they pay\. You keep the keys\./,
   );
   assert.doesNotMatch(docs, /Before it sends money/);
   assert.doesNotMatch(docs, /If the answer is no, it must not send/);
@@ -364,8 +367,13 @@ test("FAQ and Compare drop competitor names; homepage H1 stays External audit fo
   const surfaces = `${faq}\n${home}\n${compare}`;
   assert.match(faq, /Is this a package scanner\?/);
   assert.match(faq, /Do you host this, or do I run it myself\?/);
-  assert.match(faq, /checked before they pay/);
-  assert.match(home, /Checks before they pay/);
+  assert.match(faq, /They ask before they pay/);
+  assert.match(faq, /Within policy = auto · Outside policy = stop/);
+  assert.doesNotMatch(faq, /checked before they pay/);
+  assert.doesNotMatch(home, /Checks before they pay/);
+  assert.doesNotMatch(home, /checked before they pay/);
+  assert.doesNotMatch(home, /checks before they pay/);
+  assert.match(home, /They ask before they pay/);
   assert.match(home, /Do you host this, or do I run it myself\?/);
   assert.match(home, /<h1[^>]*>\s*External audit for your agents\s*<\/h1>/);
   assert.match(

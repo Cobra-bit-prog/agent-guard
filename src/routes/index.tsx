@@ -100,7 +100,7 @@ const HOME_FAQ_LD = [
     name: "Do you host this, or do I run it myself?",
     acceptedAnswer: {
       "@type": "Answer",
-      text: "We host Approval Inbox and Agent Audit. You keep the keys. Agent wallets get checked before they pay — spend limits, hold vs block. Not a package scanner.",
+      text: "We host Approval Inbox and Agent Audit. You keep the keys. They ask before they pay. Within policy = auto · Outside policy = stop. Not a package scanner.",
     },
   },
   {
@@ -276,12 +276,12 @@ function Home() {
               {
                 n: "03",
                 t: "Connect your agent",
-                d: "Connect your agent with an API key so it checks Agent Control before every spend — you keep the keys.",
+                d: "Give it an API key. They ask before they pay. You keep the keys.",
               },
               {
                 n: "04",
                 t: "Watch + pause",
-                d: "On-chain sync and checks before they pay land in one feed. Pause from the console.",
+                d: "On-chain sync and alerts land in one feed. Pause from the console.",
               },
             ].map((s) => (
               <li key={s.n} className="rounded-[20px] border border-border bg-surface p-5">
@@ -355,7 +355,7 @@ function Home() {
                   </li>
                   <li className="flex gap-2">
                     <Check className="size-4 text-success" />
-                    Checks before they pay
+                    They ask before they pay
                   </li>
                 </ul>
                 <Button
