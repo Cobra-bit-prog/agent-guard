@@ -101,7 +101,7 @@ function DashboardPanel({
     >
       <div>
         <h2 className="text-title font-semibold tracking-tight">Dashboard</h2>
-        <p className="mt-2 max-w-[42ch] text-muted">
+        <p className="mt-2 max-w-[42ch] text-body text-muted">
           Monitoring and spend overview for enrolled agents. See what is within policy, what is
           over a cap, and which alerts need a look.
         </p>
@@ -233,7 +233,7 @@ function AuditPanel() {
     >
       <div>
         <h2 className="text-title font-semibold tracking-tight">Agent Audit</h2>
-        <p className="mt-2 max-w-[42ch] text-muted">
+        <p className="mt-2 max-w-[42ch] text-body text-muted">
           Generate an on-demand report of an enrolled agent’s Agent Control trail — checks,
           alerts, decisions, and recorded transfers. Download Excel, PDF, or CSV. Not a full
           on-chain replay.
@@ -323,7 +323,7 @@ function InboxPanel() {
     >
       <div>
         <h2 className="text-title font-semibold tracking-tight">Approval Inbox</h2>
-        <p className="mt-2 max-w-[42ch] text-muted">
+        <p className="mt-2 max-w-[42ch] text-body text-muted">
           New or over-limit payments wait here. Allow once, always allow that
           address, or block. Requires the agent hook — a skipped check still goes through.
         </p>

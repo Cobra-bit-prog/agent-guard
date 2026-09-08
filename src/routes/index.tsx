@@ -200,10 +200,10 @@ function Home() {
             <h1 className="landing-rise text-display font-semibold text-balance text-fg">
               External audit for your agents
             </h1>
-            <p className="landing-rise mt-3 max-w-[44ch] text-body font-medium leading-snug text-navy">
+            <p className="landing-rise mt-3 max-w-[44ch] text-body leading-snug text-muted">
               Not a package scanner — this is spend control for agent wallets.
             </p>
-            <p className="landing-rise mt-3 max-w-[44ch] text-card leading-snug text-muted">
+            <p className="landing-rise mt-3 max-w-[44ch] text-body leading-snug text-muted">
               Keep control of your agents’ spending. You set the limits. Suspicious transactions
               show up as alerts.
             </p>
@@ -303,7 +303,7 @@ function Home() {
             {CONNECT_HEADLINE}
           </h2>
           <p className="mt-2 max-w-2xl text-body text-muted">{CONNECT_LEDE}</p>
-          <p className="mt-2 max-w-2xl text-body text-fg">{CONNECT_STARTER_LINE}</p>
+          <p className="mt-2 max-w-2xl text-body text-muted">{CONNECT_STARTER_LINE}</p>
           <ConnectSteps />
           <div className="mt-8">
             <ConnectCtas />
