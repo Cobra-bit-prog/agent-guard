@@ -4,7 +4,16 @@ import { SkyShell, SUPPORT_MAIL } from "@/components/marketing/chrome";
 import { ConnectCtas } from "@/components/marketing/connect-path";
 import { SupportedChains } from "@/components/chain-icons";
 import { AGENTKIT_RECIPE_CODE, AGENTKIT_RECIPE_STEPS } from "@/lib/agentkit-recipe";
-import { CONNECT_STEPS as CONNECT_PATH_STEPS } from "@/lib/connect-path";
+import {
+  CONNECT_BUILDERS_HEADING,
+  CONNECT_EYEBROW,
+  CONNECT_HOW_HEADING,
+  CONNECT_HEADLINE,
+  CONNECT_LEDE,
+  CONNECT_PAGE_LINK_LABEL,
+  CONNECT_STARTER_LINE,
+  CONNECT_STEPS as CONNECT_PATH_STEPS,
+} from "@/lib/connect-path";
 
 const STEPS = [
   {
@@ -223,29 +232,26 @@ function DocsPage() {
 
         <section id="connect-your-agent" className="mt-16 scroll-mt-6">
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-coral">
-            Connect your agent
+            {CONNECT_EYEBROW}
           </p>
           <h2 className="mt-3 text-2xl font-semibold tracking-tight md:text-3xl">
-            Check before spend
+            {CONNECT_HEADLINE}
           </h2>
           <p className="mt-3 max-w-[52ch] text-muted">
-            Agent Control adds a check before spend for agent wallets. Connect your agent so every
-            send asks Agent Control first — agent spend limit and approval before agent send.
-            Off-policy or first-time destinations HOLD in Approval Inbox (hold vs block). You keep
-            the keys. External audit for your agents; agent payments control on Solana, Ethereum,
-            and Base.
+            Connect your agent so it asks Agent Control before it sends money. You set a spend
+            limit. Over-limit and new addresses wait in Approval Inbox. You keep the keys. External
+            audit for your agents on Solana, Ethereum, and Base.
           </p>
           <p className="mt-3 max-w-[52ch] text-muted">
-            Works with Coinbase AgentKit and any agent that can ask before it sends.
+            Works with AgentKit, x402, or any agent that can ask before it sends.
           </p>
           <article
             id="connect-agentkit"
             className="mt-8 scroll-mt-6 rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]"
           >
-            <h3 className="text-lg font-medium">Connect AgentKit / x402</h3>
+            <h3 className="text-lg font-medium">{CONNECT_HOW_HEADING}</h3>
             <p className="mt-2 text-sm text-muted">
-              About three minutes. They ask before they pay. You keep the keys. External audit for
-              your agents. Starter $29.
+              {CONNECT_LEDE} {CONNECT_STARTER_LINE}
             </p>
             <ol className="mt-4 space-y-3">
               {CONNECT_PATH_STEPS.map((step) => (
@@ -260,10 +266,9 @@ function DocsPage() {
               <ConnectCtas size="default" />
             </div>
             <p className="mt-3 text-sm text-muted">
-              Same POST /api/v1/check — MCP{" "}
-              <code className="font-mono text-fg">check_transfer</code> and the adapters wrap it.{" "}
+              {CONNECT_BUILDERS_HEADING}.{" "}
               <a href="/connect" className="font-medium text-navy hover:text-coral">
-                Open the connect path →
+                {CONNECT_PAGE_LINK_LABEL}
               </a>
             </p>
           </article>

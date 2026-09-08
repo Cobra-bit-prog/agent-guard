@@ -152,6 +152,7 @@ test("marketing sky theme uses darker navy muted copy for contrast", () => {
 test("homepage FAQ covers Inbox, Audit, hold vs block, and skipped-check limits", () => {
   const faq = readFileSync(join(ROOT, "src/components/landing-faq.tsx"), "utf8");
   const home = readFileSync(join(ROOT, "src/routes/index.tsx"), "utf8");
+  const copy = readFileSync(join(ROOT, "src/lib/connect-path.ts"), "utf8");
   const src = `${faq}\n${home}`;
   assert.match(src, /How do I connect my agent\?/);
   assert.match(src, /What if the agent skips the check\?/);
@@ -168,9 +169,12 @@ test("homepage FAQ covers Inbox, Audit, hold vs block, and skipped-check limits"
   assert.match(src, /incoming webhook URL/);
   assert.match(src, /No action within 10 minutes/);
   assert.match(src, /must abort/);
-  assert.match(src, /If the check says stop, do not send/);
+  assert.match(faq, /CONNECT_FAQ_ANSWER/);
+  assert.match(copy, /If we say stop, it does not send/);
   assert.doesNotMatch(src, /must_abort/);
-  assert.match(src, /poll_url/);
+  assert.doesNotMatch(src, /poll_url/);
+  assert.doesNotMatch(src, /\bHOLD\b/);
+  assert.doesNotMatch(src, /POST \/api\/v1\/check/);
   assert.match(src, /Always allow this address/);
   assert.match(src, /Holds expire in 10 minutes/);
   assert.match(src, /hard block/);
@@ -233,9 +237,11 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
   assert.match(docs, /id=["']compare["']/);
   assert.match(docs, /id=["']skill-mcp["']/);
   assert.match(docs, /href=["']\/llms\.txt["']/);
-  assert.match(docs, /check before spend for agent wallets/);
-  assert.match(docs, /agent spend limit and approval before agent send/);
-  assert.match(docs, /HOLD in Approval Inbox \(hold vs block\)/);
+  assert.match(docs, /asks Agent Control before it sends money/);
+  assert.match(docs, /Over-limit and new addresses wait in Approval Inbox/);
+  assert.doesNotMatch(docs, /HOLD in Approval Inbox \(hold vs block\)/);
+  assert.doesNotMatch(docs, /check before spend for agent wallets/);
+  assert.doesNotMatch(docs, /Connect AgentKit \/ x402/);
   assert.match(docs, /POST \/api\/v1\/check/);
   assert.match(docs, /check_transfer/);
   assert.match(docs, /get_approval/);
@@ -421,7 +427,7 @@ test("partners page is wallet-complement copy; sitemap and docs link it", () => 
   assert.match(partners, /partnerAwarePath/);
 });
 
-test("Connect AgentKit / x402 path is trial then Pay $29 on the same check", () => {
+test("Connect your agent path is trial then Pay $29 on the same check", () => {
   const home = readFileSync(join(ROOT, "src/routes/index.tsx"), "utf8");
   const connect = readFileSync(join(ROOT, "src/routes/connect.tsx"), "utf8");
   const docs = readFileSync(join(ROOT, "src/routes/docs.tsx"), "utf8");
@@ -443,6 +449,12 @@ test("Connect AgentKit / x402 path is trial then Pay $29 on the same check", () 
   assert.match(src, /They ask before they pay/);
   assert.match(src, /You keep the keys/);
   assert.match(src, /External audit for your agents/);
+  assert.match(copy, /Connect your agent/);
+  assert.doesNotMatch(copy, /Connect AgentKit \/ x402/);
+  assert.doesNotMatch(connect, /About three minutes/);
+  assert.doesNotMatch(connect, /Call the same check/);
+  assert.doesNotMatch(copy, /poll_url/);
+  assert.doesNotMatch(copy, /\bHOLD\b/);
   assert.match(sitemap, /https:\/\/agent-control\.net\/connect/);
   assert.doesNotMatch(copy, /\bpre-sign hook\b/i);
   assert.doesNotMatch(connect, /\bpre-sign hook\b/i);

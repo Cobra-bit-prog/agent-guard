@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CONNECT_FAQ_ANSWER, CONNECT_FAQ_DOCS_HREF } from "@/lib/connect-path";
 import { cn } from "@/lib/utils";
 
 const FAQS = [
@@ -16,7 +17,15 @@ const FAQS = [
   },
   {
     q: "How do I connect my agent?",
-    a: "Give the agent an API key. Before they pay, the agent POSTs /api/v1/check with the destination and value_usd — or MCP check_transfer, or the AgentKit / x402 adapter. If the check says stop, do not send. Off-policy and first-time destinations can HOLD with a poll_url — you decide in /inbox. Pause and denylist are a hard block (never a hold).",
+    a: (
+      <>
+        {CONNECT_FAQ_ANSWER}{" "}
+        <a href={CONNECT_FAQ_DOCS_HREF} className="text-fg underline underline-offset-4">
+          See the docs for how to plug it in
+        </a>
+        .
+      </>
+    ),
   },
   {
     q: "What if the agent skips the check?",
