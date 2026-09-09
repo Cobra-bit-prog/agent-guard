@@ -1,5 +1,6 @@
 import { json } from "../server/http.ts";
 import { buildSolanaPayUrl } from "../solana-pay.ts";
+import { publicMeterLive } from "./live.ts";
 import { meter402Body, meterPricing, METER_PASS_1H } from "./pricing.ts";
 import { evaluateScan, type MeterChain } from "./scan.ts";
 import { evaluatePreflightSelf } from "./preflight.ts";
@@ -60,6 +61,11 @@ export async function handleMeterRequest(
 
   if (request.method === "GET" && suffix === "funds") {
     return json(meterFundsDestination());
+  }
+
+  if (request.method === "GET" && suffix === "live") {
+    const report = await resolved.report();
+    return json(publicMeterLive(report));
   }
 
   if (request.method === "GET" && suffix === "report") {
