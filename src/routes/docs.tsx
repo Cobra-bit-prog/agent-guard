@@ -14,6 +14,14 @@ import {
   CONNECT_STARTER_LINE,
   CONNECT_STEPS as CONNECT_PATH_STEPS,
 } from "@/lib/connect-path";
+import {
+  METER_EYEBROW,
+  METER_HEADLINE,
+  METER_LEDE,
+  METER_RECIPE,
+  METER_SEPARATE,
+  METER_STEPS,
+} from "@/lib/meter-recipe";
 
 const STEPS = [
   {
@@ -176,6 +184,9 @@ function DocsPage() {
           </a>
           <a href="#agent-storefront" className="text-muted hover:text-fg">
             Agent storefront
+          </a>
+          <a href="#agent-meter" className="text-muted hover:text-fg">
+            Agent Meter
           </a>
           <a href="#adapters" className="text-muted hover:text-fg">
             Adapters
@@ -534,6 +545,50 @@ client.onBeforePaymentCreation(
               connect your agent
             </a>{" "}
             so every send asks Agent Control first.
+          </p>
+        </section>
+
+        <section id="agent-meter" className="mt-16 scroll-mt-6">
+          <p className="text-meta font-medium uppercase tracking-[0.18em] text-coral">
+            {METER_EYEBROW}
+          </p>
+          <h2 className="mt-3 text-title font-semibold tracking-tight">{METER_HEADLINE}</h2>
+          <p className="mt-3 max-w-[52ch] text-muted">{METER_LEDE}</p>
+          <p className="mt-3 max-w-[52ch] text-muted">{METER_SEPARATE}</p>
+          <p className="mt-3 max-w-[52ch] text-muted">
+            One-file recipe. No SDK. Pay the pass, then scan and preflight with{" "}
+            <code className="font-mono text-fg">X-Agent-Pass</code>.
+          </p>
+          <CopyCode code={METER_RECIPE} label="Copy recipe" />
+          <ol className="mt-8 space-y-3">
+            {METER_STEPS.map((s) => (
+              <li
+                key={s.n}
+                className="rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]"
+              >
+                <p className="font-mono text-meta text-navy">{s.n}</p>
+                <h3 className="mt-2 text-card font-medium">{s.t}</h3>
+                <p className="mt-1 text-muted">{s.d}</p>
+                {s.code ? (
+                  <pre className="mt-3 overflow-x-auto rounded-[16px] bg-[#12263f] p-4 font-mono text-meta leading-relaxed text-[#e8eef6]">
+                    {s.code}
+                  </pre>
+                ) : null}
+              </li>
+            ))}
+          </ol>
+          <p className="mt-6 text-body leading-relaxed text-muted">
+            Scan never blocks a send. Preflight is allow or stop against a cap you set. Machine
+            brief:{" "}
+            <a href="/llms.txt" className="font-medium text-navy hover:text-coral">
+              /llms.txt
+            </a>
+            . MCP:{" "}
+            <code className="font-mono text-fg">meter_pricing</code>,{" "}
+            <code className="font-mono text-fg">meter_buy_pass</code>,{" "}
+            <code className="font-mono text-fg">meter_watch</code>,{" "}
+            <code className="font-mono text-fg">meter_scan</code>,{" "}
+            <code className="font-mono text-fg">meter_preflight</code>.
           </p>
         </section>
 

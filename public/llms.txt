@@ -48,14 +48,28 @@ Check API (machine-readable):
 1-day full console trial, no card, no KYC. Then Starter $29 / Pro $49 / Team $149. Humans pay at /billing/pay — $29 USDC on Solana, QR + Pay. No in-page Phantom. Agents use POST /api/v1/billing/checkout.
 
 ## Agent Meter (no human on the site)
-Separate from the Human App. Agents pay themselves. No email, no trial, no API key, no Approval Inbox.
+Separate from the Human App. Agents pay themselves. A $0.25 pass. Then scan and preflight. No inbox. No email, no trial, no API key, no Approval Inbox. Docs: https://agent-control.net/docs#agent-meter
+
+One-file recipe (no SDK):
+
+# 1 discover
+curl -s https://agent-control.net/api/v1/meter/pricing
+# 2 invoice
+curl -s -X POST https://agent-control.net/api/v1/meter/pass -H 'content-type: application/json' -d '{}'
+# 3 pay 0.25 USDC on Solana to pay_to WITH reference from the 402
+# 4 poll
+curl -s -X POST https://agent-control.net/api/v1/meter/watch -H 'content-type: application/json' -d '{"invoice_id":"inv_…"}'
+# 5 use scan + preflight with X-Agent-Pass
+curl -s -X POST https://agent-control.net/api/v1/meter/scan -H 'content-type: application/json' -H 'X-Agent-Pass: <pass>' -d '{"chain":"solana","address":"<destination>"}'
+curl -s -X POST https://agent-control.net/api/v1/meter/preflight -H 'content-type: application/json' -H 'X-Agent-Pass: <pass>' -d '{"chain":"solana","wallet":"<wallet>","to":"<destination>","value_usd":10,"cap_usd":100}'
 
 - GET /api/v1/meter/pricing — public. Pass is $0.25 USDC on Solana, 1 hour, 200 calls, covers scan + preflight.
 - POST /api/v1/meter/pass — no payment proof → HTTP 402 invoice (pay_to, reference, amount). Dev grant `{ "proof": { "type": "dev" } }` only when METER_DEV_GRANT=1 or NODE_ENV=test.
+- POST /api/v1/meter/watch — after you pay, send invoice_id until the pass token comes back.
 - POST /api/v1/meter/scan — header X-Agent-Pass. Body: chain, address. Returns risk ok|new|warn|sink. Never blocks a send.
-- POST /api/v1/meter/preflight — header X-Agent-Pass. Body: chain, wallet, to, value_usd, cap_usd. Returns allow|stop. Never hold.
+- POST /api/v1/meter/preflight — header X-Agent-Pass. Body: chain, wallet, to, value_usd, cap_usd. Returns allow or stop. Does not wait on a human.
 - GET /api/v1/meter/pass/:id — remaining calls + expiry.
-- MCP public tools: meter_pricing, meter_buy_pass, meter_scan, meter_preflight.
+- MCP public tools: meter_pricing, meter_buy_pass, meter_watch, meter_scan, meter_preflight.
 
 Auth for scan/preflight is the pass token, not a Bearer human-app key. Missing/expired/empty pass → 402.
 
@@ -74,7 +88,7 @@ APIs (machine-readable):
 - POST /api/v1/storefront/attach — attach_human: same body; does not move the customer of record
 - POST /api/v1/billing/checkout — create_checkout: Bearer agent API key → pay request for that human (plan starter|pro|team; default asset usdc, chain solana)
 - GET /api/v1/storefront/status — subscription or trial status for the human principal (Bearer agent API key)
-- POST /api/v1/mcp — Streamable HTTP. Human App tools: get_pricing, start_trial, attach_human, create_checkout, get_status, check_transfer, get_approval, get_agent_status (Bearer key except get_pricing). Agent Meter tools: meter_pricing, meter_buy_pass, meter_scan, meter_preflight (no email; pass token for scan/preflight).
+- POST /api/v1/mcp — Streamable HTTP. Human App tools: get_pricing, start_trial, attach_human, create_checkout, get_status, check_transfer, get_approval, get_agent_status (Bearer key except get_pricing). Agent Meter tools: meter_pricing, meter_buy_pass, meter_watch, meter_scan, meter_preflight (no email; pass token for scan/preflight).
 
 ## Not the same as
 - A package scanner — they scan code packages. Agent Control is agent payments control, not a package scanner. We are Approval Inbox and spend limits for agent wallets.
