@@ -207,9 +207,35 @@ describe("meter http", () => {
   it("pricing is public", async () => {
     const res = await handleMeterRequest(get("/api/v1/meter/pricing"), "/api/v1/meter/pricing", createMeterStore());
     assert.equal(res.status, 200);
-    const body = (await res.json()) as { product: string; pass: { price_usd: number } };
+    const body = (await res.json()) as { product: string; pass: { price_usd: number }; endpoints: { live: string } };
     assert.equal(body.product, "Agent Meter");
     assert.equal(body.pass.price_usd, 0.25);
+    assert.equal(body.endpoints.live, "GET /api/v1/meter/live");
+  });
+
+  it("live snapshot is public and shortens payer", async () => {
+    const store = createMeterStore();
+    const invoice = await store.createInvoice();
+    const payer = "AgentPayer1111111111111111111111111111111";
+    await store.fulfillInvoice(invoice.invoice_id, {
+      signature: "5LiveSig1111111111111111111111111111111111111111111111111111111111",
+      amountUsdc: 0.25,
+      payer_address: payer,
+    });
+    const res = await handleMeterRequest(get("/api/v1/meter/live"), "/api/v1/meter/live", store);
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as {
+      usdc_received: number;
+      invoices_paid: number;
+      agents_paid: number;
+      recent_payments: Array<{ payer: string | null; amount_usd: number }>;
+    };
+    assert.equal(body.usdc_received, 0.25);
+    assert.equal(body.invoices_paid, 1);
+    assert.equal(body.agents_paid, 1);
+    assert.equal(body.recent_payments[0]?.amount_usd, 0.25);
+    assert.notEqual(body.recent_payments[0]?.payer, payer);
+    assert.equal(JSON.stringify(body).includes(payer), false);
   });
 });
 
