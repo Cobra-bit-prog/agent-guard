@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CORS, json } from "@/lib/server/http";
 import { authorizeInternalStats } from "@/lib/server/stats.server";
-import { getMemoryMeterStore } from "@/lib/meter/store";
+import { collectMeterSqlReport } from "@/lib/meter/sql-store";
 import { meterFundsDestination } from "@/lib/meter/settle";
 
 export const Route = createFileRoute("/api/v1/internal/meter")({
@@ -13,7 +13,7 @@ export const Route = createFileRoute("/api/v1/internal/meter")({
         if (auth === "missing") return json({ error: "Not found" }, 404);
         if (auth !== "ok") return json({ error: "Unauthorized" }, 401);
         return json({
-          ...getMemoryMeterStore().report(),
+          ...(await collectMeterSqlReport()),
           funds: meterFundsDestination(),
         });
       },

@@ -37,6 +37,7 @@ export async function dispatchMcpTool(
 ): Promise<McpToolCallResult> {
   if (name === "meter_pricing") return meterTool("/api/v1/meter/pricing", "GET", args);
   if (name === "meter_buy_pass") return meterTool("/api/v1/meter/pass", "POST", args);
+  if (name === "meter_watch") return meterTool("/api/v1/meter/watch", "POST", args);
   if (name === "meter_scan") return meterTool("/api/v1/meter/scan", "POST", args);
   if (name === "meter_preflight") return meterTool("/api/v1/meter/preflight", "POST", args);
 

@@ -37,14 +37,22 @@ export async function watchMeterInvoice(
   invoice: MeterInvoice,
   finder: MeterChainFinder,
 ): Promise<{ invoice: MeterInvoice; token: string | null; match: MatchResult }> {
-  const current = store.getInvoice(invoice.invoice_id) ?? invoice;
+  const current = (await store.getInvoice(invoice.invoice_id)) ?? invoice;
   if (current.status === "paid") {
-    const issued = store.fulfillInvoice(current.invoice_id, {
+    const issued = await store.fulfillInvoice(current.invoice_id, {
       signature: current.signature ?? "on_file",
       amountUsdc: current.paid_amount_usd ?? METER_PASS_1H.price_usd,
       payer_address: current.payer_address,
     });
-    return { invoice: issued.invoice, token: issued.token, match: { kind: "paid", signature: issued.invoice.signature ?? "on_file", amountUsdc: issued.invoice.paid_amount_usd ?? METER_PASS_1H.price_usd } };
+    return {
+      invoice: issued.invoice,
+      token: issued.token,
+      match: {
+        kind: "paid",
+        signature: issued.invoice.signature ?? "on_file",
+        amountUsdc: issued.invoice.paid_amount_usd ?? METER_PASS_1H.price_usd,
+      },
+    };
   }
 
   let match: MatchResult = { kind: "none" };
@@ -59,7 +67,7 @@ export async function watchMeterInvoice(
   }
 
   if (match.kind === "paid") {
-    const issued = store.fulfillInvoice(current.invoice_id, {
+    const issued = await store.fulfillInvoice(current.invoice_id, {
       signature: match.signature,
       amountUsdc: match.amountUsdc,
     });
@@ -67,26 +75,32 @@ export async function watchMeterInvoice(
   }
 
   if (match.kind === "underpaid") {
-    store.noteUnderpaid(current.invoice_id, match.signature, match.amountUsdc);
-    return { invoice: store.getInvoice(current.invoice_id) ?? current, token: null, match };
+    await store.noteUnderpaid(current.invoice_id, match.signature, match.amountUsdc);
+    return { invoice: (await store.getInvoice(current.invoice_id)) ?? current, token: null, match };
   }
 
   return { invoice: current, token: null, match };
 }
 
-export function applyMeterHeliusPayments(store: MeterStore, body: unknown): Array<{ invoice_id: string; signature: string }> {
+export async function applyMeterHeliusPayments(
+  store: MeterStore,
+  body: unknown,
+): Promise<Array<{ invoice_id: string; signature: string }>> {
   const payments = paymentsFromHeliusPayload(body, lockedSolanaUsdcRecipient());
   return applyMeterPayments(store, payments);
 }
 
-export function applyMeterPayments(store: MeterStore, payments: HeliusPayment[]): Array<{ invoice_id: string; signature: string }> {
+export async function applyMeterPayments(
+  store: MeterStore,
+  payments: HeliusPayment[],
+): Promise<Array<{ invoice_id: string; signature: string }>> {
   const paid: Array<{ invoice_id: string; signature: string }> = [];
   for (const pay of payments) {
     if (!paidEnough(pay.amountUsdc)) continue;
     for (const key of pay.references) {
-      const invoice = store.getInvoice(key);
+      const invoice = await store.getInvoice(key);
       if (!invoice || invoice.status === "paid") continue;
-      const issued = store.fulfillInvoice(invoice.invoice_id, {
+      const issued = await store.fulfillInvoice(invoice.invoice_id, {
         signature: pay.signature,
         amountUsdc: pay.amountUsdc,
       });
