@@ -7,6 +7,8 @@ export {
   allowDevGrant,
   publicPassView,
   type MeterStore,
+  type MeterReport,
 } from "./store.ts";
 export { handleMeterRequest, readPassToken } from "./http.ts";
+export { applyMeterHeliusPayments, watchMeterInvoice, meterFundsDestination } from "./settle.ts";
 export { SCAN_SINK_FIXTURE, isListedSink } from "./denylist.ts";
