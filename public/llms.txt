@@ -6,6 +6,7 @@
 - URL: https://agent-control.net
 - Docs: https://agent-control.net/docs
 - Connect your agent: https://agent-control.net/connect
+- Agent Meter: https://agent-control.net/meter
 - Partners: https://agent-control.net/partners
 - Console: https://agent-control.net/login
 - Approval Inbox: https://agent-control.net/inbox
@@ -30,11 +31,13 @@ Agent Control is non-custodial agent payments control for wallets on Solana, Eth
 - Outside policy = stop
 - Approval Inbox
 - Agent Audit
+- Agent Meter
 
 ## Products (landing strip)
 - Dashboard — policy, spend, alerts
 - Agent Audit — on-demand Excel/PDF/CSV of checks, alerts, decisions, recorded transfers (download only; not auto-emailed; not a full chain explorer or a replay of every on-chain transfer)
 - Approval Inbox — new or over-limit payments wait here; Allow once / Always allow this address / Block; No action for 10 minutes = block; Pause and blocklists stop the send right away
+- Agent Meter — agents pay themselves $0.25 USDC for a 1-hour pass; no email, no API key, no Inbox. Public view: https://agent-control.net/meter
 - Optional warning emails — Settings → Email alerts (on by default): policy alert, spend near the daily cap, a payment waiting in Approval Inbox, or a hard block. Waiting payments can also POST a Slack incoming webhook if you set the URL in Settings (the link opens Approval Inbox). No action within 10 minutes = block. If the agent skips the check, Inbox cannot stop that send.
 
 ## How builders check before spend
@@ -49,13 +52,19 @@ Check API (machine-readable):
 
 ## Agent Meter (no human on the site)
 Separate from the Human App. Agents pay themselves. No email, no trial, no API key, no Approval Inbox.
+Public visualization: https://agent-control.net/meter
 
+- GET /meter — public product + live aggregates (USDC received, agents paid, recent payments).
 - GET /api/v1/meter/pricing — public. Pass is $0.25 USDC on Solana, 1 hour, 200 calls, covers scan + preflight.
+- GET /api/v1/meter/live — public snapshot of paid USDC, pass counts, redacted recent payments. Full payer addresses stay off this feed.
+- GET /api/v1/meter/funds — locked payout address (same Phantom receive wallet as Human App $29).
 - POST /api/v1/meter/pass — no payment proof → HTTP 402 invoice (pay_to, reference, amount). Dev grant `{ "proof": { "type": "dev" } }` only when METER_DEV_GRANT=1 or NODE_ENV=test.
+- POST /api/v1/meter/watch — poll an invoice_id after USDC lands; Helius also mints the same pass.
 - POST /api/v1/meter/scan — header X-Agent-Pass. Body: chain, address. Returns risk ok|new|warn|sink. Never blocks a send.
 - POST /api/v1/meter/preflight — header X-Agent-Pass. Body: chain, wallet, to, value_usd, cap_usd. Returns allow|stop. Never hold.
 - GET /api/v1/meter/pass/:id — remaining calls + expiry.
-- MCP public tools: meter_pricing, meter_buy_pass, meter_scan, meter_preflight.
+- GET /api/v1/meter/report — operator totals (INTERNAL_STATS_SECRET). Not for agents.
+- MCP public tools: meter_pricing, meter_buy_pass, meter_watch, meter_scan, meter_preflight.
 
 Auth for scan/preflight is the pass token, not a Bearer human-app key. Missing/expired/empty pass → 402.
 
