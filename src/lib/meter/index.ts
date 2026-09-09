@@ -11,4 +11,5 @@ export {
 } from "./store.ts";
 export { handleMeterRequest, readPassToken } from "./http.ts";
 export { applyMeterHeliusPayments, watchMeterInvoice, meterFundsDestination } from "./settle.ts";
+export { getDefaultMeterStore, getSqlMeterStore, collectMeterSqlReport, ensureMeterSchema } from "./sql-store.ts";
 export { SCAN_SINK_FIXTURE, isListedSink } from "./denylist.ts";
