@@ -239,8 +239,39 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
   assert.match(docs, /Optional warning alerts/);
   assert.match(docs, /Email alerts/);
   const beforeDetails = docs.split("<details")[0] ?? docs;
-  assert.doesNotMatch(beforeDetails, /curl /);
+  const beforeMeter = docs.split('id="agent-meter"')[0] ?? docs;
+  const meterDocs = docs.split('id="agent-meter"')[1]?.split('id="compare"')[0] ?? "";
+  const meterRecipe = readFileSync(join(ROOT, "src/lib/meter-recipe.ts"), "utf8");
+  assert.doesNotMatch(beforeMeter, /curl /);
   assert.doesNotMatch(beforeDetails, /must_abort/);
+  assert.match(docs, /id=["']agent-meter["']/);
+  assert.match(docs, /href=["']#agent-meter["']/);
+  assert.match(docs, /METER_RECIPE/);
+  assert.match(docs, /METER_HEADLINE/);
+  assert.match(docs, /METER_LEDE/);
+  assert.match(docs, /METER_SEPARATE/);
+  assert.match(meterRecipe, /Agents pay themselves/);
+  assert.match(meterRecipe, /A \$0\.25 pass\. Then scan and preflight\. No inbox\./);
+  assert.match(meterRecipe, /Separate from the Human App/);
+  assert.match(meterDocs, /X-Agent-Pass/);
+  assert.match(meterRecipe, /curl -s https:\/\/agent-control\.net\/api\/v1\/meter\/pricing/);
+  assert.match(meterRecipe, /\/api\/v1\/meter\/pass/);
+  assert.match(meterRecipe, /\/api\/v1\/meter\/watch/);
+  assert.match(meterRecipe, /\/api\/v1\/meter\/scan/);
+  assert.match(meterRecipe, /\/api\/v1\/meter\/preflight/);
+  assert.doesNotMatch(meterDocs, /poll_url/);
+  assert.doesNotMatch(meterDocs, /must_abort/);
+  assert.doesNotMatch(meterDocs, /\bHOLD\b/);
+  assert.doesNotMatch(meterDocs, /\bHelius\b/);
+  assert.doesNotMatch(meterRecipe, /Helius/);
+  assert.doesNotMatch(meterRecipe, /must_abort/);
+  assert.doesNotMatch(meterRecipe, /\bHOLD\b/);
+  assert.doesNotMatch(meterRecipe, /poll_url/);
+  assert.doesNotMatch(meterDocs, /cheaper/i);
+  assert.doesNotMatch(meterDocs, /ConnectCtas/);
+  assert.doesNotMatch(meterDocs, /Start free trial/);
+  assert.doesNotMatch(meterDocs, /Pay \$29/);
+  assert.doesNotMatch(docs, /href=["']\/meter["']|to=["']\/meter["']/);
   assert.match(docs, /If the check says stop, do not send/);
   assert.match(docs, /<code className="font-mono text-fg">must_abort<\/code>/);
   assert.match(docs, /id=["']connect-your-agent["']/);
@@ -376,6 +407,27 @@ test("llms.txt is the public AI-crawler brief", () => {
     llms,
     /A human principal signs up and owns billing and Approval Inbox; agents connect under that account\./,
   );
+  assert.match(llms, /## Agent Meter \(no human on the site\)/);
+  const meterBlock = llms.match(/## Agent Meter \(no human on the site\)\n([\s\S]*?)\n## /)?.[1] ?? "";
+  assert.match(meterBlock, /Agents pay themselves/);
+  assert.match(meterBlock, /\$0\.25 pass/);
+  assert.match(meterBlock, /scan and preflight/i);
+  assert.match(meterBlock, /No inbox/);
+  assert.match(meterBlock, /docs#agent-meter/);
+  assert.match(meterBlock, /curl -s https:\/\/agent-control\.net\/api\/v1\/meter\/pricing/);
+  assert.match(meterBlock, /POST https:\/\/agent-control\.net\/api\/v1\/meter\/pass/);
+  assert.match(meterBlock, /pay 0\.25 USDC on Solana to pay_to/);
+  assert.match(meterBlock, /POST https:\/\/agent-control\.net\/api\/v1\/meter\/watch/);
+  assert.match(meterBlock, /X-Agent-Pass/);
+  assert.match(meterBlock, /\/api\/v1\/meter\/scan/);
+  assert.match(meterBlock, /\/api\/v1\/meter\/preflight/);
+  assert.doesNotMatch(meterBlock, /poll_url/);
+  assert.doesNotMatch(meterBlock, /must_abort/);
+  assert.doesNotMatch(meterBlock, /\bHOLD\b/);
+  assert.doesNotMatch(meterBlock, /\bHelius\b/);
+  assert.doesNotMatch(meterBlock, /cheaper/i);
+  assert.doesNotMatch(meterBlock, /https:\/\/agent-control\.net\/meter(?:\s|$)/);
+  assert.doesNotMatch(llms, /https:\/\/agent-control\.net\/meter(?:\s|$)/);
   assert.match(llms, /## Agent Storefront/);
   assert.match(llms, /GET \/api\/v1\/storefront\/pricing/);
   assert.match(llms, /POST \/api\/v1\/storefront\/trial/);
@@ -526,6 +578,32 @@ test("Connect your agent path is trial then Pay $29 on the same check", () => {
   assert.doesNotMatch(src, /\bHelius\b/);
   assert.doesNotMatch(src, /skipped check = money cannot move/i);
   assert.doesNotMatch(copy, /\/api\/v2\//);
+});
+
+test("sitemap and robots expose docs, connect, partners, and llms.txt — not /meter", () => {
+  const sitemap = readFileSync(join(ROOT, "public/sitemap.xml"), "utf8");
+  const robots = readFileSync(join(ROOT, "public/robots.txt"), "utf8");
+  const chrome = readFileSync(join(ROOT, "src/components/marketing/chrome.tsx"), "utf8");
+  for (const path of ["/docs", "/connect", "/partners", "/llms.txt"]) {
+    assert.match(
+      sitemap,
+      new RegExp(`<loc>https://agent-control\\.net${path.replace(".", "\\.")}</loc>`),
+    );
+  }
+  assert.doesNotMatch(sitemap, /<loc>https:\/\/agent-control\.net\/meter<\/loc>/);
+  assert.doesNotMatch(sitemap, /<loc>https:\/\/agent-control\.net\/live<\/loc>/);
+  assert.match(robots, /Allow: \//);
+  assert.match(robots, /Sitemap: https:\/\/agent-control\.net\/sitemap\.xml/);
+  assert.doesNotMatch(robots, /Disallow: \/docs/);
+  assert.doesNotMatch(robots, /Disallow: \/connect/);
+  assert.doesNotMatch(robots, /Disallow: \/partners/);
+  assert.doesNotMatch(robots, /Disallow: \/llms/);
+  assert.doesNotMatch(robots, /\/meter/);
+  assert.doesNotMatch(chrome, /href=["']\/meter["']/);
+  assert.match(chrome, /href=["']\/docs["']/);
+  assert.match(chrome, /href=["']\/connect["']/);
+  assert.match(chrome, /href=["']\/partners["']/);
+  assert.match(chrome, /href=["']\/llms\.txt["']/);
 });
 
 test("marketing surfaces use the five-step type scale, not ad-hoc px sizes", () => {
