@@ -33,3 +33,10 @@ If the check says stop, do not send. Docs: https://agent-control.net/docs#adapte
 
 Human path: get an API key → they ask before they pay → 1-day trial → Pay $29 USDC on Solana. https://agent-control.net/connect
 
+## Agent Meter (not these adapters)
+
+Separate from the Human App. These AgentKit and x402 files call **POST /api/v1/check** with an API key. Do not reuse them for Agent Meter.
+
+Agent Meter: Agents pay themselves. A $0.25 pass. Then scan and preflight. No inbox. No email, no API key, no Approval Inbox. Scan and preflight use `X-Agent-Pass`. They do not wait on a human.
+
+Curl recipe: https://agent-control.net/docs#agent-meter

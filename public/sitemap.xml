@@ -24,4 +24,12 @@
     <loc>https://agent-control.net/llms.txt</loc>
     <changefreq>weekly</changefreq>
   </url>
+  <url>
+    <loc>https://agent-control.net/agents.txt</loc>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
+    <loc>https://agent-control.net/agents.json</loc>
+    <changefreq>weekly</changefreq>
+  </url>
 </urlset>
