@@ -11,6 +11,7 @@ export const SUPPORT_MAIL = "mailto:support@agent-control.net";
 const NAV = [
   { href: "/connect", label: "Connect" },
   { href: "/docs", label: "Docs" },
+  { href: "/meter", label: "Meter" },
   { href: "/partners", label: "Partners" },
   { href: "/#pricing", label: "Pricing" },
   { href: SUPPORT_MAIL, label: "Contact" },
@@ -21,7 +22,7 @@ export function SkyShell({
   current,
 }: {
   children: ReactNode;
-  current?: "home" | "docs" | "partners" | "connect";
+  current?: "home" | "docs" | "partners" | "connect" | "meter";
 }) {
   return (
     <div className="sky min-h-screen bg-bg text-fg">
@@ -35,7 +36,7 @@ export function SkyShell({
 export function MarketingHeader({
   current,
 }: {
-  current?: "home" | "docs" | "partners" | "connect";
+  current?: "home" | "docs" | "partners" | "connect" | "meter";
 }) {
   const { user } = useCurrentUserState();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -115,7 +116,7 @@ export function MarketingHeader({
 function navHref(
   href: string,
   pathname: string,
-  current?: "home" | "docs" | "partners" | "connect",
+  current?: "home" | "docs" | "partners" | "connect" | "meter",
 ) {
   if (href === "/#pricing" && (current === "home" || pathname === "/")) return "#pricing";
   return href;
@@ -133,6 +134,9 @@ export function MarketingFooter() {
           </a>
           <a href="/docs" className="text-muted hover:text-fg">
             Docs
+          </a>
+          <a href="/meter" className="text-muted hover:text-fg">
+            Agent Meter
           </a>
           <a href="/partners" className="text-muted hover:text-fg">
             Partners
