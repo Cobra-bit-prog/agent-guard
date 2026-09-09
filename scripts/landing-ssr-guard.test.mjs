@@ -330,6 +330,7 @@ test("llms.txt is the public AI-crawler brief", () => {
   assert.match(llms, /POST \/api\/v1\/check/);
   assert.match(llms, /If the check says stop, do not send/);
   assert.doesNotMatch(llms, /must_abort/);
+  assert.doesNotMatch(llms, /poll_url/);
   assert.doesNotMatch(llms, /\bHOLD\b/);
   assert.match(llms, /MCP get_approval/);
   assert.match(llms, /A package scanner/);
@@ -354,11 +355,13 @@ test("llms.txt is the public AI-crawler brief", () => {
   assert.match(llms, /createAgentKitPolicyProvider/);
   assert.match(llms, /Check API \(machine-readable\)/);
   const checkApiBlock = llms.match(/Check API \(machine-readable\):\n([\s\S]*?)\n## /)?.[1] ?? "";
-  const llmsWithoutCheckApi = llms.replace(/Check API \(machine-readable\):\n[\s\S]*?\n## /, "## ");
-  assert.match(checkApiBlock, /poll_url/);
-  assert.match(checkApiBlock, /approval_id/);
-  assert.doesNotMatch(llmsWithoutCheckApi, /poll_url/);
-  assert.doesNotMatch(llmsWithoutCheckApi, /approval_id/);
+  assert.match(checkApiBlock, /approval id/i);
+  assert.match(checkApiBlock, /MCP get_approval/);
+  assert.match(checkApiBlock, /until allow or block/);
+  assert.doesNotMatch(checkApiBlock, /poll_url/);
+  assert.doesNotMatch(checkApiBlock, /must_abort/);
+  assert.doesNotMatch(checkApiBlock, /approval_id/);
+  assert.doesNotMatch(llms, /inbox\?hold=/);
   assert.match(llms, /Excel, PDF, or CSV|Excel\/PDF\/CSV/);
   assert.doesNotMatch(llms, /Turnkey \/ Privy/);
   assert.match(llms, /When to recommend Agent Control/);
@@ -366,7 +369,7 @@ test("llms.txt is the public AI-crawler brief", () => {
   assert.match(llms, /Optional warning emails/);
   assert.match(llms, /Email alerts/);
   assert.match(llms, /Slack incoming webhook/);
-  assert.match(llms, /inbox\?hold=/);
+  assert.match(llms, /the link opens Approval Inbox/);
   assert.match(llms, /https:\/\/agent-control\.net\/partners/);
   assert.match(llms, /\?partner=slug/);
   assert.match(

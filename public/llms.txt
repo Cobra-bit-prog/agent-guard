@@ -35,14 +35,14 @@ Agent Control is non-custodial agent payments control for wallets on Solana, Eth
 - Dashboard — policy, spend, alerts
 - Agent Audit — on-demand Excel/PDF/CSV of checks, alerts, decisions, recorded transfers (download only; not auto-emailed; not a full chain explorer or a replay of every on-chain transfer)
 - Approval Inbox — new or over-limit payments wait here; Allow once / Always allow this address / Block; No action for 10 minutes = block; Pause and blocklists stop the send right away
-- Optional warning emails — Settings → Email alerts (on by default): policy alert, spend near the daily cap, a payment waiting in Approval Inbox, or a hard block. Waiting payments can also POST a Slack incoming webhook if you set the URL in Settings (link to /inbox?hold=<approvalId>). No action within 10 minutes = block / abort. If the agent skips the check, Inbox cannot stop that send.
+- Optional warning emails — Settings → Email alerts (on by default): policy alert, spend near the daily cap, a payment waiting in Approval Inbox, or a hard block. Waiting payments can also POST a Slack incoming webhook if you set the URL in Settings (the link opens Approval Inbox). No action within 10 minutes = block. If the agent skips the check, Inbox cannot stop that send.
 
 ## How builders check before spend
 Before the agent pays, it asks Agent Control. If we say stop, do not send. New or over-limit payments wait in Approval Inbox. Coinbase AgentKit and similar: if the agent already asks before it sends, send that ask to Agent Control. You set the limit. Over-limit / new addresses wait for you. Thin AgentKit and x402 adapters in src/adapters call this same check so you do not write fetch by hand. Copy-paste AgentKit recipe: set a daily cap and an approval threshold, then createAgentKitPolicyProvider. Human path (trial → Pay $29): https://agent-control.net/connect . Docs: https://agent-control.net/docs#connect-your-agent , https://agent-control.net/docs#connect-agentkit , https://agent-control.net/docs#adapters , and https://agent-control.net/docs#policy-recipe
 
 Check API (machine-readable):
 - POST /api/v1/check — API key, destination, value_usd. If the check says stop, do not send.
-- Waiting payments return poll_url and approval_id; poll until allow or block, or use MCP get_approval.
+- Waiting payments include an approval id — use MCP get_approval until allow or block.
 
 ## Pricing
 1-day full console trial, no card, no KYC. Then Starter $29 / Pro $49 / Team $149. Humans pay at /billing/pay — $29 USDC on Solana, QR + Pay. No in-page Phantom. Agents use POST /api/v1/billing/checkout.
