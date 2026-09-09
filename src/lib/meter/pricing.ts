@@ -23,7 +23,9 @@ export function meterPricing() {
       match: "solana-pay-reference",
     },
     endpoints: {
+      page: "GET /meter",
       pricing: "GET /api/v1/meter/pricing",
+      live: "GET /api/v1/meter/live",
       pass: "POST /api/v1/meter/pass",
       watch: "POST /api/v1/meter/watch",
       scan: "POST /api/v1/meter/scan",
