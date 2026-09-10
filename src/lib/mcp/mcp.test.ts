@@ -159,6 +159,28 @@ describe("POST initialize is Streamable HTTP", () => {
     const rpc = (await res.json()) as { result: { protocolVersion: string } };
     assert.equal(rpc.result.protocolVersion, "2025-03-26");
   });
+
+  it("initialize instructions list Agent Meter tools including meter_watch", async () => {
+    const res = await handleMcpPost(
+      post(jsonRpc("initialize", { params: { protocolVersion: "2025-03-26", capabilities: {} } }), {
+        Accept: "application/json",
+      }),
+      { callTool: refuseUnknown },
+    );
+    const rpc = (await res.json()) as { result: { instructions: string } };
+    const instructions = rpc.result.instructions ?? "";
+    assert.match(
+      instructions,
+      /meter_pricing \/ meter_buy_pass \/ meter_watch \/ meter_scan \/ meter_preflight \/ meter_scan_batch \/ meter_stamp \/ meter_verify_stamp/,
+    );
+    for (const name of mcpDiscovery().meter) {
+      assert.match(instructions, new RegExp(`\\b${name}\\b`));
+    }
+    assert.match(instructions, /pay a pass, then meter_watch, then X-Agent-Pass/);
+    const meterSlice = instructions.slice(instructions.indexOf("Agent Meter:"));
+    assert.doesNotMatch(meterSlice, /\bhold\b/i);
+    assert.doesNotMatch(meterSlice, /Inbox/);
+  });
 });
 
 describe("initialized notification and session reuse", () => {
