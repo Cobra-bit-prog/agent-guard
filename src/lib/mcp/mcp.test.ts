@@ -278,6 +278,21 @@ describe("tools/call over Streamable HTTP", () => {
     assert.match(rpc.result.content[0]?.text ?? "", /starter/);
   });
 
+  it("advertises OAuth resource metadata on 401 without breaking Bearer keys", async () => {
+    const missing = await handleMcpPost(
+      post(jsonRpc("tools/call", { params: { name: "get_status", arguments: {} } }), {
+        Accept: "application/json",
+      }),
+      {
+        callTool: await pricingTool(),
+        wwwAuthenticate:
+          'Bearer realm="Agent Control", resource_metadata="https://agent-control.net/.well-known/oauth-protected-resource/api/v1/mcp"',
+      },
+    );
+    assert.equal(missing.status, 401);
+    assert.match(missing.headers.get("www-authenticate") ?? "", /oauth-protected-resource/);
+  });
+
   it("still accepts legacy JSON clients that omit Accept and session", async () => {
     const res = await handleMcpPost(post(jsonRpc("tools/list")), { callTool: refuseUnknown });
     assert.equal(res.status, 200);
@@ -294,6 +309,7 @@ describe("GET discovery and DELETE", () => {
     assert.equal(discovery.protocol, "mcp");
     assert.ok(Array.isArray(discovery.tools));
     assert.match(discovery.auth, /Bearer agent API key/);
+    assert.match(discovery.auth, /Claude Connector OAuth/);
     assert.deepEqual(discovery.storefront, [
       "get_pricing",
       "start_trial",

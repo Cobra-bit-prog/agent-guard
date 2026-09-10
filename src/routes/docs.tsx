@@ -440,11 +440,12 @@ client.onBeforePaymentCreation(
           >
             <h3 className="text-card font-medium">Connectors</h3>
             <p className="mt-2 text-body text-muted">
-              External audit for your agents. Connect your agent from Cursor or Grok so it can ask
-              before a send. You keep the keys. The live MCP is Streamable HTTP at
+              External audit for your agents. Connect your agent from Cursor, Grok, or Claude so it
+              can ask before a send. You keep the keys. The live MCP is Streamable HTTP at
               https://agent-control.net/api/v1/mcp. get_pricing is public. Spend, checkout, and
-              status need header Authorization: Bearer plus your agent API key (env{" "}
-              <code className="font-mono text-fg">AGENT_CONTROL_API_KEY</code>).
+              status need an agent API key (Authorization: Bearer, env{" "}
+              <code className="font-mono text-fg">AGENT_CONTROL_API_KEY</code>) or a Claude
+              Connector OAuth token.
             </p>
             <ol className="mt-4 list-decimal space-y-2 pl-5 text-body text-muted">
               <li>
@@ -461,6 +462,11 @@ client.onBeforePaymentCreation(
                 <span className="font-medium text-fg">Grok.com → connectors → Custom.</span> New
                 Connector, then Custom. Paste the same URL. When asked for auth, use Authorization:
                 Bearer plus the agent API key.
+              </li>
+              <li>
+                <span className="font-medium text-fg">Claude Connectors.</span> Same MCP URL. Claude
+                signs in with OAuth (authorization code + PKCE). You stay the customer of record.
+                You keep the keys. Cursor and Grok Bearer keys still work.
               </li>
             </ol>
             <p className="mt-3 text-body text-muted">

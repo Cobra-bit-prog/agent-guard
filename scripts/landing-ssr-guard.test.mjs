@@ -22,6 +22,8 @@ test("marketing landing never imports pay-extension (SSR-unsafe wallet send)", (
     join(ROOT, "src/routes/docs.tsx"),
     join(ROOT, "src/routes/connect.tsx"),
     join(ROOT, "src/routes/partners.tsx"),
+    join(ROOT, "src/routes/privacy.tsx"),
+    join(ROOT, "src/routes/oauth/authorize.tsx"),
     join(ROOT, "src/routes/login.tsx"),
     join(ROOT, "src/routes/signup.tsx"),
     ...walk(join(ROOT, "src/components/marketing")),
@@ -501,6 +503,8 @@ test("customer marketing surfaces never say abort / must abort", () => {
     join(ROOT, "src/routes/index.tsx"),
     join(ROOT, "src/routes/connect.tsx"),
     join(ROOT, "src/routes/partners.tsx"),
+    join(ROOT, "src/routes/privacy.tsx"),
+    join(ROOT, "src/routes/oauth/authorize.tsx"),
     join(ROOT, "src/routes/login.tsx"),
     join(ROOT, "src/routes/signup.tsx"),
     ...walk(join(ROOT, "src/components/marketing")),
@@ -651,6 +655,7 @@ test("sitemap and robots expose docs, connect, partners, llms.txt, and agents.tx
   assert.match(chrome, /href=["']\/connect["']/);
   assert.match(chrome, /href=["']\/partners["']/);
   assert.match(chrome, /href=["']\/llms\.txt["']/);
+  assert.match(chrome, /href=["']\/privacy["']/);
 });
 
 test("marketing surfaces use the five-step type scale, not ad-hoc px sizes", () => {
@@ -668,6 +673,8 @@ test("marketing surfaces use the five-step type scale, not ad-hoc px sizes", () 
     join(ROOT, "src/routes/docs.tsx"),
     join(ROOT, "src/routes/connect.tsx"),
     join(ROOT, "src/routes/partners.tsx"),
+    join(ROOT, "src/routes/privacy.tsx"),
+    join(ROOT, "src/routes/oauth/authorize.tsx"),
     join(ROOT, "src/routes/login.tsx"),
     join(ROOT, "src/routes/verify-email.tsx"),
     join(ROOT, "src/routes/_app/billing.pay.tsx"),

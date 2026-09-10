@@ -9,21 +9,30 @@ import { GROK_PROVIDERS, authClient, authEnabled, signIn } from "@/lib/auth/clie
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { parsePartnerSlug } from "@/lib/partner";
 
-type LoginSearch = { mode: "signin" | "signup"; partner?: string };
+type LoginSearch = { mode: "signin" | "signup"; partner?: string; callbackURL?: string };
+
+function safeCallbackURL(value: unknown): string | undefined {
+  if (typeof value !== "string" || !value.startsWith("/") || value.startsWith("//")) return undefined;
+  if (value.includes("://") || value.includes("\\")) return undefined;
+  return value;
+}
 
 export const Route = createFileRoute("/login")({
   component: Login,
   validateSearch: (search: Record<string, unknown>): LoginSearch => {
     const partner = parsePartnerSlug(search.partner);
+    const callbackURL = safeCallbackURL(search.callbackURL);
     return {
       mode: search.mode === "signup" ? "signup" : "signin",
       ...(partner ? { partner } : {}),
+      ...(callbackURL ? { callbackURL } : {}),
     };
   },
 });
 
 function Login() {
-  const { mode: initialMode } = Route.useSearch();
+  const { mode: initialMode, callbackURL } = Route.useSearch();
+  const afterAuth = callbackURL ?? "/dashboard";
   const { user, isPending } = useCurrentUserState();
   const [mode, setMode] = useState<"signin" | "signup">(initialMode);
   const [email, setEmail] = useState("");
@@ -42,7 +51,13 @@ function Login() {
     host === "127.0.0.1";
 
   if (!isPending && user) {
-    if (user.emailVerified || user.isDevFallback) return <Navigate to="/dashboard" />;
+    if (user.emailVerified || user.isDevFallback) {
+      if (callbackURL) {
+        window.location.replace(callbackURL);
+        return null;
+      }
+      return <Navigate to="/dashboard" />;
+    }
     return <Navigate to="/verify-email" search={{ email: undefined }} />;
   }
 
@@ -53,7 +68,7 @@ function Login() {
     setNotice(null);
     try {
       if (mode === "signup") {
-        const { data, error: err } = await authClient.signUp.email({
+        const { error: err } = await authClient.signUp.email({
           email,
           password,
           name: name || email.split("@")[0],
@@ -66,7 +81,7 @@ function Login() {
         const { error: err } = await authClient.signIn.email({
           email,
           password,
-          callbackURL: "/dashboard",
+          callbackURL: afterAuth,
         });
         if (err) {
           const code = (err as { code?: string }).code ?? "";
@@ -82,7 +97,7 @@ function Login() {
           throw new Error(err.message);
         }
       }
-      window.location.href = "/dashboard";
+      window.location.href = afterAuth;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not authenticate");
     } finally {
@@ -110,7 +125,7 @@ function Login() {
                       type="button"
                       variant="secondary"
                       className="w-full"
-                      onClick={() => signIn(p.providerId, { callbackURL: "/dashboard" })}
+                      onClick={() => signIn(p.providerId, { callbackURL: afterAuth })}
                     >
                       Continue with {p.label}
                     </Button>

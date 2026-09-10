@@ -57,7 +57,11 @@ function initializeResult(requested: unknown) {
 
 export async function handleMcpPost(
   request: Request,
-  deps: { callTool: McpCallTool },
+  deps: {
+    callTool: McpCallTool;
+    resolveApiKey?: (request: Request) => Promise<string>;
+    wwwAuthenticate?: string;
+  },
 ): Promise<Response> {
   const accept = request.headers.get("accept");
 
@@ -151,13 +155,18 @@ export async function handleMcpPost(
   if (method === "tools/call" || method === "call_tool") {
     const name = typeof params.name === "string" ? params.name : "";
     const args = asRecord(params.arguments);
-    const apiKey = readApiKey(request);
+    const apiKey = deps.resolveApiKey ? await deps.resolveApiKey(request) : readApiKey(request);
     const outcome = await deps.callTool(name, args, apiKey);
     if (!outcome.ok) {
+      const extraHeaders =
+        outcome.status === 401 && deps.wwwAuthenticate
+          ? { "WWW-Authenticate": deps.wwwAuthenticate }
+          : undefined;
       return mcpRpcResponse({
         accept,
         status: outcome.status,
         sessionId,
+        extraHeaders,
         body: rpcError(id, outcome.code, outcome.message),
       });
     }

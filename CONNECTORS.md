@@ -51,6 +51,16 @@ Grok Bot only talks to a public HTTPS MCP. This one already is.
 
 On a team plan, an admin may need to add the connector first. After connect, ask Grok to read pricing (`get_pricing`) or check a send (`check_transfer`). Hold vs block is still decided by you in Approval Inbox.
 
+## Claude Connectors (OAuth)
+
+Claude Connectors use OAuth 2.1 (authorization code + PKCE) on the same Streamable HTTP MCP. You stay the customer of record. You keep the keys. Cursor and Grok Bearer API keys still work.
+
+1. In Claude, add a custom connector to `https://agent-control.net/api/v1/mcp`.
+2. Sign in and allow Claude. Pick which agent it may check.
+3. Claude can then ask before a send, wait for your Approval Inbox decision, and open pricing or checkout for you.
+
+Privacy: https://agent-control.net/privacy
+
 ## After you connect
 
 Create an account, enroll the wallet, set policy, then issue the API key. Connect your agent so every send asks first. You keep the keys.
