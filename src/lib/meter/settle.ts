@@ -60,7 +60,7 @@ export async function watchMeterInvoice(
     match = await finder({
       reference: current.reference,
       recipient: lockedSolanaUsdcRecipient(current.pay_to),
-      amountUsdc: METER_PASS_1H.price_usd,
+      amountUsdc: current.amount_usd || METER_PASS_1H.price_usd,
     });
   } catch {
     match = { kind: "none" };
@@ -96,10 +96,10 @@ export async function applyMeterPayments(
 ): Promise<Array<{ invoice_id: string; signature: string }>> {
   const paid: Array<{ invoice_id: string; signature: string }> = [];
   for (const pay of payments) {
-    if (!paidEnough(pay.amountUsdc)) continue;
     for (const key of pay.references) {
       const invoice = await store.getInvoice(key);
       if (!invoice || invoice.status === "paid") continue;
+      if (!paidEnough(pay.amountUsdc, invoice.amount_usd)) continue;
       const issued = await store.fulfillInvoice(invoice.invoice_id, {
         signature: pay.signature,
         amountUsdc: pay.amountUsdc,
