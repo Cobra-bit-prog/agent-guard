@@ -193,7 +193,7 @@ describe("meter http", () => {
   it("exhausted or expired pass returns 402", async () => {
     process.env.NODE_ENV = "test";
     const store = createMeterStore();
-    const issued = store.issuePass();
+    const issued = await store.issuePass();
     issued.pass.included_calls = 1;
     issued.pass.used_calls = 1;
     const res = await handleMeterRequest(
@@ -210,6 +210,200 @@ describe("meter http", () => {
     const body = (await res.json()) as { product: string; pass: { price_usd: number } };
     assert.equal(body.product, "Agent Meter");
     assert.equal(body.pass.price_usd, 0.25);
+  });
+});
+
+describe("extra meter skus", () => {
+  it("pricing.skus lists catalog ids and keeps pass_1h as default", async () => {
+    const res = await handleMeterRequest(get("/api/v1/meter/pricing"), "/api/v1/meter/pricing", createMeterStore());
+    const body = (await res.json()) as {
+      default_sku: string;
+      pass: { id: string; price_usd: number };
+      skus: { id: string; price_usd: number }[];
+      funds: { pay_to: string };
+    };
+    assert.equal(body.default_sku, "pass_1h");
+    assert.equal(body.pass.id, "pass_1h");
+    assert.equal(body.pass.price_usd, 0.25);
+    assert.equal(body.skus.length, 5);
+    assert.deepEqual(
+      body.skus.map((row) => row.id),
+      ["pass_1h", "pass_24h", "calls_1k", "stamp_tx", "scan_batch"],
+    );
+    assert.equal(body.funds.pay_to, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
+  });
+
+  it("POST pass {} still invoices pass_1h $0.25", async () => {
+    const store = createMeterStore();
+    const res = await handleMeterRequest(post("/api/v1/meter/pass", {}), "/api/v1/meter/pass", store);
+    assert.equal(res.status, 402);
+    const body = (await res.json()) as { sku: string; amount_usd: number; pay_to: string };
+    assert.equal(body.sku, "pass_1h");
+    assert.equal(body.amount_usd, 0.25);
+    assert.equal(body.pay_to, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
+  });
+
+  it("POST pass sku=pass_24h invoices $1", async () => {
+    const store = createMeterStore();
+    const res = await handleMeterRequest(
+      post("/api/v1/meter/pass", { sku: "pass_24h" }),
+      "/api/v1/meter/pass",
+      store,
+    );
+    assert.equal(res.status, 402);
+    const body = (await res.json()) as { sku: string; amount_usd: number; price_usd: number };
+    assert.equal(body.sku, "pass_24h");
+    assert.equal(body.amount_usd, 1);
+    assert.equal(body.price_usd, 1);
+  });
+
+  it("fulfillInvoice mints the invoice sku, not always pass_1h", async () => {
+    const store = createMeterStore();
+    const invoice = await store.createInvoice({ sku: "pass_24h" });
+    assert.equal(invoice.amount_usd, 1);
+    const paid = await store.fulfillInvoice(invoice.invoice_id, { signature: "sig24", amountUsdc: 1 });
+    assert.equal(paid.pass.sku, "pass_24h");
+    assert.equal(paid.pass.included_calls, 2000);
+    const ttlMs = Date.parse(paid.pass.expires_at) - Date.parse(paid.pass.created_at);
+    assert.equal(ttlMs, 86400 * 1000);
+  });
+
+  it("unknown sku returns 400 without creating an invoice", async () => {
+    const store = createMeterStore();
+    const res = await handleMeterRequest(
+      post("/api/v1/meter/pass", { sku: "not_a_sku" }),
+      "/api/v1/meter/pass",
+      store,
+    );
+    assert.equal(res.status, 400);
+    const body = (await res.json()) as { error: string; sku: string };
+    assert.equal(body.error, "unknown_sku");
+    assert.equal(body.sku, "not_a_sku");
+    const report = await store.report();
+    assert.equal(report.invoices_created, 0);
+  });
+
+  it("scan-batch and stamp work with a covering dev grant", async () => {
+    process.env.NODE_ENV = "test";
+    const store = createMeterStore();
+    const issued = await handleMeterRequest(
+      post("/api/v1/meter/pass", { proof: { type: "dev" } }),
+      "/api/v1/meter/pass",
+      store,
+    );
+    const pass = (await issued.json()) as { token: string; sku: string; included_calls: number };
+    assert.equal(pass.sku, "pass_1h");
+    assert.equal(pass.included_calls, 200);
+
+    const batch = await handleMeterRequest(
+      post(
+        "/api/v1/meter/scan-batch",
+        { chain: "solana", addresses: [SCAN_SINK_FIXTURE, "UnknownWallet111111111111111111111111111"] },
+        { "X-Agent-Pass": pass.token },
+      ),
+      "/api/v1/meter/scan-batch",
+      store,
+    );
+    assert.equal(batch.status, 200);
+    const batchBody = (await batch.json()) as {
+      count: number;
+      risk: string;
+      results: { address: string; risk: string }[];
+      pass_remaining_calls: number;
+    };
+    assert.equal(batchBody.count, 2);
+    assert.equal(batchBody.risk, "sink");
+    assert.equal(batchBody.results[0]?.risk, "sink");
+    assert.equal(batchBody.results[1]?.risk, "new");
+    assert.equal(batchBody.pass_remaining_calls, 199);
+
+    const stamp = await handleMeterRequest(
+      post(
+        "/api/v1/meter/stamp",
+        { chain: "solana", wallet: "AgentStamp", to: "ShopStamp", decision: "allow", value_usd: 5 },
+        { "X-Agent-Pass": pass.token },
+      ),
+      "/api/v1/meter/stamp",
+      store,
+    );
+    assert.equal(stamp.status, 200);
+    const stampBody = (await stamp.json()) as {
+      stamp_id: string;
+      decision: string;
+      hmac: string;
+      alg: string;
+      verified: boolean;
+    };
+    assert.equal(stampBody.decision, "allow");
+    assert.equal(stampBody.alg, "HMAC-SHA256");
+    assert.equal(stampBody.verified, true);
+    assert.match(stampBody.hmac, /^[a-f0-9]{64}$/);
+
+    const fetched = await handleMeterRequest(
+      get(`/api/v1/meter/stamp/${stampBody.stamp_id}`),
+      `/api/v1/meter/stamp/${stampBody.stamp_id}`,
+      store,
+    );
+    assert.equal(fetched.status, 200);
+    const fetchedBody = (await fetched.json()) as { stamp_id: string; hmac: string; verified: boolean };
+    assert.equal(fetchedBody.stamp_id, stampBody.stamp_id);
+    assert.equal(fetchedBody.hmac, stampBody.hmac);
+    assert.equal(fetchedBody.verified, true);
+  });
+
+  it("stamp_tx covers stamp but not scan-batch", async () => {
+    process.env.NODE_ENV = "test";
+    const store = createMeterStore();
+    const issued = await handleMeterRequest(
+      post("/api/v1/meter/pass", { sku: "stamp_tx", proof: { type: "dev" } }),
+      "/api/v1/meter/pass",
+      store,
+    );
+    const pass = (await issued.json()) as { token: string; sku: string; included_calls: number; covers: string[] };
+    assert.equal(pass.sku, "stamp_tx");
+    assert.equal(pass.included_calls, 1);
+    assert.deepEqual(pass.covers, ["stamp"]);
+
+    const denied = await handleMeterRequest(
+      post(
+        "/api/v1/meter/scan-batch",
+        { chain: "solana", addresses: [SCAN_SINK_FIXTURE] },
+        { "X-Agent-Pass": pass.token },
+      ),
+      "/api/v1/meter/scan-batch",
+      store,
+    );
+    assert.equal(denied.status, 402);
+    const deniedBody = (await denied.json()) as { error: string; sku: string; kind: string };
+    assert.equal(deniedBody.error, "sku_does_not_cover");
+    assert.equal(deniedBody.sku, "stamp_tx");
+    assert.equal(deniedBody.kind, "scan_batch");
+
+    const stamp = await handleMeterRequest(
+      post(
+        "/api/v1/meter/stamp",
+        { decision: "stop", chain: "solana", to: "Sink111" },
+        { "X-Agent-Pass": pass.token },
+      ),
+      "/api/v1/meter/stamp",
+      store,
+    );
+    assert.equal(stamp.status, 200);
+    const stampBody = (await stamp.json()) as { decision: string; verified: boolean };
+    assert.equal(stampBody.decision, "stop");
+    assert.equal(stampBody.verified, true);
+  });
+
+  it("scan-batch without a pass is 402, not unknown_meter_route", async () => {
+    const store = createMeterStore();
+    const res = await handleMeterRequest(
+      post("/api/v1/meter/scan-batch", { chain: "solana", addresses: [SCAN_SINK_FIXTURE] }),
+      "/api/v1/meter/scan-batch",
+      store,
+    );
+    assert.equal(res.status, 402);
+    const body = (await res.json()) as { error: string };
+    assert.equal(body.error, "payment_required");
   });
 });
 

@@ -118,9 +118,26 @@ export const MCP_TOOLS = [
     inputSchema: {
       type: "object",
       properties: {
-        sku: { type: "string", description: "pass_1h" },
+        sku: {
+          type: "string",
+          description: "pass_1h (default $0.25), pass_24h, calls_1k, stamp_tx, or scan_batch",
+        },
         proof: { type: "object", description: "Payment proof. { type: dev } only when METER_DEV_GRANT=1" },
         pass_token: { type: "string" },
+      },
+    },
+  },
+  {
+    name: "meter_watch",
+    title: "Watch a Meter invoice",
+    description:
+      "Public. After paying the 402 invoice, send invoice_id until the pass token comes back. No human account.",
+    annotations: writes,
+    inputSchema: {
+      type: "object",
+      properties: {
+        invoice_id: { type: "string" },
+        sku: { type: "string" },
       },
     },
   },
@@ -159,6 +176,55 @@ export const MCP_TOOLS = [
       required: ["chain", "wallet", "to", "value_usd", "cap_usd"],
     },
   },
+  {
+    name: "meter_scan_batch",
+    title: "Scan a batch of destinations",
+    description:
+      "Public with X-Agent-Pass. Risk scores for up to 100 addresses. Consumes 1 call. Pass sku must cover scan_batch. Never hold.",
+    annotations: readOnly,
+    inputSchema: {
+      type: "object",
+      properties: {
+        chain: { type: "string", description: "solana, ethereum, or base" },
+        addresses: { type: "array", items: { type: "string" }, description: "Up to 100 addresses" },
+        pass_token: { type: "string" },
+        sku: { type: "string" },
+      },
+      required: ["chain", "addresses"],
+    },
+  },
+  {
+    name: "meter_stamp",
+    title: "Stamp an allow or stop receipt",
+    description:
+      "Public with X-Agent-Pass. Signed allow|stop receipt a merchant can verify. Session passes and stamp_tx cover stamp. HMAC-SHA256 using INTERNAL_STATS_SECRET or BETTER_AUTH_SECRET.",
+    annotations: writes,
+    inputSchema: {
+      type: "object",
+      properties: {
+        decision: { type: "string", description: "allow or stop. Optional if value_usd and cap_usd are set." },
+        chain: { type: "string" },
+        wallet: { type: "string" },
+        to: { type: "string" },
+        value_usd: { type: "number" },
+        cap_usd: { type: "number" },
+        pass_token: { type: "string" },
+      },
+    },
+  },
+  {
+    name: "meter_verify_stamp",
+    title: "Verify a Meter stamp",
+    description: "Public. GET a signed allow|stop receipt by stamp_id. No email. No API key.",
+    annotations: readOnly,
+    inputSchema: {
+      type: "object",
+      properties: {
+        stamp_id: { type: "string" },
+        id: { type: "string" },
+      },
+    },
+  },
 ] as const;
 
 export const MCP_STOREFRONT_TOOLS = [
@@ -174,8 +240,17 @@ export function mcpDiscovery() {
     name: "Agent Control",
     protocol: "mcp",
     tools: MCP_TOOLS,
-    auth: "Bearer agent API key (required for check, approval, checkout, and status; get_pricing and meter_* are public; meter scan/preflight need X-Agent-Pass)",
+    auth: "Bearer agent API key (required for check, approval, checkout, and status; get_pricing and meter_* are public; meter scan/preflight/batch/stamp need X-Agent-Pass)",
     storefront: MCP_STOREFRONT_TOOLS,
-    meter: ["meter_pricing", "meter_buy_pass", "meter_scan", "meter_preflight"],
+    meter: [
+      "meter_pricing",
+      "meter_buy_pass",
+      "meter_watch",
+      "meter_scan",
+      "meter_preflight",
+      "meter_scan_batch",
+      "meter_stamp",
+      "meter_verify_stamp",
+    ],
   };
 }

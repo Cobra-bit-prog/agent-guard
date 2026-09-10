@@ -83,6 +83,16 @@ export function resolveMeterSku(raw: unknown): MeterSku | { error: "unknown_sku"
   return hit;
 }
 
+/** Unknown/empty sku falls back to the default pass_1h catalog row. */
+export function meterSkuOrDefault(raw: unknown): MeterSku {
+  const hit = resolveMeterSku(raw);
+  return "error" in hit ? METER_PASS_1H : hit;
+}
+
+export function coversForSku(sku: string): string[] {
+  return [...(METER_SKUS[sku as MeterSkuId]?.covers ?? METER_PASS_1H.covers)];
+}
+
 export function skuCovers(sku: string, kind: string): boolean {
   const hit = METER_SKUS[sku as MeterSkuId];
   return Boolean(hit?.covers.includes(kind));

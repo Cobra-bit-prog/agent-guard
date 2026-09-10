@@ -1,16 +1,19 @@
 import { createHash, randomBytes } from "node:crypto";
 import { getSql, type Sql } from "../db.ts";
-import { newPayReference } from "../pay-invoice.ts";
-import { PAY_EXPIRY_MS, SOLANA_PAYOUT_ADDRESS } from "../solana-pay.ts";
+import { SOLANA_PAYOUT_ADDRESS } from "../solana-pay.ts";
 import { utcDayKey } from "./preflight.ts";
 import { METER_PASS_1H, METER_PASS_SKU } from "./pricing.ts";
 import {
   getMemoryMeterStore,
+  invoiceDraft,
+  newMeterId,
+  passDraft,
   type MeterCallLog,
   type MeterInvoice,
   type MeterPass,
   type MeterPaymentRow,
   type MeterReport,
+  type MeterStamp,
   type MeterStore,
 } from "./store.ts";
 
@@ -49,9 +52,17 @@ type PassRow = {
   invoice_id: string | null;
 };
 
-function id(prefix: string) {
-  return `${prefix}_${randomBytes(8).toString("hex")}`;
-}
+type StampRow = {
+  id: string;
+  pass_id: string;
+  decision: string;
+  chain: string;
+  wallet: string | null;
+  address: string | null;
+  value_usd: unknown;
+  hmac: string;
+  created_at: unknown;
+};
 
 function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
@@ -108,6 +119,21 @@ function mapPass(row: PassRow): MeterPass {
     invoice_id: row.invoice_id,
     signature: row.signature,
     paid_amount_usd: row.paid_amount_usd == null ? null : num(row.paid_amount_usd),
+  };
+}
+
+function mapStamp(row: StampRow): MeterStamp {
+  const decision = row.decision === "stop" ? "stop" : "allow";
+  return {
+    id: row.id,
+    pass_id: row.pass_id,
+    decision,
+    chain: row.chain,
+    wallet: row.wallet,
+    address: row.address,
+    value_usd: row.value_usd == null ? null : num(row.value_usd),
+    hmac: row.hmac,
+    created_at: iso(row.created_at),
   };
 }
 
@@ -168,6 +194,20 @@ export async function ensureMeterSchema(sql?: Sql): Promise<void> {
   `);
   await db.query(`create index if not exists meter_invoices_status_idx on meter_invoices (status, created_at desc)`);
   await db.query(`create index if not exists meter_invoices_ref_idx on meter_invoices (reference)`);
+  await db.query(`
+    create table if not exists meter_stamps (
+      id text primary key,
+      pass_id text not null,
+      decision text not null,
+      chain text not null,
+      wallet text,
+      address text,
+      value_usd numeric,
+      hmac text not null,
+      created_at timestamptz not null default now()
+    )
+  `);
+  await db.query(`create index if not exists meter_stamps_pass_idx on meter_stamps (pass_id, created_at desc)`);
 }
 
 async function expireIfNeeded(db: Sql, row: MeterInvoice, nowMs = Date.now()): Promise<MeterInvoice> {
@@ -181,25 +221,8 @@ async function expireIfNeeded(db: Sql, row: MeterInvoice, nowMs = Date.now()): P
 export function createSqlMeterStore(db: Sql): MeterStore {
   const store: MeterStore = {
     pendingApprovalsCreated: 0,
-    async createInvoice(nowMs = Date.now()) {
-      const invoice: MeterInvoice = {
-        invoice_id: id("inv"),
-        reference: newPayReference(),
-        sku: METER_PASS_SKU,
-        pay_to: SOLANA_PAYOUT_ADDRESS,
-        amount_usd: METER_PASS_1H.price_usd,
-        amount_base_units: METER_PASS_1H.amount_base_units,
-        chain: METER_PASS_1H.chain,
-        asset: METER_PASS_1H.asset,
-        status: "pending",
-        signature: null,
-        paid_amount_usd: null,
-        payer_address: null,
-        pass_id: null,
-        created_at: new Date(nowMs).toISOString(),
-        expires_at: new Date(nowMs + PAY_EXPIRY_MS).toISOString(),
-        paid_at: null,
-      };
+    async createInvoice(opts = {}) {
+      const invoice = invoiceDraft(opts);
       await db`
         insert into meter_invoices (
           id, reference, sku, pay_to, amount_usd, amount_base_units, chain, asset,
@@ -241,6 +264,7 @@ export function createSqlMeterStore(db: Sql): MeterStore {
         }
       }
       const issued = await store.issuePass({
+        sku: existing?.sku ?? METER_PASS_SKU,
         payer_address: match.payer_address ?? existing?.payer_address ?? null,
         invoice_id: invoiceId,
         signature: match.signature,
@@ -276,7 +300,7 @@ export function createSqlMeterStore(db: Sql): MeterStore {
         invoice: {
           invoice_id: invoiceId,
           reference: "",
-          sku: METER_PASS_SKU,
+          sku: issued.pass.sku,
           pay_to: SOLANA_PAYOUT_ADDRESS,
           amount_usd: METER_PASS_1H.price_usd,
           amount_base_units: METER_PASS_1H.amount_base_units,
@@ -296,22 +320,8 @@ export function createSqlMeterStore(db: Sql): MeterStore {
       };
     },
     async issuePass(input = {}) {
-      const now = input.nowMs ?? Date.now();
       const token = `acp_${randomBytes(18).toString("base64url")}`;
-      const pass: MeterPass = {
-        id: id("pass"),
-        token_hash: hashToken(token),
-        sku: METER_PASS_SKU,
-        chain: METER_PASS_1H.chain,
-        created_at: new Date(now).toISOString(),
-        expires_at: new Date(now + METER_PASS_1H.duration_sec * 1000).toISOString(),
-        included_calls: METER_PASS_1H.included_calls,
-        used_calls: 0,
-        payer_address: input.payer_address ?? null,
-        invoice_id: input.invoice_id ?? null,
-        signature: input.signature ?? null,
-        paid_amount_usd: input.paid_amount_usd ?? null,
-      };
+      const pass = passDraft(hashToken(token), input);
       await db`
         insert into meter_passes (
           id, token_hash, token, sku, chain, payer_address, included_calls, used_calls,
@@ -352,7 +362,7 @@ export function createSqlMeterStore(db: Sql): MeterStore {
       await db`
         insert into meter_calls (id, pass_id, kind, chain, wallet, address, value_usd, decision)
         values (
-          ${id("mlog")}, ${row.pass_id}, ${row.kind}, ${row.chain},
+          ${newMeterId("mlog")}, ${row.pass_id}, ${row.kind}, ${row.chain},
           ${row.wallet}, ${row.address}, ${row.value_usd}, ${row.decision}
         )
       `;
@@ -370,6 +380,23 @@ export function createSqlMeterStore(db: Sql): MeterStore {
       return num(rows[0]?.spent);
     },
     async addAllowSpend() {},
+    async saveStamp(row) {
+      await db`
+        insert into meter_stamps (
+          id, pass_id, decision, chain, wallet, address, value_usd, hmac, created_at
+        ) values (
+          ${row.id}, ${row.pass_id}, ${row.decision}, ${row.chain},
+          ${row.wallet}, ${row.address}, ${row.value_usd}, ${row.hmac}, ${row.created_at}
+        )
+      `;
+      return row;
+    },
+    async getStamp(stampId) {
+      const key = stampId.trim();
+      if (!key) return null;
+      const rows = await db.query<StampRow>(`select * from meter_stamps where id = $1 limit 1`, [key]);
+      return rows[0] ? mapStamp(rows[0]) : null;
+    },
     async report() {
       return collectMeterSqlReport(db);
     },
@@ -400,6 +427,7 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
       invoices_paid: unknown;
       invoices_pending: unknown;
       usdc_received: unknown;
+      usdc_pending: unknown;
       agents_paid: unknown;
     }>(
       `select
@@ -407,6 +435,7 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
          count(*) filter (where status = 'paid')::int as invoices_paid,
          count(*) filter (where status in ('pending', 'underpaid'))::int as invoices_pending,
          coalesce(sum(paid_amount_usd) filter (where status = 'paid'), 0) as usdc_received,
+         coalesce(sum(amount_usd) filter (where status in ('pending', 'underpaid')), 0) as usdc_pending,
          count(distinct lower(coalesce(nullif(payer_address, ''), nullif(signature, ''), id)))
            filter (where status = 'paid')::int as agents_paid
        from meter_invoices`,
@@ -426,6 +455,7 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
     );
     const invoicesPending = num(totals[0]?.invoices_pending);
     const usdcReceived = num(totals[0]?.usdc_received);
+    const usdcPending = num(totals[0]?.usdc_pending);
     const recentPayments: MeterPaymentRow[] = recent.map((row) => ({
       invoice_id: row.id,
       pass_id: row.pass_id,
@@ -443,7 +473,7 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
       passes_issued: num(passes[0]?.n),
       agents_paid: num(totals[0]?.agents_paid),
       usdc_received: Number(usdcReceived.toFixed(6)),
-      usdc_pending: Number((invoicesPending * METER_PASS_1H.price_usd).toFixed(6)),
+      usdc_pending: Number(usdcPending.toFixed(6)),
       calls: num(calls[0]?.n),
       recent_payments: recentPayments,
       generated_at: new Date().toISOString(),

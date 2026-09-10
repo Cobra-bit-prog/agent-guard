@@ -1,8 +1,9 @@
 import { createHash, randomBytes } from "node:crypto";
 import { newPayReference } from "../pay-invoice.ts";
 import { PAY_EXPIRY_MS, SOLANA_PAYOUT_ADDRESS } from "../solana-pay.ts";
-import { METER_PASS_1H, METER_PASS_SKU } from "./pricing.ts";
+import { coversForSku, meterSkuOrDefault, METER_PASS_1H, METER_PASS_SKU, type MeterSku } from "./pricing.ts";
 import { utcDayKey } from "./preflight.ts";
+import type { StampDecision } from "./stamp.ts";
 
 export type MeterPass = {
   id: string;
@@ -19,15 +20,29 @@ export type MeterPass = {
   paid_amount_usd: number | null;
 };
 
+export type MeterCallKind = "scan" | "preflight" | "scan_batch" | "stamp";
+
 export type MeterCallLog = {
   id: string;
   pass_id: string;
-  kind: "scan" | "preflight";
+  kind: MeterCallKind;
   chain: string;
   wallet: string | null;
   address: string | null;
   value_usd: number | null;
   decision: string | null;
+  created_at: string;
+};
+
+export type MeterStamp = {
+  id: string;
+  pass_id: string;
+  decision: StampDecision;
+  chain: string;
+  wallet: string | null;
+  address: string | null;
+  value_usd: number | null;
+  hmac: string;
   created_at: string;
 };
 
@@ -80,37 +95,89 @@ export type MeterReport = {
 
 export type Awaitable<T> = T | Promise<T>;
 
+export type IssuePassInput = {
+  sku?: string;
+  payer_address?: string | null;
+  nowMs?: number;
+  invoice_id?: string | null;
+  signature?: string | null;
+  paid_amount_usd?: number | null;
+};
+
+export type CreateInvoiceInput = {
+  sku?: string;
+  nowMs?: number;
+};
+
 export type MeterStore = {
-  createInvoice(nowMs?: number): Awaitable<MeterInvoice>;
+  createInvoice(opts?: CreateInvoiceInput): Awaitable<MeterInvoice>;
   getInvoice(idOrRef: string): Awaitable<MeterInvoice | null>;
   noteUnderpaid(invoiceId: string, signature: string, amountUsd: number): Awaitable<MeterInvoice | null>;
   fulfillInvoice(
     invoiceId: string,
     match: { signature: string; amountUsdc: number; payer_address?: string | null },
   ): Awaitable<{ invoice: MeterInvoice; pass: MeterPass; token: string }>;
-  issuePass(input?: {
-    payer_address?: string | null;
-    nowMs?: number;
-    invoice_id?: string | null;
-    signature?: string | null;
-    paid_amount_usd?: number | null;
-  }): Awaitable<{ pass: MeterPass; token: string }>;
+  issuePass(input?: IssuePassInput): Awaitable<{ pass: MeterPass; token: string }>;
   getPassByToken(token: string, nowMs?: number): Awaitable<MeterPass | null>;
   getPassById(id: string): Awaitable<MeterPass | null>;
   consumeCall(pass: MeterPass): Awaitable<MeterPass | "exhausted">;
   logCall(row: Omit<MeterCallLog, "id" | "created_at">): Awaitable<void>;
   spentTodayUsd(wallet: string, nowMs?: number): Awaitable<number>;
   addAllowSpend(wallet: string, valueUsd: number, nowMs?: number): Awaitable<void>;
+  saveStamp(row: MeterStamp): Awaitable<MeterStamp>;
+  getStamp(id: string): Awaitable<MeterStamp | null>;
   report(): Awaitable<MeterReport>;
   pendingApprovalsCreated: number;
 };
 
-function hashToken(token: string) {
-  return createHash("sha256").update(token).digest("hex");
+export function newMeterId(prefix: string) {
+  return `${prefix}_${randomBytes(8).toString("hex")}`;
 }
 
-function id(prefix: string) {
-  return `${prefix}_${randomBytes(8).toString("hex")}`;
+export function invoiceDraft(opts: CreateInvoiceInput = {}): MeterInvoice {
+  const nowMs = opts.nowMs ?? Date.now();
+  const sku: MeterSku = meterSkuOrDefault(opts.sku);
+  return {
+    invoice_id: newMeterId("inv"),
+    reference: newPayReference(),
+    sku: sku.id,
+    pay_to: SOLANA_PAYOUT_ADDRESS,
+    amount_usd: sku.price_usd,
+    amount_base_units: sku.amount_base_units,
+    chain: sku.chain,
+    asset: sku.asset,
+    status: "pending",
+    signature: null,
+    paid_amount_usd: null,
+    payer_address: null,
+    pass_id: null,
+    created_at: new Date(nowMs).toISOString(),
+    expires_at: new Date(nowMs + PAY_EXPIRY_MS).toISOString(),
+    paid_at: null,
+  };
+}
+
+export function passDraft(tokenHash: string, input: IssuePassInput = {}): MeterPass {
+  const now = input.nowMs ?? Date.now();
+  const sku = meterSkuOrDefault(input.sku);
+  return {
+    id: newMeterId("pass"),
+    token_hash: tokenHash,
+    sku: sku.id,
+    chain: sku.chain,
+    created_at: new Date(now).toISOString(),
+    expires_at: new Date(now + sku.duration_sec * 1000).toISOString(),
+    included_calls: sku.included_calls,
+    used_calls: 0,
+    payer_address: input.payer_address ?? null,
+    invoice_id: input.invoice_id ?? null,
+    signature: input.signature ?? null,
+    paid_amount_usd: input.paid_amount_usd ?? null,
+  };
+}
+
+function hashToken(token: string) {
+  return createHash("sha256").update(token).digest("hex");
 }
 
 export function allowDevGrant(env = process.env): boolean {
@@ -127,6 +194,7 @@ export function createMeterStore(): MeterStore {
   const logs: MeterCallLog[] = [];
   const spend = new Map<string, number>();
   const payments: MeterPaymentRow[] = [];
+  const stamps = new Map<string, MeterStamp>();
 
   function spendKey(wallet: string, nowMs: number) {
     return `${wallet.trim().toLowerCase()}:${utcDayKey(nowMs)}`;
@@ -143,25 +211,8 @@ export function createMeterStore(): MeterStore {
 
   const store: MeterStore = {
     pendingApprovalsCreated: 0,
-    createInvoice(nowMs = Date.now()) {
-      const invoice: MeterInvoice = {
-        invoice_id: id("inv"),
-        reference: newPayReference(),
-        sku: METER_PASS_SKU,
-        pay_to: SOLANA_PAYOUT_ADDRESS,
-        amount_usd: METER_PASS_1H.price_usd,
-        amount_base_units: METER_PASS_1H.amount_base_units,
-        chain: METER_PASS_1H.chain,
-        asset: METER_PASS_1H.asset,
-        status: "pending",
-        signature: null,
-        paid_amount_usd: null,
-        payer_address: null,
-        pass_id: null,
-        created_at: new Date(nowMs).toISOString(),
-        expires_at: new Date(nowMs + PAY_EXPIRY_MS).toISOString(),
-        paid_at: null,
-      };
+    createInvoice(opts = {}) {
+      const invoice = invoiceDraft(opts);
       invoices.set(invoice.invoice_id, invoice);
       invoiceByRef.set(invoice.reference, invoice.invoice_id);
       return invoice;
@@ -192,6 +243,7 @@ export function createMeterStore(): MeterStore {
       const row = invoices.get(invoiceId);
       if (!row) {
         const issued = store.issuePass({
+          sku: METER_PASS_SKU,
           payer_address: match.payer_address ?? null,
           signature: match.signature,
           paid_amount_usd: match.amountUsdc,
@@ -200,7 +252,7 @@ export function createMeterStore(): MeterStore {
           invoice: {
             invoice_id: invoiceId,
             reference: "",
-            sku: METER_PASS_SKU,
+            sku: issued.pass.sku,
             pay_to: SOLANA_PAYOUT_ADDRESS,
             amount_usd: METER_PASS_1H.price_usd,
             amount_base_units: METER_PASS_1H.amount_base_units,
@@ -225,6 +277,7 @@ export function createMeterStore(): MeterStore {
         if (pass) return { invoice: row, pass, token: existingToken };
       }
       const issued = store.issuePass({
+        sku: row.sku,
         payer_address: match.payer_address ?? row.payer_address,
         invoice_id: invoiceId,
         signature: match.signature,
@@ -253,22 +306,8 @@ export function createMeterStore(): MeterStore {
       return { invoice: next, pass: issued.pass, token: issued.token };
     },
     issuePass(input = {}) {
-      const now = input.nowMs ?? Date.now();
       const token = `acp_${randomBytes(18).toString("base64url")}`;
-      const pass: MeterPass = {
-        id: id("pass"),
-        token_hash: hashToken(token),
-        sku: METER_PASS_SKU,
-        chain: METER_PASS_1H.chain,
-        created_at: new Date(now).toISOString(),
-        expires_at: new Date(now + METER_PASS_1H.duration_sec * 1000).toISOString(),
-        included_calls: METER_PASS_1H.included_calls,
-        used_calls: 0,
-        payer_address: input.payer_address ?? null,
-        invoice_id: input.invoice_id ?? null,
-        signature: input.signature ?? null,
-        paid_amount_usd: input.paid_amount_usd ?? null,
-      };
+      const pass = passDraft(hashToken(token), input);
       passes.set(pass.id, pass);
       byHash.set(pass.token_hash, pass.id);
       return { pass, token };
@@ -296,9 +335,16 @@ export function createMeterStore(): MeterStore {
     logCall(row) {
       logs.push({
         ...row,
-        id: id("mlog"),
+        id: newMeterId("mlog"),
         created_at: new Date().toISOString(),
       });
+    },
+    saveStamp(row) {
+      stamps.set(row.id, row);
+      return row;
+    },
+    getStamp(stampId) {
+      return stamps.get(stampId) ?? null;
     },
     spentTodayUsd(wallet, nowMs = Date.now()) {
       return spend.get(spendKey(wallet, nowMs)) ?? 0;
@@ -330,7 +376,9 @@ export function createMeterStore(): MeterStore {
         passes_issued: passes.size,
         agents_paid: payers.size,
         usdc_received: Number(usdcReceived.toFixed(6)),
-        usdc_pending: Number((pendingRows.length * METER_PASS_1H.price_usd).toFixed(6)),
+        usdc_pending: Number(
+          pendingRows.reduce((sum, row) => sum + Number(row.amount_usd || 0), 0).toFixed(6),
+        ),
         calls: logs.length,
         recent_payments: payments.slice(-50).reverse(),
         generated_at: new Date().toISOString(),
@@ -354,7 +402,7 @@ export function publicPassView(pass: MeterPass) {
     expires_at: pass.expires_at,
     included_calls: pass.included_calls,
     remaining_calls: Math.max(0, pass.included_calls - pass.used_calls),
-    covers: [...METER_PASS_1H.covers],
+    covers: coversForSku(pass.sku),
     invoice_id: pass.invoice_id,
   };
 }
