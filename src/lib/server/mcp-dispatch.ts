@@ -40,6 +40,12 @@ export async function dispatchMcpTool(
   if (name === "meter_watch") return meterTool("/api/v1/meter/watch", "POST", args);
   if (name === "meter_scan") return meterTool("/api/v1/meter/scan", "POST", args);
   if (name === "meter_preflight") return meterTool("/api/v1/meter/preflight", "POST", args);
+  if (name === "meter_scan_batch") return meterTool("/api/v1/meter/scan-batch", "POST", args);
+  if (name === "meter_stamp") return meterTool("/api/v1/meter/stamp", "POST", args);
+  if (name === "meter_verify_stamp") {
+    const id = String(args.stamp_id ?? args.id ?? "");
+    return meterTool(`/api/v1/meter/stamp/${id}`, "GET", args);
+  }
 
   const storefront = await dispatchStorefrontTool(name, args, apiKey);
   if (storefront) {
