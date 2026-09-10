@@ -462,6 +462,8 @@ export async function ensureSchema() {
   for (const row of missingKeys) {
     await sql`update agents set api_key = ${generateApiKey()} where id = ${row.id}`;
   }
+  const { ensureOauthSchema } = await import("@/lib/oauth/sql-store");
+  await ensureOauthSchema(sql);
 }
 
 async function ensureWorkspace(userId: string) {

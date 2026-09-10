@@ -123,8 +123,9 @@ export function mcpRpcResponse(opts: {
   status: number;
   body: unknown;
   sessionId?: string | null;
+  extraHeaders?: Record<string, string>;
 }): Response {
-  const headers = mcpTransportHeaders(opts.sessionId);
+  const headers = { ...mcpTransportHeaders(opts.sessionId), ...opts.extraHeaders };
   if (responseMode(opts.accept) === "sse") {
     return new Response(encodeSseMessage(opts.body, crypto.randomUUID()), {
       status: opts.status,

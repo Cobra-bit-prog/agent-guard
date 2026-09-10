@@ -90,6 +90,33 @@ test("shouldSoftReject: leaves /api/v1/mcp and other API routes alone", () => {
   );
 });
 
+test("shouldSoftReject: leaves Claude OAuth discovery and token/register JSON alone", () => {
+  assert.equal(
+    shouldSoftReject({
+      method: "GET",
+      pathname: "/.well-known/oauth-authorization-server",
+      accept: "application/json",
+    }),
+    false,
+  );
+  assert.equal(
+    shouldSoftReject({
+      method: "GET",
+      pathname: "/.well-known/oauth-protected-resource/api/v1/mcp",
+      accept: "application/json",
+    }),
+    false,
+  );
+  assert.equal(
+    shouldSoftReject({ method: "POST", pathname: "/oauth/token", accept: "application/json" }),
+    false,
+  );
+  assert.equal(
+    shouldSoftReject({ method: "GET", pathname: "/oauth/register", accept: "application/json" }),
+    false,
+  );
+});
+
 test("shouldSoftReject: POST server-fn traffic is not intercepted", () => {
   assert.equal(
     shouldSoftReject({

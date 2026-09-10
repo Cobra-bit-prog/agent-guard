@@ -99,6 +99,7 @@ describe("agents discovery crawler surfaces", () => {
     assert.match(sitemap, /<loc>https:\/\/agent-control\.net\/agents\.txt<\/loc>/);
     assert.match(sitemap, /<loc>https:\/\/agent-control\.net\/agents\.json<\/loc>/);
     assert.match(sitemap, /<loc>https:\/\/agent-control\.net\/llms\.txt<\/loc>/);
+    assert.match(sitemap, /<loc>https:\/\/agent-control\.net\/privacy<\/loc>/);
     assert.doesNotMatch(sitemap, /<loc>https:\/\/agent-control\.net\/meter<\/loc>/);
     assert.doesNotMatch(sitemap, /<loc>https:\/\/agent-control\.net\/live<\/loc>/);
 

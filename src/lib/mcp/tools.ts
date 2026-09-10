@@ -240,7 +240,7 @@ export function mcpDiscovery() {
     name: "Agent Control",
     protocol: "mcp",
     tools: MCP_TOOLS,
-    auth: "Bearer agent API key (required for check, approval, checkout, and status; get_pricing and meter_* are public; meter scan/preflight/batch/stamp need X-Agent-Pass)",
+    auth: "Bearer agent API key or Claude Connector OAuth (required for check, approval, checkout, and status; get_pricing and meter_* are public; meter scan/preflight/batch/stamp need X-Agent-Pass)",
     storefront: MCP_STOREFRONT_TOOLS,
     meter: [
       "meter_pricing",

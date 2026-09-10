@@ -12,6 +12,7 @@
 - Agent Audit: https://agent-control.net/audit
 - GitHub: https://github.com/Cobra-bit-prog/agent-guard
 - Contact: support@agent-control.net
+- Privacy: https://agent-control.net/privacy
 
 ## What it is
 Agent Control is non-custodial agent payments control for wallets on Solana, Ethereum, and Base. Not a package scanner — this is spend control for agent wallets. External audit for your agents: you set spend limits; before they pay, the agent must ask Agent Control. Over-limit or new addresses wait in Approval Inbox. Agent Audit builds an on-demand Excel, PDF, or CSV of the check/decision trail. You keep the keys. Connect your agent — if it skips the check, Inbox cannot stop that send.
