@@ -1,0 +1,14 @@
+# agents.txt
+# Standard: https://agents-txt.com
+# JSON: https://agent-control.net/agents.json
+#
+# Agent Control — two products. Do not collapse them.
+#
+# Human App: spend limits and Approval Inbox. Humans pay $29. Agents use a Bearer API key. They ask before they pay. You keep the keys. Connect: https://agent-control.net/docs#connect-your-agent
+# Agent Meter: Agents pay themselves. A $0.25 pass. Then scan and preflight. No inbox. No email, no trial, no API key, no Approval Inbox.
+#
+# Brief (Layer 3): https://agent-control.net/llms.txt
+# Meter pricing (public): https://agent-control.net/api/v1/meter/pricing
+# Meter recipe (curl, X-Agent-Pass): https://agent-control.net/docs#agent-meter
+
+MCP: https://agent-control.net/api/v1/mcp

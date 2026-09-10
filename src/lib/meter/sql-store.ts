@@ -1,6 +1,11 @@
 import { createHash, randomBytes } from "node:crypto";
 import { getSql, type Sql } from "../db.ts";
 import { SOLANA_PAYOUT_ADDRESS } from "../solana-pay.ts";
+import {
+  blankInvoiceOrigin,
+  isMeterInvoiceSource,
+  METER_INVOICE_LIST_LIMIT,
+} from "./origin.ts";
 import { utcDayKey } from "./preflight.ts";
 import { METER_PASS_1H, METER_PASS_SKU } from "./pricing.ts";
 import {
@@ -10,6 +15,7 @@ import {
   passDraft,
   type MeterCallLog,
   type MeterInvoice,
+  type MeterInvoiceListOpts,
   type MeterPass,
   type MeterPaymentRow,
   type MeterReport,
@@ -34,6 +40,11 @@ type InvoiceRow = {
   created_at: unknown;
   expires_at: unknown;
   paid_at: unknown;
+  source: string | null;
+  user_agent: string | null;
+  cf_connecting_ip_hash: string | null;
+  x_forwarded_for_hash: string | null;
+  partner: string | null;
 };
 
 type PassRow = {
@@ -102,6 +113,11 @@ function mapInvoice(row: InvoiceRow): MeterInvoice {
     created_at: iso(row.created_at),
     expires_at: iso(row.expires_at),
     paid_at: row.paid_at ? iso(row.paid_at) : null,
+    source: isMeterInvoiceSource(row.source) ? row.source : null,
+    user_agent: row.user_agent ?? null,
+    cf_connecting_ip_hash: row.cf_connecting_ip_hash ?? null,
+    x_forwarded_for_hash: row.x_forwarded_for_hash ?? null,
+    partner: row.partner ?? null,
   };
 }
 
@@ -194,6 +210,12 @@ export async function ensureMeterSchema(sql?: Sql): Promise<void> {
   `);
   await db.query(`create index if not exists meter_invoices_status_idx on meter_invoices (status, created_at desc)`);
   await db.query(`create index if not exists meter_invoices_ref_idx on meter_invoices (reference)`);
+  await db.query(`alter table meter_invoices add column if not exists source text`);
+  await db.query(`alter table meter_invoices add column if not exists user_agent text`);
+  await db.query(`alter table meter_invoices add column if not exists cf_connecting_ip_hash text`);
+  await db.query(`alter table meter_invoices add column if not exists x_forwarded_for_hash text`);
+  await db.query(`alter table meter_invoices add column if not exists partner text`);
+  await db.query(`create index if not exists meter_invoices_created_idx on meter_invoices (created_at desc)`);
   await db.query(`
     create table if not exists meter_stamps (
       id text primary key,
@@ -226,14 +248,37 @@ export function createSqlMeterStore(db: Sql): MeterStore {
       await db`
         insert into meter_invoices (
           id, reference, sku, pay_to, amount_usd, amount_base_units, chain, asset,
-          status, created_at, expires_at
+          status, created_at, expires_at, source, user_agent, cf_connecting_ip_hash,
+          x_forwarded_for_hash, partner
         ) values (
           ${invoice.invoice_id}, ${invoice.reference}, ${invoice.sku}, ${invoice.pay_to},
           ${invoice.amount_usd}, ${invoice.amount_base_units}, ${invoice.chain}, ${invoice.asset},
-          ${invoice.status}, ${invoice.created_at}, ${invoice.expires_at}
+          ${invoice.status}, ${invoice.created_at}, ${invoice.expires_at}, ${invoice.source},
+          ${invoice.user_agent}, ${invoice.cf_connecting_ip_hash}, ${invoice.x_forwarded_for_hash},
+          ${invoice.partner}
         )
       `;
       return invoice;
+    },
+    async listInvoices(opts: MeterInvoiceListOpts = {}) {
+      const limit = Math.min(Math.max(opts.limit ?? METER_INVOICE_LIST_LIMIT, 1), 500);
+      const params: unknown[] = [];
+      const where: string[] = [];
+      if (opts.status) {
+        params.push(opts.status);
+        where.push(`status = $${params.length}`);
+      }
+      if (opts.since) {
+        params.push(opts.since.toISOString());
+        where.push(`created_at >= $${params.length}::timestamptz`);
+      }
+      params.push(limit);
+      const sqlWhere = where.length ? `where ${where.join(" and ")}` : "";
+      const rows = await db.query<InvoiceRow>(
+        `select * from meter_invoices ${sqlWhere} order by created_at desc limit $${params.length}`,
+        params,
+      );
+      return rows.map(mapInvoice);
     },
     async getInvoice(idOrRef) {
       const key = idOrRef.trim();
@@ -314,6 +359,7 @@ export function createSqlMeterStore(db: Sql): MeterStore {
           created_at: issued.pass.created_at,
           expires_at: issued.pass.expires_at,
           paid_at: paidAt,
+          ...blankInvoiceOrigin(),
         },
         pass: issued.pass,
         token: issued.token,
@@ -413,10 +459,14 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
     invoices_created: 0,
     invoices_paid: 0,
     invoices_pending: 0,
+    invoices_pending_fresh: 0,
+    invoices_pending_stale: 0,
     passes_issued: 0,
     agents_paid: 0,
     usdc_received: 0,
     usdc_pending: 0,
+    usdc_pending_fresh: 0,
+    usdc_pending_stale: 0,
     calls: 0,
     recent_payments: [],
     generated_at: new Date().toISOString(),
@@ -426,16 +476,32 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
       invoices_created: unknown;
       invoices_paid: unknown;
       invoices_pending: unknown;
+      invoices_pending_fresh: unknown;
+      invoices_pending_stale: unknown;
       usdc_received: unknown;
       usdc_pending: unknown;
+      usdc_pending_fresh: unknown;
+      usdc_pending_stale: unknown;
       agents_paid: unknown;
     }>(
       `select
          count(*)::int as invoices_created,
          count(*) filter (where status = 'paid')::int as invoices_paid,
          count(*) filter (where status in ('pending', 'underpaid'))::int as invoices_pending,
+         count(*) filter (where status in ('pending', 'underpaid') and expires_at > now())::int
+           as invoices_pending_fresh,
+         count(*) filter (
+           where status = 'expired'
+              or (status in ('pending', 'underpaid') and expires_at <= now())
+         )::int as invoices_pending_stale,
          coalesce(sum(paid_amount_usd) filter (where status = 'paid'), 0) as usdc_received,
          coalesce(sum(amount_usd) filter (where status in ('pending', 'underpaid')), 0) as usdc_pending,
+         coalesce(sum(amount_usd) filter (where status in ('pending', 'underpaid') and expires_at > now()), 0)
+           as usdc_pending_fresh,
+         coalesce(sum(amount_usd) filter (
+           where status = 'expired'
+              or (status in ('pending', 'underpaid') and expires_at <= now())
+         ), 0) as usdc_pending_stale,
          count(distinct lower(coalesce(nullif(payer_address, ''), nullif(signature, ''), id)))
            filter (where status = 'paid')::int as agents_paid
        from meter_invoices`,
@@ -454,8 +520,12 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
        from meter_invoices where status = 'paid' order by paid_at desc nulls last limit 50`,
     );
     const invoicesPending = num(totals[0]?.invoices_pending);
+    const invoicesPendingFresh = num(totals[0]?.invoices_pending_fresh);
+    const invoicesPendingStale = num(totals[0]?.invoices_pending_stale);
     const usdcReceived = num(totals[0]?.usdc_received);
     const usdcPending = num(totals[0]?.usdc_pending);
+    const usdcPendingFresh = num(totals[0]?.usdc_pending_fresh);
+    const usdcPendingStale = num(totals[0]?.usdc_pending_stale);
     const recentPayments: MeterPaymentRow[] = recent.map((row) => ({
       invoice_id: row.id,
       pass_id: row.pass_id,
@@ -470,10 +540,14 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
       invoices_created: num(totals[0]?.invoices_created),
       invoices_paid: num(totals[0]?.invoices_paid),
       invoices_pending: invoicesPending,
+      invoices_pending_fresh: invoicesPendingFresh,
+      invoices_pending_stale: invoicesPendingStale,
       passes_issued: num(passes[0]?.n),
       agents_paid: num(totals[0]?.agents_paid),
       usdc_received: Number(usdcReceived.toFixed(6)),
       usdc_pending: Number(usdcPending.toFixed(6)),
+      usdc_pending_fresh: Number(usdcPendingFresh.toFixed(6)),
+      usdc_pending_stale: Number(usdcPendingStale.toFixed(6)),
       calls: num(calls[0]?.n),
       recent_payments: recentPayments,
       generated_at: new Date().toISOString(),

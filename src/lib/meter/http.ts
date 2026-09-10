@@ -1,5 +1,14 @@
 import { json } from "../server/http.ts";
+import { authorizeInternalStats } from "../server/stats.server.ts";
 import { buildSolanaPayUrl } from "../solana-pay.ts";
+import {
+  extractMeterInvoiceOrigin,
+  internalInvoiceListView,
+  invoiceSourceForMeterPath,
+  isMeterInvoiceStatus,
+  parseInvoiceSince,
+  type MeterInvoiceSource,
+} from "./origin.ts";
 import {
   coversForSku,
   meter402Body,
@@ -30,6 +39,7 @@ const SCAN_BATCH_MAX = 100;
 
 export type MeterHttpDeps = {
   findPayment?: MeterChainFinder;
+  source?: MeterInvoiceSource;
 };
 
 export function readPassToken(request: Request, body?: Record<string, unknown>) {
@@ -65,11 +75,19 @@ function unknownSkuResponse(sku: string): Response {
 
 async function invoiceForBody(
   store: MeterStore,
+  request: Request,
+  source: MeterInvoiceSource,
   body: Record<string, unknown>,
 ): Promise<{ ok: true; invoice: Awaited<ReturnType<MeterStore["createInvoice"]>> } | { ok: false; response: Response }> {
   const sku = skuFromBody(body);
   if ("error" in sku) return { ok: false, response: unknownSkuResponse(sku.sku) };
-  return { ok: true, invoice: await store.createInvoice({ sku: sku.id }) };
+  return {
+    ok: true,
+    invoice: await store.createInvoice({
+      sku: sku.id,
+      origin: extractMeterInvoiceOrigin(request, source, body),
+    }),
+  };
 }
 
 export async function handleMeterRequest(
@@ -123,7 +141,7 @@ export async function handleMeterRequest(
   }
 
   if (request.method === "POST" && (suffix === "pass" || suffix === "" || suffix === "watch")) {
-    return issueOrInvoice(request, body, resolved, deps);
+    return issueOrInvoice(request, body, resolved, deps, suffix);
   }
 
   if (request.method === "POST" && suffix === "helius") {
@@ -156,13 +174,34 @@ async function defaultStore(): Promise<MeterStore> {
 }
 
 function meterReport(request: Request, store: MeterStore) {
-  const secret = process.env.INTERNAL_STATS_SECRET?.trim();
-  if (!secret) return json({ error: "Not found" }, 404);
-  const header = request.headers.get("authorization") ?? "";
-  const bearer = header.toLowerCase().startsWith("bearer ") ? header.slice(7).trim() : "";
-  const cron = request.headers.get("x-vercel-cron") === "1";
-  if (!cron && bearer !== secret) return json({ error: "Unauthorized" }, 401);
+  const auth = authorizeInternalStats(request);
+  if (auth === "missing") return json({ error: "Not found" }, 404);
+  if (auth !== "ok") return json({ error: "Unauthorized" }, 401);
   return Promise.resolve(store.report()).then((report) => json(report));
+}
+
+export async function handleInternalMeterInvoices(
+  request: Request,
+  store?: MeterStore,
+): Promise<Response> {
+  const auth = authorizeInternalStats(request);
+  if (auth === "missing") return json({ error: "Not found" }, 404);
+  if (auth !== "ok") return json({ error: "Unauthorized" }, 401);
+
+  const url = new URL(request.url);
+  const statusRaw = (url.searchParams.get("status") ?? "").trim();
+  if (statusRaw && !isMeterInvoiceStatus(statusRaw)) {
+    return json({ error: "invalid_status" }, 400);
+  }
+  const sinceRaw = parseInvoiceSince(url.searchParams.get("since"));
+  if (sinceRaw === "invalid") return json({ error: "invalid_since" }, 400);
+
+  const resolved = store ?? (await defaultStore());
+  const invoices = await resolved.listInvoices({
+    status: statusRaw && isMeterInvoiceStatus(statusRaw) ? statusRaw : undefined,
+    since: sinceRaw ?? undefined,
+  });
+  return json({ invoices: invoices.map(internalInvoiceListView) });
 }
 
 function publicInvoiceView(invoice: Awaited<ReturnType<MeterStore["createInvoice"]>>) {
@@ -188,12 +227,25 @@ function publicInvoiceView(invoice: Awaited<ReturnType<MeterStore["createInvoice
   };
 }
 
+async function paymentRequired(
+  store: MeterStore,
+  request: Request,
+  source: MeterInvoiceSource,
+  body: Record<string, unknown>,
+): Promise<Response> {
+  const minted = await invoiceForBody(store, request, source, body);
+  if (!minted.ok) return minted.response;
+  return json(meter402Body(minted.invoice), 402);
+}
+
 async function issueOrInvoice(
   request: Request,
   body: Record<string, unknown>,
   store: MeterStore,
   deps: MeterHttpDeps,
+  suffix: string,
 ): Promise<Response> {
+  const source = invoiceSourceForMeterPath(suffix, deps.source);
   const proof = proofRecord(body);
   const proofType = String(proof.type ?? body.proof_type ?? "").toLowerCase();
 
@@ -229,9 +281,7 @@ async function issueOrInvoice(
   if (wantsWatch) {
     const invoice = invoiceKey ? await store.getInvoice(invoiceKey) : null;
     if (!invoice) {
-      const minted = await invoiceForBody(store, body);
-      if (!minted.ok) return minted.response;
-      return json(meter402Body(minted.invoice), 402);
+      return paymentRequired(store, request, source, body);
     }
     const finder: MeterChainFinder =
       deps.findPayment ??
@@ -259,9 +309,7 @@ async function issueOrInvoice(
     );
   }
 
-  const minted = await invoiceForBody(store, body);
-  if (!minted.ok) return minted.response;
-  return json(meter402Body(minted.invoice), 402);
+  return paymentRequired(store, request, source, body);
 }
 
 function skuDoesNotCoverResponse(pass: MeterPass, kind: string) {
@@ -280,14 +328,13 @@ async function requirePass(
   request: Request,
   body: Record<string, unknown>,
   store: MeterStore,
+  source: MeterInvoiceSource,
   kind?: string,
 ) {
   const token = readPassToken(request, body);
   const pass = await store.getPassByToken(token);
   if (!pass) {
-    const minted = await invoiceForBody(store, body);
-    if (!minted.ok) return { pass: null as null, token, response: minted.response };
-    return { pass: null as null, token, response: json(meter402Body(minted.invoice), 402) };
+    return { pass: null as null, token, response: await paymentRequired(store, request, source, body) };
   }
   if (kind && !skuCovers(pass.sku, kind)) {
     return { pass, token, response: skuDoesNotCoverResponse(pass, kind) };
@@ -296,7 +343,8 @@ async function requirePass(
 }
 
 async function runScan(request: Request, body: Record<string, unknown>, store: MeterStore): Promise<Response> {
-  const gate = await requirePass(request, body, store, "scan");
+  const source = invoiceSourceForMeterPath("scan");
+  const gate = await requirePass(request, body, store, source, "scan");
   if (gate.response) return gate.response;
   const chain = chainOf(body.chain);
   const address = String(body.address ?? "").trim();
@@ -305,9 +353,7 @@ async function runScan(request: Request, body: Record<string, unknown>, store: M
   const scanned = evaluateScan({ address, chain });
   const after = await store.consumeCall(gate.pass!);
   if (after === "exhausted") {
-    const minted = await invoiceForBody(store, body);
-    if (!minted.ok) return minted.response;
-    return json(meter402Body(minted.invoice), 402);
+    return paymentRequired(store, request, source, body);
   }
   await store.logCall({
     pass_id: after.id,
@@ -325,7 +371,8 @@ async function runScan(request: Request, body: Record<string, unknown>, store: M
 }
 
 async function runPreflight(request: Request, body: Record<string, unknown>, store: MeterStore): Promise<Response> {
-  const gate = await requirePass(request, body, store, "preflight");
+  const source = invoiceSourceForMeterPath("preflight");
+  const gate = await requirePass(request, body, store, source, "preflight");
   if (gate.response) return gate.response;
   const chain = chainOf(body.chain);
   const wallet = String(body.wallet ?? "").trim();
@@ -341,9 +388,7 @@ async function runPreflight(request: Request, body: Record<string, unknown>, sto
 
   const after = await store.consumeCall(gate.pass!);
   if (after === "exhausted") {
-    const minted = await invoiceForBody(store, body);
-    if (!minted.ok) return minted.response;
-    return json(meter402Body(minted.invoice), 402);
+    return paymentRequired(store, request, source, body);
   }
   if (verdict.decision === "allow") await store.addAllowSpend(wallet, value_usd);
   await store.logCall({
@@ -372,7 +417,8 @@ function parseAddressList(body: Record<string, unknown>): string[] | { error: st
 }
 
 async function runScanBatch(request: Request, body: Record<string, unknown>, store: MeterStore): Promise<Response> {
-  const gate = await requirePass(request, body, store, "scan_batch");
+  const source = invoiceSourceForMeterPath("scan-batch");
+  const gate = await requirePass(request, body, store, source, "scan_batch");
   if (gate.response) return gate.response;
   const chain = chainOf(body.chain);
   if (!chain) return json({ error: "Provide chain and addresses[]." }, 400);
@@ -384,9 +430,7 @@ async function runScanBatch(request: Request, body: Record<string, unknown>, sto
   const results = parsed.map((address) => evaluateScan({ address, chain }));
   const after = await store.consumeCall(gate.pass!);
   if (after === "exhausted") {
-    const minted = await invoiceForBody(store, body);
-    if (!minted.ok) return minted.response;
-    return json(meter402Body(minted.invoice), 402);
+    return paymentRequired(store, request, source, body);
   }
   const worst = results.reduce(
     (acc, row) => (riskRank(row.risk) > riskRank(acc) ? row.risk : acc),
@@ -428,7 +472,8 @@ function stampDecisionOf(body: Record<string, unknown>): StampDecision | null {
 }
 
 async function runStamp(request: Request, body: Record<string, unknown>, store: MeterStore): Promise<Response> {
-  const gate = await requirePass(request, body, store, "stamp");
+  const source = invoiceSourceForMeterPath("stamp");
+  const gate = await requirePass(request, body, store, source, "stamp");
   if (gate.response) return gate.response;
   const chain = chainOf(body.chain) ?? "solana";
   const decision = stampDecisionOf(body);
@@ -436,9 +481,7 @@ async function runStamp(request: Request, body: Record<string, unknown>, store: 
 
   const after = await store.consumeCall(gate.pass!);
   if (after === "exhausted") {
-    const minted = await invoiceForBody(store, body);
-    if (!minted.ok) return minted.response;
-    return json(meter402Body(minted.invoice), 402);
+    return paymentRequired(store, request, source, body);
   }
 
   const created_at = new Date().toISOString();

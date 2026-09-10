@@ -1,0 +1,17 @@
+{
+  "$schema": "https://agents-txt.com/schema/agents-json/v1.0.json",
+  "version": "1.0",
+  "standard": "https://agents-txt.com",
+  "site": {
+    "name": "Agent Control",
+    "url": "https://agent-control.net",
+    "description": "Two products. Human App: spend limits and Approval Inbox. Humans pay $29. Agents use a Bearer API key. They ask before they pay. You keep the keys. Agent Meter: Agents pay themselves. A $0.25 pass. Then scan and preflight. No inbox. No email, no trial, no API key, no Approval Inbox. Brief: https://agent-control.net/llms.txt Meter pricing: https://agent-control.net/api/v1/meter/pricing Recipe: https://agent-control.net/docs#agent-meter"
+  },
+  "mcp": [
+    {
+      "url": "https://agent-control.net/api/v1/mcp",
+      "type": "streamable-http",
+      "description": "Streamable HTTP. Two products on one MCP. Human App tools (Bearer agent API key except get_pricing): get_pricing, start_trial, attach_human, create_checkout, get_status, check_transfer, get_approval, get_agent_status. Agent Meter tools (no email; pass token for scan and preflight): meter_pricing, meter_buy_pass, meter_watch, meter_scan, meter_preflight. Meter pricing: https://agent-control.net/api/v1/meter/pricing Recipe: https://agent-control.net/docs#agent-meter Brief: https://agent-control.net/llms.txt"
+    }
+  ]
+}

@@ -1,4 +1,7 @@
 User-agent: *
+Allow: /llms.txt
+Allow: /agents.txt
+Allow: /agents.json
 Allow: /
 Disallow: /api/
 

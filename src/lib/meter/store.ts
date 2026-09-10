@@ -1,6 +1,13 @@
 import { createHash, randomBytes } from "node:crypto";
 import { newPayReference } from "../pay-invoice.ts";
 import { PAY_EXPIRY_MS, SOLANA_PAYOUT_ADDRESS } from "../solana-pay.ts";
+import {
+  applyInvoiceOrigin,
+  blankInvoiceOrigin,
+  METER_INVOICE_LIST_LIMIT,
+  type MeterInvoiceCreateOrigin,
+  type MeterInvoiceOrigin,
+} from "./origin.ts";
 import { coversForSku, meterSkuOrDefault, METER_PASS_1H, METER_PASS_SKU, type MeterSku } from "./pricing.ts";
 import { utcDayKey } from "./preflight.ts";
 import type { StampDecision } from "./stamp.ts";
@@ -63,7 +70,7 @@ export type MeterInvoice = {
   created_at: string;
   expires_at: string;
   paid_at: string | null;
-};
+} & MeterInvoiceOrigin;
 
 export type MeterPaymentRow = {
   invoice_id: string;
@@ -84,13 +91,24 @@ export type MeterReport = {
   invoices_created: number;
   invoices_paid: number;
   invoices_pending: number;
+  invoices_pending_fresh: number;
+  invoices_pending_stale: number;
   passes_issued: number;
   agents_paid: number;
   usdc_received: number;
   usdc_pending: number;
+  usdc_pending_fresh: number;
+  usdc_pending_stale: number;
   calls: number;
   recent_payments: MeterPaymentRow[];
   generated_at: string;
+};
+
+export type MeterInvoiceListOpts = {
+  status?: MeterInvoice["status"];
+  since?: Date;
+  limit?: number;
+  nowMs?: number;
 };
 
 export type Awaitable<T> = T | Promise<T>;
@@ -107,11 +125,13 @@ export type IssuePassInput = {
 export type CreateInvoiceInput = {
   sku?: string;
   nowMs?: number;
+  origin?: MeterInvoiceCreateOrigin;
 };
 
 export type MeterStore = {
   createInvoice(opts?: CreateInvoiceInput): Awaitable<MeterInvoice>;
   getInvoice(idOrRef: string): Awaitable<MeterInvoice | null>;
+  listInvoices(opts?: MeterInvoiceListOpts): Awaitable<MeterInvoice[]>;
   noteUnderpaid(invoiceId: string, signature: string, amountUsd: number): Awaitable<MeterInvoice | null>;
   fulfillInvoice(
     invoiceId: string,
@@ -154,6 +174,7 @@ export function invoiceDraft(opts: CreateInvoiceInput = {}): MeterInvoice {
     created_at: new Date(nowMs).toISOString(),
     expires_at: new Date(nowMs + PAY_EXPIRY_MS).toISOString(),
     paid_at: null,
+    ...applyInvoiceOrigin(opts.origin),
   };
 }
 
@@ -178,6 +199,10 @@ export function passDraft(tokenHash: string, input: IssuePassInput = {}): MeterP
 
 function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
+}
+
+function usdSum(rows: Array<{ amount_usd: number }>) {
+  return Number(rows.reduce((sum, row) => sum + Number(row.amount_usd || 0), 0).toFixed(6));
 }
 
 export function allowDevGrant(env = process.env): boolean {
@@ -216,6 +241,17 @@ export function createMeterStore(): MeterStore {
       invoices.set(invoice.invoice_id, invoice);
       invoiceByRef.set(invoice.reference, invoice.invoice_id);
       return invoice;
+    },
+    listInvoices(opts = {}) {
+      const nowMs = opts.nowMs ?? Date.now();
+      const sinceMs = opts.since ? opts.since.getTime() : null;
+      const limit = opts.limit ?? METER_INVOICE_LIST_LIMIT;
+      return [...invoices.values()]
+        .map((row) => expireInvoice(row, nowMs))
+        .filter((row) => (opts.status ? row.status === opts.status : true))
+        .filter((row) => (sinceMs == null ? true : Date.parse(row.created_at) >= sinceMs))
+        .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
+        .slice(0, limit);
     },
     getInvoice(idOrRef) {
       const key = idOrRef.trim();
@@ -266,6 +302,7 @@ export function createMeterStore(): MeterStore {
             created_at: issued.pass.created_at,
             expires_at: issued.pass.expires_at,
             paid_at: issued.pass.created_at,
+            ...blankInvoiceOrigin(),
           },
           pass: issued.pass,
           token: issued.token,
@@ -354,9 +391,18 @@ export function createMeterStore(): MeterStore {
       spend.set(key, (spend.get(key) ?? 0) + valueUsd);
     },
     report() {
-      const all = [...invoices.values()].map((row) => expireInvoice(row));
+      const nowMs = Date.now();
+      const all = [...invoices.values()].map((row) => expireInvoice(row, nowMs));
       const paidRows = all.filter((row) => row.status === "paid");
       const pendingRows = all.filter((row) => row.status === "pending" || row.status === "underpaid");
+      const pendingFresh = pendingRows.filter((row) => Date.parse(row.expires_at) > nowMs);
+      const pendingStale = all.filter((row) => {
+        if (row.status === "expired") return true;
+        if (row.status === "pending" || row.status === "underpaid") {
+          return Date.parse(row.expires_at) <= nowMs;
+        }
+        return false;
+      });
       const payers = new Set(
         paidRows
           .map((row) => (row.payer_address || row.signature || row.invoice_id).toLowerCase())
@@ -373,12 +419,14 @@ export function createMeterStore(): MeterStore {
         invoices_created: all.length,
         invoices_paid: paidRows.length,
         invoices_pending: pendingRows.length,
+        invoices_pending_fresh: pendingFresh.length,
+        invoices_pending_stale: pendingStale.length,
         passes_issued: passes.size,
         agents_paid: payers.size,
         usdc_received: Number(usdcReceived.toFixed(6)),
-        usdc_pending: Number(
-          pendingRows.reduce((sum, row) => sum + Number(row.amount_usd || 0), 0).toFixed(6),
-        ),
+        usdc_pending: usdSum(pendingRows),
+        usdc_pending_fresh: usdSum(pendingFresh),
+        usdc_pending_stale: usdSum(pendingStale),
         calls: logs.length,
         recent_payments: payments.slice(-50).reverse(),
         generated_at: new Date().toISOString(),
