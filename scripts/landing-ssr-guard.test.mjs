@@ -616,11 +616,18 @@ test("Connect your agent path is trial then Pay $29 on the same check", () => {
   assert.doesNotMatch(copy, /\/api\/v2\//);
 });
 
-test("sitemap and robots expose docs, connect, partners, and llms.txt — not /meter", () => {
+test("sitemap and robots expose docs, connect, partners, llms.txt, and agents.txt — not /meter", () => {
   const sitemap = readFileSync(join(ROOT, "public/sitemap.xml"), "utf8");
   const robots = readFileSync(join(ROOT, "public/robots.txt"), "utf8");
   const chrome = readFileSync(join(ROOT, "src/components/marketing/chrome.tsx"), "utf8");
-  for (const path of ["/docs", "/connect", "/partners", "/llms.txt"]) {
+  for (const path of [
+    "/docs",
+    "/connect",
+    "/partners",
+    "/llms.txt",
+    "/agents.txt",
+    "/agents.json",
+  ]) {
     assert.match(
       sitemap,
       new RegExp(`<loc>https://agent-control\\.net${path.replace(".", "\\.")}</loc>`),
@@ -629,11 +636,15 @@ test("sitemap and robots expose docs, connect, partners, and llms.txt — not /m
   assert.doesNotMatch(sitemap, /<loc>https:\/\/agent-control\.net\/meter<\/loc>/);
   assert.doesNotMatch(sitemap, /<loc>https:\/\/agent-control\.net\/live<\/loc>/);
   assert.match(robots, /Allow: \//);
+  assert.match(robots, /Allow: \/llms\.txt/);
+  assert.match(robots, /Allow: \/agents\.txt/);
+  assert.match(robots, /Allow: \/agents\.json/);
   assert.match(robots, /Sitemap: https:\/\/agent-control\.net\/sitemap\.xml/);
   assert.doesNotMatch(robots, /Disallow: \/docs/);
   assert.doesNotMatch(robots, /Disallow: \/connect/);
   assert.doesNotMatch(robots, /Disallow: \/partners/);
   assert.doesNotMatch(robots, /Disallow: \/llms/);
+  assert.doesNotMatch(robots, /Disallow: \/agents/);
   assert.doesNotMatch(robots, /\/meter/);
   assert.doesNotMatch(chrome, /href=["']\/meter["']/);
   assert.match(chrome, /href=["']\/docs["']/);
