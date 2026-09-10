@@ -38,7 +38,7 @@ function PrivacyPage() {
           {PRIVACY_EYEBROW}
         </p>
         <h1 className="mt-3 text-display font-semibold">{PRIVACY_HEADLINE}</h1>
-        <p className="mt-4 max-w-[54ch] text-card text-muted">{PRIVACY_LEDE}</p>
+        <p className="mt-4 max-w-[54ch] text-body text-muted">{PRIVACY_LEDE}</p>
         <h2 className="mt-10 text-title font-semibold tracking-tight">{PRIVACY_KEEP_HEADING}</h2>
         <p className="mt-4 max-w-[54ch] text-body text-muted">{PRIVACY_BODY}</p>
         <p className="mt-6 max-w-[54ch] text-body text-muted">

@@ -318,14 +318,16 @@ describe("privacy and consent copy contract", () => {
     assert.match(privacy, /text-meta font-medium uppercase tracking-\[0\.18em\] text-coral/);
     assert.match(privacy, /text-display font-semibold/);
     assert.match(privacy, /text-title font-semibold tracking-tight/);
-    assert.match(privacy, /text-card text-muted/);
+    assert.match(privacy, /text-body text-muted">\{PRIVACY_LEDE\}/);
+    assert.doesNotMatch(privacy, /text-card text-muted">\{PRIVACY_LEDE\}/);
     assert.match(privacy, /text-body text-muted/);
     assert.match(privacy, /SkyShell/);
     assert.match(partners, /text-display font-semibold/);
     assert.match(partners, /text-title font-semibold tracking-tight/);
     assert.match(consent, /text-display font-semibold/);
     assert.match(consent, /text-title font-semibold tracking-tight/);
-    assert.match(consent, /text-card text-muted/);
+    assert.match(consent, /text-body text-muted">\{CONSENT_LEDE\}/);
+    assert.doesNotMatch(consent, /text-card text-muted">\{CONSENT_LEDE\}/);
     assert.match(consent, /text-body text-muted/);
     assert.doesNotMatch(privacy, /text-\[\d+px\]/);
     assert.doesNotMatch(consent, /text-\[\d+px\]/);
