@@ -7,6 +7,8 @@ export const METER_INVOICE_SOURCES = [
   "http_watch",
   "http_scan",
   "http_preflight",
+  "http_scan_batch",
+  "http_stamp",
   "mcp_buy_pass",
 ] as const;
 
@@ -131,6 +133,8 @@ export function invoiceSourceForMeterPath(
   if (suffix === "watch") return "http_watch";
   if (suffix === "scan") return "http_scan";
   if (suffix === "preflight") return "http_preflight";
+  if (suffix === "scan-batch" || suffix === "scan_batch") return "http_scan_batch";
+  if (suffix === "stamp") return "http_stamp";
   return "http_pass";
 }
 
