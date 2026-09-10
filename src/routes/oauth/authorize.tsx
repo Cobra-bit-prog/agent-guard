@@ -103,7 +103,7 @@ function AuthorizePage() {
         <div className="w-full max-w-md rounded-[28px] border border-border bg-surface p-8 shadow-[var(--shadow-panel)]">
           <Logo href="/" markClassName="text-navy" />
           <h1 className="mt-6 text-display font-semibold">{CONSENT_HEADLINE}</h1>
-          <p className="mt-4 text-card text-muted">{CONSENT_LEDE}</p>
+          <p className="mt-4 text-body text-muted">{CONSENT_LEDE}</p>
           <p className="mt-3 text-body text-muted">{CONSENT_SIGN_IN}</p>
           <Button asChild className="mt-6 w-full rounded-full">
             <a href={href}>Sign in</a>
@@ -138,7 +138,7 @@ function AuthorizePage() {
           {CONSENT_EYEBROW}
         </p>
         <h1 className="mt-3 text-display font-semibold">{CONSENT_HEADLINE}</h1>
-        <p className="mt-4 max-w-[46ch] text-card text-muted">{CONSENT_LEDE}</p>
+        <p className="mt-4 max-w-[46ch] text-body text-muted">{CONSENT_LEDE}</p>
         <p className="mt-3 text-body text-muted">{CONSENT_HUMAN_LINE}</p>
         <h2 className="mt-6 text-title font-semibold tracking-tight">{CONSENT_WHAT_HEADING}</h2>
         <ul className="mt-3 list-disc space-y-1 pl-5 text-body text-muted">
