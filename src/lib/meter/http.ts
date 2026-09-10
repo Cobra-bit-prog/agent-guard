@@ -1,5 +1,14 @@
 import { json } from "../server/http.ts";
+import { authorizeInternalStats } from "../server/stats.server.ts";
 import { buildSolanaPayUrl } from "../solana-pay.ts";
+import {
+  extractMeterInvoiceOrigin,
+  internalInvoiceListView,
+  invoiceSourceForMeterPath,
+  isMeterInvoiceStatus,
+  parseInvoiceSince,
+  type MeterInvoiceSource,
+} from "./origin.ts";
 import { meter402Body, meterPricing, METER_PASS_1H } from "./pricing.ts";
 import { evaluateScan, type MeterChain } from "./scan.ts";
 import { evaluatePreflightSelf } from "./preflight.ts";
@@ -19,6 +28,7 @@ const CHAINS = new Set(["solana", "ethereum", "base"]);
 
 export type MeterHttpDeps = {
   findPayment?: MeterChainFinder;
+  source?: MeterInvoiceSource;
 };
 
 export function readPassToken(request: Request, body?: Record<string, unknown>) {
@@ -91,7 +101,7 @@ export async function handleMeterRequest(
   }
 
   if (request.method === "POST" && (suffix === "pass" || suffix === "" || suffix === "watch")) {
-    return issueOrInvoice(request, body, resolved, deps);
+    return issueOrInvoice(request, body, resolved, deps, suffix);
   }
 
   if (request.method === "POST" && suffix === "helius") {
@@ -116,13 +126,43 @@ async function defaultStore(): Promise<MeterStore> {
 }
 
 function meterReport(request: Request, store: MeterStore) {
-  const secret = process.env.INTERNAL_STATS_SECRET?.trim();
-  if (!secret) return json({ error: "Not found" }, 404);
-  const header = request.headers.get("authorization") ?? "";
-  const bearer = header.toLowerCase().startsWith("bearer ") ? header.slice(7).trim() : "";
-  const cron = request.headers.get("x-vercel-cron") === "1";
-  if (!cron && bearer !== secret) return json({ error: "Unauthorized" }, 401);
+  const auth = authorizeInternalStats(request);
+  if (auth === "missing") return json({ error: "Not found" }, 404);
+  if (auth !== "ok") return json({ error: "Unauthorized" }, 401);
   return Promise.resolve(store.report()).then((report) => json(report));
+}
+
+export async function handleInternalMeterInvoices(
+  request: Request,
+  store?: MeterStore,
+): Promise<Response> {
+  const auth = authorizeInternalStats(request);
+  if (auth === "missing") return json({ error: "Not found" }, 404);
+  if (auth !== "ok") return json({ error: "Unauthorized" }, 401);
+
+  const url = new URL(request.url);
+  const statusRaw = (url.searchParams.get("status") ?? "").trim();
+  if (statusRaw && !isMeterInvoiceStatus(statusRaw)) {
+    return json({ error: "invalid_status" }, 400);
+  }
+  const sinceRaw = parseInvoiceSince(url.searchParams.get("since"));
+  if (sinceRaw === "invalid") return json({ error: "invalid_since" }, 400);
+
+  const resolved = store ?? (await defaultStore());
+  const invoices = await resolved.listInvoices({
+    status: statusRaw && isMeterInvoiceStatus(statusRaw) ? statusRaw : undefined,
+    since: sinceRaw ?? undefined,
+  });
+  return json({ invoices: invoices.map(internalInvoiceListView) });
+}
+
+async function mintInvoice(
+  store: MeterStore,
+  request: Request,
+  source: MeterInvoiceSource,
+  body: Record<string, unknown> = {},
+) {
+  return store.createInvoice(undefined, extractMeterInvoiceOrigin(request, source, body));
 }
 
 function publicInvoiceView(invoice: Awaited<ReturnType<MeterStore["createInvoice"]>>) {
@@ -152,7 +192,9 @@ async function issueOrInvoice(
   body: Record<string, unknown>,
   store: MeterStore,
   deps: MeterHttpDeps,
+  suffix: string,
 ) {
+  const source = invoiceSourceForMeterPath(suffix, deps.source);
   const proof = proofRecord(body);
   const proofType = String(proof.type ?? body.proof_type ?? "").toLowerCase();
 
@@ -185,7 +227,7 @@ async function issueOrInvoice(
   if (wantsWatch) {
     const invoice = invoiceKey ? await store.getInvoice(invoiceKey) : null;
     if (!invoice) {
-      const fresh = await store.createInvoice();
+      const fresh = await mintInvoice(store, request, source, body);
       return json(meter402Body(fresh), 402);
     }
     const finder: MeterChainFinder =
@@ -214,22 +256,28 @@ async function issueOrInvoice(
     );
   }
 
-  const invoice = await store.createInvoice();
+  const invoice = await mintInvoice(store, request, source, body);
   return json(meter402Body(invoice), 402);
 }
 
-async function requirePass(request: Request, body: Record<string, unknown>, store: MeterStore) {
+async function requirePass(
+  request: Request,
+  body: Record<string, unknown>,
+  store: MeterStore,
+  source: MeterInvoiceSource,
+) {
   const token = readPassToken(request, body);
   const pass = await store.getPassByToken(token);
   if (!pass) {
-    const invoice = await store.createInvoice();
+    const invoice = await mintInvoice(store, request, source, body);
     return { pass: null as null, token, response: json(meter402Body(invoice), 402) };
   }
   return { pass, token, response: null as Response | null };
 }
 
 async function runScan(request: Request, body: Record<string, unknown>, store: MeterStore) {
-  const gate = await requirePass(request, body, store);
+  const source = invoiceSourceForMeterPath("scan");
+  const gate = await requirePass(request, body, store, source);
   if (gate.response) return gate.response;
   const chain = chainOf(body.chain);
   const address = String(body.address ?? "").trim();
@@ -238,7 +286,7 @@ async function runScan(request: Request, body: Record<string, unknown>, store: M
   const scanned = evaluateScan({ address, chain });
   const after = await store.consumeCall(gate.pass!);
   if (after === "exhausted") {
-    const invoice = await store.createInvoice();
+    const invoice = await mintInvoice(store, request, source, body);
     return json(meter402Body(invoice), 402);
   }
   await store.logCall({
@@ -258,7 +306,8 @@ async function runScan(request: Request, body: Record<string, unknown>, store: M
 }
 
 async function runPreflight(request: Request, body: Record<string, unknown>, store: MeterStore) {
-  const gate = await requirePass(request, body, store);
+  const source = invoiceSourceForMeterPath("preflight");
+  const gate = await requirePass(request, body, store, source);
   if (gate.response) return gate.response;
   const chain = chainOf(body.chain);
   const wallet = String(body.wallet ?? "").trim();
@@ -274,7 +323,7 @@ async function runPreflight(request: Request, body: Record<string, unknown>, sto
 
   const after = await store.consumeCall(gate.pass!);
   if (after === "exhausted") {
-    const invoice = await store.createInvoice();
+    const invoice = await mintInvoice(store, request, source, body);
     return json(meter402Body(invoice), 402);
   }
   if (verdict.decision === "allow") await store.addAllowSpend(wallet, value_usd);

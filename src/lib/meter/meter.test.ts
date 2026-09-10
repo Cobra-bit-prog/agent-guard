@@ -1,8 +1,18 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { PAY_EXPIRY_MS } from "../solana-pay.ts";
 import { evaluateTransfer } from "../policy.ts";
 import { SCAN_SINK_FIXTURE } from "./denylist.ts";
-import { handleMeterRequest } from "./http.ts";
+import { handleInternalMeterInvoices, handleMeterRequest } from "./http.ts";
+import {
+  extractMeterInvoiceOrigin,
+  hashMeterClientIp,
+  meterInvoiceSourceForMcpTool,
+  METER_USER_AGENT_MAX,
+} from "./origin.ts";
 import { evaluatePreflightSelf } from "./preflight.ts";
 import { evaluateScan } from "./scan.ts";
 import { createMeterStore } from "./store.ts";
@@ -210,6 +220,215 @@ describe("meter http", () => {
     const body = (await res.json()) as { product: string; pass: { price_usd: number } };
     assert.equal(body.product, "Agent Meter");
     assert.equal(body.pass.price_usd, 0.25);
+  });
+});
+
+describe("invoice origin", { concurrency: false }, () => {
+  const SECRET = "meter-origin-test-secret";
+
+  function withStatsSecret<T>(fn: () => Promise<T> | T): Promise<T> {
+    const prev = process.env.INTERNAL_STATS_SECRET;
+    process.env.INTERNAL_STATS_SECRET = SECRET;
+    return Promise.resolve()
+      .then(fn)
+      .finally(() => {
+        if (prev == null) delete process.env.INTERNAL_STATS_SECRET;
+        else process.env.INTERNAL_STATS_SECRET = prev;
+      });
+  }
+
+  it("hashes first-hop IPs and truncates user-agent", () => {
+    const origin = extractMeterInvoiceOrigin(
+      new Request("https://agent-control.net/api/v1/meter/pass?partner=Turnkey", {
+        method: "POST",
+        headers: {
+          "user-agent": `UA${"x".repeat(400)}`,
+          "cf-connecting-ip": "198.51.100.7",
+          "x-forwarded-for": "203.0.113.10, 70.41.3.18",
+        },
+      }),
+      "http_pass",
+      {},
+      { INTERNAL_STATS_SECRET: SECRET },
+    );
+    assert.equal(origin.source, "http_pass");
+    assert.equal(origin.partner, "turnkey");
+    assert.equal(origin.user_agent?.length, METER_USER_AGENT_MAX);
+    assert.equal(origin.cf_connecting_ip_hash, hashMeterClientIp("198.51.100.7", SECRET));
+    assert.equal(origin.x_forwarded_for_hash, hashMeterClientIp("203.0.113.10", SECRET));
+    assert.doesNotMatch(origin.cf_connecting_ip_hash ?? "", /198\.51\.100\.7/);
+    assert.doesNotMatch(origin.x_forwarded_for_hash ?? "", /203\.0\.113\.10/);
+  });
+
+  it("persists http_pass metadata and ignores invalid partner", async () => {
+    await withStatsSecret(async () => {
+      const store = createMeterStore();
+      const res = await handleMeterRequest(
+        post(
+          "/api/v1/meter/pass?partner=nope!",
+          { partner: "AgentKit" },
+          {
+            "user-agent": "curl/8.0",
+            "cf-connecting-ip": "198.51.100.20",
+          },
+        ),
+        "/api/v1/meter/pass",
+        store,
+      );
+      assert.equal(res.status, 402);
+      const body = (await res.json()) as { invoice_id: string };
+      const invoice = await store.getInvoice(body.invoice_id);
+      assert.ok(invoice);
+      assert.equal(invoice.source, "http_pass");
+      assert.equal(invoice.user_agent, "curl/8.0");
+      assert.equal(invoice.partner, "agentkit");
+      assert.equal(invoice.cf_connecting_ip_hash, hashMeterClientIp("198.51.100.20", SECRET));
+      assert.equal(invoice.x_forwarded_for_hash, null);
+      const publicText = JSON.stringify(body);
+      assert.doesNotMatch(publicText, /198\.51\.100\.20/);
+      assert.doesNotMatch(publicText, /cf_connecting_ip_hash/);
+    });
+  });
+
+  it("tags scan and preflight 402s and watch creates", async () => {
+    await withStatsSecret(async () => {
+      const store = createMeterStore();
+      const scan = await handleMeterRequest(
+        post("/api/v1/meter/scan", { chain: "solana", address: SCAN_SINK_FIXTURE }),
+        "/api/v1/meter/scan",
+        store,
+      );
+      const scanBody = (await scan.json()) as { invoice_id: string };
+      assert.equal((await store.getInvoice(scanBody.invoice_id))?.source, "http_scan");
+
+      const pre = await handleMeterRequest(
+        post("/api/v1/meter/preflight", { chain: "solana", wallet: "W", to: "T" }),
+        "/api/v1/meter/preflight",
+        store,
+      );
+      const preBody = (await pre.json()) as { invoice_id: string };
+      assert.equal((await store.getInvoice(preBody.invoice_id))?.source, "http_preflight");
+
+      const watch = await handleMeterRequest(
+        post("/api/v1/meter/watch", {}),
+        "/api/v1/meter/watch",
+        store,
+      );
+      const watchBody = (await watch.json()) as { invoice_id: string };
+      assert.equal((await store.getInvoice(watchBody.invoice_id))?.source, "http_watch");
+    });
+  });
+
+  it("tags MCP meter_buy_pass as mcp_buy_pass", async () => {
+    assert.equal(meterInvoiceSourceForMcpTool("meter_buy_pass"), "mcp_buy_pass");
+    assert.equal(meterInvoiceSourceForMcpTool("meter_watch"), undefined);
+    const dispatch = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), "../server/mcp-dispatch.ts"),
+      "utf8",
+    );
+    assert.match(dispatch, /meterInvoiceSourceForMcpTool/);
+    assert.match(dispatch, /source: "mcp_buy_pass"|source = meterInvoiceSourceForMcpTool\(name\)/);
+    assert.match(dispatch, /cf-connecting-ip/);
+    assert.match(dispatch, /x-forwarded-for/);
+    await withStatsSecret(async () => {
+      const store = createMeterStore();
+      const res = await handleMeterRequest(
+        post(
+          "/api/v1/meter/pass",
+          { partner: "privy" },
+          {
+            "user-agent": "mcp-inspector/1",
+            "x-forwarded-for": "203.0.113.55, 10.0.0.1",
+          },
+        ),
+        "/api/v1/meter/pass",
+        store,
+        { source: "mcp_buy_pass" },
+      );
+      assert.equal(res.status, 402);
+      const body = (await res.json()) as { invoice_id: string };
+      const invoice = await store.getInvoice(body.invoice_id);
+      assert.equal(invoice?.source, "mcp_buy_pass");
+      assert.equal(invoice?.user_agent, "mcp-inspector/1");
+      assert.equal(invoice?.partner, "privy");
+      assert.equal(invoice?.x_forwarded_for_hash, hashMeterClientIp("203.0.113.55", SECRET));
+      assert.equal(invoice?.cf_connecting_ip_hash, null);
+    });
+  });
+
+  it("splits pending_fresh vs pending_stale so expired smokes do not inflate", async () => {
+    const store = createMeterStore();
+    store.createInvoice(Date.now() - PAY_EXPIRY_MS - 5_000);
+    store.createInvoice();
+    const report = await store.report();
+    assert.equal(report.invoices_created, 2);
+    assert.equal(report.invoices_pending, 1);
+    assert.equal(report.invoices_pending_fresh, 1);
+    assert.equal(report.invoices_pending_stale, 1);
+    assert.equal(report.usdc_pending_fresh, 0.25);
+    assert.equal(report.usdc_pending_stale, 0.25);
+  });
+
+  it("internal invoice list returns 401 without the bearer secret", async () => {
+    await withStatsSecret(async () => {
+      const res = await handleInternalMeterInvoices(
+        get("/api/v1/internal/meter/invoices"),
+        createMeterStore(),
+      );
+      assert.equal(res.status, 401);
+      const body = (await res.json()) as { error: string };
+      assert.equal(body.error, "Unauthorized");
+    });
+  });
+
+  it("internal invoice list returns hashed origin fields and never plaintext IP", async () => {
+    await withStatsSecret(async () => {
+      const store = createMeterStore();
+      await handleMeterRequest(
+        post(
+          "/api/v1/meter/pass?partner=x402",
+          {},
+          { "user-agent": "list-agent", "cf-connecting-ip": "192.0.2.44" },
+        ),
+        "/api/v1/meter/pass",
+        store,
+      );
+      const res = await handleInternalMeterInvoices(
+        new Request("https://agent-control.net/api/v1/internal/meter/invoices?status=pending", {
+          headers: { authorization: `Bearer ${SECRET}` },
+        }),
+        store,
+      );
+      assert.equal(res.status, 200);
+      const body = (await res.json()) as {
+        invoices: Array<{
+          invoice_id: string;
+          status: string;
+          created_at: string;
+          expires_at: string;
+          source: string;
+          user_agent: string;
+          cf_connecting_ip_hash: string;
+          partner: string;
+          amount_usd: number;
+        }>;
+      };
+      assert.equal(body.invoices.length, 1);
+      const row = body.invoices[0];
+      assert.ok(row);
+      assert.equal(row.source, "http_pass");
+      assert.equal(row.user_agent, "list-agent");
+      assert.equal(row.partner, "x402");
+      assert.equal(row.amount_usd, 0.25);
+      assert.equal(row.status, "pending");
+      assert.ok(row.invoice_id);
+      assert.ok(row.created_at);
+      assert.ok(row.expires_at);
+      assert.equal(row.cf_connecting_ip_hash, hashMeterClientIp("192.0.2.44", SECRET));
+      const text = JSON.stringify(body);
+      assert.doesNotMatch(text, /192\.0\.2\.44/);
+      assert.doesNotMatch(text, /"ip"/);
+    });
   });
 });
 
