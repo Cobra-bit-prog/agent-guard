@@ -244,6 +244,11 @@ export default defineConfig(({ command, isPreview }) => ({
             // manifest + head-tag middleware). Nitro v3 defaults serverDir to
             // false, so removing this silently unwires /?install=1 on deploys.
             serverDir: "./server",
+            // Vite 8.2 / Rolldown can emit an SSR chunk that re-exports
+            // undeclared `ssr_exports`, so every Vercel request 500s while
+            // `vite build` still exits 0. Inlining server imports avoids that
+            // split. https://github.com/TanStack/router/issues/8031
+            inlineDynamicImports: true,
           }),
         ]
       : []),

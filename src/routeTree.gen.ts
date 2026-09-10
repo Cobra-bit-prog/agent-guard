@@ -19,8 +19,6 @@ import { Route as PartnersRouteImport } from './routes/partners'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
-import { Route as DotwellKnownOauthAuthorizationServerRouteImport } from './routes/[.]well-known/oauth-authorization-server'
-import { Route as DotwellKnownOauthProtectedResourceRouteImport } from './routes/[.]well-known/oauth-protected-resource'
 import { Route as AppAgentsRouteImport } from './routes/_app/agents'
 import { Route as AppAlertsRouteImport } from './routes/_app/alerts'
 import { Route as AppAuditRouteImport } from './routes/_app/audit'
@@ -55,7 +53,6 @@ import { Route as ApiV1StorefrontCheckoutRouteImport } from './routes/api/v1/sto
 import { Route as ApiV1StorefrontPricingRouteImport } from './routes/api/v1/storefront.pricing'
 import { Route as ApiV1StorefrontStatusRouteImport } from './routes/api/v1/storefront.status'
 import { Route as ApiV1StorefrontTrialRouteImport } from './routes/api/v1/storefront.trial'
-import { Route as DotwellKnownOauthProtectedResourceApiV1McpRouteImport } from './routes/[.]well-known/oauth-protected-resource.api.v1.mcp'
 import { Route as ApiV1InternalMeterInvoicesRouteImport } from './routes/api/v1/internal/meter.invoices'
 
 const IndexRoute = IndexRouteImport.update({
@@ -107,18 +104,6 @@ const VerifyEmailRoute = VerifyEmailRouteImport.update({
   path: '/verify-email',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DotwellKnownOauthAuthorizationServerRoute =
-  DotwellKnownOauthAuthorizationServerRouteImport.update({
-    id: '/.well-known/oauth-authorization-server',
-    path: '/.well-known/oauth-authorization-server',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const DotwellKnownOauthProtectedResourceRoute =
-  DotwellKnownOauthProtectedResourceRouteImport.update({
-    id: '/.well-known/oauth-protected-resource',
-    path: '/.well-known/oauth-protected-resource',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const AppAgentsRoute = AppAgentsRouteImport.update({
   id: '/agents',
   path: '/agents',
@@ -289,12 +274,6 @@ const ApiV1StorefrontTrialRoute = ApiV1StorefrontTrialRouteImport.update({
   path: '/api/v1/storefront/trial',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DotwellKnownOauthProtectedResourceApiV1McpRoute =
-  DotwellKnownOauthProtectedResourceApiV1McpRouteImport.update({
-    id: '/api/v1/mcp',
-    path: '/api/v1/mcp',
-    getParentRoute: () => DotwellKnownOauthProtectedResourceRoute,
-  } as any)
 const ApiV1InternalMeterInvoicesRoute =
   ApiV1InternalMeterInvoicesRouteImport.update({
     id: '/invoices',
@@ -312,8 +291,6 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
-  '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRoute
-  '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRouteWithChildren
   '/agents': typeof AppAgentsRouteWithChildren
   '/alerts': typeof AppAlertsRoute
   '/audit': typeof AppAuditRoute
@@ -348,7 +325,6 @@ export interface FileRoutesByFullPath {
   '/api/v1/storefront/pricing': typeof ApiV1StorefrontPricingRoute
   '/api/v1/storefront/status': typeof ApiV1StorefrontStatusRoute
   '/api/v1/storefront/trial': typeof ApiV1StorefrontTrialRoute
-  '/.well-known/oauth-protected-resource/api/v1/mcp': typeof DotwellKnownOauthProtectedResourceApiV1McpRoute
   '/api/v1/internal/meter/invoices': typeof ApiV1InternalMeterInvoicesRoute
 }
 export interface FileRoutesByTo {
@@ -361,8 +337,6 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
-  '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRoute
-  '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRouteWithChildren
   '/alerts': typeof AppAlertsRoute
   '/audit': typeof AppAuditRoute
   '/dashboard': typeof AppDashboardRoute
@@ -395,7 +369,6 @@ export interface FileRoutesByTo {
   '/api/v1/storefront/pricing': typeof ApiV1StorefrontPricingRoute
   '/api/v1/storefront/status': typeof ApiV1StorefrontStatusRoute
   '/api/v1/storefront/trial': typeof ApiV1StorefrontTrialRoute
-  '/.well-known/oauth-protected-resource/api/v1/mcp': typeof DotwellKnownOauthProtectedResourceApiV1McpRoute
   '/api/v1/internal/meter/invoices': typeof ApiV1InternalMeterInvoicesRoute
 }
 export interface FileRoutesById {
@@ -410,8 +383,6 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
-  '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRoute
-  '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRouteWithChildren
   '/_app/agents': typeof AppAgentsRouteWithChildren
   '/_app/alerts': typeof AppAlertsRoute
   '/_app/audit': typeof AppAuditRoute
@@ -446,7 +417,6 @@ export interface FileRoutesById {
   '/api/v1/storefront/pricing': typeof ApiV1StorefrontPricingRoute
   '/api/v1/storefront/status': typeof ApiV1StorefrontStatusRoute
   '/api/v1/storefront/trial': typeof ApiV1StorefrontTrialRoute
-  '/.well-known/oauth-protected-resource/api/v1/mcp': typeof DotwellKnownOauthProtectedResourceApiV1McpRoute
   '/api/v1/internal/meter/invoices': typeof ApiV1InternalMeterInvoicesRoute
 }
 export interface FileRouteTypes {
@@ -461,8 +431,6 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/signup'
     | '/verify-email'
-    | '/.well-known/oauth-authorization-server'
-    | '/.well-known/oauth-protected-resource'
     | '/agents'
     | '/alerts'
     | '/audit'
@@ -497,7 +465,6 @@ export interface FileRouteTypes {
     | '/api/v1/storefront/pricing'
     | '/api/v1/storefront/status'
     | '/api/v1/storefront/trial'
-    | '/.well-known/oauth-protected-resource/api/v1/mcp'
     | '/api/v1/internal/meter/invoices'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -510,8 +477,6 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/signup'
     | '/verify-email'
-    | '/.well-known/oauth-authorization-server'
-    | '/.well-known/oauth-protected-resource'
     | '/alerts'
     | '/audit'
     | '/dashboard'
@@ -544,7 +509,6 @@ export interface FileRouteTypes {
     | '/api/v1/storefront/pricing'
     | '/api/v1/storefront/status'
     | '/api/v1/storefront/trial'
-    | '/.well-known/oauth-protected-resource/api/v1/mcp'
     | '/api/v1/internal/meter/invoices'
   id:
     | '__root__'
@@ -558,8 +522,6 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/signup'
     | '/verify-email'
-    | '/.well-known/oauth-authorization-server'
-    | '/.well-known/oauth-protected-resource'
     | '/_app/agents'
     | '/_app/alerts'
     | '/_app/audit'
@@ -594,7 +556,6 @@ export interface FileRouteTypes {
     | '/api/v1/storefront/pricing'
     | '/api/v1/storefront/status'
     | '/api/v1/storefront/trial'
-    | '/.well-known/oauth-protected-resource/api/v1/mcp'
     | '/api/v1/internal/meter/invoices'
   fileRoutesById: FileRoutesById
 }
@@ -609,8 +570,6 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   SignupRoute: typeof SignupRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
-  DotwellKnownOauthAuthorizationServerRoute: typeof DotwellKnownOauthAuthorizationServerRoute
-  DotwellKnownOauthProtectedResourceRoute: typeof DotwellKnownOauthProtectedResourceRouteWithChildren
   OauthAuthorizeRoute: typeof OauthAuthorizeRoute
   OauthRegisterRoute: typeof OauthRegisterRoute
   OauthTokenRoute: typeof OauthTokenRoute
@@ -705,20 +664,6 @@ declare module '@tanstack/react-router' {
       path: '/verify-email'
       fullPath: '/verify-email'
       preLoaderRoute: typeof VerifyEmailRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/.well-known/oauth-authorization-server': {
-      id: '/.well-known/oauth-authorization-server'
-      path: '/.well-known/oauth-authorization-server'
-      fullPath: '/.well-known/oauth-authorization-server'
-      preLoaderRoute: typeof DotwellKnownOauthAuthorizationServerRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/.well-known/oauth-protected-resource': {
-      id: '/.well-known/oauth-protected-resource'
-      path: '/.well-known/oauth-protected-resource'
-      fullPath: '/.well-known/oauth-protected-resource'
-      preLoaderRoute: typeof DotwellKnownOauthProtectedResourceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/agents': {
@@ -959,13 +904,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1StorefrontTrialRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/.well-known/oauth-protected-resource/api/v1/mcp': {
-      id: '/.well-known/oauth-protected-resource/api/v1/mcp'
-      path: '/api/v1/mcp'
-      fullPath: '/.well-known/oauth-protected-resource/api/v1/mcp'
-      preLoaderRoute: typeof DotwellKnownOauthProtectedResourceApiV1McpRouteImport
-      parentRoute: typeof DotwellKnownOauthProtectedResourceRoute
-    }
     '/api/v1/internal/meter/invoices': {
       id: '/api/v1/internal/meter/invoices'
       path: '/invoices'
@@ -1028,21 +966,6 @@ const AppRouteChildren: AppRouteChildren = {
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
-interface DotwellKnownOauthProtectedResourceRouteChildren {
-  DotwellKnownOauthProtectedResourceApiV1McpRoute: typeof DotwellKnownOauthProtectedResourceApiV1McpRoute
-}
-
-const DotwellKnownOauthProtectedResourceRouteChildren: DotwellKnownOauthProtectedResourceRouteChildren =
-  {
-    DotwellKnownOauthProtectedResourceApiV1McpRoute:
-      DotwellKnownOauthProtectedResourceApiV1McpRoute,
-  }
-
-const DotwellKnownOauthProtectedResourceRouteWithChildren =
-  DotwellKnownOauthProtectedResourceRoute._addFileChildren(
-    DotwellKnownOauthProtectedResourceRouteChildren,
-  )
-
 interface ApiV1InternalMeterRouteChildren {
   ApiV1InternalMeterInvoicesRoute: typeof ApiV1InternalMeterInvoicesRoute
 }
@@ -1065,10 +988,6 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   SignupRoute: SignupRoute,
   VerifyEmailRoute: VerifyEmailRoute,
-  DotwellKnownOauthAuthorizationServerRoute:
-    DotwellKnownOauthAuthorizationServerRoute,
-  DotwellKnownOauthProtectedResourceRoute:
-    DotwellKnownOauthProtectedResourceRouteWithChildren,
   OauthAuthorizeRoute: OauthAuthorizeRoute,
   OauthRegisterRoute: OauthRegisterRoute,
   OauthTokenRoute: OauthTokenRoute,
@@ -1095,3 +1014,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
