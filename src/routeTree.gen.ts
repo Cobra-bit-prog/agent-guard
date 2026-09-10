@@ -41,6 +41,7 @@ import { Route as ApiV1BillingHeliusSetupRouteImport } from './routes/api/v1/bil
 import { Route as ApiV1BillingInvoiceRouteImport } from './routes/api/v1/billing.invoice'
 import { Route as ApiV1BillingWatchRouteImport } from './routes/api/v1/billing.watch'
 import { Route as ApiV1InternalMeterRouteImport } from './routes/api/v1/internal/meter'
+import { Route as ApiV1InternalMeterInvoicesRouteImport } from './routes/api/v1/internal/meter.invoices'
 import { Route as ApiV1InternalStatsRouteImport } from './routes/api/v1/internal/stats'
 import { Route as ApiV1InternalTrialMailRouteImport } from './routes/api/v1/internal/trial-mail'
 import { Route as ApiV1MeterSplatRouteImport } from './routes/api/v1/meter.$'
@@ -209,6 +210,11 @@ const ApiV1InternalMeterRoute = ApiV1InternalMeterRouteImport.update({
   path: '/api/v1/internal/meter',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1InternalMeterInvoicesRoute = ApiV1InternalMeterInvoicesRouteImport.update({
+  id: '/api/v1/internal/meter/invoices',
+  path: '/api/v1/internal/meter/invoices',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1InternalStatsRoute = ApiV1InternalStatsRouteImport.update({
   id: '/api/v1/internal/stats',
   path: '/api/v1/internal/stats',
@@ -282,6 +288,7 @@ export interface FileRoutesByFullPath {
   '/api/v1/billing/invoice': typeof ApiV1BillingInvoiceRoute
   '/api/v1/billing/watch': typeof ApiV1BillingWatchRoute
   '/api/v1/internal/meter': typeof ApiV1InternalMeterRoute
+  '/api/v1/internal/meter/invoices': typeof ApiV1InternalMeterInvoicesRoute
   '/api/v1/internal/stats': typeof ApiV1InternalStatsRoute
   '/api/v1/internal/trial-mail': typeof ApiV1InternalTrialMailRoute
   '/api/v1/meter/$': typeof ApiV1MeterSplatRoute
@@ -321,6 +328,7 @@ export interface FileRoutesByTo {
   '/api/v1/billing/invoice': typeof ApiV1BillingInvoiceRoute
   '/api/v1/billing/watch': typeof ApiV1BillingWatchRoute
   '/api/v1/internal/meter': typeof ApiV1InternalMeterRoute
+  '/api/v1/internal/meter/invoices': typeof ApiV1InternalMeterInvoicesRoute
   '/api/v1/internal/stats': typeof ApiV1InternalStatsRoute
   '/api/v1/internal/trial-mail': typeof ApiV1InternalTrialMailRoute
   '/api/v1/meter/$': typeof ApiV1MeterSplatRoute
@@ -364,6 +372,7 @@ export interface FileRoutesById {
   '/api/v1/billing/invoice': typeof ApiV1BillingInvoiceRoute
   '/api/v1/billing/watch': typeof ApiV1BillingWatchRoute
   '/api/v1/internal/meter': typeof ApiV1InternalMeterRoute
+  '/api/v1/internal/meter/invoices': typeof ApiV1InternalMeterInvoicesRoute
   '/api/v1/internal/stats': typeof ApiV1InternalStatsRoute
   '/api/v1/internal/trial-mail': typeof ApiV1InternalTrialMailRoute
   '/api/v1/meter/$': typeof ApiV1MeterSplatRoute
@@ -407,6 +416,7 @@ export interface FileRouteTypes {
     | '/api/v1/billing/invoice'
     | '/api/v1/billing/watch'
     | '/api/v1/internal/meter'
+    | '/api/v1/internal/meter/invoices'
     | '/api/v1/internal/stats'
     | '/api/v1/internal/trial-mail'
     | '/api/v1/meter/$'
@@ -446,6 +456,7 @@ export interface FileRouteTypes {
     | '/api/v1/billing/invoice'
     | '/api/v1/billing/watch'
     | '/api/v1/internal/meter'
+    | '/api/v1/internal/meter/invoices'
     | '/api/v1/internal/stats'
     | '/api/v1/internal/trial-mail'
     | '/api/v1/meter/$'
@@ -488,6 +499,7 @@ export interface FileRouteTypes {
     | '/api/v1/billing/invoice'
     | '/api/v1/billing/watch'
     | '/api/v1/internal/meter'
+    | '/api/v1/internal/meter/invoices'
     | '/api/v1/internal/stats'
     | '/api/v1/internal/trial-mail'
     | '/api/v1/meter/$'
@@ -519,6 +531,7 @@ export interface RootRouteChildren {
   ApiV1BillingInvoiceRoute: typeof ApiV1BillingInvoiceRoute
   ApiV1BillingWatchRoute: typeof ApiV1BillingWatchRoute
   ApiV1InternalMeterRoute: typeof ApiV1InternalMeterRoute
+  ApiV1InternalMeterInvoicesRoute: typeof ApiV1InternalMeterInvoicesRoute
   ApiV1InternalStatsRoute: typeof ApiV1InternalStatsRoute
   ApiV1InternalTrialMailRoute: typeof ApiV1InternalTrialMailRoute
   ApiV1MeterSplatRoute: typeof ApiV1MeterSplatRoute
@@ -755,6 +768,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1InternalMeterRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/internal/meter/invoices': {
+      id: '/api/v1/internal/meter/invoices'
+      path: '/api/v1/internal/meter/invoices'
+      fullPath: '/api/v1/internal/meter/invoices'
+      preLoaderRoute: typeof ApiV1InternalMeterInvoicesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/internal/stats': {
       id: '/api/v1/internal/stats'
       path: '/api/v1/internal/stats'
@@ -887,6 +907,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiV1BillingInvoiceRoute: ApiV1BillingInvoiceRoute,
   ApiV1BillingWatchRoute: ApiV1BillingWatchRoute,
   ApiV1InternalMeterRoute: ApiV1InternalMeterRoute,
+  ApiV1InternalMeterInvoicesRoute: ApiV1InternalMeterInvoicesRoute,
   ApiV1InternalStatsRoute: ApiV1InternalStatsRoute,
   ApiV1InternalTrialMailRoute: ApiV1InternalTrialMailRoute,
   ApiV1MeterSplatRoute: ApiV1MeterSplatRoute,

@@ -9,7 +9,13 @@ export {
   type MeterStore,
   type MeterReport,
 } from "./store.ts";
-export { handleMeterRequest, readPassToken } from "./http.ts";
+export { handleMeterRequest, handleInternalMeterInvoices, readPassToken } from "./http.ts";
+export {
+  extractMeterInvoiceOrigin,
+  hashMeterClientIp,
+  METER_INVOICE_SOURCES,
+  type MeterInvoiceSource,
+} from "./origin.ts";
 export { applyMeterHeliusPayments, watchMeterInvoice, meterFundsDestination } from "./settle.ts";
 export { getDefaultMeterStore, getSqlMeterStore, collectMeterSqlReport, ensureMeterSchema } from "./sql-store.ts";
 export { SCAN_SINK_FIXTURE, isListedSink } from "./denylist.ts";

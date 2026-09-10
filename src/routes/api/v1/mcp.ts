@@ -11,7 +11,9 @@ export const Route = createFileRoute("/api/v1/mcp")({
       DELETE: ({ request }) => handleMcpDelete(request),
       POST: async ({ request }) => {
         await getSql();
-        return handleMcpPost(request, { callTool: dispatchMcpTool });
+        return handleMcpPost(request, {
+          callTool: (name, args, apiKey) => dispatchMcpTool(name, args, apiKey, request),
+        });
       },
     },
   },
