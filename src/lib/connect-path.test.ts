@@ -41,6 +41,8 @@ const BANNED = [
   /POST \/api\/v1\/check/,
   /check_transfer/,
   /Connect AgentKit \/ x402/,
+  /must abort/i,
+  /\babort\b/i,
 ];
 
 const CUSTOMER_BLOB = [

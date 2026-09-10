@@ -232,7 +232,7 @@ function DocsPage() {
         </p>
         <p className="mt-3 text-body leading-relaxed text-muted">
           New or over-limit payments wait in Approval Inbox: Allow once, always allow that
-          address, or block. No action for 10 minutes = block — the agent must abort. When a
+          address, or block. No action for 10 minutes = block — the agent must stop / does not send. When a
           payment is waiting for you, optional email (Settings → Email alerts) and a Slack incoming
           webhook (if you set the URL in Settings) can ping you with a link to Approval Inbox. Pause
           and blocklists stop the send right away. Agent Audit generates an on-demand Excel, PDF, or
@@ -411,7 +411,7 @@ client.onBeforePaymentCreation(
             <ul className="mt-3 list-disc space-y-1 pl-5 text-body text-muted">
               <li>Email alerts (on by default) send a link to Approval Inbox.</li>
               <li>Paste a Slack incoming webhook URL in Settings to get the same ping there.</li>
-              <li>No action within 10 minutes = block — the agent must abort.</li>
+              <li>No action within 10 minutes = block — the agent must stop / does not send.</li>
             </ul>
           </article>
           <p id="skill-mcp" className="mt-6 scroll-mt-6 text-body leading-relaxed text-muted">

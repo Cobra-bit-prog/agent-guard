@@ -92,7 +92,7 @@ const HOME_FAQ_LD = [
     name: "Do you email me when something looks off?",
     acceptedAnswer: {
       "@type": "Answer",
-      text: "If Email alerts is on in Settings (on by default), we send optional pings for a policy alert, spend near the daily cap, a payment waiting in Approval Inbox (/inbox), or a hard block. When a payment is waiting for you, that email (and Slack, if you saved an incoming webhook URL in Settings) includes a link to Approval Inbox. No action within 10 minutes = block — the agent must abort. Console alerts still list at /alerts. Turn Email alerts off to keep policy pings in the console only. If the agent skips the check, Inbox cannot stop that send.",
+      text: "If Email alerts is on in Settings (on by default), we send optional pings for a policy alert, spend near the daily cap, a payment waiting in Approval Inbox (/inbox), or a hard block. When a payment is waiting for you, that email (and Slack, if you saved an incoming webhook URL in Settings) includes a link to Approval Inbox. No action within 10 minutes = block — the agent must stop / does not send. Console alerts still list at /alerts. Turn Email alerts off to keep policy pings in the console only. If the agent skips the check, Inbox cannot stop that send.",
     },
   },
   {
