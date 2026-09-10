@@ -174,7 +174,9 @@ test("homepage FAQ covers Inbox, Audit, hold vs block, and skipped-check limits"
   assert.match(src, /near the daily cap/);
   assert.match(src, /incoming webhook URL/);
   assert.match(src, /No action within 10 minutes/);
-  assert.match(src, /must abort/);
+  assert.match(src, /the agent must stop \/ does not send/);
+  assert.doesNotMatch(src, /must abort/i);
+  assert.doesNotMatch(src, /\babort\b/i);
   assert.match(faq, /CONNECT_FAQ_ANSWER/);
   assert.match(copy, /If we say stop, it does not send/);
   assert.doesNotMatch(src, /must_abort/);
@@ -273,6 +275,9 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
   assert.doesNotMatch(meterDocs, /Pay \$29/);
   assert.doesNotMatch(docs, /href=["']\/meter["']|to=["']\/meter["']/);
   assert.match(docs, /If the check says stop, do not send/);
+  assert.match(docs, /the agent must stop \/ does not send/);
+  assert.doesNotMatch(docs, /must abort/i);
+  assert.doesNotMatch(beforeDetails, /\babort\b/i);
   assert.match(docs, /<code className="font-mono text-fg">must_abort<\/code>/);
   assert.match(docs, /id=["']connect-your-agent["']/);
   assert.match(docs, /id=["']connect-agentkit["']/);
@@ -489,6 +494,37 @@ test("FAQ and Compare drop competitor names; homepage H1 stays External audit fo
   assert.doesNotMatch(home, /turnkey/i);
   assert.doesNotMatch(home, /Policy \+ pre-sign/i);
   assert.doesNotMatch(home, /Policy \+ check before they pay/);
+});
+
+test("customer marketing surfaces never say abort / must abort", () => {
+  const files = [
+    join(ROOT, "src/routes/index.tsx"),
+    join(ROOT, "src/routes/connect.tsx"),
+    join(ROOT, "src/routes/partners.tsx"),
+    join(ROOT, "src/routes/login.tsx"),
+    join(ROOT, "src/routes/signup.tsx"),
+    ...walk(join(ROOT, "src/components/marketing")),
+    join(ROOT, "src/components/landing-faq.tsx"),
+    join(ROOT, "src/components/landing-console.tsx"),
+    join(ROOT, "src/components/landing-demo-dashboard.tsx"),
+    join(ROOT, "src/lib/connect-path.ts"),
+    join(ROOT, "public/llms.txt"),
+  ];
+  for (const file of files) {
+    const src = readFileSync(file, "utf8");
+    assert.doesNotMatch(src, /must abort/i, `${file} must not say must abort`);
+    assert.doesNotMatch(src, /\babort\b/i, `${file} must not say abort`);
+  }
+
+  const docs = readFileSync(join(ROOT, "src/routes/docs.tsx"), "utf8");
+  const beforeDetails = docs.split("<details")[0] ?? docs;
+  const holdNotes =
+    docs.split('id="hold-notifications"')[1]?.split('id="skill-mcp"')[0] ?? "";
+  assert.doesNotMatch(beforeDetails, /must abort/i);
+  assert.doesNotMatch(beforeDetails, /\babort\b/i);
+  assert.doesNotMatch(holdNotes, /must abort/i);
+  assert.doesNotMatch(holdNotes, /\babort\b/i);
+  assert.match(docs, /<code className="font-mono text-fg">must_abort<\/code>/);
 });
 
 test("partners page is wallet-complement copy; sitemap and docs link it", () => {
