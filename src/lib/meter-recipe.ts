@@ -12,21 +12,27 @@ export const METER_SEPARATE =
 export const METER_DOCS_HREF = "/docs#agent-meter";
 export const METER_DOCS_URL = "https://agent-control.net/docs#agent-meter";
 
-/** Exact one-file curl recipe for llms.txt and /docs. */
+/** Copy-paste agent pay — no Phantom. Same file as src/adapters/meter-pay.ts. */
+export const METER_PAY_SNIPPET = `import { buyMeterPass } from "./src/adapters/meter-pay.ts";
+await buyMeterPass({ keypair });`;
+
+/** Exact one-file recipe for llms.txt and /docs. Step 3 is the agent wallet. */
 export const METER_RECIPE = `# 1 discover
 curl -s https://agent-control.net/api/v1/meter/pricing
 # 2 invoice
 curl -s -X POST https://agent-control.net/api/v1/meter/pass -H 'content-type: application/json' -d '{}'
 # 3 pay 0.25 USDC on Solana to pay_to WITH reference from the 402
+# copy src/adapters/meter-pay.ts — agent wallet signs and sends (no Phantom)
+${METER_PAY_SNIPPET}
 # 4 poll
 curl -s -X POST https://agent-control.net/api/v1/meter/watch -H 'content-type: application/json' -d '{"invoice_id":"inv_…"}'
 # 5 use scan + preflight with X-Agent-Pass`;
 
 export const METER_SCAN_CURL =
-  "curl -s -X POST https://agent-control.net/api/v1/meter/scan -H 'content-type: application/json' -H 'X-Agent-Pass: <pass>' -d '{\"chain\":\"solana\",\"address\":\"<destination>\"}'";
+  'curl -s -X POST https://agent-control.net/api/v1/meter/scan -H \'content-type: application/json\' -H \'X-Agent-Pass: <pass>\' -d \'{"chain":"solana","address":"<destination>"}\'';
 
 export const METER_PREFLIGHT_CURL =
-  "curl -s -X POST https://agent-control.net/api/v1/meter/preflight -H 'content-type: application/json' -H 'X-Agent-Pass: <pass>' -d '{\"chain\":\"solana\",\"wallet\":\"<wallet>\",\"to\":\"<destination>\",\"value_usd\":10,\"cap_usd\":100}'";
+  'curl -s -X POST https://agent-control.net/api/v1/meter/preflight -H \'content-type: application/json\' -H \'X-Agent-Pass: <pass>\' -d \'{"chain":"solana","wallet":"<wallet>","to":"<destination>","value_usd":10,"cap_usd":100}\'';
 
 export const METER_STEPS = [
   {
@@ -44,8 +50,8 @@ export const METER_STEPS = [
   {
     n: "3",
     t: "Pay $0.25",
-    d: "Pay 0.25 USDC on Solana to pay_to with the reference from the 402.",
-    code: null,
+    d: "Your agent wallet sends 0.25 USDC on Solana to pay_to with the reference from the 402. Copy src/adapters/meter-pay.ts. No Phantom.",
+    code: METER_PAY_SNIPPET,
   },
   {
     n: "4",
