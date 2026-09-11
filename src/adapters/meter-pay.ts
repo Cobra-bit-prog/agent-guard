@@ -28,11 +28,11 @@ import {
 /** Locked Phantom receive wallet. Never change. Query strings cannot retarget funds. */
 export const LOCKED_SOLANA_PAY_TO = "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR";
 export const METER_USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
-export const DEFAULT_METER_SKU = "pass_1h";
+export const DEFAULT_METER_SKU = "look";
 export const DEFAULT_METER_ORIGIN = "https://agent-control.net";
 export const DEFAULT_METER_RPC = "https://api.mainnet-beta.solana.com";
-export const DEFAULT_PASS_USD = 0.25;
-export const DEFAULT_PASS_BASE_UNITS = "250000";
+export const DEFAULT_PASS_USD = 0.02;
+export const DEFAULT_PASS_BASE_UNITS = "20000";
 
 export type MeterFetchLike = (
   input: string,
@@ -295,7 +295,7 @@ function invoiceFromBody(body: Record<string, unknown>): MeterPassInvoice {
 
 /**
  * End-to-end: invoice → agent wallet pays → watch until X-Agent-Pass token.
- * Default sku is pass_1h ($0.25).
+ * Default sku is look ($0.02). Pack looks_20 is $0.20. Not pass_1h.
  */
 export async function buyMeterPass(opts: BuyMeterPassOptions): Promise<BuyMeterPassResult> {
   assertPayerIsNotReceiveWallet(opts.keypair.publicKey);

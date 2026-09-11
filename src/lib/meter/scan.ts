@@ -1,7 +1,10 @@
 import { isListedSink } from "./denylist.ts";
+import { LOOK_QUESTION, LOOK_RISKS } from "./pricing.ts";
 
 export type MeterChain = "solana" | "ethereum" | "base";
-export type ScanRisk = "ok" | "new" | "warn" | "sink";
+export type ScanRisk = (typeof LOOK_RISKS)[number];
+
+export { LOOK_QUESTION, LOOK_RISKS };
 
 export type ScanHistory = {
   first_seen_at: string | null;
@@ -16,6 +19,7 @@ export function evaluateScan(input: {
 }): {
   address: string;
   chain: MeterChain;
+  question: typeof LOOK_QUESTION;
   risk: ScanRisk;
   reason: string;
   first_seen_at: string | null;
@@ -30,6 +34,7 @@ export function evaluateScan(input: {
     return {
       address,
       chain: input.chain,
+      question: LOOK_QUESTION,
       risk: "sink",
       reason: "listed_sink Destination matches the meter sink list.",
       first_seen_at: history.first_seen_at,
@@ -42,6 +47,7 @@ export function evaluateScan(input: {
     return {
       address,
       chain: input.chain,
+      question: LOOK_QUESTION,
       risk: "new",
       reason: "no_history No transfer history on file for this address.",
       first_seen_at: null,
@@ -55,6 +61,7 @@ export function evaluateScan(input: {
     return {
       address,
       chain: input.chain,
+      question: LOOK_QUESTION,
       risk: "new",
       reason: "fresh_address First seen within the last 15 minutes.",
       first_seen_at: history.first_seen_at,
@@ -67,6 +74,7 @@ export function evaluateScan(input: {
     return {
       address,
       chain: input.chain,
+      question: LOOK_QUESTION,
       risk: "warn",
       reason: "thin_history Fewer than 3 transfers on file.",
       first_seen_at: history.first_seen_at,
@@ -78,6 +86,7 @@ export function evaluateScan(input: {
   return {
     address,
     chain: input.chain,
+    question: LOOK_QUESTION,
     risk: "ok",
     reason: "ok Address is not on the sink list and has history.",
     first_seen_at: history.first_seen_at,

@@ -8,16 +8,16 @@ export const Route = createFileRoute("/meter/pay")({
   component: MeterPayPage,
   head: () => ({
     meta: [
-      { title: "Pay 0.25 USDC — Agent Control" },
+      { title: "Pay 0.02 USDC — Agent Control" },
       {
         name: "description",
-        content: "Pay 0.25 USDC on Solana with Phantom. Laptop page — no QR scan required.",
+        content: "Pay 0.02 USDC on Solana with Phantom. Laptop page — no QR scan required.",
       },
       { name: "theme-color", content: "#eef3f8" },
-      { property: "og:title", content: "Pay 0.25 USDC — Agent Control" },
+      { property: "og:title", content: "Pay 0.02 USDC — Agent Control" },
       {
         property: "og:description",
-        content: "Pay 0.25 USDC on Solana with Phantom. We unlock when it lands.",
+        content: "Pay 0.02 USDC on Solana with Phantom. We unlock when it lands.",
       },
     ],
   }),

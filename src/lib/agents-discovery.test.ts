@@ -63,8 +63,9 @@ describe("agents.txt Layer 4 discovery", () => {
     assert.match(blob, /Agent Meter/);
     assert.match(blob, /two products/i);
     assert.match(blob, /Agents pay themselves|agents pay themselves/);
-    assert.match(blob, /\$0\.25 pass/);
-    assert.match(blob, /scan and preflight/i);
+    assert.match(blob, /Can I pay this address\?/);
+    assert.match(blob, /First 5 free\. Then \$0\.02 USDC/);
+    assert.match(blob, /looks_20/);
     assert.match(blob, /No inbox/);
     assert.match(blob, /No email/);
     assert.match(blob, /no API key/);
@@ -118,8 +119,9 @@ describe("adapters README Meter note", () => {
     assert.match(readme, /createX402BeforePaymentHook/);
     assert.match(readme, /## Agent Meter/);
     assert.match(readme, /Agents pay themselves/);
-    assert.match(readme, /\$0\.25 pass/);
-    assert.match(readme, /scan and preflight/i);
+    assert.match(readme, /Can I pay this address\?/);
+    assert.match(readme, /First 5 free\. Then \$0\.02 USDC/);
+    assert.match(readme, /looks_20/);
     assert.match(readme, /No inbox/);
     assert.match(readme, /X-Agent-Pass/);
     assert.match(readme, /docs#agent-meter/);

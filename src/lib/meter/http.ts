@@ -12,6 +12,11 @@ import {
 } from "./origin.ts";
 import {
   coversForSku,
+  defaultSkuForKind,
+  LOOK_QUESTION,
+  METER_FREE_LOOKS,
+  METER_FREE_THEN_LOOK,
+  METER_LOOK_SKU,
   meter402Body,
   meterPricing,
   resolveMeterSku,
@@ -29,6 +34,7 @@ import {
 import { publicStampView, signStamp, type StampDecision, type StampPayload } from "./stamp.ts";
 import {
   allowDevGrant,
+  meterIdentityKey,
   newMeterId,
   publicPassView,
   type MeterPass,
@@ -66,7 +72,13 @@ function proofRecord(body: Record<string, unknown>): Record<string, unknown> {
   return {};
 }
 
-function skuFromBody(body: Record<string, unknown>): MeterSku | { error: "unknown_sku"; sku: string } {
+function skuFromBody(
+  body: Record<string, unknown>,
+  fallback?: string,
+): MeterSku | { error: "unknown_sku"; sku: string } {
+  if (body.sku == null || body.sku === "") {
+    return resolveMeterSku(fallback ?? METER_LOOK_SKU);
+  }
   return resolveMeterSku(body.sku);
 }
 
@@ -79,8 +91,9 @@ async function invoiceForBody(
   request: Request,
   source: MeterInvoiceSource,
   body: Record<string, unknown>,
+  fallbackSku?: string,
 ): Promise<{ ok: true; invoice: Awaited<ReturnType<MeterStore["createInvoice"]>> } | { ok: false; response: Response }> {
-  const sku = skuFromBody(body);
+  const sku = skuFromBody(body, fallbackSku);
   if ("error" in sku) return { ok: false, response: unknownSkuResponse(sku.sku) };
   return {
     ok: true,
@@ -243,8 +256,9 @@ async function paymentRequired(
   request: Request,
   source: MeterInvoiceSource,
   body: Record<string, unknown>,
+  fallbackSku?: string,
 ): Promise<Response> {
-  const minted = await invoiceForBody(store, request, source, body);
+  const minted = await invoiceForBody(store, request, source, body, fallbackSku);
   if (!minted.ok) return minted.response;
   return json(meter402Body(minted.invoice), 402);
 }
@@ -335,39 +349,107 @@ function skuDoesNotCoverResponse(pass: MeterPass, kind: string) {
   );
 }
 
-async function requirePass(
+type LookGate =
+  | { mode: "pack"; pass: MeterPass; identity: string; token: string; response: null }
+  | { mode: "free"; pass: null; identity: string; token: string; response: null }
+  | { mode: "pay"; pass: MeterPass | null; identity: string; token: string; response: Response };
+
+async function requireLookOrPack(
   request: Request,
   body: Record<string, unknown>,
   store: MeterStore,
   source: MeterInvoiceSource,
-  kind?: string,
-) {
+  kind: string,
+): Promise<LookGate> {
   const token = readPassToken(request, body);
-  const pass = await store.getPassByToken(token);
-  if (!pass) {
-    return { pass: null as null, token, response: await paymentRequired(store, request, source, body) };
+  const identity = meterIdentityKey(token);
+  const live = token ? await store.getPassByToken(token) : null;
+  const recorded = token ? await store.findPassByToken(token) : null;
+  const pass = live ?? recorded;
+
+  if (live && skuCovers(live.sku, kind)) {
+    return { mode: "pack", pass: live, identity, token, response: null };
   }
-  if (kind && !skuCovers(pass.sku, kind)) {
-    return { pass, token, response: skuDoesNotCoverResponse(pass, kind) };
+  if (pass && !skuCovers(pass.sku, kind)) {
+    return { mode: "pay", pass, identity, token, response: skuDoesNotCoverResponse(pass, kind) };
   }
-  return { pass, token, response: null as Response | null };
+  if (recorded && skuCovers(recorded.sku, kind)) {
+    return {
+      mode: "pay",
+      pass: recorded,
+      identity,
+      token,
+      response: await paymentRequired(store, request, source, body, defaultSkuForKind(kind).id),
+    };
+  }
+
+  if (kind === "scan" || kind === "preflight") {
+    const remaining = await store.freeLooksRemaining(identity);
+    if (remaining > 0) {
+      return { mode: "free", pass: null, identity, token, response: null };
+    }
+    return {
+      mode: "pay",
+      pass: null,
+      identity,
+      token,
+      response: await paymentRequired(store, request, source, body, METER_LOOK_SKU),
+    };
+  }
+
+  return {
+    mode: "pay",
+    pass: null,
+    identity,
+    token,
+    response: await paymentRequired(store, request, source, body, defaultSkuForKind(kind).id),
+  };
+}
+
+async function consumeLookGrant(
+  store: MeterStore,
+  gate: Extract<LookGate, { response: null }>,
+): Promise<{ after: MeterPass | null; freeRemaining: number | null } | "exhausted"> {
+  if (gate.mode === "pack") {
+    const after = await store.consumeCall(gate.pass);
+    if (after === "exhausted") return "exhausted";
+    return { after, freeRemaining: null };
+  }
+  const free = await store.consumeFreeLook(gate.identity);
+  if (free === "exhausted") return "exhausted";
+  return { after: null, freeRemaining: free.remaining };
+}
+
+function lookAccessFields(opts: {
+  pass: MeterPass | null;
+  freeRemaining: number | null;
+}) {
+  if (opts.pass) return meterPassRemaining(opts.pass);
+  return {
+    free_looks_remaining: opts.freeRemaining ?? 0,
+    free_looks: METER_FREE_LOOKS,
+    note: METER_FREE_THEN_LOOK,
+    question: LOOK_QUESTION,
+    covers: coversForSku(METER_LOOK_SKU),
+  };
 }
 
 async function runScan(request: Request, body: Record<string, unknown>, store: MeterStore): Promise<Response> {
   const source = invoiceSourceForMeterPath("scan");
-  const gate = await requirePass(request, body, store, source, "scan");
-  if (gate.response) return gate.response;
   const chain = chainOf(body.chain);
   const address = String(body.address ?? "").trim();
   if (!chain || !address) return json({ error: "Provide chain and address." }, 400);
 
+  const gate = await requireLookOrPack(request, body, store, source, "scan");
+  if (gate.response) return gate.response;
+
   const scanned = evaluateScan({ address, chain });
-  const after = await store.consumeCall(gate.pass!);
-  if (after === "exhausted") {
-    return paymentRequired(store, request, source, body);
+  const consumed = await consumeLookGrant(store, gate);
+  if (consumed === "exhausted") {
+    return paymentRequired(store, request, source, body, METER_LOOK_SKU);
   }
   await store.logCall({
-    pass_id: after.id,
+    pass_id: consumed.after?.id ?? `free:${gate.identity}`,
     kind: "scan",
     chain,
     wallet: typeof body.from === "string" ? body.from : null,
@@ -377,14 +459,13 @@ async function runScan(request: Request, body: Record<string, unknown>, store: M
   });
   return json({
     ...scanned,
-    ...meterPassRemaining(after),
+    question: LOOK_QUESTION,
+    ...lookAccessFields({ pass: consumed.after, freeRemaining: consumed.freeRemaining }),
   });
 }
 
 async function runPreflight(request: Request, body: Record<string, unknown>, store: MeterStore): Promise<Response> {
   const source = invoiceSourceForMeterPath("preflight");
-  const gate = await requirePass(request, body, store, source, "preflight");
-  if (gate.response) return gate.response;
   const chain = chainOf(body.chain);
   const wallet = String(body.wallet ?? "").trim();
   const to = String(body.to ?? "").trim();
@@ -392,18 +473,21 @@ async function runPreflight(request: Request, body: Record<string, unknown>, sto
   const cap_usd = Number(body.cap_usd ?? body.capUsd);
   if (!chain || !wallet || !to) return json({ error: "Provide chain, wallet, and to." }, 400);
 
+  const gate = await requireLookOrPack(request, body, store, source, "preflight");
+  if (gate.response) return gate.response;
+
   const declaredSpend = Number(body.spent_usd ?? body.spentUsd);
   const logged = await store.spentTodayUsd(wallet);
   const spent_today_usd = Number.isFinite(declaredSpend) ? Math.max(declaredSpend, logged) : logged;
   const verdict = evaluatePreflightSelf({ cap_usd, value_usd, spent_today_usd });
 
-  const after = await store.consumeCall(gate.pass!);
-  if (after === "exhausted") {
-    return paymentRequired(store, request, source, body);
+  const consumed = await consumeLookGrant(store, gate);
+  if (consumed === "exhausted") {
+    return paymentRequired(store, request, source, body, METER_LOOK_SKU);
   }
   if (verdict.decision === "allow") await store.addAllowSpend(wallet, value_usd);
   await store.logCall({
-    pass_id: after.id,
+    pass_id: consumed.after?.id ?? `free:${gate.identity}`,
     kind: "preflight",
     chain,
     wallet,
@@ -414,7 +498,8 @@ async function runPreflight(request: Request, body: Record<string, unknown>, sto
   return json({
     ...verdict,
     to,
-    ...meterPassRemaining(after),
+    question: LOOK_QUESTION,
+    ...lookAccessFields({ pass: consumed.after, freeRemaining: consumed.freeRemaining }),
   });
 }
 
@@ -429,8 +514,6 @@ function parseAddressList(body: Record<string, unknown>): string[] | { error: st
 
 async function runScanBatch(request: Request, body: Record<string, unknown>, store: MeterStore): Promise<Response> {
   const source = invoiceSourceForMeterPath("scan-batch");
-  const gate = await requirePass(request, body, store, source, "scan_batch");
-  if (gate.response) return gate.response;
   const chain = chainOf(body.chain);
   if (!chain) return json({ error: "Provide chain and addresses[]." }, 400);
   const parsed = parseAddressList(body);
@@ -438,17 +521,20 @@ async function runScanBatch(request: Request, body: Record<string, unknown>, sto
     return json(parsed.max ? { error: parsed.error, max: parsed.max } : { error: parsed.error }, 400);
   }
 
+  const gate = await requireLookOrPack(request, body, store, source, "scan_batch");
+  if (gate.response) return gate.response;
+
   const results = parsed.map((address) => evaluateScan({ address, chain }));
-  const after = await store.consumeCall(gate.pass!);
-  if (after === "exhausted") {
-    return paymentRequired(store, request, source, body);
+  const consumed = await consumeLookGrant(store, gate);
+  if (consumed === "exhausted") {
+    return paymentRequired(store, request, source, body, defaultSkuForKind("scan_batch").id);
   }
   const worst = results.reduce(
     (acc, row) => (riskRank(row.risk) > riskRank(acc) ? row.risk : acc),
     "ok" as ReturnType<typeof evaluateScan>["risk"],
   );
   await store.logCall({
-    pass_id: after.id,
+    pass_id: consumed.after?.id ?? `free:${gate.identity}`,
     kind: "scan_batch",
     chain,
     wallet: typeof body.from === "string" ? body.from : null,
@@ -459,8 +545,9 @@ async function runScanBatch(request: Request, body: Record<string, unknown>, sto
   return json({
     count: results.length,
     risk: worst,
+    question: LOOK_QUESTION,
     results,
-    ...meterPassRemaining(after),
+    ...lookAccessFields({ pass: consumed.after, freeRemaining: consumed.freeRemaining }),
   });
 }
 
@@ -484,16 +571,18 @@ function stampDecisionOf(body: Record<string, unknown>): StampDecision | null {
 
 async function runStamp(request: Request, body: Record<string, unknown>, store: MeterStore): Promise<Response> {
   const source = invoiceSourceForMeterPath("stamp");
-  const gate = await requirePass(request, body, store, source, "stamp");
-  if (gate.response) return gate.response;
   const chain = chainOf(body.chain) ?? "solana";
   const decision = stampDecisionOf(body);
   if (!decision) return json({ error: "Provide decision allow|stop, or value_usd and cap_usd." }, 400);
 
-  const after = await store.consumeCall(gate.pass!);
-  if (after === "exhausted") {
-    return paymentRequired(store, request, source, body);
+  const gate = await requireLookOrPack(request, body, store, source, "stamp");
+  if (gate.response) return gate.response;
+
+  const consumed = await consumeLookGrant(store, gate);
+  if (consumed === "exhausted" || !consumed.after) {
+    return paymentRequired(store, request, source, body, defaultSkuForKind("stamp").id);
   }
+  const after = consumed.after;
 
   const created_at = new Date().toISOString();
   const payload: StampPayload = {
@@ -561,6 +650,6 @@ export function meterPassRemaining(pass: { sku?: string; included_calls: number;
   return {
     pass_remaining_calls: Math.max(0, pass.included_calls - pass.used_calls),
     pass_expires_at: pass.expires_at,
-    covers: coversForSku(pass.sku ?? "pass_1h"),
+    covers: coversForSku(pass.sku ?? METER_LOOK_SKU),
   };
 }

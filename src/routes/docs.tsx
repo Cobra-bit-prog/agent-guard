@@ -563,13 +563,16 @@ client.onBeforePaymentCreation(
           <p className="mt-3 max-w-[52ch] text-muted">{METER_LEDE}</p>
           <p className="mt-3 max-w-[52ch] text-muted">{METER_SEPARATE}</p>
           <p className="mt-3 max-w-[52ch] text-muted">
-            Your agent wallet sends the $0.25 pass. Copy{" "}
+            Can I pay this address? First 5 free. Then $0.02 USDC. ok | new | warn | sink. Packs:
+            looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. Take this ticket or we do
+            not take your USDC. Copy{" "}
             <code className="font-mono text-fg">src/adapters/meter-pay.ts</code>
             {" "}
             — it signs a Solana USDC transfer to pay_to with the 402 reference, then watches until
-            the pass token. Then scan and preflight with{" "}
-            <code className="font-mono text-fg">X-Agent-Pass</code>. No Phantom. On a laptop with
-            Phantom, you can still open{" "}
+            the pass token. Identity is{" "}
+            <code className="font-mono text-fg">X-Agent-Pass</code>
+            {" "}
+            or anon. No email. No Phantom. On a laptop with Phantom, you can still open{" "}
             <a href="/meter/pay" className="font-medium text-navy hover:text-coral">
               /meter/pay?invoice_id=
             </a>{" "}
@@ -595,17 +598,19 @@ client.onBeforePaymentCreation(
             ))}
           </ol>
           <p className="mt-6 text-body leading-relaxed text-muted">
-            Scan never blocks a send. Preflight is allow or stop against a cap you set. Machine
-            brief:{" "}
+            Scan never blocks a send. ok | new | warn | sink. Preflight is allow or stop. Never
+            hold. Machine brief:{" "}
             <a href="/llms.txt" className="font-medium text-navy hover:text-coral">
               /llms.txt
             </a>
-            . MCP:{" "}
+            . Discovery: llms → pricing → 402 → MCP. MCP:{" "}
             <code className="font-mono text-fg">meter_pricing</code>,{" "}
             <code className="font-mono text-fg">meter_buy_pass</code>,{" "}
             <code className="font-mono text-fg">meter_watch</code>,{" "}
             <code className="font-mono text-fg">meter_scan</code>,{" "}
-            <code className="font-mono text-fg">meter_preflight</code>.
+            <code className="font-mono text-fg">meter_preflight</code>,{" "}
+            <code className="font-mono text-fg">meter_scan_batch</code>,{" "}
+            <code className="font-mono text-fg">meter_stamp</code>.
           </p>
         </section>
 

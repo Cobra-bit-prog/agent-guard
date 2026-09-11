@@ -62,25 +62,12 @@ describe("preflight-self", () => {
 });
 
 describe("meter http", () => {
-  it("returns 402 for scan without a pass", async () => {
-    const store = createMeterStore();
-    const res = await handleMeterRequest(
-      post("/api/v1/meter/scan", { chain: "solana", address: SCAN_SINK_FIXTURE }),
-      "/api/v1/meter/scan",
-      store,
-    );
-    assert.equal(res.status, 402);
-    const body = (await res.json()) as { error: string };
-    assert.equal(body.error, "payment_required");
-    assert.equal(store.pendingApprovalsCreated, 0);
-  });
-
-  it("scans a sink after a dev pass", async () => {
+  it("scans a sink after a looks_20 pack", async () => {
     const prev = process.env.NODE_ENV;
     process.env.NODE_ENV = "test";
     const store = createMeterStore();
     const issued = await handleMeterRequest(
-      post("/api/v1/meter/pass", { proof: { type: "dev" } }),
+      post("/api/v1/meter/pass", { sku: "looks_20", proof: { type: "dev" } }),
       "/api/v1/meter/pass",
       store,
     );
@@ -92,9 +79,10 @@ describe("meter http", () => {
       store,
     );
     assert.equal(res.status, 200);
-    const body = (await res.json()) as { risk: string; pass_remaining_calls: number };
+    const body = (await res.json()) as { risk: string; pass_remaining_calls: number; question: string };
     assert.equal(body.risk, "sink");
-    assert.equal(body.pass_remaining_calls, 199);
+    assert.equal(body.question, "Can I pay this address?");
+    assert.equal(body.pass_remaining_calls, 19);
     process.env.NODE_ENV = prev;
   });
 
@@ -102,7 +90,7 @@ describe("meter http", () => {
     process.env.NODE_ENV = "test";
     const store = createMeterStore();
     const issued = await handleMeterRequest(
-      post("/api/v1/meter/pass", { proof: { type: "dev" } }),
+      post("/api/v1/meter/pass", { sku: "looks_20", proof: { type: "dev" } }),
       "/api/v1/meter/pass",
       store,
     );
@@ -125,7 +113,7 @@ describe("meter http", () => {
     process.env.NODE_ENV = "test";
     const store = createMeterStore();
     const issued = await handleMeterRequest(
-      post("/api/v1/meter/pass", { proof: { type: "dev" } }),
+      post("/api/v1/meter/pass", { sku: "looks_20", proof: { type: "dev" } }),
       "/api/v1/meter/pass",
       store,
     );
@@ -148,7 +136,7 @@ describe("meter http", () => {
     process.env.NODE_ENV = "test";
     const store = createMeterStore();
     const issued = await handleMeterRequest(
-      post("/api/v1/meter/pass", { proof: { type: "dev" } }),
+      post("/api/v1/meter/pass", { sku: "looks_20", proof: { type: "dev" } }),
       "/api/v1/meter/pass",
       store,
     );
@@ -171,7 +159,7 @@ describe("meter http", () => {
     process.env.NODE_ENV = "test";
     const store = createMeterStore();
     const issued = await handleMeterRequest(
-      post("/api/v1/meter/pass", { proof: { type: "dev" } }),
+      post("/api/v1/meter/pass", { sku: "looks_20", proof: { type: "dev" } }),
       "/api/v1/meter/pass",
       store,
     );
@@ -218,14 +206,15 @@ describe("meter http", () => {
   it("pricing is public", async () => {
     const res = await handleMeterRequest(get("/api/v1/meter/pricing"), "/api/v1/meter/pricing", createMeterStore());
     assert.equal(res.status, 200);
-    const body = (await res.json()) as { product: string; pass: { price_usd: number } };
+    const body = (await res.json()) as { product: string; pass: { price_usd: number }; default_sku: string };
     assert.equal(body.product, "Agent Meter");
-    assert.equal(body.pass.price_usd, 0.25);
+    assert.equal(body.pass.price_usd, 0.02);
+    assert.equal(body.default_sku, "look");
   });
 
   it("GET invoice returns pay_url to the locked payout wallet", async () => {
     const store = createMeterStore();
-    const invoice = await store.createInvoice({ sku: "pass_1h" });
+    const invoice = await store.createInvoice({ sku: "look" });
     const res = await handleMeterRequest(
       get(`/api/v1/meter/invoice/${invoice.invoice_id}`),
       `/api/v1/meter/invoice/${invoice.invoice_id}`,
@@ -240,7 +229,7 @@ describe("meter http", () => {
       pay_url: string;
     };
     assert.equal(body.invoice_id, invoice.invoice_id);
-    assert.equal(body.amount_usd, 0.25);
+    assert.equal(body.amount_usd, 0.02);
     assert.equal(body.pay_to, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
     assert.match(body.pay_url, /^solana:49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR\?/);
     assert.match(body.pay_url, new RegExp(`reference=${invoice.reference}`));
@@ -248,56 +237,60 @@ describe("meter http", () => {
 });
 
 describe("extra meter skus", () => {
-  it("pricing.skus lists catalog ids and keeps pass_1h as default", async () => {
+  it("pricing.skus lists catalog ids and keeps look as default", async () => {
     const res = await handleMeterRequest(get("/api/v1/meter/pricing"), "/api/v1/meter/pricing", createMeterStore());
     const body = (await res.json()) as {
       default_sku: string;
       pass: { id: string; price_usd: number };
       skus: { id: string; price_usd: number }[];
       funds: { pay_to: string };
+      free_looks: number;
     };
-    assert.equal(body.default_sku, "pass_1h");
-    assert.equal(body.pass.id, "pass_1h");
-    assert.equal(body.pass.price_usd, 0.25);
-    assert.equal(body.skus.length, 5);
+    assert.equal(body.default_sku, "look");
+    assert.equal(body.pass.id, "look");
+    assert.equal(body.pass.price_usd, 0.02);
+    assert.equal(body.free_looks, 5);
     assert.deepEqual(
       body.skus.map((row) => row.id),
-      ["pass_1h", "pass_24h", "calls_1k", "stamp_tx", "scan_batch"],
+      ["look", "looks_20", "addresses_100", "stamp_tx", "pass_1h"],
     );
+    assert.equal(body.skus.find((row) => row.id === "looks_20")?.price_usd, 0.2);
+    assert.equal(body.skus.find((row) => row.id === "addresses_100")?.price_usd, 0.15);
+    assert.equal(body.skus.find((row) => row.id === "stamp_tx")?.price_usd, 0.05);
     assert.equal(body.funds.pay_to, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
   });
 
-  it("POST pass {} still invoices pass_1h $0.25", async () => {
+  it("POST pass {} invoices look $0.02", async () => {
     const store = createMeterStore();
     const res = await handleMeterRequest(post("/api/v1/meter/pass", {}), "/api/v1/meter/pass", store);
     assert.equal(res.status, 402);
     const body = (await res.json()) as { sku: string; amount_usd: number; pay_to: string };
-    assert.equal(body.sku, "pass_1h");
-    assert.equal(body.amount_usd, 0.25);
+    assert.equal(body.sku, "look");
+    assert.equal(body.amount_usd, 0.02);
     assert.equal(body.pay_to, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
   });
 
-  it("POST pass sku=pass_24h invoices $1", async () => {
+  it("POST pass sku=looks_20 invoices $0.20", async () => {
     const store = createMeterStore();
     const res = await handleMeterRequest(
-      post("/api/v1/meter/pass", { sku: "pass_24h" }),
+      post("/api/v1/meter/pass", { sku: "looks_20" }),
       "/api/v1/meter/pass",
       store,
     );
     assert.equal(res.status, 402);
     const body = (await res.json()) as { sku: string; amount_usd: number; price_usd: number };
-    assert.equal(body.sku, "pass_24h");
-    assert.equal(body.amount_usd, 1);
-    assert.equal(body.price_usd, 1);
+    assert.equal(body.sku, "looks_20");
+    assert.equal(body.amount_usd, 0.2);
+    assert.equal(body.price_usd, 0.2);
   });
 
-  it("fulfillInvoice mints the invoice sku, not always pass_1h", async () => {
+  it("fulfillInvoice mints the invoice sku, not always look", async () => {
     const store = createMeterStore();
-    const invoice = await store.createInvoice({ sku: "pass_24h" });
-    assert.equal(invoice.amount_usd, 1);
-    const paid = await store.fulfillInvoice(invoice.invoice_id, { signature: "sig24", amountUsdc: 1 });
-    assert.equal(paid.pass.sku, "pass_24h");
-    assert.equal(paid.pass.included_calls, 2000);
+    const invoice = await store.createInvoice({ sku: "looks_20" });
+    assert.equal(invoice.amount_usd, 0.2);
+    const paid = await store.fulfillInvoice(invoice.invoice_id, { signature: "sig20", amountUsdc: 0.2 });
+    assert.equal(paid.pass.sku, "looks_20");
+    assert.equal(paid.pass.included_calls, 20);
     const ttlMs = Date.parse(paid.pass.expires_at) - Date.parse(paid.pass.created_at);
     assert.equal(ttlMs, 86400 * 1000);
   });
@@ -321,7 +314,7 @@ describe("extra meter skus", () => {
     process.env.NODE_ENV = "test";
     const store = createMeterStore();
     const issued = await handleMeterRequest(
-      post("/api/v1/meter/pass", { proof: { type: "dev" } }),
+      post("/api/v1/meter/pass", { sku: "pass_1h", proof: { type: "dev" } }),
       "/api/v1/meter/pass",
       store,
     );
@@ -511,12 +504,21 @@ describe("invoice origin", { concurrency: false }, () => {
   it("tags scan, preflight, scan-batch, stamp 402s and watch creates", async () => {
     await withStatsSecret(async () => {
       const store = createMeterStore();
+      for (let i = 0; i < 5; i += 1) {
+        const free = await handleMeterRequest(
+          post("/api/v1/meter/scan", { chain: "solana", address: SCAN_SINK_FIXTURE }),
+          "/api/v1/meter/scan",
+          store,
+        );
+        assert.equal(free.status, 200);
+      }
       const scan = await handleMeterRequest(
         post("/api/v1/meter/scan", { chain: "solana", address: SCAN_SINK_FIXTURE }),
         "/api/v1/meter/scan",
         store,
       );
       const scanBody = (await scan.json()) as { invoice_id: string };
+      assert.equal(scan.status, 402);
       assert.equal((await store.getInvoice(scanBody.invoice_id))?.source, "http_scan");
 
       const pre = await handleMeterRequest(
@@ -599,8 +601,8 @@ describe("invoice origin", { concurrency: false }, () => {
     assert.equal(report.invoices_pending, 1);
     assert.equal(report.invoices_pending_fresh, 1);
     assert.equal(report.invoices_pending_stale, 1);
-    assert.equal(report.usdc_pending_fresh, 0.25);
-    assert.equal(report.usdc_pending_stale, 0.25);
+    assert.equal(report.usdc_pending_fresh, 0.02);
+    assert.equal(report.usdc_pending_stale, 0.02);
     assert.equal(report.invoices_pending_smoke, 0);
     assert.equal(report.usdc_pending_smoke, 0);
   });
@@ -699,10 +701,10 @@ describe("invoice origin", { concurrency: false }, () => {
     assert.equal(report.invoices_pending_fresh, 2);
     assert.equal(report.invoices_pending_stale, 1);
     assert.equal(report.invoices_pending_smoke, 2);
-    assert.equal(report.usdc_pending, 0.5);
-    assert.equal(report.usdc_pending_fresh, 0.5);
-    assert.equal(report.usdc_pending_stale, 0.25);
-    assert.equal(report.usdc_pending_smoke, 0.5);
+    assert.equal(report.usdc_pending, 0.04);
+    assert.equal(report.usdc_pending_fresh, 0.04);
+    assert.equal(report.usdc_pending_stale, 0.02);
+    assert.equal(report.usdc_pending_smoke, 0.04);
   });
 
   it("internal invoice list returns 401 without the bearer secret", async () => {
@@ -755,7 +757,7 @@ describe("invoice origin", { concurrency: false }, () => {
       assert.equal(row.source, "http_pass");
       assert.equal(row.user_agent, "list-agent");
       assert.equal(row.partner, "x402");
-      assert.equal(row.amount_usd, 0.25);
+      assert.equal(row.amount_usd, 0.02);
       assert.equal(row.status, "pending");
       assert.ok(row.invoice_id);
       assert.ok(row.created_at);
@@ -824,5 +826,168 @@ describe("human app isolation", () => {
     const meter = evaluatePreflightSelf({ cap_usd: 100, value_usd: 50, spent_today_usd: 0 });
     assert.notEqual(meter.decision, "hold" as string);
     assert.equal(meter.decision, "allow");
+  });
+});
+
+describe("paying agents A–H", () => {
+  const PAY_TO = "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR";
+
+  async function scanOnce(store: ReturnType<typeof createMeterStore>, headers: Record<string, string> = {}) {
+    return handleMeterRequest(
+      post("/api/v1/meter/scan", { chain: "solana", address: SCAN_SINK_FIXTURE }, headers),
+      "/api/v1/meter/scan",
+      store,
+    );
+  }
+
+  it("A free5: first 5 looks succeed without a pack", async () => {
+    const store = createMeterStore();
+    for (let i = 1; i <= 5; i += 1) {
+      const res = await scanOnce(store);
+      assert.equal(res.status, 200, `look ${i}`);
+      const body = (await res.json()) as { risk: string; free_looks_remaining: number; question: string };
+      assert.equal(body.risk, "sink");
+      assert.equal(body.question, "Can I pay this address?");
+      assert.equal(body.free_looks_remaining, 5 - i);
+    }
+  });
+
+  it("B 402 $0.02 pay_to locked wallet after free5", async () => {
+    const store = createMeterStore();
+    for (let i = 0; i < 5; i += 1) {
+      assert.equal((await scanOnce(store)).status, 200);
+    }
+    const res = await scanOnce(store);
+    assert.equal(res.status, 402);
+    const body = (await res.json()) as { sku: string; amount_usd: number; pay_to: string; error: string };
+    assert.equal(body.error, "payment_required");
+    assert.equal(body.sku, "look");
+    assert.equal(body.amount_usd, 0.02);
+    assert.equal(body.pay_to, PAY_TO);
+  });
+
+  it("C pack20: looks_20 covers 20 looks", async () => {
+    process.env.NODE_ENV = "test";
+    const store = createMeterStore();
+    const issued = await handleMeterRequest(
+      post("/api/v1/meter/pass", { sku: "looks_20", proof: { type: "dev" } }),
+      "/api/v1/meter/pass",
+      store,
+    );
+    const pass = (await issued.json()) as { token: string; sku: string; included_calls: number };
+    assert.equal(pass.sku, "looks_20");
+    assert.equal(pass.included_calls, 20);
+    const first = await scanOnce(store, { "X-Agent-Pass": pass.token });
+    assert.equal(first.status, 200);
+    const firstBody = (await first.json()) as { pass_remaining_calls: number };
+    assert.equal(firstBody.pass_remaining_calls, 19);
+    for (let i = 0; i < 19; i += 1) {
+      assert.equal((await scanOnce(store, { "X-Agent-Pass": pass.token })).status, 200);
+    }
+    const done = await scanOnce(store, { "X-Agent-Pass": pass.token });
+    assert.equal(done.status, 402);
+    const doneBody = (await done.json()) as { sku: string; amount_usd: number };
+    assert.equal(doneBody.sku, "look");
+    assert.equal(doneBody.amount_usd, 0.02);
+  });
+
+  it("D batch100: addresses_100 covers one batch of up to 100", async () => {
+    process.env.NODE_ENV = "test";
+    const store = createMeterStore();
+    const issued = await handleMeterRequest(
+      post("/api/v1/meter/pass", { sku: "addresses_100", proof: { type: "dev" } }),
+      "/api/v1/meter/pass",
+      store,
+    );
+    const pass = (await issued.json()) as { token: string; sku: string; included_calls: number };
+    assert.equal(pass.sku, "addresses_100");
+    assert.equal(pass.included_calls, 1);
+    const addresses = Array.from({ length: 100 }, (_, i) => `BatchWallet${String(i).padStart(3, "0")}`);
+    const batch = await handleMeterRequest(
+      post("/api/v1/meter/scan-batch", { chain: "solana", addresses }, { "X-Agent-Pass": pass.token }),
+      "/api/v1/meter/scan-batch",
+      store,
+    );
+    assert.equal(batch.status, 200);
+    const body = (await batch.json()) as { count: number; risk: string };
+    assert.equal(body.count, 100);
+    assert.equal(body.risk, "new");
+  });
+
+  it("E stamp $0.05 ticket copy", async () => {
+    process.env.NODE_ENV = "test";
+    const store = createMeterStore();
+    const quote = await handleMeterRequest(
+      post("/api/v1/meter/pass", { sku: "stamp_tx" }),
+      "/api/v1/meter/pass",
+      store,
+    );
+    assert.equal(quote.status, 402);
+    const quoteBody = (await quote.json()) as { sku: string; amount_usd: number };
+    assert.equal(quoteBody.sku, "stamp_tx");
+    assert.equal(quoteBody.amount_usd, 0.05);
+
+    const issued = await handleMeterRequest(
+      post("/api/v1/meter/pass", { sku: "stamp_tx", proof: { type: "dev" } }),
+      "/api/v1/meter/pass",
+      store,
+    );
+    const pass = (await issued.json()) as { token: string };
+    const stamp = await handleMeterRequest(
+      post("/api/v1/meter/stamp", { decision: "allow", chain: "solana", to: "Shop" }, { "X-Agent-Pass": pass.token }),
+      "/api/v1/meter/stamp",
+      store,
+    );
+    assert.equal(stamp.status, 200);
+    const body = (await stamp.json()) as { ticket: string; price_usd: number; verified: boolean };
+    assert.equal(body.ticket, "Take this ticket or we do not take your USDC.");
+    assert.equal(body.price_usd, 0.05);
+    assert.equal(body.verified, true);
+  });
+
+  it("F payout lock stays on the receive wallet", async () => {
+    const store = createMeterStore();
+    const invoice = await store.createInvoice({ sku: "look" });
+    assert.equal(invoice.pay_to, PAY_TO);
+    const pricing = await handleMeterRequest(get("/api/v1/meter/pricing"), "/api/v1/meter/pricing", store);
+    const body = (await pricing.json()) as { funds: { pay_to: string } };
+    assert.equal(body.funds.pay_to, PAY_TO);
+  });
+
+  it("G scan and preflight never hold", async () => {
+    const store = createMeterStore();
+    const scan = await scanOnce(store);
+    const scanBody = (await scan.json()) as { risk: string };
+    assert.ok(["ok", "new", "warn", "sink"].includes(scanBody.risk));
+    assert.notEqual(scanBody.risk, "hold");
+    const pre = await handleMeterRequest(
+      post("/api/v1/meter/preflight", {
+        chain: "solana",
+        wallet: "AgentG",
+        to: "ShopG",
+        value_usd: 5,
+        cap_usd: 20,
+      }),
+      "/api/v1/meter/preflight",
+      store,
+    );
+    const preBody = (await pre.json()) as { decision: string };
+    assert.ok(preBody.decision === "allow" || preBody.decision === "stop");
+    assert.notEqual(preBody.decision, "hold");
+    assert.equal(store.pendingApprovalsCreated, 0);
+  });
+
+  it("H smoke header tags POST /pass health checks", async () => {
+    const store = createMeterStore();
+    const headerFlag = await handleMeterRequest(
+      post("/api/v1/meter/pass", {}, { "user-agent": "MeterClient/1.0", "x-meter-smoke": "1" }),
+      "/api/v1/meter/pass",
+      store,
+    );
+    assert.equal(headerFlag.status, 402);
+    const invoice = await store.getInvoice(((await headerFlag.json()) as { invoice_id: string }).invoice_id);
+    assert.equal(invoice?.source, "smoke");
+    assert.equal(invoice?.sku, "look");
+    assert.equal(invoice?.amount_usd, 0.02);
   });
 });

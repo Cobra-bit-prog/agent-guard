@@ -49,37 +49,39 @@ Check API (machine-readable):
 1-day full console trial, no card, no KYC. Then Starter $29 / Pro $49 / Team $149. Humans pay at /billing/pay — $29 USDC on Solana, QR + Pay. No in-page Phantom. Agents use POST /api/v1/billing/checkout.
 
 ## Agent Meter (no human on the site)
-Separate from the Human App. Agents pay themselves. A $0.25 pass. Then scan and preflight. No inbox. No email, no trial, no API key, no Approval Inbox. Docs: https://agent-control.net/docs#agent-meter
+Separate from the Human App. Agents pay themselves. Can I pay this address? First 5 free. Then $0.02 USDC. Then scan and preflight. ok | new | warn | sink. Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. Take this ticket or we do not take your USDC. No inbox. No email, no trial, no API key, no Approval Inbox. Discovery: llms → pricing → 402 → MCP. Docs: https://agent-control.net/docs#agent-meter
 
 One-file recipe (no SDK):
 
 # 1 discover
+# https://agent-control.net/llms.txt
 curl -s https://agent-control.net/api/v1/meter/pricing
-# 2 invoice
+# 2 look — First 5 free. Then $0.02 USDC. One address. ok | new | warn | sink
+curl -s -X POST https://agent-control.net/api/v1/meter/scan -H 'content-type: application/json' -d '{"chain":"solana","address":"<destination>"}'
+# 3 after 5, POST /api/v1/meter/pass → 402 look $0.02 USDC on Solana to pay_to WITH reference
 curl -s -X POST https://agent-control.net/api/v1/meter/pass -H 'content-type: application/json' -d '{}'
-# 3 pay 0.25 USDC on Solana to pay_to WITH reference from the 402
 # copy src/adapters/meter-pay.ts — agent wallet signs and sends (no Phantom)
 import { buyMeterPass } from "./src/adapters/meter-pay.ts";
 await buyMeterPass({ keypair });
 # 4 poll
 curl -s -X POST https://agent-control.net/api/v1/meter/watch -H 'content-type: application/json' -d '{"invoice_id":"inv_…"}'
-# 5 use scan + preflight with X-Agent-Pass
-curl -s -X POST https://agent-control.net/api/v1/meter/scan -H 'content-type: application/json' -H 'X-Agent-Pass: <pass>' -d '{"chain":"solana","address":"<destination>"}'
-curl -s -X POST https://agent-control.net/api/v1/meter/preflight -H 'content-type: application/json' -H 'X-Agent-Pass: <pass>' -d '{"chain":"solana","wallet":"<wallet>","to":"<destination>","value_usd":10,"cap_usd":100}'
+# 5 packs looks_20 $0.20 · addresses_100 $0.15 · stamp_tx $0.05 ticket
+# Take this ticket or we do not take your USDC.
+# 6 MCP meter_* at /api/v1/mcp
 
-- GET /api/v1/meter/pricing — public. Default pass_1h is $0.25 USDC on Solana, 1 hour, 200 calls. Response includes skus[] (pass_1h, pass_24h, calls_1k, stamp_tx, scan_batch) and still describes pass_1h under pass.
-- POST /api/v1/meter/pass — no payment proof → HTTP 402 invoice (pay_to, reference, amount). Empty body {} mints pass_1h $0.25. Optional {"sku":"pass_24h"} (and other catalog ids). Unknown sku → 400 unknown_sku. Dev grant `{ "proof": { "type": "dev" } }` only when METER_DEV_GRANT=1 or NODE_ENV=test.
+- GET /api/v1/meter/pricing — public. Default door is look $0.02 USDC. First 5 free. Then $0.02 USDC. Response includes skus[] (look, looks_20, addresses_100, stamp_tx, pass_1h catalog-only). pass describes the default look.
+- POST /api/v1/meter/pass — no payment proof → HTTP 402 invoice (pay_to, reference, amount). Empty body {} mints look $0.02. Optional {"sku":"looks_20"} (and other catalog ids). Unknown sku → 400 unknown_sku. Dev grant `{ "proof": { "type": "dev" } }` only when METER_DEV_GRANT=1 or NODE_ENV=test.
 - POST /api/v1/meter/watch — after you pay, send invoice_id until the pass token comes back.
-- Agent wallet pay (no Phantom): copy src/adapters/meter-pay.ts. `import { buyMeterPass } from "./src/adapters/meter-pay.ts"; await buyMeterPass({ keypair });` Sends 0.25 USDC to pay_to with the Solana Pay reference as an extra non-signer account, then watches until the token. payMeterPass({ invoice, keypairOrSigner }) if you already have the 402.
+- Agent wallet pay (no Phantom): copy src/adapters/meter-pay.ts. `import { buyMeterPass } from "./src/adapters/meter-pay.ts"; await buyMeterPass({ keypair });` Default sku is look ($0.02). looks_20 is $0.20. Sends USDC to pay_to with the Solana Pay reference as an extra non-signer account, then watches until the token. payMeterPass({ invoice, keypairOrSigner }) if you already have the 402.
 - Laptop Phantom (Chrome extension, no QR): https://agent-control.net/meter/pay?invoice_id=inv_…
-- POST /api/v1/meter/scan — header X-Agent-Pass. Body: chain, address. Returns risk ok|new|warn|sink. Never blocks a send.
-- POST /api/v1/meter/preflight — header X-Agent-Pass. Body: chain, wallet, to, value_usd, cap_usd. Returns allow or stop. Does not wait on a human.
-- POST /api/v1/meter/scan-batch — header X-Agent-Pass. Body: chain, addresses[] (max 100). One call. Sku must cover scan_batch.
-- POST /api/v1/meter/stamp — header X-Agent-Pass. Signed allow|stop receipt (HMAC-SHA256). GET /api/v1/meter/stamp/:id to verify. stamp_tx or a session pass covers stamp.
+- POST /api/v1/meter/scan — one look = one address. First 5 free (X-Agent-Pass or anon). Then 402 look $0.02 unless a pack covers. Returns risk ok|new|warn|sink. Never hold. Never blocks a send.
+- POST /api/v1/meter/preflight — one look = one address. First 5 free then $0.02. Returns allow or stop. Never hold. No Inbox.
+- POST /api/v1/meter/scan-batch — header X-Agent-Pass. Body: chain, addresses[] (max 100). Sku addresses_100 $0.15 covers scan_batch.
+- POST /api/v1/meter/stamp — header X-Agent-Pass. stamp_tx $0.05. Take this ticket or we do not take your USDC. GET /api/v1/meter/stamp/:id to verify.
 - GET /api/v1/meter/pass/:id — remaining calls + expiry.
 - MCP public tools: meter_pricing, meter_buy_pass, meter_watch, meter_scan, meter_preflight, meter_scan_batch, meter_stamp, meter_verify_stamp.
 
-Auth for scan/preflight is the pass token, not a Bearer human-app key. Missing/expired/empty pass → 402.
+Auth for scan/preflight is X-Agent-Pass or anon. No email. After 5 free looks, missing/expired/empty pack → 402 look $0.02.
 
 ## Agent Storefront
 Agents discover price, start a trial, and start checkout here. A human principal signs up and owns billing and Approval Inbox; agents connect under that account. Agents cannot open a root account, cannot decide Approval Inbox, and cannot use a virtual card.
