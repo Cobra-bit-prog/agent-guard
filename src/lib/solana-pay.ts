@@ -16,6 +16,20 @@ export function lockedSolanaUsdcRecipient(_candidate?: string | null): string {
   return SOLANA_PAYOUT_ADDRESS;
 }
 
+export const RECEIVE_WALLET_SWITCH_ERROR =
+  "Switch to a different wallet that holds USDC — you cannot pay from the receive wallet.";
+
+export function isReceiveWalletPayer(payer: string): boolean {
+  return payer.trim() === SOLANA_PAYOUT_ADDRESS;
+}
+
+/** Refuse a self-send from the locked payout wallet. */
+export function assertPayerIsNotReceiveWallet(payer: string): void {
+  if (isReceiveWalletPayer(payer)) {
+    throw new Error(RECEIVE_WALLET_SWITCH_ERROR);
+  }
+}
+
 export type PayChain = "solana" | "ethereum" | "base";
 
 export const PAY_CHAIN_LABEL: Record<PayChain, string> = {

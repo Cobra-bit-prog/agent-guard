@@ -1,6 +1,11 @@
 import { Buffer } from "buffer";
 import { EVM_USDC, type EvmPayChain } from "@/lib/evm-pay";
-import { lockedSolanaUsdcRecipient, USDC_MINT, usdcBaseUnits } from "@/lib/solana-pay";
+import {
+  assertPayerIsNotReceiveWallet,
+  lockedSolanaUsdcRecipient,
+  USDC_MINT,
+  usdcBaseUnits,
+} from "@/lib/solana-pay";
 
 function ensureNodeBuffer() {
   const g = globalThis as typeof globalThis & {
@@ -51,6 +56,25 @@ function getPhantom(): PhantomProvider {
   return p;
 }
 
+/** Connected Phantom pubkey if the extension already exposed one. Does not prompt. */
+export function peekPhantomPubkey(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const pk = getPhantom().publicKey?.toString().trim();
+    return pk || null;
+  } catch {
+    return null;
+  }
+}
+
+export async function connectPhantomPubkey(): Promise<string> {
+  const phantom = getPhantom();
+  const connected = await phantom.connect();
+  const pk = connected.publicKey.toString().trim();
+  if (!pk) throw new Error("Phantom did not return a wallet.");
+  return pk;
+}
+
 export async function payUsdcWithPhantomExtension(opts: {
   recipient: string;
   amountUsdc: number;
@@ -72,6 +96,7 @@ export async function payUsdcWithPhantomExtension(opts: {
   const phantom = getPhantom();
   const connected = await phantom.connect();
   const payer = new PublicKey(connected.publicKey.toString());
+  assertPayerIsNotReceiveWallet(payer.toString());
   const destOwner = new PublicKey(lockedSolanaUsdcRecipient(opts.recipient));
   const mint = new PublicKey(USDC_MINT);
   const reference = new PublicKey(opts.reference);

@@ -109,4 +109,15 @@ describe("meter laptop pay", () => {
     assert.match(card, /\/api\/v1\/meter\/invoice\//);
     assert.doesNotMatch(card, /from\s+["'][^"']*pay-extension["']/);
   });
+
+  it("Phantom send refuses the locked receive wallet", () => {
+    const ext = readFileSync(join(ROOT, "src/lib/pay-extension.ts"), "utf8");
+    assert.match(ext, /assertPayerIsNotReceiveWallet\(payer\.toString\(\)\)/);
+    assert.match(ext, /lockedSolanaUsdcRecipient/);
+    assert.doesNotMatch(ext, /49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR/);
+    const card = readFileSync(join(ROOT, "src/components/meter-pay-card.tsx"), "utf8");
+    assert.match(card, /isReceiveWalletPayer/);
+    assert.match(card, /RECEIVE_WALLET_SWITCH_ERROR/);
+    assert.match(card, /shortAddress\(connectedPubkey\)/);
+  });
 });
