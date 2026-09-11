@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { PLANS } from "./plans.ts";
-import { USDC_MINT, buildSolanaPayUrl, usdcBaseUnits } from "./solana-pay.ts";
+import { USDC_MINT, assertPayerIsNotReceiveWallet, buildSolanaPayUrl, usdcBaseUnits } from "./solana-pay.ts";
 import { newPayReference } from "./pay-invoice.ts";
 import {
   SOLANA_PAYOUT_ADDRESS,
@@ -69,6 +69,19 @@ describe("Solana Pay URL", () => {
       lockedSolanaUsdcRecipient("preview-env-wrong-wallet"),
       "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR",
     );
+  });
+
+  it("refuses Phantom pay when the connected wallet is the receive address", () => {
+    assert.throws(
+      () => assertPayerIsNotReceiveWallet(SOLANA_PAYOUT_ADDRESS),
+      /Switch to a different wallet in Phantom/,
+    );
+    assert.throws(
+      () => assertPayerIsNotReceiveWallet(` ${SOLANA_PAYOUT_ADDRESS} `),
+      /This wallet is the receive address/,
+    );
+    assert.doesNotThrow(() => assertPayerIsNotReceiveWallet("SomeOtherWallet111111111111111111111111"));
+    assert.equal(isForbiddenCustomerWord("This wallet is the receive address. Switch to a different wallet in Phantom, then pay."), false);
   });
 });
 

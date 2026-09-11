@@ -16,6 +16,16 @@ export function lockedSolanaUsdcRecipient(_candidate?: string | null): string {
   return SOLANA_PAYOUT_ADDRESS;
 }
 
+export const RECEIVE_WALLET_SWITCH_ERROR =
+  "This wallet is the receive address. Switch to a different wallet in Phantom, then pay.";
+
+/** Refuse a self-send from the locked payout wallet. */
+export function assertPayerIsNotReceiveWallet(payer: string): void {
+  if (payer.trim() === SOLANA_PAYOUT_ADDRESS) {
+    throw new Error(RECEIVE_WALLET_SWITCH_ERROR);
+  }
+}
+
 export type PayChain = "solana" | "ethereum" | "base";
 
 export const PAY_CHAIN_LABEL: Record<PayChain, string> = {
