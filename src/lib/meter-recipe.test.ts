@@ -8,6 +8,7 @@ import {
   METER_EYEBROW,
   METER_HEADLINE,
   METER_LEDE,
+  METER_PAY_SNIPPET,
   METER_PREFLIGHT_CURL,
   METER_RECIPE,
   METER_SCAN_CURL,
@@ -48,15 +49,34 @@ describe("Agent Meter recipe", () => {
     assert.doesNotMatch(METER_PROSE, /cheaper/i);
     assert.doesNotMatch(METER_PROSE, /Start free trial/);
     assert.doesNotMatch(METER_PROSE, /Pay \$29/);
+    assert.doesNotMatch(METER_PROSE, /They ask before they pay/);
+    assert.doesNotMatch(METER_PROSE, /\bbroadcast/i);
   });
 
   it("ships the exact curl recipe with watch, scan, and preflight", () => {
-    assert.match(METER_RECIPE, /^# 1 discover\ncurl -s https:\/\/agent-control\.net\/api\/v1\/meter\/pricing$/m);
+    assert.match(
+      METER_RECIPE,
+      /^# 1 discover\ncurl -s https:\/\/agent-control\.net\/api\/v1\/meter\/pricing$/m,
+    );
     assert.match(
       METER_RECIPE,
       /curl -s -X POST https:\/\/agent-control\.net\/api\/v1\/meter\/pass -H 'content-type: application\/json' -d '\{\}'/,
     );
-    assert.match(METER_RECIPE, /# 3 pay 0\.25 USDC on Solana to pay_to WITH reference from the 402/);
+    assert.match(
+      METER_RECIPE,
+      /# 3 pay 0\.25 USDC on Solana to pay_to WITH reference from the 402/,
+    );
+    assert.match(METER_RECIPE, /src\/adapters\/meter-pay\.ts/);
+    assert.match(METER_RECIPE, /buyMeterPass/);
+    assert.equal(
+      METER_PAY_SNIPPET,
+      `import { buyMeterPass } from "./src/adapters/meter-pay.ts";
+await buyMeterPass({ keypair });`,
+    );
+    assert.equal(METER_STEPS[2]?.code, METER_PAY_SNIPPET);
+    assert.match(METER_STEPS[2]?.d ?? "", /src\/adapters\/meter-pay\.ts/);
+    assert.match(METER_STEPS[2]?.d ?? "", /No Phantom/);
+    assert.doesNotMatch(METER_RECIPE, /\bbroadcast/i);
     assert.match(METER_RECIPE, /# 4 poll/);
     assert.match(
       METER_RECIPE,
@@ -84,7 +104,10 @@ describe("Agent Meter recipe on public discovery surfaces", () => {
     assert.match(llms, /\/api\/v1\/meter\/watch/);
     assert.match(docs, /id=["']agent-meter["']/);
     assert.match(docs, /METER_RECIPE/);
+    assert.match(docs, /METER_PAY_SNIPPET/);
     assert.match(docs, /href=["']#agent-meter["']/);
+    assert.match(llms, /buyMeterPass/);
+    assert.match(llms, /src\/adapters\/meter-pay\.ts/);
     for (const line of METER_RECIPE.split("\n")) {
       assert.match(llms, new RegExp(line.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
     }

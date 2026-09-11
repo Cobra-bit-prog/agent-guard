@@ -18,6 +18,7 @@ import {
   METER_EYEBROW,
   METER_HEADLINE,
   METER_LEDE,
+  METER_PAY_SNIPPET,
   METER_RECIPE,
   METER_SEPARATE,
   METER_STEPS,
@@ -562,14 +563,19 @@ client.onBeforePaymentCreation(
           <p className="mt-3 max-w-[52ch] text-muted">{METER_LEDE}</p>
           <p className="mt-3 max-w-[52ch] text-muted">{METER_SEPARATE}</p>
           <p className="mt-3 max-w-[52ch] text-muted">
-            One-file recipe. No SDK. Pay the pass, then scan and preflight with{" "}
-            <code className="font-mono text-fg">X-Agent-Pass</code>. On a laptop with Phantom, open{" "}
+            Your agent wallet sends the $0.25 pass. Copy{" "}
+            <code className="font-mono text-fg">src/adapters/meter-pay.ts</code>
+            — it signs a Solana USDC transfer to pay_to with the 402 reference, then watches until
+            the pass token. Then scan and preflight with{" "}
+            <code className="font-mono text-fg">X-Agent-Pass</code>. No Phantom. On a laptop with
+            Phantom, you can still open{" "}
             <a href="/meter/pay" className="font-medium text-navy hover:text-coral">
               /meter/pay?invoice_id=
             </a>
-            plus the invoice id, then tap Pay.
+            plus the invoice id.
           </p>
           <CopyCode code={METER_RECIPE} label="Copy recipe" />
+          <CopyCode code={METER_PAY_SNIPPET} label="Copy agent pay" />
           <ol className="mt-8 space-y-3">
             {METER_STEPS.map((s) => (
               <li
