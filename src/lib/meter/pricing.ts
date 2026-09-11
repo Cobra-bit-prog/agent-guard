@@ -1,6 +1,18 @@
+export const METER_LOOK_SKU = "look" as const;
+export const METER_DEFAULT_SKU = METER_LOOK_SKU;
+/** @deprecated Default door is `look`. pass_1h stays in catalog only. */
 export const METER_PASS_SKU = "pass_1h" as const;
 
-export type MeterSkuId = "pass_1h" | "pass_24h" | "calls_1k" | "stamp_tx" | "scan_batch";
+export const METER_FREE_LOOKS = 5;
+export const METER_LOOK_USD = 0.02;
+export const METER_ANON_IDENTITY = "anon" as const;
+
+export const LOOK_QUESTION = "Can I pay this address?";
+export const LOOK_RISKS = ["ok", "new", "warn", "sink"] as const;
+export const METER_FREE_THEN_LOOK = "First 5 free. Then $0.02 USDC.";
+export const STAMP_TICKET_COPY = "Take this ticket or we do not take your USDC.";
+
+export type MeterSkuId = "look" | "looks_20" | "addresses_100" | "stamp_tx" | "pass_1h";
 
 export type MeterSku = {
   id: MeterSkuId;
@@ -14,6 +26,55 @@ export type MeterSku = {
   job: string;
 };
 
+export const METER_LOOK: MeterSku = {
+  id: METER_LOOK_SKU,
+  price_usd: METER_LOOK_USD,
+  duration_sec: 600,
+  included_calls: 1,
+  covers: ["scan", "preflight"],
+  asset: "usdc",
+  chain: "solana",
+  amount_base_units: "20000",
+  job: "One look. One address. Can I pay this address?",
+};
+
+export const METER_LOOKS_20: MeterSku = {
+  id: "looks_20",
+  price_usd: 0.2,
+  duration_sec: 86400,
+  included_calls: 20,
+  covers: ["scan", "preflight"],
+  asset: "usdc",
+  chain: "solana",
+  amount_base_units: "200000",
+  job: "Pack of 20 looks.",
+};
+
+export const METER_ADDRESSES_100: MeterSku = {
+  id: "addresses_100",
+  price_usd: 0.15,
+  duration_sec: 3600,
+  included_calls: 1,
+  covers: ["scan_batch"],
+  asset: "usdc",
+  chain: "solana",
+  amount_base_units: "150000",
+  job: "One batch of up to 100 addresses.",
+};
+
+export const METER_STAMP_TX: MeterSku = {
+  id: "stamp_tx",
+  price_usd: 0.05,
+  duration_sec: 600,
+  included_calls: 1,
+  covers: ["stamp"],
+  asset: "usdc",
+  chain: "solana",
+  amount_base_units: "50000",
+  job: STAMP_TICKET_COPY,
+};
+
+/** Catalog-only. Not the default door. */
 export const METER_PASS_1H: MeterSku = {
   id: METER_PASS_SKU,
   price_usd: 0.25,
@@ -23,74 +84,40 @@ export const METER_PASS_1H: MeterSku = {
   asset: "usdc",
   chain: "solana",
   amount_base_units: "250000",
-  job: "Default session. Scan + preflight + batch + stamp.",
+  job: "Optional session pack. Scan + preflight + batch + stamp.",
 };
 
 export const METER_SKUS: Record<MeterSkuId, MeterSku> = {
+  look: METER_LOOK,
+  looks_20: METER_LOOKS_20,
+  addresses_100: METER_ADDRESSES_100,
+  stamp_tx: METER_STAMP_TX,
   pass_1h: METER_PASS_1H,
-  pass_24h: {
-    id: "pass_24h",
-    price_usd: 1,
-    duration_sec: 86400,
-    included_calls: 2000,
-    covers: ["scan", "preflight", "scan_batch", "stamp"],
-    asset: "usdc",
-    chain: "solana",
-    amount_base_units: "1000000",
-    job: "Overnight crawler session.",
-  },
-  calls_1k: {
-    id: "calls_1k",
-    price_usd: 0.8,
-    duration_sec: 86400,
-    included_calls: 1000,
-    covers: ["scan", "preflight", "scan_batch", "stamp"],
-    asset: "usdc",
-    chain: "solana",
-    amount_base_units: "800000",
-    job: "Burst pack. Not a subscription.",
-  },
-  stamp_tx: {
-    id: "stamp_tx",
-    price_usd: 0.1,
-    duration_sec: 600,
-    included_calls: 1,
-    covers: ["stamp"],
-    asset: "usdc",
-    chain: "solana",
-    amount_base_units: "100000",
-    job: "One signed allow|stop receipt a merchant can verify.",
-  },
-  scan_batch: {
-    id: "scan_batch",
-    price_usd: 0.15,
-    duration_sec: 3600,
-    included_calls: 1,
-    covers: ["scan_batch"],
-    asset: "usdc",
-    chain: "solana",
-    amount_base_units: "150000",
-    job: "One batch of up to 100 addresses. Prefer a session pass if you scan more than once.",
-  },
 };
 
 export const METER_SKU_IDS = Object.keys(METER_SKUS) as MeterSkuId[];
 
+export function defaultSkuForKind(kind: string): MeterSku {
+  if (kind === "stamp") return METER_STAMP_TX;
+  if (kind === "scan_batch") return METER_ADDRESSES_100;
+  return METER_LOOK;
+}
+
 export function resolveMeterSku(raw: unknown): MeterSku | { error: "unknown_sku"; sku: string } {
-  const sku = String(raw ?? METER_PASS_SKU).trim() || METER_PASS_SKU;
+  const sku = String(raw ?? METER_DEFAULT_SKU).trim() || METER_DEFAULT_SKU;
   const hit = METER_SKUS[sku as MeterSkuId];
   if (!hit) return { error: "unknown_sku", sku };
   return hit;
 }
 
-/** Unknown/empty sku falls back to the default pass_1h catalog row. */
+/** Unknown/empty sku falls back to the default look catalog row. */
 export function meterSkuOrDefault(raw: unknown): MeterSku {
   const hit = resolveMeterSku(raw);
-  return "error" in hit ? METER_PASS_1H : hit;
+  return "error" in hit ? METER_LOOK : hit;
 }
 
 export function coversForSku(sku: string): string[] {
-  return [...(METER_SKUS[sku as MeterSkuId]?.covers ?? METER_PASS_1H.covers)];
+  return [...(METER_SKUS[sku as MeterSkuId]?.covers ?? METER_LOOK.covers)];
 }
 
 export function skuCovers(sku: string, kind: string): boolean {
@@ -101,17 +128,39 @@ export function skuCovers(sku: string, kind: string): boolean {
 export function meterPricing() {
   return {
     product: "Agent Meter",
-    note: "No email. No API key. Pay a pass, then call scan and preflight. Human App ($29 Inbox) is separate.",
-    default_sku: METER_PASS_SKU,
+    question: LOOK_QUESTION,
+    risks: [...LOOK_RISKS],
+    note: `${LOOK_QUESTION} ${METER_FREE_THEN_LOOK} No email. No API key. Human App ($29 Inbox) is separate.`,
+    default_sku: METER_DEFAULT_SKU,
+    free_looks: METER_FREE_LOOKS,
+    look: {
+      id: METER_LOOK.id,
+      price_usd: METER_LOOK.price_usd,
+      duration_sec: METER_LOOK.duration_sec,
+      included_calls: METER_LOOK.included_calls,
+      covers: [...METER_LOOK.covers],
+      asset: METER_LOOK.asset,
+      chain: METER_LOOK.chain,
+      amount_base_units: METER_LOOK.amount_base_units,
+    },
     pass: {
-      id: METER_PASS_1H.id,
-      price_usd: METER_PASS_1H.price_usd,
-      duration_sec: METER_PASS_1H.duration_sec,
-      included_calls: METER_PASS_1H.included_calls,
-      covers: [...METER_PASS_1H.covers],
-      asset: METER_PASS_1H.asset,
-      chain: METER_PASS_1H.chain,
-      amount_base_units: METER_PASS_1H.amount_base_units,
+      id: METER_LOOK.id,
+      price_usd: METER_LOOK.price_usd,
+      duration_sec: METER_LOOK.duration_sec,
+      included_calls: METER_LOOK.included_calls,
+      covers: [...METER_LOOK.covers],
+      asset: METER_LOOK.asset,
+      chain: METER_LOOK.chain,
+      amount_base_units: METER_LOOK.amount_base_units,
+    },
+    packs: {
+      looks_20: { price_usd: METER_LOOKS_20.price_usd, included_calls: METER_LOOKS_20.included_calls },
+      addresses_100: { price_usd: METER_ADDRESSES_100.price_usd, included_calls: METER_ADDRESSES_100.included_calls },
+    },
+    ticket: {
+      sku: METER_STAMP_TX.id,
+      price_usd: METER_STAMP_TX.price_usd,
+      copy: STAMP_TICKET_COPY,
     },
     skus: METER_SKU_IDS.map((id) => {
       const row = METER_SKUS[id];
@@ -145,6 +194,8 @@ export function meterPricing() {
       report: "GET /api/v1/meter/report",
     },
     header: "X-Agent-Pass",
+    identity: "X-Agent-Pass or anon. No email.",
+    discovery: "llms → pricing → 402 → MCP",
   };
 }
 
@@ -158,8 +209,8 @@ export function meter402Body(invoice: {
   asset: string;
   sku?: string;
 }) {
-  const sku = (invoice.sku as MeterSkuId) || METER_PASS_SKU;
-  const catalog = METER_SKUS[sku] ?? METER_PASS_1H;
+  const sku = (invoice.sku as MeterSkuId) || METER_DEFAULT_SKU;
+  const catalog = METER_SKUS[sku] ?? METER_LOOK;
   const price = invoice.amount_usd || catalog.price_usd;
   return {
     error: "payment_required",
@@ -173,7 +224,9 @@ export function meter402Body(invoice: {
     amount_base_units: invoice.amount_base_units,
     invoice_id: invoice.invoice_id,
     reference: invoice.reference,
+    question: LOOK_QUESTION,
+    note: catalog.id === "stamp_tx" ? STAMP_TICKET_COPY : METER_FREE_THEN_LOOK,
     pay_url: `solana:${invoice.pay_to}?amount=${price}&spl-token=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v&reference=${invoice.reference}&label=Agent%20Control&message=Pay%20$${price}%20${catalog.id}`,
-    next: `Pay ${price} USDC on Solana with the reference, then POST /api/v1/meter/watch { invoice_id } — no human. Helius also mints when the transfer lands.`,
+    next: `Pay ${price} USDC on Solana with the reference, then POST /api/v1/meter/watch { invoice_id }.`,
   };
 }

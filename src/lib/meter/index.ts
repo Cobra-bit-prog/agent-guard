@@ -1,4 +1,25 @@
-export { meterPricing, meter402Body, METER_PASS_1H, METER_PASS_SKU, METER_SKUS, resolveMeterSku, skuCovers, meterSkuOrDefault, coversForSku } from "./pricing.ts";
+export {
+  meterPricing,
+  meter402Body,
+  METER_LOOK,
+  METER_LOOK_SKU,
+  METER_LOOKS_20,
+  METER_ADDRESSES_100,
+  METER_STAMP_TX,
+  METER_PASS_1H,
+  METER_PASS_SKU,
+  METER_DEFAULT_SKU,
+  METER_FREE_LOOKS,
+  METER_SKUS,
+  LOOK_QUESTION,
+  METER_FREE_THEN_LOOK,
+  STAMP_TICKET_COPY,
+  resolveMeterSku,
+  skuCovers,
+  meterSkuOrDefault,
+  coversForSku,
+  defaultSkuForKind,
+} from "./pricing.ts";
 export { evaluateScan, type MeterChain, type ScanRisk } from "./scan.ts";
 export { evaluatePreflightSelf, utcDayKey } from "./preflight.ts";
 export {
@@ -6,6 +27,7 @@ export {
   getMemoryMeterStore,
   allowDevGrant,
   publicPassView,
+  meterIdentityKey,
   type MeterStore,
   type MeterReport,
   type MeterStamp,

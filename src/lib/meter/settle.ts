@@ -1,6 +1,6 @@
 import { paymentsFromHeliusPayload, type HeliusPayment, type MatchResult } from "../pay-invoice.ts";
 import { lockedSolanaUsdcRecipient } from "../solana-pay.ts";
-import { METER_PASS_1H } from "./pricing.ts";
+import { METER_LOOK } from "./pricing.ts";
 import type { MeterInvoice, MeterStore } from "./store.ts";
 
 export type MeterChainFinder = (opts: {
@@ -19,7 +19,7 @@ export function meterFundsDestination() {
   };
 }
 
-export function paidEnough(amountUsdc: number, need = METER_PASS_1H.price_usd): boolean {
+export function paidEnough(amountUsdc: number, need = METER_LOOK.price_usd): boolean {
   return Number(amountUsdc) + 1e-9 >= need;
 }
 
@@ -41,7 +41,7 @@ export async function watchMeterInvoice(
   if (current.status === "paid") {
     const issued = await store.fulfillInvoice(current.invoice_id, {
       signature: current.signature ?? "on_file",
-      amountUsdc: current.paid_amount_usd ?? METER_PASS_1H.price_usd,
+      amountUsdc: current.paid_amount_usd ?? current.amount_usd ?? METER_LOOK.price_usd,
       payer_address: current.payer_address,
     });
     return {
@@ -50,7 +50,7 @@ export async function watchMeterInvoice(
       match: {
         kind: "paid",
         signature: issued.invoice.signature ?? "on_file",
-        amountUsdc: issued.invoice.paid_amount_usd ?? METER_PASS_1H.price_usd,
+        amountUsdc: issued.invoice.paid_amount_usd ?? issued.invoice.amount_usd ?? METER_LOOK.price_usd,
       },
     };
   }
@@ -60,7 +60,7 @@ export async function watchMeterInvoice(
     match = await finder({
       reference: current.reference,
       recipient: lockedSolanaUsdcRecipient(current.pay_to),
-      amountUsdc: current.amount_usd || METER_PASS_1H.price_usd,
+      amountUsdc: current.amount_usd || METER_LOOK.price_usd,
     });
   } catch {
     match = { kind: "none" };

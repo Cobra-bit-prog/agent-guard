@@ -1,5 +1,7 @@
 export type PreflightDecision = "allow" | "stop";
 
+/** Meter preflight never holds. allow | stop only. */
+
 export function utcDayKey(nowMs = Date.now()): string {
   return new Date(nowMs).toISOString().slice(0, 10);
 }

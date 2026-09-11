@@ -7,7 +7,7 @@ import {
   METER_INVOICE_LIST_LIMIT,
 } from "./origin.ts";
 import { utcDayKey } from "./preflight.ts";
-import { METER_PASS_1H, METER_PASS_SKU } from "./pricing.ts";
+import { METER_ANON_IDENTITY, METER_FREE_LOOKS, METER_LOOK, METER_LOOK_SKU } from "./pricing.ts";
 import {
   getMemoryMeterStore,
   invoiceDraft,
@@ -230,6 +230,13 @@ export async function ensureMeterSchema(sql?: Sql): Promise<void> {
     )
   `);
   await db.query(`create index if not exists meter_stamps_pass_idx on meter_stamps (pass_id, created_at desc)`);
+  await db.query(`
+    create table if not exists meter_free_looks (
+      identity_key text primary key,
+      used integer not null default 0,
+      updated_at timestamptz not null default now()
+    )
+  `);
 }
 
 async function expireIfNeeded(db: Sql, row: MeterInvoice, nowMs = Date.now()): Promise<MeterInvoice> {
@@ -316,7 +323,7 @@ export function createSqlMeterStore(db: Sql): MeterStore {
         }
       }
       const issued = await store.issuePass({
-        sku: existing?.sku ?? METER_PASS_SKU,
+        sku: existing?.sku ?? METER_LOOK_SKU,
         payer_address: match.payer_address ?? existing?.payer_address ?? null,
         invoice_id: invoiceId,
         signature: match.signature,
@@ -354,10 +361,10 @@ export function createSqlMeterStore(db: Sql): MeterStore {
           reference: "",
           sku: issued.pass.sku,
           pay_to: SOLANA_PAYOUT_ADDRESS,
-          amount_usd: METER_PASS_1H.price_usd,
-          amount_base_units: METER_PASS_1H.amount_base_units,
-          chain: METER_PASS_1H.chain,
-          asset: METER_PASS_1H.asset,
+          amount_usd: METER_LOOK.price_usd,
+          amount_base_units: METER_LOOK.amount_base_units,
+          chain: METER_LOOK.chain,
+          asset: METER_LOOK.asset,
           status: "paid",
           signature: match.signature,
           paid_amount_usd: match.amountUsdc,
@@ -387,12 +394,15 @@ export function createSqlMeterStore(db: Sql): MeterStore {
       `;
       return { pass, token };
     },
-    async getPassByToken(token, nowMs = Date.now()) {
+    async findPassByToken(token) {
       const raw = token.trim();
       if (!raw) return null;
       const rows = await db.query<PassRow>(`select * from meter_passes where token_hash = $1 limit 1`, [hashToken(raw)]);
-      if (!rows[0]) return null;
-      const pass = mapPass(rows[0]);
+      return rows[0] ? mapPass(rows[0]) : null;
+    },
+    async getPassByToken(token, nowMs = Date.now()) {
+      const pass = await store.findPassByToken(token);
+      if (!pass) return null;
       if (Date.parse(pass.expires_at) <= nowMs) return null;
       if (pass.used_calls >= pass.included_calls) return null;
       return pass;
@@ -410,6 +420,29 @@ export function createSqlMeterStore(db: Sql): MeterStore {
       );
       if (!rows[0]) return "exhausted";
       return mapPass(rows[0]);
+    },
+    async consumeFreeLook(identity) {
+      const key = identity.trim() || METER_ANON_IDENTITY;
+      const rows = await db.query<{ used: unknown }>(
+        `insert into meter_free_looks (identity_key, used)
+         values ($1, 1)
+         on conflict (identity_key) do update
+           set used = meter_free_looks.used + 1, updated_at = now()
+           where meter_free_looks.used < $2
+         returning used`,
+        [key, METER_FREE_LOOKS],
+      );
+      if (!rows[0]) return "exhausted";
+      const used = num(rows[0].used);
+      return { used, remaining: Math.max(0, METER_FREE_LOOKS - used) };
+    },
+    async freeLooksRemaining(identity) {
+      const key = identity.trim() || METER_ANON_IDENTITY;
+      const rows = await db.query<{ used: unknown }>(
+        `select used from meter_free_looks where identity_key = $1 limit 1`,
+        [key],
+      );
+      return Math.max(0, METER_FREE_LOOKS - num(rows[0]?.used));
     },
     async logCall(row: Omit<MeterCallLog, "id" | "created_at">) {
       await db`

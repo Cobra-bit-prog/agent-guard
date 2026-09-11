@@ -5,7 +5,7 @@
   "site": {
     "name": "Agent Control",
     "url": "https://agent-control.net",
-    "description": "Two products. Human App: spend limits and Approval Inbox. Humans pay $29. Agents use a Bearer API key. They ask before they pay. You keep the keys. Agent Meter: Agents pay themselves. A $0.25 pass. Then scan and preflight. No inbox. No email, no trial, no API key, no Approval Inbox. Brief: https://agent-control.net/llms.txt Meter pricing: https://agent-control.net/api/v1/meter/pricing Recipe: https://agent-control.net/docs#agent-meter"
+    "description": "Two products. Human App: spend limits and Approval Inbox. Humans pay $29. Agents use a Bearer API key. They ask before they pay. You keep the keys. Agent Meter: Agents pay themselves. Can I pay this address? First 5 free. Then $0.02 USDC. ok | new | warn | sink. Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. No inbox. No email, no trial, no API key, no Approval Inbox. Brief: https://agent-control.net/llms.txt Meter pricing: https://agent-control.net/api/v1/meter/pricing Recipe: https://agent-control.net/docs#agent-meter"
   },
   "mcp": [
     {

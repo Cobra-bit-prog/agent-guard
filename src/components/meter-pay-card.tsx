@@ -214,7 +214,7 @@ export function MeterPayCard({ search }: { search: MeterPaySearch }) {
     }
   }
 
-  const amountLabel = intent ? displayMeterAmount(intent) : "0.25";
+  const amountLabel = intent ? displayMeterAmount(intent) : "0.02";
 
   if (paid) {
     return (
@@ -246,9 +246,9 @@ export function MeterPayCard({ search }: { search: MeterPaySearch }) {
     return (
       <div className="rounded-[20px] border border-border bg-surface p-6 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]">
         <h1 className="text-title font-semibold tracking-tight">Invoice expired</h1>
-        <p className="mt-2 text-muted">Start a new $0.25 invoice, then pay with Phantom.</p>
+        <p className="mt-2 text-muted">Start a new $0.02 look invoice, then pay with Phantom.</p>
         <Button className="mt-5 h-11 w-full rounded-full" onClick={() => void onCreateInvoice()} disabled={creating}>
-          {creating ? "Starting…" : "Get a $0.25 invoice"}
+          {creating ? "Starting…" : "Get a $0.02 invoice"}
         </Button>
       </div>
     );
@@ -262,7 +262,7 @@ export function MeterPayCard({ search }: { search: MeterPaySearch }) {
     return (
       <div className="rounded-[20px] border border-border bg-surface p-6 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]">
         <p className="text-meta font-semibold uppercase tracking-[0.16em] text-navy">Meter pass</p>
-        <h1 className="mt-2 text-title font-semibold tracking-tight">Pay 0.25 USDC</h1>
+        <h1 className="mt-2 text-title font-semibold tracking-tight">Pay 0.02 USDC</h1>
         <p className="mt-2 text-muted">
           Open this page with an invoice, or start one here. Phantom in Chrome can pay without scanning a
           QR.
@@ -270,7 +270,7 @@ export function MeterPayCard({ search }: { search: MeterPaySearch }) {
         {loadError ? <p className="mt-3 text-body text-danger">{loadError}</p> : null}
         {payError ? <p className="mt-3 text-body text-danger">{payError}</p> : null}
         <Button className="mt-5 h-11 w-full rounded-full" onClick={() => void onCreateInvoice()} disabled={creating}>
-          {creating ? "Starting…" : "Get a $0.25 invoice"}
+          {creating ? "Starting…" : "Get a $0.02 invoice"}
         </Button>
         <p className="mt-4 text-meta text-muted">
           URL shape: https://agent-control.net/meter/pay?invoice_id= plus your invoice id.

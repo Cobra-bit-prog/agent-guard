@@ -5,10 +5,13 @@
  */
 
 export const METER_EYEBROW = "Agent Meter";
-export const METER_HEADLINE = "Agents pay themselves";
-export const METER_LEDE = "A $0.25 pass. Then scan and preflight. No inbox.";
+export const METER_HEADLINE = "Can I pay this address?";
+export const METER_LEDE = "First 5 free. Then $0.02 USDC.";
 export const METER_SEPARATE =
   "Separate from the Human App. No email, no API key, no Approval Inbox.";
+export const METER_RISKS = "ok | new | warn | sink";
+export const METER_PACKS = "Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05.";
+export const METER_TICKET = "Take this ticket or we do not take your USDC.";
 export const METER_DOCS_HREF = "/docs#agent-meter";
 export const METER_DOCS_URL = "https://agent-control.net/docs#agent-meter";
 
@@ -16,17 +19,20 @@ export const METER_DOCS_URL = "https://agent-control.net/docs#agent-meter";
 export const METER_PAY_SNIPPET = `import { buyMeterPass } from "./src/adapters/meter-pay.ts";
 await buyMeterPass({ keypair });`;
 
-/** Exact one-file recipe for llms.txt and /docs. Step 3 is the agent wallet. */
+/** Exact one-file recipe for llms.txt and /docs. Discovery: llms → pricing → 402 → MCP. */
 export const METER_RECIPE = `# 1 discover
+# https://agent-control.net/llms.txt
 curl -s https://agent-control.net/api/v1/meter/pricing
-# 2 invoice
-curl -s -X POST https://agent-control.net/api/v1/meter/pass -H 'content-type: application/json' -d '{}'
-# 3 pay 0.25 USDC on Solana to pay_to WITH reference from the 402
+# 2 look — First 5 free. Then $0.02 USDC. One address. ok | new | warn | sink
+curl -s -X POST https://agent-control.net/api/v1/meter/scan -H 'content-type: application/json' -d '{"chain":"solana","address":"<destination>"}'
+# 3 after 5, 402 look $0.02 USDC on Solana to pay_to WITH reference
 # copy src/adapters/meter-pay.ts — agent wallet signs and sends (no Phantom)
 ${METER_PAY_SNIPPET}
 # 4 poll
 curl -s -X POST https://agent-control.net/api/v1/meter/watch -H 'content-type: application/json' -d '{"invoice_id":"inv_…"}'
-# 5 use scan + preflight with X-Agent-Pass`;
+# 5 packs looks_20 $0.20 · addresses_100 $0.15 · stamp_tx $0.05 ticket
+# Take this ticket or we do not take your USDC.
+# 6 MCP meter_* at /api/v1/mcp`;
 
 export const METER_SCAN_CURL =
   'curl -s -X POST https://agent-control.net/api/v1/meter/scan -H \'content-type: application/json\' -H \'X-Agent-Pass: <pass>\' -d \'{"chain":"solana","address":"<destination>"}\'';
@@ -38,19 +44,19 @@ export const METER_STEPS = [
   {
     n: "1",
     t: "Discover",
-    d: "Read the pass price. Public. No key.",
+    d: "Read /llms.txt then GET pricing. Public. No key.",
     code: "curl -s https://agent-control.net/api/v1/meter/pricing",
   },
   {
     n: "2",
-    t: "Invoice",
-    d: "Ask for a pass. You get a 402 with pay_to and a reference.",
-    code: "curl -s -X POST https://agent-control.net/api/v1/meter/pass -H 'content-type: application/json' -d '{}'",
+    t: "Look",
+    d: "Can I pay this address? First 5 free. Then $0.02 USDC. ok | new | warn | sink. Never hold.",
+    code: 'curl -s -X POST https://agent-control.net/api/v1/meter/scan -H \'content-type: application/json\' -d \'{"chain":"solana","address":"<destination>"}\'',
   },
   {
     n: "3",
-    t: "Pay $0.25",
-    d: "Your agent wallet sends 0.25 USDC on Solana to pay_to with the reference from the 402. Copy src/adapters/meter-pay.ts. No Phantom.",
+    t: "Pay $0.02",
+    d: "After 5 free, 402 look. Your agent wallet sends 0.02 USDC on Solana to pay_to with the reference. Copy src/adapters/meter-pay.ts. No Phantom. Default sku is look. Pack looks_20 is $0.20.",
     code: METER_PAY_SNIPPET,
   },
   {
@@ -61,8 +67,8 @@ export const METER_STEPS = [
   },
   {
     n: "5",
-    t: "Scan and preflight",
-    d: "Use X-Agent-Pass. Scan a destination. Preflight is allow or stop against a cap you set.",
+    t: "Packs and ticket",
+    d: "Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. Take this ticket or we do not take your USDC. Then MCP meter_* tools.",
     code: `${METER_SCAN_CURL}\n${METER_PREFLIGHT_CURL}`,
   },
 ] as const;

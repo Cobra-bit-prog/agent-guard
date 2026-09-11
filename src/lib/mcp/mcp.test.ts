@@ -176,7 +176,9 @@ describe("POST initialize is Streamable HTTP", () => {
     for (const name of mcpDiscovery().meter) {
       assert.match(instructions, new RegExp(`\\b${name}\\b`));
     }
-    assert.match(instructions, /pay a pass, then meter_watch, then X-Agent-Pass/);
+    assert.match(instructions, /First 5 free\. Then \$0\.02 USDC/);
+    assert.match(instructions, /look \/ looks_20 \/ addresses_100 \/ stamp_tx/);
+    assert.match(instructions, /meter_watch, then X-Agent-Pass/);
     const meterSlice = instructions.slice(instructions.indexOf("Agent Meter:"));
     assert.doesNotMatch(meterSlice, /\bhold\b/i);
     assert.doesNotMatch(meterSlice, /Inbox/);

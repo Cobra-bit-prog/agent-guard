@@ -10,7 +10,15 @@ import {
   type MeterInvoiceOrigin,
   type MeterInvoiceSource,
 } from "./origin.ts";
-import { coversForSku, meterSkuOrDefault, METER_PASS_1H, METER_PASS_SKU, type MeterSku } from "./pricing.ts";
+import {
+  coversForSku,
+  meterSkuOrDefault,
+  METER_ANON_IDENTITY,
+  METER_FREE_LOOKS,
+  METER_LOOK,
+  METER_LOOK_SKU,
+  type MeterSku,
+} from "./pricing.ts";
 import { utcDayKey } from "./preflight.ts";
 import type { StampDecision } from "./stamp.ts";
 
@@ -145,8 +153,11 @@ export type MeterStore = {
   ): Awaitable<{ invoice: MeterInvoice; pass: MeterPass; token: string }>;
   issuePass(input?: IssuePassInput): Awaitable<{ pass: MeterPass; token: string }>;
   getPassByToken(token: string, nowMs?: number): Awaitable<MeterPass | null>;
+  findPassByToken(token: string): Awaitable<MeterPass | null>;
   getPassById(id: string): Awaitable<MeterPass | null>;
   consumeCall(pass: MeterPass): Awaitable<MeterPass | "exhausted">;
+  consumeFreeLook(identity: string): Awaitable<{ used: number; remaining: number } | "exhausted">;
+  freeLooksRemaining(identity: string): Awaitable<number>;
   logCall(row: Omit<MeterCallLog, "id" | "created_at">): Awaitable<void>;
   spentTodayUsd(wallet: string, nowMs?: number): Awaitable<number>;
   addAllowSpend(wallet: string, valueUsd: number, nowMs?: number): Awaitable<void>;
@@ -158,6 +169,13 @@ export type MeterStore = {
 
 export function newMeterId(prefix: string) {
   return `${prefix}_${randomBytes(8).toString("hex")}`;
+}
+
+/** Free-5 identity: SHA-256 of X-Agent-Pass when present, else literal `anon`. No email. */
+export function meterIdentityKey(token: string): string {
+  const raw = token.trim();
+  if (!raw) return METER_ANON_IDENTITY;
+  return createHash("sha256").update(`meter-id:${raw}`).digest("hex");
 }
 
 export function invoiceDraft(opts: CreateInvoiceInput = {}): MeterInvoice {
@@ -226,6 +244,7 @@ export function createMeterStore(): MeterStore {
   const spend = new Map<string, number>();
   const payments: MeterPaymentRow[] = [];
   const stamps = new Map<string, MeterStamp>();
+  const freeLooks = new Map<string, number>();
 
   function spendKey(wallet: string, nowMs: number) {
     return `${wallet.trim().toLowerCase()}:${utcDayKey(nowMs)}`;
@@ -287,7 +306,7 @@ export function createMeterStore(): MeterStore {
       const row = invoices.get(invoiceId);
       if (!row) {
         const issued = store.issuePass({
-          sku: METER_PASS_SKU,
+          sku: METER_LOOK_SKU,
           payer_address: match.payer_address ?? null,
           signature: match.signature,
           paid_amount_usd: match.amountUsdc,
@@ -298,10 +317,10 @@ export function createMeterStore(): MeterStore {
             reference: "",
             sku: issued.pass.sku,
             pay_to: SOLANA_PAYOUT_ADDRESS,
-            amount_usd: METER_PASS_1H.price_usd,
-            amount_base_units: METER_PASS_1H.amount_base_units,
-            chain: METER_PASS_1H.chain,
-            asset: METER_PASS_1H.asset,
+            amount_usd: METER_LOOK.price_usd,
+            amount_base_units: METER_LOOK.amount_base_units,
+            chain: METER_LOOK.chain,
+            asset: METER_LOOK.asset,
             status: "paid",
             signature: match.signature,
             paid_amount_usd: match.amountUsdc,
@@ -357,12 +376,15 @@ export function createMeterStore(): MeterStore {
       byHash.set(pass.token_hash, pass.id);
       return { pass, token };
     },
-    getPassByToken(token, nowMs = Date.now()) {
+    findPassByToken(token) {
       const raw = token.trim();
       if (!raw) return null;
       const pid = byHash.get(hashToken(raw));
       if (!pid) return null;
-      const pass = passes.get(pid);
+      return passes.get(pid) ?? null;
+    },
+    getPassByToken(token, nowMs = Date.now()) {
+      const pass = store.findPassByToken(token) as MeterPass | null;
       if (!pass) return null;
       if (Date.parse(pass.expires_at) <= nowMs) return null;
       if (pass.used_calls >= pass.included_calls) return null;
@@ -376,6 +398,19 @@ export function createMeterStore(): MeterStore {
       const next = { ...pass, used_calls: pass.used_calls + 1 };
       passes.set(pass.id, next);
       return next;
+    },
+    consumeFreeLook(identity) {
+      const key = identity.trim() || METER_ANON_IDENTITY;
+      const used = freeLooks.get(key) ?? 0;
+      if (used >= METER_FREE_LOOKS) return "exhausted";
+      const next = used + 1;
+      freeLooks.set(key, next);
+      return { used: next, remaining: Math.max(0, METER_FREE_LOOKS - next) };
+    },
+    freeLooksRemaining(identity) {
+      const key = identity.trim() || METER_ANON_IDENTITY;
+      const used = freeLooks.get(key) ?? 0;
+      return Math.max(0, METER_FREE_LOOKS - used);
     },
     logCall(row) {
       logs.push({

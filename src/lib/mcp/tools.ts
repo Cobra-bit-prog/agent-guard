@@ -105,7 +105,7 @@ export const MCP_TOOLS = [
     name: "meter_pricing",
     title: "Agent Meter pricing",
     description:
-      "Public. Agent Meter pass price and endpoints. No email. No API key. Separate from the Human App $29 plans.",
+      "Public. Can I pay this address? First 5 free. Then $0.02 USDC. SKUs: look, looks_20, addresses_100, stamp_tx. No email. No API key. Separate from the Human App $29 plans.",
     annotations: readOnly,
     inputSchema: { type: "object", properties: {} },
   },
@@ -113,14 +113,14 @@ export const MCP_TOOLS = [
     name: "meter_buy_pass",
     title: "Buy an Agent Meter pass",
     description:
-      "Public. Returns HTTP 402 invoice to pay 0.25 USDC on Solana, or issues a pass when proof is accepted. No human account.",
+      "Public. Returns HTTP 402 invoice to pay look $0.02 USDC on Solana (or looks_20 / addresses_100 / stamp_tx), or issues a pass when proof is accepted. No human account.",
     annotations: writes,
     inputSchema: {
       type: "object",
       properties: {
         sku: {
           type: "string",
-          description: "pass_1h (default $0.25), pass_24h, calls_1k, stamp_tx, or scan_batch",
+          description: "look (default $0.02), looks_20 ($0.20), addresses_100 ($0.15), stamp_tx ($0.05). pass_1h stays in catalog only.",
         },
         proof: { type: "object", description: "Payment proof. { type: dev } only when METER_DEV_GRANT=1" },
         pass_token: { type: "string" },
@@ -145,7 +145,7 @@ export const MCP_TOOLS = [
     name: "meter_scan",
     title: "Scan a destination",
     description:
-      "Public with X-Agent-Pass. Risk score for an address (ok/new/warn/sink). Does not block a send. Does not use Approval Inbox.",
+      "Can I pay this address? One look = one address. First 5 free (X-Agent-Pass or anon), then $0.02. Risk ok|new|warn|sink. Never hold. No Inbox.",
     annotations: readOnly,
     inputSchema: {
       type: "object",
@@ -161,7 +161,7 @@ export const MCP_TOOLS = [
     name: "meter_preflight",
     title: "Preflight against a self cap",
     description:
-      "Public with X-Agent-Pass. allow or stop vs cap_usd the agent declared. Never hold. No Inbox.",
+      "One look = one address. First 5 free then $0.02. allow or stop vs cap_usd. Never hold. No Inbox.",
     annotations: writes,
     inputSchema: {
       type: "object",
@@ -180,7 +180,7 @@ export const MCP_TOOLS = [
     name: "meter_scan_batch",
     title: "Scan a batch of destinations",
     description:
-      "Public with X-Agent-Pass. Risk scores for up to 100 addresses. Consumes 1 call. Pass sku must cover scan_batch. Never hold.",
+      "Risk scores for up to 100 addresses. Sku addresses_100 ($0.15) covers scan_batch. Never hold. ok|new|warn|sink.",
     annotations: readOnly,
     inputSchema: {
       type: "object",
@@ -197,7 +197,7 @@ export const MCP_TOOLS = [
     name: "meter_stamp",
     title: "Stamp an allow or stop receipt",
     description:
-      "Public with X-Agent-Pass. Signed allow|stop receipt a merchant can verify. Session passes and stamp_tx cover stamp. HMAC-SHA256 using INTERNAL_STATS_SECRET or BETTER_AUTH_SECRET.",
+      "stamp_tx $0.05. Take this ticket or we do not take your USDC. Signed allow|stop receipt. HMAC-SHA256.",
     annotations: writes,
     inputSchema: {
       type: "object",

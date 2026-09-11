@@ -28,10 +28,10 @@ function invoice(over: Partial<MeterPassInvoice> = {}): MeterPassInvoice {
     invoice_id: "inv_202f5a771d4c6f77",
     pay_to: LOCKED_SOLANA_PAY_TO,
     reference: REF,
-    amount_usd: 0.25,
-    amount_base_units: "250000",
-    pay_url: `solana:${LOCKED_SOLANA_PAY_TO}?amount=0.25&spl-token=${METER_USDC_MINT}&reference=${REF}`,
-    sku: "pass_1h",
+    amount_usd: 0.02,
+    amount_base_units: "20000",
+    pay_url: `solana:${LOCKED_SOLANA_PAY_TO}?amount=0.02&spl-token=${METER_USDC_MINT}&reference=${REF}`,
+    sku: "look",
     ...over,
   };
 }
@@ -44,12 +44,12 @@ function jsonResponse(body: unknown, status = 200): Response {
 }
 
 describe("Agent Meter auto-pay adapter", () => {
-  it("locks payout, mint, and the $0.25 default pass", () => {
+  it("locks payout, mint, and the $0.02 default look", () => {
     assert.equal(LOCKED_SOLANA_PAY_TO, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
     assert.equal(METER_USDC_MINT, "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
-    assert.equal(DEFAULT_METER_SKU, "pass_1h");
-    assert.equal(DEFAULT_PASS_USD, 0.25);
-    assert.equal(DEFAULT_PASS_BASE_UNITS, "250000");
+    assert.equal(DEFAULT_METER_SKU, "look");
+    assert.equal(DEFAULT_PASS_USD, 0.02);
+    assert.equal(DEFAULT_PASS_BASE_UNITS, "20000");
     assert.equal(lockedMeterPayTo(HOSTILE_PAY_TO), LOCKED_SOLANA_PAY_TO);
     assert.equal(buyFromIndex, buyMeterPass);
     assert.equal(payFromIndex, payMeterPass);
@@ -195,19 +195,19 @@ describe("Agent Meter auto-pay adapter", () => {
     let passBody = "";
     const bought = await buyMeterPass({
       keypair: payer,
-      sku: "pass_24h",
+      sku: "looks_20",
       fetch: async (_url, init) => {
         if (!passBody) {
           passBody = init?.body ?? "";
-          return jsonResponse(invoice({ sku: "pass_24h" }), 402);
+          return jsonResponse(invoice({ sku: "looks_20" }), 402);
         }
-        return jsonResponse({ token: "acp_24h", invoice_id: "inv_202f5a771d4c6f77" });
+        return jsonResponse({ token: "acp_20", invoice_id: "inv_202f5a771d4c6f77" });
       },
       pay: async () => ({ signature: "sig", invoice_id: "inv_202f5a771d4c6f77" }),
       sleep: async () => {},
     });
-    assert.deepEqual(JSON.parse(passBody), { sku: "pass_24h" });
-    assert.equal(bought.token, "acp_24h");
+    assert.deepEqual(JSON.parse(passBody), { sku: "looks_20" });
+    assert.equal(bought.token, "acp_20");
 
     const receiveSigner = {
       publicKey: new PublicKey(LOCKED_SOLANA_PAY_TO),
