@@ -4,9 +4,11 @@ import { PAY_EXPIRY_MS, SOLANA_PAYOUT_ADDRESS } from "../solana-pay.ts";
 import {
   applyInvoiceOrigin,
   blankInvoiceOrigin,
+  isMeterSmokeSource,
   METER_INVOICE_LIST_LIMIT,
   type MeterInvoiceCreateOrigin,
   type MeterInvoiceOrigin,
+  type MeterInvoiceSource,
 } from "./origin.ts";
 import { coversForSku, meterSkuOrDefault, METER_PASS_1H, METER_PASS_SKU, type MeterSku } from "./pricing.ts";
 import { utcDayKey } from "./preflight.ts";
@@ -93,12 +95,14 @@ export type MeterReport = {
   invoices_pending: number;
   invoices_pending_fresh: number;
   invoices_pending_stale: number;
+  invoices_pending_smoke: number;
   passes_issued: number;
   agents_paid: number;
   usdc_received: number;
   usdc_pending: number;
   usdc_pending_fresh: number;
   usdc_pending_stale: number;
+  usdc_pending_smoke: number;
   calls: number;
   recent_payments: MeterPaymentRow[];
   generated_at: string;
@@ -109,6 +113,8 @@ export type MeterInvoiceListOpts = {
   since?: Date;
   limit?: number;
   nowMs?: number;
+  source?: MeterInvoiceSource;
+  excludeSmoke?: boolean;
 };
 
 export type Awaitable<T> = T | Promise<T>;
@@ -250,6 +256,8 @@ export function createMeterStore(): MeterStore {
         .map((row) => expireInvoice(row, nowMs))
         .filter((row) => (opts.status ? row.status === opts.status : true))
         .filter((row) => (sinceMs == null ? true : Date.parse(row.created_at) >= sinceMs))
+        .filter((row) => (opts.source ? row.source === opts.source : true))
+        .filter((row) => (opts.excludeSmoke ? !isMeterSmokeSource(row.source) : true))
         .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
         .slice(0, limit);
     },
@@ -394,14 +402,22 @@ export function createMeterStore(): MeterStore {
       const nowMs = Date.now();
       const all = [...invoices.values()].map((row) => expireInvoice(row, nowMs));
       const paidRows = all.filter((row) => row.status === "paid");
-      const pendingRows = all.filter((row) => row.status === "pending" || row.status === "underpaid");
+      const pendingRows = all.filter(
+        (row) =>
+          (row.status === "pending" || row.status === "underpaid") && !isMeterSmokeSource(row.source),
+      );
       const pendingFresh = pendingRows.filter((row) => Date.parse(row.expires_at) > nowMs);
       const pendingStale = all.filter((row) => {
+        if (isMeterSmokeSource(row.source)) return false;
         if (row.status === "expired") return true;
         if (row.status === "pending" || row.status === "underpaid") {
           return Date.parse(row.expires_at) <= nowMs;
         }
         return false;
+      });
+      const pendingSmoke = all.filter((row) => {
+        if (!isMeterSmokeSource(row.source)) return false;
+        return row.status === "expired" || row.status === "pending" || row.status === "underpaid";
       });
       const payers = new Set(
         paidRows
@@ -421,12 +437,14 @@ export function createMeterStore(): MeterStore {
         invoices_pending: pendingRows.length,
         invoices_pending_fresh: pendingFresh.length,
         invoices_pending_stale: pendingStale.length,
+        invoices_pending_smoke: pendingSmoke.length,
         passes_issued: passes.size,
         agents_paid: payers.size,
         usdc_received: Number(usdcReceived.toFixed(6)),
         usdc_pending: usdSum(pendingRows),
         usdc_pending_fresh: usdSum(pendingFresh),
         usdc_pending_stale: usdSum(pendingStale),
+        usdc_pending_smoke: usdSum(pendingSmoke),
         calls: logs.length,
         recent_payments: payments.slice(-50).reverse(),
         generated_at: new Date().toISOString(),

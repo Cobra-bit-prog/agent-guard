@@ -14,6 +14,8 @@ export { handleMeterRequest, handleInternalMeterInvoices, readPassToken } from "
 export {
   extractMeterInvoiceOrigin,
   hashMeterClientIp,
+  isMeterSmokeSource,
+  isSmokeUserAgent,
   METER_INVOICE_SOURCES,
   type MeterInvoiceSource,
 } from "./origin.ts";
