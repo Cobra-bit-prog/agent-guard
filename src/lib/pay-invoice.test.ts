@@ -20,6 +20,8 @@ describe("plans are exact dollars, not unique dust", () => {
     assert.equal(PLANS.pro.price, 49);
     assert.equal(PLANS.team.price, 149);
     assert.equal(usdcBaseUnits(29), "29000000");
+    assert.equal(usdcBaseUnits(0.25), "250000");
+    assert.equal(usdcBaseUnits(0.1), "100000");
     assert.notEqual(String(PLANS.starter.price), "29.000137");
   });
 });

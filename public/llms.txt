@@ -67,6 +67,7 @@ curl -s -X POST https://agent-control.net/api/v1/meter/preflight -H 'content-typ
 - GET /api/v1/meter/pricing — public. Default pass_1h is $0.25 USDC on Solana, 1 hour, 200 calls. Response includes skus[] (pass_1h, pass_24h, calls_1k, stamp_tx, scan_batch) and still describes pass_1h under pass.
 - POST /api/v1/meter/pass — no payment proof → HTTP 402 invoice (pay_to, reference, amount). Empty body {} mints pass_1h $0.25. Optional {"sku":"pass_24h"} (and other catalog ids). Unknown sku → 400 unknown_sku. Dev grant `{ "proof": { "type": "dev" } }` only when METER_DEV_GRANT=1 or NODE_ENV=test.
 - POST /api/v1/meter/watch — after you pay, send invoice_id until the pass token comes back.
+- Laptop Phantom (Chrome extension, no QR): https://agent-control.net/meter/pay?invoice_id=inv_…
 - POST /api/v1/meter/scan — header X-Agent-Pass. Body: chain, address. Returns risk ok|new|warn|sink. Never blocks a send.
 - POST /api/v1/meter/preflight — header X-Agent-Pass. Body: chain, wallet, to, value_usd, cap_usd. Returns allow or stop. Does not wait on a human.
 - POST /api/v1/meter/scan-batch — header X-Agent-Pass. Body: chain, addresses[] (max 100). One call. Sku must cover scan_batch.
