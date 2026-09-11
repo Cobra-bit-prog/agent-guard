@@ -29,6 +29,33 @@ export function isApiPath(pathname) {
   return path === "/api" || path.startsWith("/api/");
 }
 
+/** Agents often POST /mcp instead of /api/v1/mcp. Must not 500. */
+export function isMcpWrongPath(pathname) {
+  const path = String(pathname ?? "").replace(/\/+$/, "") || "/";
+  return path === "/mcp";
+}
+
+export const MCP_WRONG_PATH_BODY = JSON.stringify({
+  error: "wrong_path",
+  hint: "Meter MCP is POST /api/v1/mcp",
+});
+
+export function mcpWrongPathHeaders() {
+  return {
+    "content-type": "application/json; charset=utf-8",
+    "access-control-allow-origin": "*",
+    "access-control-allow-methods": "GET, POST, OPTIONS",
+    "access-control-allow-headers": "Authorization, Content-Type, X-Agent-Pass",
+  };
+}
+
+export function mcpWrongPathResponse() {
+  return new Response(MCP_WRONG_PATH_BODY, {
+    status: 404,
+    headers: mcpWrongPathHeaders(),
+  });
+}
+
 /** @param {string | null | undefined} pathname */
 export function isOauthMachinePath(pathname) {
   const path = String(pathname ?? "");

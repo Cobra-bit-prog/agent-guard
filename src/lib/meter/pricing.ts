@@ -1,3 +1,5 @@
+import { SOLANA_PAYOUT_ADDRESS, USDC_MINT } from "../solana-pay.ts";
+
 export const METER_LOOK_SKU = "look" as const;
 export const METER_DEFAULT_SKU = METER_LOOK_SKU;
 /** @deprecated Default door is `look`. pass_1h stays in catalog only. */
@@ -227,6 +229,49 @@ export function meter402Body(invoice: {
     question: LOOK_QUESTION,
     note: catalog.id === "stamp_tx" ? STAMP_TICKET_COPY : METER_FREE_THEN_LOOK,
     pay_url: `solana:${invoice.pay_to}?amount=${price}&spl-token=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v&reference=${invoice.reference}&label=Agent%20Control&message=Pay%20$${price}%20${catalog.id}`,
-    next: `Pay ${price} USDC on Solana with the reference, then POST /api/v1/meter/watch { invoice_id }.`,
+    next: `Pay ${price} USDC on Solana with the reference, then POST /api/v1/meter/watch { invoice_id }, then retry scan with the same X-Agent-Pass.`,
+  };
+}
+
+export type Meter402Invoice = {
+  invoice_id: string;
+  pay_to: string;
+  reference: string;
+  amount_usd: number;
+  amount_base_units: string;
+  chain: string;
+  asset: string;
+  sku?: string;
+};
+
+export function meter402PaymentRequiredPayload(invoice: Meter402Invoice) {
+  const sku = (invoice.sku as MeterSkuId) || METER_DEFAULT_SKU;
+  const catalog = METER_SKUS[sku] ?? METER_LOOK;
+  return {
+    x402Version: 2,
+    accepts: [
+      {
+        scheme: "exact",
+        network: "solana",
+        maxAmountRequired: invoice.amount_base_units || catalog.amount_base_units,
+        payTo: SOLANA_PAYOUT_ADDRESS,
+        asset: USDC_MINT,
+        extra: { reference: invoice.reference },
+      },
+    ],
+  };
+}
+
+export function meter402ChallengeHeaders(invoice: Meter402Invoice): Record<string, string> {
+  const sku = (invoice.sku as MeterSkuId) || METER_DEFAULT_SKU;
+  const catalog = METER_SKUS[sku] ?? METER_LOOK;
+  const price = invoice.amount_usd || catalog.price_usd;
+  const payTo = SOLANA_PAYOUT_ADDRESS;
+  return {
+    "PAYMENT-REQUIRED": Buffer.from(JSON.stringify(meter402PaymentRequiredPayload(invoice)), "utf8").toString(
+      "base64",
+    ),
+    "WWW-Authenticate": `Payment realm="Agent Meter", chain="solana", token="USDC", amount="${price}", address="${payTo}", reference="${invoice.reference}"`,
+    "Access-Control-Expose-Headers": "PAYMENT-REQUIRED, WWW-Authenticate",
   };
 }

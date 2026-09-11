@@ -1,9 +1,10 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { PAY_EXPIRY_MS } from "../solana-pay.ts";
+import { PAY_EXPIRY_MS, SOLANA_PAYOUT_ADDRESS, USDC_MINT } from "../solana-pay.ts";
 import { evaluateTransfer } from "../policy.ts";
 import { SCAN_SINK_FIXTURE } from "./denylist.ts";
 import { handleInternalMeterInvoices, handleMeterRequest } from "./http.ts";
@@ -14,9 +15,10 @@ import {
   meterInvoiceSourceForMcpTool,
   METER_USER_AGENT_MAX,
 } from "./origin.ts";
-import { evaluatePreflightSelf } from "./preflight.ts";
+import { evaluatePreflightSelf, missingPreflightFields, PREFLIGHT_REQUIRED } from "./preflight.ts";
 import { evaluateScan } from "./scan.ts";
-import { createMeterStore } from "./store.ts";
+import { createMeterStore, meterIdentityKey } from "./store.ts";
+import { METER_ANON_IDENTITY, meter402Body, meter402PaymentRequiredPayload } from "./pricing.ts";
 
 const ORIGIN = "https://agent-control.net";
 
@@ -30,6 +32,37 @@ function post(path: string, body: unknown, headers: Record<string, string> = {})
 
 function get(path: string) {
   return new Request(`${ORIGIN}${path}`, { method: "GET" });
+}
+
+function assertMeter402IndexHeaders(res: Response, reference?: string) {
+  const paymentRequired = res.headers.get("PAYMENT-REQUIRED") ?? res.headers.get("payment-required") ?? "";
+  const www = res.headers.get("WWW-Authenticate") ?? res.headers.get("www-authenticate") ?? "";
+  const expose = res.headers.get("Access-Control-Expose-Headers") ?? "";
+  assert.ok(paymentRequired, "PAYMENT-REQUIRED header");
+  assert.match(www, /Payment realm="Agent Meter"/);
+  assert.match(www, /chain="solana"/);
+  assert.match(www, /token="USDC"/);
+  assert.match(www, new RegExp(`address="${SOLANA_PAYOUT_ADDRESS}"`));
+  assert.match(expose, /PAYMENT-REQUIRED/);
+  assert.match(expose, /WWW-Authenticate/);
+  const decoded = JSON.parse(Buffer.from(paymentRequired, "base64").toString("utf8")) as {
+    x402Version: number;
+    accepts: Array<{
+      scheme: string;
+      network: string;
+      maxAmountRequired: string;
+      payTo: string;
+      asset: string;
+      extra: { reference: string };
+    }>;
+  };
+  assert.equal(decoded.x402Version, 2);
+  assert.equal(decoded.accepts[0]?.scheme, "exact");
+  assert.equal(decoded.accepts[0]?.network, "solana");
+  assert.equal(decoded.accepts[0]?.payTo, SOLANA_PAYOUT_ADDRESS);
+  assert.equal(decoded.accepts[0]?.asset, USDC_MINT);
+  if (reference) assert.equal(decoded.accepts[0]?.extra.reference, reference);
+  assert.match(www, new RegExp(`reference="${decoded.accepts[0]?.extra.reference}"`));
 }
 
 describe("scan heuristics", () => {
@@ -59,9 +92,89 @@ describe("preflight-self", () => {
     assert.equal(out.must_abort, false);
     assert.equal(out.remaining_usd, 15);
   });
+
+  it("lists required fields when the body is wrong or missing", () => {
+    assert.deepEqual(PREFLIGHT_REQUIRED, ["chain", "wallet", "to", "value_usd", "cap_usd"]);
+    assert.deepEqual(missingPreflightFields({}), ["chain", "wallet", "to", "value_usd", "cap_usd"]);
+    assert.deepEqual(missingPreflightFields({ chain: "solana", wallet: "W", to: "T" }), [
+      "value_usd",
+      "cap_usd",
+    ]);
+    assert.deepEqual(
+      missingPreflightFields({
+        chain: "solana",
+        wallet: "W",
+        to: "T",
+        value_usd: 10,
+        cap_usd: 100,
+      }),
+      [],
+    );
+  });
+});
+
+describe("meter identity", () => {
+  it("hashes X-Agent-Pass; empty pass is anon", () => {
+    assert.equal(meterIdentityKey(""), METER_ANON_IDENTITY);
+    assert.equal(meterIdentityKey("   "), METER_ANON_IDENTITY);
+    const pass = "agent-abc";
+    assert.equal(meterIdentityKey(pass), createHash("sha256").update(`meter-id:${pass}`).digest("hex"));
+    assert.notEqual(meterIdentityKey(pass), pass);
+    assert.notEqual(meterIdentityKey(pass), METER_ANON_IDENTITY);
+  });
 });
 
 describe("meter http", () => {
+  it("preflight missing body is 400 listing wallet, to, value_usd, cap_usd", async () => {
+    const store = createMeterStore();
+    const res = await handleMeterRequest(
+      post("/api/v1/meter/preflight", { chain: "solana" }),
+      "/api/v1/meter/preflight",
+      store,
+    );
+    assert.equal(res.status, 400);
+    const body = (await res.json()) as { error: string; required: string[]; missing: string[] };
+    assert.match(body.error, /wallet/);
+    assert.match(body.error, /to/);
+    assert.match(body.error, /value_usd/);
+    assert.match(body.error, /cap_usd/);
+    assert.deepEqual(body.required, ["chain", "wallet", "to", "value_usd", "cap_usd"]);
+    assert.deepEqual(body.missing, ["wallet", "to", "value_usd", "cap_usd"]);
+  });
+
+  it("402 next tells the agent to pay 0.02, watch, then retry with the same X-Agent-Pass", () => {
+    const body = meter402Body({
+      invoice_id: "inv_test",
+      pay_to: "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR",
+      reference: "ref_test",
+      amount_usd: 0.02,
+      amount_base_units: "20000",
+      chain: "solana",
+      asset: "usdc",
+      sku: "look",
+    });
+    assert.match(body.next, /0\.02 USDC/);
+    assert.match(body.next, /watch/);
+    assert.match(body.next, /same X-Agent-Pass/);
+  });
+
+  it("402index PAYMENT-REQUIRED payTo stays on the locked wallet", () => {
+    const payload = meter402PaymentRequiredPayload({
+      invoice_id: "inv_hostile",
+      pay_to: "HostileWalletDoNotPay11111111111111111111",
+      reference: "ref_lock",
+      amount_usd: 0.02,
+      amount_base_units: "20000",
+      chain: "solana",
+      asset: "usdc",
+      sku: "look",
+    });
+    assert.equal(payload.accepts[0]?.payTo, SOLANA_PAYOUT_ADDRESS);
+    assert.equal(payload.accepts[0]?.payTo, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
+    assert.notEqual(payload.accepts[0]?.payTo, "HostileWalletDoNotPay11111111111111111111");
+    assert.equal(payload.accepts[0]?.asset, USDC_MINT);
+  });
+
   it("scans a sink after a looks_20 pack", async () => {
     const prev = process.env.NODE_ENV;
     process.env.NODE_ENV = "test";
@@ -264,10 +377,11 @@ describe("extra meter skus", () => {
     const store = createMeterStore();
     const res = await handleMeterRequest(post("/api/v1/meter/pass", {}), "/api/v1/meter/pass", store);
     assert.equal(res.status, 402);
-    const body = (await res.json()) as { sku: string; amount_usd: number; pay_to: string };
+    const body = (await res.json()) as { sku: string; amount_usd: number; pay_to: string; reference: string };
     assert.equal(body.sku, "look");
     assert.equal(body.amount_usd, 0.02);
     assert.equal(body.pay_to, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
+    assertMeter402IndexHeaders(res, body.reference);
   });
 
   it("POST pass sku=looks_20 invoices $0.20", async () => {
@@ -522,7 +636,13 @@ describe("invoice origin", { concurrency: false }, () => {
       assert.equal((await store.getInvoice(scanBody.invoice_id))?.source, "http_scan");
 
       const pre = await handleMeterRequest(
-        post("/api/v1/meter/preflight", { chain: "solana", wallet: "W", to: "T" }),
+        post("/api/v1/meter/preflight", {
+          chain: "solana",
+          wallet: "W",
+          to: "T",
+          value_usd: 10,
+          cap_usd: 100,
+        }),
         "/api/v1/meter/preflight",
         store,
       );
@@ -859,11 +979,22 @@ describe("paying agents A–H", () => {
     }
     const res = await scanOnce(store);
     assert.equal(res.status, 402);
-    const body = (await res.json()) as { sku: string; amount_usd: number; pay_to: string; error: string };
+    const body = (await res.json()) as {
+      sku: string;
+      amount_usd: number;
+      pay_to: string;
+      error: string;
+      next: string;
+      reference: string;
+    };
     assert.equal(body.error, "payment_required");
     assert.equal(body.sku, "look");
     assert.equal(body.amount_usd, 0.02);
     assert.equal(body.pay_to, PAY_TO);
+    assert.match(body.next, /0\.02 USDC/);
+    assert.match(body.next, /watch/);
+    assert.match(body.next, /same X-Agent-Pass/);
+    assertMeter402IndexHeaders(res, body.reference);
   });
 
   it("C pack20: looks_20 covers 20 looks", async () => {
@@ -886,9 +1017,10 @@ describe("paying agents A–H", () => {
     }
     const done = await scanOnce(store, { "X-Agent-Pass": pass.token });
     assert.equal(done.status, 402);
-    const doneBody = (await done.json()) as { sku: string; amount_usd: number };
+    const doneBody = (await done.json()) as { sku: string; amount_usd: number; reference: string };
     assert.equal(doneBody.sku, "look");
     assert.equal(doneBody.amount_usd, 0.02);
+    assertMeter402IndexHeaders(done, doneBody.reference);
   });
 
   it("D batch100: addresses_100 covers one batch of up to 100", async () => {
@@ -923,9 +1055,10 @@ describe("paying agents A–H", () => {
       store,
     );
     assert.equal(quote.status, 402);
-    const quoteBody = (await quote.json()) as { sku: string; amount_usd: number };
+    const quoteBody = (await quote.json()) as { sku: string; amount_usd: number; reference: string };
     assert.equal(quoteBody.sku, "stamp_tx");
     assert.equal(quoteBody.amount_usd, 0.05);
+    assertMeter402IndexHeaders(quote, quoteBody.reference);
 
     const issued = await handleMeterRequest(
       post("/api/v1/meter/pass", { sku: "stamp_tx", proof: { type: "dev" } }),

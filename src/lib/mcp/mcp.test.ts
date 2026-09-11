@@ -232,6 +232,15 @@ describe("initialized notification and session reuse", () => {
     }
     assert.equal(MCP_TOOLS.find((tool) => tool.name === "get_pricing")?.annotations.readOnlyHint, true);
     assert.equal(MCP_TOOLS.find((tool) => tool.name === "check_transfer")?.annotations.readOnlyHint, false);
+    const scan = MCP_TOOLS.find((tool) => tool.name === "meter_scan")?.description ?? "";
+    const preflight = MCP_TOOLS.find((tool) => tool.name === "meter_preflight")?.description ?? "";
+    assert.match(scan, /X-Agent-Pass/);
+    assert.match(scan, /first 5 looks on that id are free/);
+    assert.match(scan, /402 look \$0\.02/);
+    assert.match(preflight, /X-Agent-Pass/);
+    assert.match(preflight, /first 5 looks on that id are free/);
+    assert.match(preflight, /value_usd/);
+    assert.match(preflight, /cap_usd/);
   });
 
   it("returns 404 for a malformed session id", async () => {

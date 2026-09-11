@@ -5,12 +5,18 @@
  * Must register before TanStack Start so JSON/SSE Accept never reaches
  * executeRouter (500 "Only HTML requests are supported here").
  */
-import { NOT_ACCEPTABLE_BODY, notAcceptableHeaders, shouldSoftReject } from "./soft-accept.mjs";
+import {
+  isMcpWrongPath,
+  MCP_WRONG_PATH_BODY,
+  mcpWrongPathHeaders,
+  NOT_ACCEPTABLE_BODY,
+  notAcceptableHeaders,
+  shouldSoftReject,
+} from "./soft-accept.mjs";
 
-function sendNotAcceptable(res) {
-  const body = Buffer.from(NOT_ACCEPTABLE_BODY, "utf8");
-  const headers = notAcceptableHeaders();
-  res.statusCode = 406;
+function sendJson(res, status, raw, headers) {
+  const body = Buffer.from(raw, "utf8");
+  res.statusCode = status;
   for (const [key, value] of Object.entries(headers)) {
     res.setHeader(key, value);
   }
@@ -18,9 +24,21 @@ function sendNotAcceptable(res) {
   res.end(body);
 }
 
+function sendNotAcceptable(res) {
+  sendJson(res, 406, NOT_ACCEPTABLE_BODY, notAcceptableHeaders());
+}
+
+function sendMcpWrongPath(res) {
+  sendJson(res, 404, MCP_WRONG_PATH_BODY, mcpWrongPathHeaders());
+}
+
 function serveSoftAccept(middlewares) {
   middlewares.use((req, res, next) => {
     const pathOnly = (req.url ?? "").split("?", 1)[0] ?? "";
+    if (isMcpWrongPath(pathOnly)) {
+      sendMcpWrongPath(res);
+      return;
+    }
     if (
       shouldSoftReject({
         method: req.method,

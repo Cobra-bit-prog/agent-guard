@@ -20,17 +20,25 @@ export const METER_DOCS_URL = "https://agent-control.net/docs#agent-meter";
 export const METER_PAY_SNIPPET = `import { buyMeterPass } from "./src/adapters/meter-pay.ts";
 await buyMeterPass({ keypair });`;
 
+/** Free-look header. Pick any string; first 5 looks on that id are free. */
+export const METER_FREE_LOOK_NOTE =
+  "pick any string; first 5 looks on that id are free; then 402 look $0.02";
+
+export const METER_FREE_LOOK_CURL =
+  "curl -s -X POST https://agent-control.net/api/v1/meter/scan -H 'content-type: application/json' -H 'X-Agent-Pass: <your-id>' -d '{\"chain\":\"solana\",\"address\":\"<destination>\"}'";
+
 /** Exact one-file recipe for llms.txt and /docs. Discovery: llms → pricing → 402 → MCP. */
 export const METER_RECIPE = `# 1 discover
 # https://agent-control.net/llms.txt
 curl -s https://agent-control.net/api/v1/meter/pricing
 # 2 look — First 5 free. Then $0.02 USDC. One address. ok | new | warn | sink
-curl -s -X POST https://agent-control.net/api/v1/meter/scan -H 'content-type: application/json' -d '{"chain":"solana","address":"<destination>"}'
+# ${METER_FREE_LOOK_NOTE}
+${METER_FREE_LOOK_CURL}
 # 3 after 5, POST /api/v1/meter/pass → 402 look $0.02 USDC on Solana to pay_to WITH reference
 curl -s -X POST https://agent-control.net/api/v1/meter/pass -H 'content-type: application/json' -d '{}'
 # copy src/adapters/meter-pay.ts — agent wallet signs and sends (no Phantom)
 ${METER_PAY_SNIPPET}
-# 4 poll
+# 4 watch
 curl -s -X POST https://agent-control.net/api/v1/meter/watch -H 'content-type: application/json' -d '{"invoice_id":"inv_…"}'
 # 5 packs looks_20 $0.20 · addresses_100 $0.15 · stamp_tx $0.05 ticket
 # Take this ticket or we do not take your USDC.
@@ -52,8 +60,8 @@ export const METER_STEPS = [
   {
     n: "2",
     t: "Look",
-    d: "Can I pay this address? First 5 free. Then $0.02 USDC. ok | new | warn | sink. Never hold.",
-    code: 'curl -s -X POST https://agent-control.net/api/v1/meter/scan -H \'content-type: application/json\' -d \'{"chain":"solana","address":"<destination>"}\'',
+    d: "Can I pay this address? First 5 free. Then $0.02 USDC. ok | new | warn | sink. Never hold. Pick any string; first 5 looks on that id are free; then 402 look $0.02.",
+    code: METER_FREE_LOOK_CURL,
   },
   {
     n: "3",

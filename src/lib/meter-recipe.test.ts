@@ -6,6 +6,8 @@ import { fileURLToPath } from "node:url";
 import {
   METER_DOCS_URL,
   METER_EYEBROW,
+  METER_FREE_LOOK_CURL,
+  METER_FREE_LOOK_NOTE,
   METER_HEADLINE,
   METER_LEDE,
   METER_PACKS,
@@ -104,11 +106,18 @@ await buyMeterPass({ keypair });`,
     assert.match(METER_STEPS[2]?.d ?? "", /looks_20/);
     assert.match(METER_STEPS[2]?.d ?? "", /No Phantom/);
     assert.doesNotMatch(METER_RECIPE, /\bbroadcast/i);
-    assert.match(METER_RECIPE, /# 4 poll/);
+    assert.doesNotMatch(METER_RECIPE, /^# 4 poll/m);
+    assert.match(METER_RECIPE, /^# 4 watch$/m);
     assert.match(
       METER_RECIPE,
       /curl -s -X POST https:\/\/agent-control\.net\/api\/v1\/meter\/watch -H 'content-type: application\/json' -d '\{"invoice_id":"inv_…"\}'/,
     );
+    assert.match(METER_RECIPE, /X-Agent-Pass: <your-id>/);
+    assert.match(METER_RECIPE, /pick any string; first 5 looks on that id are free; then 402 look \$0\.02/);
+    assert.equal(METER_FREE_LOOK_NOTE, "pick any string; first 5 looks on that id are free; then 402 look $0.02");
+    assert.match(METER_FREE_LOOK_CURL, /\/api\/v1\/meter\/scan/);
+    assert.match(METER_FREE_LOOK_CURL, /X-Agent-Pass: <your-id>/);
+    assert.equal(METER_STEPS[1]?.code, METER_FREE_LOOK_CURL);
     assert.match(METER_SCAN_CURL, /\/api\/v1\/meter\/scan/);
     assert.match(METER_SCAN_CURL, /X-Agent-Pass/);
     assert.match(METER_PREFLIGHT_CURL, /\/api\/v1\/meter\/preflight/);
@@ -135,6 +144,13 @@ describe("Agent Meter recipe on public discovery surfaces", () => {
     assert.match(docs, /href=["']#agent-meter["']/);
     assert.match(llms, /buyMeterPass/);
     assert.match(llms, /src\/adapters\/meter-pay\.ts/);
+    assert.match(llms, /X-Agent-Pass: <your-id>/);
+    assert.doesNotMatch(llms, /^# 4 poll/m);
+    assert.match(llms, /^# 4 watch$/m);
+    const lookCurl = llms
+      .split("\n")
+      .find((line) => line.includes("/api/v1/meter/scan") && line.startsWith("curl"));
+    assert.match(lookCurl ?? "", /X-Agent-Pass: <your-id>/);
     for (const line of METER_RECIPE.split("\n")) {
       assert.match(llms, new RegExp(line.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
     }

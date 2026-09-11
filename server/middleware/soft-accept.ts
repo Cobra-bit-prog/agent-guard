@@ -5,7 +5,12 @@
  * TanStack Start page SSR 500s when Accept has no text/html (or wildcard).
  * Return 406 here so those requests never reach executeRouter. /api/* is skipped.
  */
-import { notAcceptableResponse, shouldSoftReject } from "../../scripts/soft-accept.mjs";
+import {
+  isMcpWrongPath,
+  mcpWrongPathResponse,
+  notAcceptableResponse,
+  shouldSoftReject,
+} from "../../scripts/soft-accept.mjs";
 
 interface SoftAcceptEvent {
   url: URL;
@@ -16,6 +21,9 @@ export default async function softAcceptMiddleware(
   event: SoftAcceptEvent,
   next: () => unknown | Promise<unknown>,
 ): Promise<unknown> {
+  if (isMcpWrongPath(event.url.pathname)) {
+    return mcpWrongPathResponse();
+  }
   if (
     shouldSoftReject({
       method: event.req.method,
