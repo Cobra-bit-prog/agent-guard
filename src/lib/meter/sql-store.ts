@@ -272,6 +272,13 @@ export function createSqlMeterStore(db: Sql): MeterStore {
         params.push(opts.since.toISOString());
         where.push(`created_at >= $${params.length}::timestamptz`);
       }
+      if (opts.source) {
+        params.push(opts.source);
+        where.push(`source = $${params.length}`);
+      }
+      if (opts.excludeSmoke) {
+        where.push(`coalesce(source, '') <> 'smoke'`);
+      }
       params.push(limit);
       const sqlWhere = where.length ? `where ${where.join(" and ")}` : "";
       const rows = await db.query<InvoiceRow>(
@@ -461,12 +468,14 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
     invoices_pending: 0,
     invoices_pending_fresh: 0,
     invoices_pending_stale: 0,
+    invoices_pending_smoke: 0,
     passes_issued: 0,
     agents_paid: 0,
     usdc_received: 0,
     usdc_pending: 0,
     usdc_pending_fresh: 0,
     usdc_pending_stale: 0,
+    usdc_pending_smoke: 0,
     calls: 0,
     recent_payments: [],
     generated_at: new Date().toISOString(),
@@ -478,30 +487,62 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
       invoices_pending: unknown;
       invoices_pending_fresh: unknown;
       invoices_pending_stale: unknown;
+      invoices_pending_smoke: unknown;
       usdc_received: unknown;
       usdc_pending: unknown;
       usdc_pending_fresh: unknown;
       usdc_pending_stale: unknown;
+      usdc_pending_smoke: unknown;
       agents_paid: unknown;
     }>(
       `select
          count(*)::int as invoices_created,
          count(*) filter (where status = 'paid')::int as invoices_paid,
-         count(*) filter (where status in ('pending', 'underpaid'))::int as invoices_pending,
-         count(*) filter (where status in ('pending', 'underpaid') and expires_at > now())::int
-           as invoices_pending_fresh,
          count(*) filter (
-           where status = 'expired'
-              or (status in ('pending', 'underpaid') and expires_at <= now())
+           where status in ('pending', 'underpaid') and coalesce(source, '') <> 'smoke'
+         )::int as invoices_pending,
+         count(*) filter (
+           where status in ('pending', 'underpaid')
+             and expires_at > now()
+             and coalesce(source, '') <> 'smoke'
+         )::int as invoices_pending_fresh,
+         count(*) filter (
+           where coalesce(source, '') <> 'smoke'
+             and (
+               status = 'expired'
+               or (status in ('pending', 'underpaid') and expires_at <= now())
+             )
          )::int as invoices_pending_stale,
+         count(*) filter (
+           where source = 'smoke'
+             and (
+               status = 'expired'
+               or status in ('pending', 'underpaid')
+             )
+         )::int as invoices_pending_smoke,
          coalesce(sum(paid_amount_usd) filter (where status = 'paid'), 0) as usdc_received,
-         coalesce(sum(amount_usd) filter (where status in ('pending', 'underpaid')), 0) as usdc_pending,
-         coalesce(sum(amount_usd) filter (where status in ('pending', 'underpaid') and expires_at > now()), 0)
-           as usdc_pending_fresh,
          coalesce(sum(amount_usd) filter (
-           where status = 'expired'
-              or (status in ('pending', 'underpaid') and expires_at <= now())
+           where status in ('pending', 'underpaid') and coalesce(source, '') <> 'smoke'
+         ), 0) as usdc_pending,
+         coalesce(sum(amount_usd) filter (
+           where status in ('pending', 'underpaid')
+             and expires_at > now()
+             and coalesce(source, '') <> 'smoke'
+         ), 0) as usdc_pending_fresh,
+         coalesce(sum(amount_usd) filter (
+           where coalesce(source, '') <> 'smoke'
+             and (
+               status = 'expired'
+               or (status in ('pending', 'underpaid') and expires_at <= now())
+             )
          ), 0) as usdc_pending_stale,
+         coalesce(sum(amount_usd) filter (
+           where source = 'smoke'
+             and (
+               status = 'expired'
+               or status in ('pending', 'underpaid')
+             )
+         ), 0) as usdc_pending_smoke,
          count(distinct lower(coalesce(nullif(payer_address, ''), nullif(signature, ''), id)))
            filter (where status = 'paid')::int as agents_paid
        from meter_invoices`,
@@ -522,10 +563,12 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
     const invoicesPending = num(totals[0]?.invoices_pending);
     const invoicesPendingFresh = num(totals[0]?.invoices_pending_fresh);
     const invoicesPendingStale = num(totals[0]?.invoices_pending_stale);
+    const invoicesPendingSmoke = num(totals[0]?.invoices_pending_smoke);
     const usdcReceived = num(totals[0]?.usdc_received);
     const usdcPending = num(totals[0]?.usdc_pending);
     const usdcPendingFresh = num(totals[0]?.usdc_pending_fresh);
     const usdcPendingStale = num(totals[0]?.usdc_pending_stale);
+    const usdcPendingSmoke = num(totals[0]?.usdc_pending_smoke);
     const recentPayments: MeterPaymentRow[] = recent.map((row) => ({
       invoice_id: row.id,
       pass_id: row.pass_id,
@@ -542,12 +585,14 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
       invoices_pending: invoicesPending,
       invoices_pending_fresh: invoicesPendingFresh,
       invoices_pending_stale: invoicesPendingStale,
+      invoices_pending_smoke: invoicesPendingSmoke,
       passes_issued: num(passes[0]?.n),
       agents_paid: num(totals[0]?.agents_paid),
       usdc_received: Number(usdcReceived.toFixed(6)),
       usdc_pending: Number(usdcPending.toFixed(6)),
       usdc_pending_fresh: Number(usdcPendingFresh.toFixed(6)),
       usdc_pending_stale: Number(usdcPendingStale.toFixed(6)),
+      usdc_pending_smoke: Number(usdcPendingSmoke.toFixed(6)),
       calls: num(calls[0]?.n),
       recent_payments: recentPayments,
       generated_at: new Date().toISOString(),

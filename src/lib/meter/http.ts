@@ -5,6 +5,7 @@ import {
   extractMeterInvoiceOrigin,
   internalInvoiceListView,
   invoiceSourceForMeterPath,
+  isMeterInvoiceSource,
   isMeterInvoiceStatus,
   parseInvoiceSince,
   type MeterInvoiceSource,
@@ -100,6 +101,8 @@ export async function handleMeterRequest(
   const path = pathname.replace(/\/+$/, "");
   const suffix = path.replace(/^\/api\/v1\/meter\/?/, "");
 
+  // Health / uptime: GET pricing (no invoice). Do not POST /pass from probes —
+  // that mints unpaid 402s. If a probe must POST, send {"source":"smoke"} or X-Meter-Smoke: 1.
   if (request.method === "GET" && (suffix === "pricing" || suffix === "")) {
     return json(meterPricing());
   }
@@ -195,11 +198,19 @@ export async function handleInternalMeterInvoices(
   }
   const sinceRaw = parseInvoiceSince(url.searchParams.get("since"));
   if (sinceRaw === "invalid") return json({ error: "invalid_since" }, 400);
+  const sourceRaw = (url.searchParams.get("source") ?? "").trim();
+  if (sourceRaw && !isMeterInvoiceSource(sourceRaw)) {
+    return json({ error: "invalid_source" }, 400);
+  }
+  const excludeSmokeRaw = (url.searchParams.get("exclude_smoke") ?? "").trim().toLowerCase();
+  const excludeSmoke = excludeSmokeRaw === "1" || excludeSmokeRaw === "true" || excludeSmokeRaw === "yes";
 
   const resolved = store ?? (await defaultStore());
   const invoices = await resolved.listInvoices({
     status: statusRaw && isMeterInvoiceStatus(statusRaw) ? statusRaw : undefined,
     since: sinceRaw ?? undefined,
+    source: sourceRaw && isMeterInvoiceSource(sourceRaw) ? sourceRaw : undefined,
+    excludeSmoke: excludeSmoke || undefined,
   });
   return json({ invoices: invoices.map(internalInvoiceListView) });
 }

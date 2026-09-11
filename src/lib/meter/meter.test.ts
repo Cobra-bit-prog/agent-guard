@@ -10,6 +10,7 @@ import { handleInternalMeterInvoices, handleMeterRequest } from "./http.ts";
 import {
   extractMeterInvoiceOrigin,
   hashMeterClientIp,
+  isSmokeUserAgent,
   meterInvoiceSourceForMcpTool,
   METER_USER_AGENT_MAX,
 } from "./origin.ts";
@@ -485,7 +486,7 @@ describe("invoice origin", { concurrency: false }, () => {
           "/api/v1/meter/pass?partner=nope!",
           { partner: "AgentKit" },
           {
-            "user-agent": "curl/8.0",
+            "user-agent": "MeterClient/1.0",
             "cf-connecting-ip": "198.51.100.20",
           },
         ),
@@ -497,7 +498,7 @@ describe("invoice origin", { concurrency: false }, () => {
       const invoice = await store.getInvoice(body.invoice_id);
       assert.ok(invoice);
       assert.equal(invoice.source, "http_pass");
-      assert.equal(invoice.user_agent, "curl/8.0");
+      assert.equal(invoice.user_agent, "MeterClient/1.0");
       assert.equal(invoice.partner, "agentkit");
       assert.equal(invoice.cf_connecting_ip_hash, hashMeterClientIp("198.51.100.20", SECRET));
       assert.equal(invoice.x_forwarded_for_hash, null);
@@ -600,6 +601,108 @@ describe("invoice origin", { concurrency: false }, () => {
     assert.equal(report.invoices_pending_stale, 1);
     assert.equal(report.usdc_pending_fresh, 0.25);
     assert.equal(report.usdc_pending_stale, 0.25);
+    assert.equal(report.invoices_pending_smoke, 0);
+    assert.equal(report.usdc_pending_smoke, 0);
+  });
+
+  it("accepts explicit smoke source on POST /pass", async () => {
+    const store = createMeterStore();
+    const bodyFlag = await handleMeterRequest(
+      post("/api/v1/meter/pass", { source: "smoke" }, { "user-agent": "Mozilla/5.0 Phantom/24.0" }),
+      "/api/v1/meter/pass",
+      store,
+    );
+    assert.equal(bodyFlag.status, 402);
+    const bodyInvoice = await store.getInvoice(((await bodyFlag.json()) as { invoice_id: string }).invoice_id);
+    assert.equal(bodyInvoice?.source, "smoke");
+
+    const headerFlag = await handleMeterRequest(
+      post("/api/v1/meter/pass", {}, { "user-agent": "MeterClient/1.0", "x-meter-smoke": "1" }),
+      "/api/v1/meter/pass",
+      store,
+    );
+    assert.equal(headerFlag.status, 402);
+    const headerInvoice = await store.getInvoice(
+      ((await headerFlag.json()) as { invoice_id: string }).invoice_id,
+    );
+    assert.equal(headerInvoice?.source, "smoke");
+  });
+
+  it("auto-tags curl, python-requests, and httpx UAs as smoke", async () => {
+    assert.equal(isSmokeUserAgent("curl/8.0"), true);
+    assert.equal(isSmokeUserAgent("python-requests/2.31.0"), true);
+    assert.equal(isSmokeUserAgent("httpx/0.27.0"), true);
+    assert.equal(isSmokeUserAgent("python-httpx/0.27.2"), true);
+    assert.equal(isSmokeUserAgent("CoS/1.0"), true);
+    assert.equal(isSmokeUserAgent("meter-health/1"), true);
+    assert.equal(isSmokeUserAgent("Mozilla/5.0 Phantom/24.0"), false);
+    assert.equal(isSmokeUserAgent("mcp-inspector/1"), false);
+    assert.equal(isSmokeUserAgent("MeterClient/1.0"), false);
+    assert.equal(isSmokeUserAgent(""), false);
+
+    const store = createMeterStore();
+    for (const ua of ["curl/8.0", "python-requests/2.31.0", "httpx/0.27.0"]) {
+      const res = await handleMeterRequest(
+        post("/api/v1/meter/pass", {}, { "user-agent": ua }),
+        "/api/v1/meter/pass",
+        store,
+      );
+      assert.equal(res.status, 402);
+      const invoice = await store.getInvoice(((await res.json()) as { invoice_id: string }).invoice_id);
+      assert.equal(invoice?.source, "smoke", ua);
+      assert.equal(invoice?.user_agent, ua);
+    }
+  });
+
+  it("never auto-tags Phantom, browser, or MCP agent clients as smoke", async () => {
+    const store = createMeterStore();
+    const phantom = await handleMeterRequest(
+      post(
+        "/api/v1/meter/pass",
+        {},
+        {
+          "user-agent":
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Phantom/24.0",
+        },
+      ),
+      "/api/v1/meter/pass",
+      store,
+    );
+    assert.equal(
+      (await store.getInvoice(((await phantom.json()) as { invoice_id: string }).invoice_id))?.source,
+      "http_pass",
+    );
+
+    const mcp = await handleMeterRequest(
+      post("/api/v1/meter/pass", {}, { "user-agent": "mcp-inspector/1" }),
+      "/api/v1/meter/pass",
+      store,
+      { source: "mcp_buy_pass" },
+    );
+    assert.equal(
+      (await store.getInvoice(((await mcp.json()) as { invoice_id: string }).invoice_id))?.source,
+      "mcp_buy_pass",
+    );
+  });
+
+  it("excludes smoke from pending_stale and still counts http_pass and mcp_buy_pass", async () => {
+    const store = createMeterStore();
+    const staleMs = Date.now() - PAY_EXPIRY_MS - 5_000;
+    store.createInvoice({ nowMs: staleMs, origin: { source: "http_pass" } });
+    store.createInvoice({ origin: { source: "http_pass" } });
+    store.createInvoice({ origin: { source: "mcp_buy_pass" } });
+    store.createInvoice({ nowMs: staleMs, origin: { source: "smoke" } });
+    store.createInvoice({ origin: { source: "smoke" } });
+    const report = await store.report();
+    assert.equal(report.invoices_created, 5);
+    assert.equal(report.invoices_pending, 2);
+    assert.equal(report.invoices_pending_fresh, 2);
+    assert.equal(report.invoices_pending_stale, 1);
+    assert.equal(report.invoices_pending_smoke, 2);
+    assert.equal(report.usdc_pending, 0.5);
+    assert.equal(report.usdc_pending_fresh, 0.5);
+    assert.equal(report.usdc_pending_stale, 0.25);
+    assert.equal(report.usdc_pending_smoke, 0.5);
   });
 
   it("internal invoice list returns 401 without the bearer secret", async () => {
@@ -661,6 +764,41 @@ describe("invoice origin", { concurrency: false }, () => {
       const text = JSON.stringify(body);
       assert.doesNotMatch(text, /192\.0\.2\.44/);
       assert.doesNotMatch(text, /"ip"/);
+    });
+  });
+
+  it("internal invoice list can filter source=smoke or exclude_smoke", async () => {
+    await withStatsSecret(async () => {
+      const store = createMeterStore();
+      await handleMeterRequest(
+        post("/api/v1/meter/pass", {}, { "user-agent": "MeterClient/1.0" }),
+        "/api/v1/meter/pass",
+        store,
+      );
+      await handleMeterRequest(
+        post("/api/v1/meter/pass", {}, { "user-agent": "curl/8.5.0" }),
+        "/api/v1/meter/pass",
+        store,
+      );
+      const smokeOnly = await handleInternalMeterInvoices(
+        new Request("https://agent-control.net/api/v1/internal/meter/invoices?source=smoke", {
+          headers: { authorization: `Bearer ${SECRET}` },
+        }),
+        store,
+      );
+      const smokeBody = (await smokeOnly.json()) as { invoices: Array<{ source: string }> };
+      assert.equal(smokeBody.invoices.length, 1);
+      assert.equal(smokeBody.invoices[0]?.source, "smoke");
+
+      const realOnly = await handleInternalMeterInvoices(
+        new Request("https://agent-control.net/api/v1/internal/meter/invoices?exclude_smoke=1", {
+          headers: { authorization: `Bearer ${SECRET}` },
+        }),
+        store,
+      );
+      const realBody = (await realOnly.json()) as { invoices: Array<{ source: string }> };
+      assert.equal(realBody.invoices.length, 1);
+      assert.equal(realBody.invoices[0]?.source, "http_pass");
     });
   });
 });

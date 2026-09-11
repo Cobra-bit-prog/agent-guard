@@ -57,3 +57,5 @@ await payMeterPass({ invoice, keypairOrSigner: keypair });
 ```
 
 Default sku is pass_1h ($0.25). Docs: https://agent-control.net/docs#agent-meter
+
+Health / uptime probes should **GET /api/v1/meter/pricing** (or another no-op). Do not POST /api/v1/meter/pass from smoke checks — that mints unpaid invoices and pollutes pending_stale. If a probe must POST /pass, send `{"source":"smoke"}` or header `X-Meter-Smoke: 1`.

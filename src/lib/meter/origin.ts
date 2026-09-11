@@ -1,7 +1,10 @@
 import { createHmac } from "node:crypto";
 import { parsePartnerSlug, partnerSlugFromSearchParams } from "../partner.ts";
 
-/** Invoice mint paths. Extend only when a real creator is added. */
+/**
+ * Invoice mint paths. Extend only when a real creator is added.
+ * `smoke` is health/probe traffic, not agent conversion intent.
+ */
 export const METER_INVOICE_SOURCES = [
   "http_pass",
   "http_watch",
@@ -10,6 +13,7 @@ export const METER_INVOICE_SOURCES = [
   "http_scan_batch",
   "http_stamp",
   "mcp_buy_pass",
+  "smoke",
 ] as const;
 
 export type MeterInvoiceSource = (typeof METER_INVOICE_SOURCES)[number];
@@ -45,6 +49,57 @@ export function blankInvoiceOrigin(): MeterInvoiceOrigin {
 
 export function isMeterInvoiceSource(value: unknown): value is MeterInvoiceSource {
   return typeof value === "string" && (METER_INVOICE_SOURCES as readonly string[]).includes(value);
+}
+
+export function isMeterSmokeSource(value: unknown): boolean {
+  return value === "smoke";
+}
+
+const TRUTHY_SMOKE_FLAG = new Set(["1", "true", "yes", "smoke"]);
+
+/** Body `{"source":"smoke"}` or `X-Meter-Smoke: 1` — health probes only. Never lets a client pick mcp_buy_pass. */
+export function isExplicitMeterSmoke(request: Request, body: Record<string, unknown> = {}): boolean {
+  if (body.source === "smoke") return true;
+  const header = (request.headers.get("x-meter-smoke") ?? "").trim().toLowerCase();
+  return TRUTHY_SMOKE_FLAG.has(header);
+}
+
+/**
+ * Browser, Phantom, and MCP agent clients are never auto-classified as smoke.
+ * Explicit `source=smoke` / `X-Meter-Smoke` still wins.
+ */
+const REAL_CLIENT_UA =
+  /mozilla\/|phantom\/|chrome\/|safari\/|firefox\/|edg\/|mcp-inspector|modelcontextprotocol/i;
+
+/**
+ * Conservative bot UAs: curl, python-requests, httpx, and CoS/meter health probes.
+ * Do not match Node fetch / undici — that is the real meter-pay adapter path.
+ */
+export function isSmokeUserAgent(value: string | null | undefined): boolean {
+  const ua = (value ?? "").trim();
+  if (!ua) return false;
+  if (REAL_CLIENT_UA.test(ua)) return false;
+  if (/^(curl|wget|httpie)\//i.test(ua)) return true;
+  if (/^(python-requests|python-httpx|python-urllib|httpx|aiohttp)\//i.test(ua)) return true;
+  if (/^cos\//i.test(ua)) return true;
+  if (
+    /\b(?:cos[-_]?health|cursor[-_]?cos|agent[-_]?guard[-_]?health|meter[-_]?(?:health|smoke))\b/i.test(
+      ua,
+    )
+  ) {
+    return true;
+  }
+  return false;
+}
+
+export function resolveMeterInvoiceSource(
+  pathSource: MeterInvoiceSource,
+  request: Request,
+  body: Record<string, unknown> = {},
+): MeterInvoiceSource {
+  if (isExplicitMeterSmoke(request, body)) return "smoke";
+  if (isSmokeUserAgent(request.headers.get("user-agent"))) return "smoke";
+  return pathSource;
 }
 
 /**
@@ -104,7 +159,7 @@ export function extractMeterInvoiceOrigin(
 ): MeterInvoiceCreateOrigin {
   const secret = meterIpHashSecret(env);
   return {
-    source,
+    source: resolveMeterInvoiceSource(source, request, body),
     user_agent: truncateUserAgent(request.headers.get("user-agent")),
     cf_connecting_ip_hash: hashHeaderIp(request.headers.get("cf-connecting-ip"), secret),
     x_forwarded_for_hash: hashHeaderIp(request.headers.get("x-forwarded-for"), secret),
