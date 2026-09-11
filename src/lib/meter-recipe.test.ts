@@ -61,8 +61,9 @@ const BANNED_METER = [
 describe("Agent Meter recipe", () => {
   it("locks Can I pay this address / free5 / $0.02 / packs / ticket", () => {
     assert.equal(METER_EYEBROW, "Agent Meter");
-    assert.equal(METER_HEADLINE, "Can I pay this address?");
+    assert.equal(METER_HEADLINE, "Agents pay themselves");
     assert.equal(METER_LEDE, "First 5 free. Then $0.02 USDC.");
+    assert.match(METER_STEPS[1]?.d ?? "", /Can I pay this address\?/);
     assert.equal(METER_RISKS, "ok | new | warn | sink");
     assert.match(METER_PACKS, /looks_20 \$0\.20/);
     assert.match(METER_PACKS, /addresses_100 \$0\.15/);

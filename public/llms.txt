@@ -49,7 +49,7 @@ Check API (machine-readable):
 1-day full console trial, no card, no KYC. Then Starter $29 / Pro $49 / Team $149. Humans pay at /billing/pay — $29 USDC on Solana, QR + Pay. No in-page Phantom. Agents use POST /api/v1/billing/checkout.
 
 ## Agent Meter (no human on the site)
-Separate from the Human App. Agents pay themselves. Can I pay this address? First 5 free. Then $0.02 USDC. ok | new | warn | sink. Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. Take this ticket or we do not take your USDC. No inbox. No email, no trial, no API key, no Approval Inbox. Discovery: llms → pricing → 402 → MCP. Docs: https://agent-control.net/docs#agent-meter
+Separate from the Human App. Agents pay themselves. Can I pay this address? First 5 free. Then $0.02 USDC. Then scan and preflight. ok | new | warn | sink. Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. Take this ticket or we do not take your USDC. No inbox. No email, no trial, no API key, no Approval Inbox. Discovery: llms → pricing → 402 → MCP. Docs: https://agent-control.net/docs#agent-meter
 
 One-file recipe (no SDK):
 
@@ -58,7 +58,8 @@ One-file recipe (no SDK):
 curl -s https://agent-control.net/api/v1/meter/pricing
 # 2 look — First 5 free. Then $0.02 USDC. One address. ok | new | warn | sink
 curl -s -X POST https://agent-control.net/api/v1/meter/scan -H 'content-type: application/json' -d '{"chain":"solana","address":"<destination>"}'
-# 3 after 5, 402 look $0.02 USDC on Solana to pay_to WITH reference
+# 3 after 5, POST /api/v1/meter/pass → 402 look $0.02 USDC on Solana to pay_to WITH reference
+curl -s -X POST https://agent-control.net/api/v1/meter/pass -H 'content-type: application/json' -d '{}'
 # copy src/adapters/meter-pay.ts — agent wallet signs and sends (no Phantom)
 import { buyMeterPass } from "./src/adapters/meter-pay.ts";
 await buyMeterPass({ keypair });

@@ -255,7 +255,7 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
   assert.match(docs, /METER_LEDE/);
   assert.match(docs, /METER_SEPARATE/);
   assert.match(meterRecipe, /Agents pay themselves/);
-  assert.match(meterRecipe, /A \$0\.25 pass\. Then scan and preflight\. No inbox\./);
+  assert.match(meterRecipe, /First 5 free\. Then \$0\.02 USDC\./);
   assert.match(meterRecipe, /Separate from the Human App/);
   assert.match(meterDocs, /X-Agent-Pass/);
   assert.match(meterRecipe, /curl -s https:\/\/agent-control\.net\/api\/v1\/meter\/pricing/);
@@ -417,13 +417,14 @@ test("llms.txt is the public AI-crawler brief", () => {
   assert.match(llms, /## Agent Meter \(no human on the site\)/);
   const meterBlock = llms.match(/## Agent Meter \(no human on the site\)\n([\s\S]*?)\n## /)?.[1] ?? "";
   assert.match(meterBlock, /Agents pay themselves/);
-  assert.match(meterBlock, /\$0\.25 pass/);
+  assert.match(meterBlock, /\$0\.02/);
+  assert.match(meterBlock, /First 5 free/);
   assert.match(meterBlock, /scan and preflight/i);
   assert.match(meterBlock, /No inbox/);
   assert.match(meterBlock, /docs#agent-meter/);
   assert.match(meterBlock, /curl -s https:\/\/agent-control\.net\/api\/v1\/meter\/pricing/);
   assert.match(meterBlock, /POST https:\/\/agent-control\.net\/api\/v1\/meter\/pass/);
-  assert.match(meterBlock, /pay 0\.25 USDC on Solana to pay_to/);
+  assert.match(meterBlock, /0\.02 USDC on Solana to pay_to/);
   assert.match(meterBlock, /POST https:\/\/agent-control\.net\/api\/v1\/meter\/watch/);
   assert.match(meterBlock, /X-Agent-Pass/);
   assert.match(meterBlock, /\/api\/v1\/meter\/scan/);

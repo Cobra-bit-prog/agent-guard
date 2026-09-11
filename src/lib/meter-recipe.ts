@@ -5,10 +5,11 @@
  */
 
 export const METER_EYEBROW = "Agent Meter";
-export const METER_HEADLINE = "Can I pay this address?";
+/** Locked Meter headline. The look question lives in LOOK_QUESTION. */
+export const METER_HEADLINE = "Agents pay themselves";
 export const METER_LEDE = "First 5 free. Then $0.02 USDC.";
 export const METER_SEPARATE =
-  "Separate from the Human App. No email, no API key, no Approval Inbox.";
+  "Separate from the Human App. Then scan and preflight. No email, no API key, no Approval Inbox.";
 export const METER_RISKS = "ok | new | warn | sink";
 export const METER_PACKS = "Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05.";
 export const METER_TICKET = "Take this ticket or we do not take your USDC.";
@@ -25,7 +26,8 @@ export const METER_RECIPE = `# 1 discover
 curl -s https://agent-control.net/api/v1/meter/pricing
 # 2 look — First 5 free. Then $0.02 USDC. One address. ok | new | warn | sink
 curl -s -X POST https://agent-control.net/api/v1/meter/scan -H 'content-type: application/json' -d '{"chain":"solana","address":"<destination>"}'
-# 3 after 5, 402 look $0.02 USDC on Solana to pay_to WITH reference
+# 3 after 5, POST /api/v1/meter/pass → 402 look $0.02 USDC on Solana to pay_to WITH reference
+curl -s -X POST https://agent-control.net/api/v1/meter/pass -H 'content-type: application/json' -d '{}'
 # copy src/adapters/meter-pay.ts — agent wallet signs and sends (no Phantom)
 ${METER_PAY_SNIPPET}
 # 4 poll
