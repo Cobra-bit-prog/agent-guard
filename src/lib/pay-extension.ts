@@ -56,6 +56,25 @@ function getPhantom(): PhantomProvider {
   return p;
 }
 
+/** Connected Phantom pubkey if the extension already exposed one. Does not prompt. */
+export function peekPhantomPubkey(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const pk = getPhantom().publicKey?.toString().trim();
+    return pk || null;
+  } catch {
+    return null;
+  }
+}
+
+export async function connectPhantomPubkey(): Promise<string> {
+  const phantom = getPhantom();
+  const connected = await phantom.connect();
+  const pk = connected.publicKey.toString().trim();
+  if (!pk) throw new Error("Phantom did not return a wallet.");
+  return pk;
+}
+
 export async function payUsdcWithPhantomExtension(opts: {
   recipient: string;
   amountUsdc: number;

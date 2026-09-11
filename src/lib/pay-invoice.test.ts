@@ -74,14 +74,19 @@ describe("Solana Pay URL", () => {
   it("refuses Phantom pay when the connected wallet is the receive address", () => {
     assert.throws(
       () => assertPayerIsNotReceiveWallet(SOLANA_PAYOUT_ADDRESS),
-      /Switch to a different wallet in Phantom/,
+      /you cannot pay from the receive wallet/,
     );
     assert.throws(
       () => assertPayerIsNotReceiveWallet(` ${SOLANA_PAYOUT_ADDRESS} `),
-      /This wallet is the receive address/,
+      /Switch to a different wallet that holds USDC/,
     );
     assert.doesNotThrow(() => assertPayerIsNotReceiveWallet("SomeOtherWallet111111111111111111111111"));
-    assert.equal(isForbiddenCustomerWord("This wallet is the receive address. Switch to a different wallet in Phantom, then pay."), false);
+    assert.equal(
+      isForbiddenCustomerWord(
+        "Switch to a different wallet that holds USDC — you cannot pay from the receive wallet.",
+      ),
+      false,
+    );
   });
 });
 

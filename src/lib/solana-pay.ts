@@ -17,11 +17,15 @@ export function lockedSolanaUsdcRecipient(_candidate?: string | null): string {
 }
 
 export const RECEIVE_WALLET_SWITCH_ERROR =
-  "This wallet is the receive address. Switch to a different wallet in Phantom, then pay.";
+  "Switch to a different wallet that holds USDC — you cannot pay from the receive wallet.";
+
+export function isReceiveWalletPayer(payer: string): boolean {
+  return payer.trim() === SOLANA_PAYOUT_ADDRESS;
+}
 
 /** Refuse a self-send from the locked payout wallet. */
 export function assertPayerIsNotReceiveWallet(payer: string): void {
-  if (payer.trim() === SOLANA_PAYOUT_ADDRESS) {
+  if (isReceiveWalletPayer(payer)) {
     throw new Error(RECEIVE_WALLET_SWITCH_ERROR);
   }
 }

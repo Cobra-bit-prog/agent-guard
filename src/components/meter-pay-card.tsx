@@ -8,7 +8,8 @@ import {
   type MeterPayIntent,
   type MeterPaySearch,
 } from "@/lib/meter-pay";
-import { SOLANA_PAYOUT_ADDRESS } from "@/lib/solana-pay";
+import { SOLANA_PAYOUT_ADDRESS, RECEIVE_WALLET_SWITCH_ERROR, isReceiveWalletPayer } from "@/lib/solana-pay";
+import { shortAddress } from "@/lib/utils";
 
 async function copyText(value: string): Promise<boolean> {
   if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
@@ -59,6 +60,7 @@ export function MeterPayCard({ search }: { search: MeterPaySearch }) {
   const [busy, setBusy] = useState(false);
   const [creating, setCreating] = useState(false);
   const [hasPhantom, setHasPhantom] = useState(false);
+  const [connectedPubkey, setConnectedPubkey] = useState<string | null>(null);
   const [signature, setSignature] = useState<string | null>(null);
   const [passToken, setPassToken] = useState<string | null>(null);
   const [copied, setCopied] = useState<"address" | "token" | "sig" | null>(null);
@@ -73,7 +75,10 @@ export function MeterPayCard({ search }: { search: MeterPaySearch }) {
   useEffect(() => {
     let cancelled = false;
     void import("@/lib/pay-extension").then((mod) => {
-      if (!cancelled) setHasPhantom(mod.hasPhantomExtension());
+      if (cancelled) return;
+      setHasPhantom(mod.hasPhantomExtension());
+      const pk = mod.peekPhantomPubkey();
+      if (pk) setConnectedPubkey(pk);
     });
     return () => {
       cancelled = true;
@@ -183,6 +188,8 @@ export function MeterPayCard({ search }: { search: MeterPaySearch }) {
     try {
       const ext = await import("@/lib/pay-extension");
       if (ext.hasPhantomExtension()) {
+        const pk = await ext.connectPhantomPubkey();
+        setConnectedPubkey(pk);
         const sent = await ext.payUsdcWithPhantomExtension({
           recipient: next.recipient,
           amountUsdc: next.amountUsdc,
@@ -195,6 +202,8 @@ export function MeterPayCard({ search }: { search: MeterPaySearch }) {
       window.location.assign(next.payUrl);
     } catch (err) {
       const ext = await import("@/lib/pay-extension");
+      const pk = ext.peekPhantomPubkey();
+      if (pk) setConnectedPubkey(pk);
       if (ext.walletUserRejected(err)) {
         setPayError("Payment cancelled.");
         return;
@@ -291,7 +300,7 @@ export function MeterPayCard({ search }: { search: MeterPaySearch }) {
       </dl>
 
       <div className="mt-4 rounded-[14px] border border-border bg-elevated px-3.5 py-3">
-        <p className="text-meta text-muted">Address</p>
+        <p className="text-meta text-muted">Pay to</p>
         <p className="mt-1 break-all font-mono text-meta leading-relaxed">{SOLANA_PAYOUT_ADDRESS}</p>
         <button
           type="button"
@@ -302,9 +311,18 @@ export function MeterPayCard({ search }: { search: MeterPaySearch }) {
         </button>
       </div>
 
+      {connectedPubkey ? (
+        <p className="mt-3 text-meta text-muted">
+          Phantom {shortAddress(connectedPubkey)}
+        </p>
+      ) : null}
+      {connectedPubkey && isReceiveWalletPayer(connectedPubkey) ? (
+        <p className="mt-2 text-body text-danger">{RECEIVE_WALLET_SWITCH_ERROR}</p>
+      ) : null}
+
       <button
         type="button"
-        disabled={busy}
+        disabled={busy || Boolean(connectedPubkey && isReceiveWalletPayer(connectedPubkey))}
         onClick={() => void onPay(intent)}
         className="mt-5 inline-flex h-12 w-full items-center justify-center rounded-full bg-primary px-5 text-body font-semibold text-primary-fg disabled:opacity-50"
       >
