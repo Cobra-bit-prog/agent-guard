@@ -24,8 +24,11 @@ export const PAY_CHAIN_LABEL: Record<PayChain, string> = {
   base: "Base",
 };
 
+/** Convert a USDC UI amount (including $0.25) to 6-decimal base units. */
 export function usdcBaseUnits(uiAmount: number): string {
-  return String(BigInt(uiAmount) * 10n ** BigInt(USDC_DECIMALS));
+  const micros = Math.round(Number(uiAmount) * 10 ** USDC_DECIMALS);
+  if (!Number.isFinite(micros) || micros < 0) return "0";
+  return String(micros);
 }
 
 /** Exact USDC amount from base units, up to 6 decimal places. */
@@ -65,6 +68,59 @@ export function buildSolanaPayUrl(opts: {
 /** HTTPS universal link: opens the Phantom app, or the App Store / download page. */
 export function phantomBrowseUrl(solanaUrl: string): string {
   return `https://phantom.app/ul/browse/${encodeURIComponent(solanaUrl)}?ref=${encodeURIComponent("https://agent-control.net")}`;
+}
+
+const B58_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+
+export function isSolanaPayReference(value: string): boolean {
+  return B58_RE.test(value.trim());
+}
+
+function unwrapPhantomBrowseUrl(raw: string): string {
+  const trimmed = raw.trim();
+  try {
+    const url = new URL(trimmed);
+    if (!url.hostname.endsWith("phantom.app")) return trimmed;
+    const marker = "/ul/browse/";
+    const idx = url.pathname.indexOf(marker);
+    if (idx === -1) return trimmed;
+    return decodeURIComponent(url.pathname.slice(idx + marker.length));
+  } catch {
+    return trimmed;
+  }
+}
+
+export type ParsedSolanaPayUrl = {
+  recipient: string;
+  amountUsdc: number | null;
+  reference: string | null;
+  mint: string | null;
+  payUrl: string;
+};
+
+/** Parse a solana: Pay URL (or Phantom browse wrapper). Recipient is always the locked payout wallet. */
+export function parseSolanaPayUrl(raw: string): ParsedSolanaPayUrl | null {
+  const text = unwrapPhantomBrowseUrl(raw);
+  const lower = text.toLowerCase();
+  if (!lower.startsWith("solana:")) return null;
+  const rest = text.slice("solana:".length);
+  const qIndex = rest.indexOf("?");
+  const recipientRaw = (qIndex === -1 ? rest : rest.slice(0, qIndex)).trim();
+  const query = qIndex === -1 ? "" : rest.slice(qIndex + 1);
+  const params = new URLSearchParams(query);
+  const amountRaw = params.get("amount");
+  const amountNum = amountRaw != null && amountRaw !== "" ? Number(amountRaw) : NaN;
+  const amountUsdc = Number.isFinite(amountNum) && amountNum > 0 ? amountNum : null;
+  const referenceRaw = (params.get("reference") ?? "").trim();
+  const reference = isSolanaPayReference(referenceRaw) ? referenceRaw : null;
+  const mint = (params.get("spl-token") ?? "").trim() || null;
+  const recipient = lockedSolanaUsdcRecipient(recipientRaw);
+  const payUrl = buildSolanaPayUrl({
+    recipient,
+    amountUsdc: amountUsdc ?? 0.25,
+    reference: reference ?? referenceRaw,
+  });
+  return { recipient, amountUsdc, reference, mint, payUrl };
 }
 
 export type PayStatus = "pending" | "paid" | "expired" | "underpaid";

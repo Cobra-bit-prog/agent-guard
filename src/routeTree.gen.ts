@@ -15,6 +15,7 @@ import { Route as ConnectRouteImport } from './routes/connect'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LogosRouteImport } from './routes/logos'
+import { Route as MeterPayRouteImport } from './routes/meter.pay'
 import { Route as PartnersRouteImport } from './routes/partners'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as SignupRouteImport } from './routes/signup'
@@ -82,6 +83,11 @@ const LoginRoute = LoginRouteImport.update({
 const LogosRoute = LogosRouteImport.update({
   id: '/logos',
   path: '/logos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MeterPayRoute = MeterPayRouteImport.update({
+  id: '/meter/pay',
+  path: '/meter/pay',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PartnersRoute = PartnersRouteImport.update({
@@ -287,6 +293,7 @@ export interface FileRoutesByFullPath {
   '/docs': typeof DocsRoute
   '/login': typeof LoginRoute
   '/logos': typeof LogosRoute
+  '/meter/pay': typeof MeterPayRoute
   '/partners': typeof PartnersRoute
   '/privacy': typeof PrivacyRoute
   '/signup': typeof SignupRoute
@@ -333,6 +340,7 @@ export interface FileRoutesByTo {
   '/docs': typeof DocsRoute
   '/login': typeof LoginRoute
   '/logos': typeof LogosRoute
+  '/meter/pay': typeof MeterPayRoute
   '/partners': typeof PartnersRoute
   '/privacy': typeof PrivacyRoute
   '/signup': typeof SignupRoute
@@ -379,6 +387,7 @@ export interface FileRoutesById {
   '/docs': typeof DocsRoute
   '/login': typeof LoginRoute
   '/logos': typeof LogosRoute
+  '/meter/pay': typeof MeterPayRoute
   '/partners': typeof PartnersRoute
   '/privacy': typeof PrivacyRoute
   '/signup': typeof SignupRoute
@@ -427,6 +436,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/login'
     | '/logos'
+    | '/meter/pay'
     | '/partners'
     | '/privacy'
     | '/signup'
@@ -473,6 +483,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/login'
     | '/logos'
+    | '/meter/pay'
     | '/partners'
     | '/privacy'
     | '/signup'
@@ -518,6 +529,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/login'
     | '/logos'
+    | '/meter/pay'
     | '/partners'
     | '/privacy'
     | '/signup'
@@ -566,6 +578,7 @@ export interface RootRouteChildren {
   DocsRoute: typeof DocsRoute
   LoginRoute: typeof LoginRoute
   LogosRoute: typeof LogosRoute
+  MeterPayRoute: typeof MeterPayRoute
   PartnersRoute: typeof PartnersRoute
   PrivacyRoute: typeof PrivacyRoute
   SignupRoute: typeof SignupRoute
@@ -636,6 +649,13 @@ declare module '@tanstack/react-router' {
       path: '/logos'
       fullPath: '/logos'
       preLoaderRoute: typeof LogosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/meter/pay': {
+      id: '/meter/pay'
+      path: '/meter/pay'
+      fullPath: '/meter/pay'
+      preLoaderRoute: typeof MeterPayRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/partners': {
@@ -984,6 +1004,7 @@ const rootRouteChildren: RootRouteChildren = {
   DocsRoute: DocsRoute,
   LoginRoute: LoginRoute,
   LogosRoute: LogosRoute,
+  MeterPayRoute: MeterPayRoute,
   PartnersRoute: PartnersRoute,
   PrivacyRoute: PrivacyRoute,
   SignupRoute: SignupRoute,

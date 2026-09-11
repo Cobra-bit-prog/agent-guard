@@ -563,7 +563,11 @@ client.onBeforePaymentCreation(
           <p className="mt-3 max-w-[52ch] text-muted">{METER_SEPARATE}</p>
           <p className="mt-3 max-w-[52ch] text-muted">
             One-file recipe. No SDK. Pay the pass, then scan and preflight with{" "}
-            <code className="font-mono text-fg">X-Agent-Pass</code>.
+            <code className="font-mono text-fg">X-Agent-Pass</code>. On a laptop with Phantom, open{" "}
+            <a href="/meter/pay" className="font-medium text-navy hover:text-coral">
+              /meter/pay?invoice_id=
+            </a>
+            plus the invoice id, then tap Pay.
           </p>
           <CopyCode code={METER_RECIPE} label="Copy recipe" />
           <ol className="mt-8 space-y-3">

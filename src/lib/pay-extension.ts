@@ -1,6 +1,6 @@
 import { Buffer } from "buffer";
 import { EVM_USDC, type EvmPayChain } from "@/lib/evm-pay";
-import { USDC_MINT, usdcBaseUnits } from "@/lib/solana-pay";
+import { lockedSolanaUsdcRecipient, USDC_MINT, usdcBaseUnits } from "@/lib/solana-pay";
 
 function ensureNodeBuffer() {
   const g = globalThis as typeof globalThis & {
@@ -55,6 +55,7 @@ export async function payUsdcWithPhantomExtension(opts: {
   recipient: string;
   amountUsdc: number;
   reference: string;
+  amountBaseUnits?: string;
 }): Promise<string> {
   ensureNodeBuffer();
   const {
@@ -71,10 +72,10 @@ export async function payUsdcWithPhantomExtension(opts: {
   const phantom = getPhantom();
   const connected = await phantom.connect();
   const payer = new PublicKey(connected.publicKey.toString());
-  const destOwner = new PublicKey(opts.recipient);
+  const destOwner = new PublicKey(lockedSolanaUsdcRecipient(opts.recipient));
   const mint = new PublicKey(USDC_MINT);
   const reference = new PublicKey(opts.reference);
-  const amount = BigInt(usdcBaseUnits(opts.amountUsdc));
+  const amount = BigInt(opts.amountBaseUnits?.trim() || usdcBaseUnits(opts.amountUsdc));
 
   const sourceAta = await getAssociatedTokenAddress(mint, payer);
   const destAta = await getAssociatedTokenAddress(mint, destOwner);

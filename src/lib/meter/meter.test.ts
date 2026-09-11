@@ -221,6 +221,29 @@ describe("meter http", () => {
     assert.equal(body.product, "Agent Meter");
     assert.equal(body.pass.price_usd, 0.25);
   });
+
+  it("GET invoice returns pay_url to the locked payout wallet", async () => {
+    const store = createMeterStore();
+    const invoice = await store.createInvoice({ sku: "pass_1h" });
+    const res = await handleMeterRequest(
+      get(`/api/v1/meter/invoice/${invoice.invoice_id}`),
+      `/api/v1/meter/invoice/${invoice.invoice_id}`,
+      store,
+    );
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as {
+      invoice_id: string;
+      amount_usd: number;
+      pay_to: string;
+      reference: string;
+      pay_url: string;
+    };
+    assert.equal(body.invoice_id, invoice.invoice_id);
+    assert.equal(body.amount_usd, 0.25);
+    assert.equal(body.pay_to, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
+    assert.match(body.pay_url, /^solana:49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR\?/);
+    assert.match(body.pay_url, new RegExp(`reference=${invoice.reference}`));
+  });
 });
 
 describe("extra meter skus", () => {
