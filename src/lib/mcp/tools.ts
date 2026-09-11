@@ -145,7 +145,7 @@ export const MCP_TOOLS = [
     name: "meter_scan",
     title: "Scan a destination",
     description:
-      "Can I pay this address? One look = one address. First 5 free (X-Agent-Pass or anon), then $0.02. Risk ok|new|warn|sink. Never hold. No Inbox.",
+      "Can I pay this address? One look = one address. Send X-Agent-Pass with any string; first 5 looks on that id are free; then 402 look $0.02. Risk ok|new|warn|sink. Never hold. No Inbox.",
     annotations: readOnly,
     inputSchema: {
       type: "object",
@@ -161,7 +161,7 @@ export const MCP_TOOLS = [
     name: "meter_preflight",
     title: "Preflight against a self cap",
     description:
-      "One look = one address. First 5 free then $0.02. allow or stop vs cap_usd. Never hold. No Inbox.",
+      "One look = one address. Send X-Agent-Pass with any string; first 5 looks on that id are free; then 402 look $0.02. Body: chain, wallet, to, value_usd, cap_usd. allow or stop vs cap_usd. Never hold. No Inbox.",
     annotations: writes,
     inputSchema: {
       type: "object",

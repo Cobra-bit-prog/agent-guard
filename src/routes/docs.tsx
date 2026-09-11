@@ -569,10 +569,10 @@ client.onBeforePaymentCreation(
             <code className="font-mono text-fg">src/adapters/meter-pay.ts</code>
             {" "}
             — it signs a Solana USDC transfer to pay_to with the 402 reference, then watches until
-            the pass token. Identity is{" "}
+            the pass token. Send{" "}
             <code className="font-mono text-fg">X-Agent-Pass</code>
-            {" "}
-            or anon. No email. No Phantom. On a laptop with Phantom, you can still open{" "}
+            : pick any string; first 5 looks on that id are free; then 402 look $0.02. No email. No
+            Phantom. On a laptop with Phantom, you can still open{" "}
             <a href="/meter/pay" className="font-medium text-navy hover:text-coral">
               /meter/pay?invoice_id=
             </a>{" "}

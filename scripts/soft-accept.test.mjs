@@ -6,6 +6,9 @@ import test from "node:test";
 import {
   acceptAllowsHtml,
   isApiPath,
+  isMcpWrongPath,
+  MCP_WRONG_PATH_BODY,
+  mcpWrongPathResponse,
   NOT_ACCEPTABLE_BODY,
   notAcceptableResponse,
   shouldSoftReject,
@@ -139,6 +142,23 @@ test("shouldSoftReject: PWA internals stay on grok-pwa middleware", () => {
   );
 });
 
+test("isMcpWrongPath is only /mcp", () => {
+  assert.equal(isMcpWrongPath("/mcp"), true);
+  assert.equal(isMcpWrongPath("/mcp/"), true);
+  assert.equal(isMcpWrongPath("/api/v1/mcp"), false);
+  assert.equal(isMcpWrongPath("/mcp.json"), false);
+  assert.equal(isMcpWrongPath("/"), false);
+});
+
+test("wrong-path /mcp hint is not 500 and names POST /api/v1/mcp", () => {
+  const response = mcpWrongPathResponse();
+  assert.equal(response.status, 404);
+  assert.notEqual(response.status, 500);
+  assert.match(response.headers.get("content-type") ?? "", /application\/json/);
+  assert.match(MCP_WRONG_PATH_BODY, /Meter MCP is POST \/api\/v1\/mcp/);
+  assert.doesNotMatch(MCP_WRONG_PATH_BODY, /Bearer|secret|token|api[_-]?key/i);
+});
+
 test("notAcceptableResponse is 406 JSON, never 500", () => {
   const response = notAcceptableResponse();
   assert.equal(response.status, 406);
@@ -155,9 +175,12 @@ test("nitro middleware and vite plugin stay wired", () => {
   const middleware = readFileSync(join(ROOT, "server/middleware/soft-accept.ts"), "utf8");
   assert.match(middleware, /shouldSoftReject/);
   assert.match(middleware, /notAcceptableResponse/);
+  assert.match(middleware, /isMcpWrongPath/);
+  assert.match(middleware, /mcpWrongPathResponse/);
   assert.doesNotMatch(middleware, /api\/v1\/mcp/);
 
   const plugin = readFileSync(join(ROOT, "scripts/soft-accept-plugin.mjs"), "utf8");
   assert.match(plugin, /shouldSoftReject/);
+  assert.match(plugin, /isMcpWrongPath/);
   assert.match(plugin, /configureServer/);
 });

@@ -2,6 +2,18 @@ export type PreflightDecision = "allow" | "stop";
 
 /** Meter preflight never holds. allow | stop only. */
 
+export const PREFLIGHT_REQUIRED = ["chain", "wallet", "to", "value_usd", "cap_usd"] as const;
+
+export function missingPreflightFields(body: Record<string, unknown>): string[] {
+  const missing: string[] = [];
+  if (!String(body.chain ?? "").trim()) missing.push("chain");
+  if (!String(body.wallet ?? "").trim()) missing.push("wallet");
+  if (!String(body.to ?? "").trim()) missing.push("to");
+  if (!Number.isFinite(Number(body.value_usd ?? body.valueUsd))) missing.push("value_usd");
+  if (!Number.isFinite(Number(body.cap_usd ?? body.capUsd))) missing.push("cap_usd");
+  return missing;
+}
+
 export function utcDayKey(nowMs = Date.now()): string {
   return new Date(nowMs).toISOString().slice(0, 10);
 }

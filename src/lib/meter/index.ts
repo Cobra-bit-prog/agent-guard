@@ -1,6 +1,8 @@
 export {
   meterPricing,
   meter402Body,
+  meter402ChallengeHeaders,
+  meter402PaymentRequiredPayload,
   METER_LOOK,
   METER_LOOK_SKU,
   METER_LOOKS_20,

@@ -18,13 +18,14 @@ import {
   METER_FREE_THEN_LOOK,
   METER_LOOK_SKU,
   meter402Body,
+  meter402ChallengeHeaders,
   meterPricing,
   resolveMeterSku,
   skuCovers,
   type MeterSku,
 } from "./pricing.ts";
 import { evaluateScan, type MeterChain } from "./scan.ts";
-import { evaluatePreflightSelf } from "./preflight.ts";
+import { evaluatePreflightSelf, missingPreflightFields, PREFLIGHT_REQUIRED } from "./preflight.ts";
 import {
   applyMeterHeliusPayments,
   meterFundsDestination,
@@ -260,7 +261,7 @@ async function paymentRequired(
 ): Promise<Response> {
   const minted = await invoiceForBody(store, request, source, body, fallbackSku);
   if (!minted.ok) return minted.response;
-  return json(meter402Body(minted.invoice), 402);
+  return json(meter402Body(minted.invoice), 402, meter402ChallengeHeaders(minted.invoice));
 }
 
 async function issueOrInvoice(
@@ -331,6 +332,7 @@ async function issueOrInvoice(
         signature: watched.invoice.signature,
       },
       402,
+      meter402ChallengeHeaders(watched.invoice),
     );
   }
 
@@ -466,12 +468,32 @@ async function runScan(request: Request, body: Record<string, unknown>, store: M
 
 async function runPreflight(request: Request, body: Record<string, unknown>, store: MeterStore): Promise<Response> {
   const source = invoiceSourceForMeterPath("preflight");
+  const missing = missingPreflightFields(body);
+  if (missing.length) {
+    return json(
+      {
+        error: "Provide chain, wallet, to, value_usd, and cap_usd.",
+        required: [...PREFLIGHT_REQUIRED],
+        missing,
+      },
+      400,
+    );
+  }
   const chain = chainOf(body.chain);
   const wallet = String(body.wallet ?? "").trim();
   const to = String(body.to ?? "").trim();
   const value_usd = Number(body.value_usd ?? body.valueUsd);
   const cap_usd = Number(body.cap_usd ?? body.capUsd);
-  if (!chain || !wallet || !to) return json({ error: "Provide chain, wallet, and to." }, 400);
+  if (!chain) {
+    return json(
+      {
+        error: "Provide chain, wallet, to, value_usd, and cap_usd.",
+        required: [...PREFLIGHT_REQUIRED],
+        missing: ["chain"],
+      },
+      400,
+    );
+  }
 
   const gate = await requireLookOrPack(request, body, store, source, "preflight");
   if (gate.response) return gate.response;

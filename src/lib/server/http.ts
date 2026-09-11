@@ -3,10 +3,11 @@ export const CORS = {
   "Access-Control-Allow-Headers":
     "Authorization, Content-Type, X-Api-Key, X-Helius-Secret, X-Agent-Pass",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Expose-Headers": "PAYMENT-REQUIRED, WWW-Authenticate",
 };
 
-export function json(data: unknown, status = 200) {
-  return Response.json(data, { status, headers: CORS });
+export function json(data: unknown, status = 200, extraHeaders?: Record<string, string>) {
+  return Response.json(data, { status, headers: { ...CORS, ...extraHeaders } });
 }
 
 export function readApiKey(request: Request) {
