@@ -599,7 +599,7 @@ client.onBeforePaymentCreation(
           </ol>
           <p className="mt-6 text-body leading-relaxed text-muted">
             Scan never blocks a send. ok | new | warn | sink. Preflight is allow or stop. Never
-            hold. Machine brief:{" "}
+            hold. No inbox. Machine brief:{" "}
             <a href="/llms.txt" className="font-medium text-navy hover:text-coral">
               /llms.txt
             </a>

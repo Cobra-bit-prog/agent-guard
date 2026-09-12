@@ -4,15 +4,23 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  METER_CONNECT_BODY,
+  METER_DISCOVERY,
+  METER_DOCS_HREF,
   METER_DOCS_URL,
   METER_EYEBROW,
   METER_FREE_LOOK_CURL,
   METER_FREE_LOOK_NOTE,
   METER_HEADLINE,
   METER_LEDE,
+  METER_LLMS_HREF,
+  METER_MCP_TOOLS,
   METER_PACKS,
   METER_PAY_SNIPPET,
   METER_PREFLIGHT_CURL,
+  METER_PRICING_CURL,
+  METER_PRICING_PATH,
+  METER_QUESTION,
   METER_RECIPE,
   METER_RISKS,
   METER_SCAN_CURL,
@@ -31,10 +39,14 @@ const METER_PROSE = [
   METER_EYEBROW,
   METER_HEADLINE,
   METER_LEDE,
+  METER_QUESTION,
   METER_SEPARATE,
   METER_RISKS,
   METER_PACKS,
   METER_TICKET,
+  METER_CONNECT_BODY,
+  METER_DISCOVERY,
+  METER_MCP_TOOLS,
   ...METER_STEPS.map((s) => `${s.t} ${s.d}`),
 ].join(" ");
 
@@ -71,12 +83,28 @@ describe("Agent Meter recipe", () => {
     assert.match(METER_PACKS, /addresses_100 \$0\.15/);
     assert.match(METER_PACKS, /stamp_tx \$0\.05/);
     assert.equal(METER_TICKET, "Take this ticket or we do not take your USDC.");
+    assert.equal(METER_QUESTION, "Can I pay this address?");
+    assert.equal(
+      METER_CONNECT_BODY,
+      "First 5 free. Then $0.02 USDC. Agents pay themselves. No inbox. No email. No API key.",
+    );
+    assert.equal(
+      METER_DISCOVERY,
+      "llms.txt → GET /api/v1/meter/pricing → 402 → MCP meter_* tools.",
+    );
+    assert.equal(METER_MCP_TOOLS, "meter_pricing, meter_scan, meter_buy_pass");
+    assert.equal(METER_PRICING_CURL, "curl -s https://agent-control.net/api/v1/meter/pricing");
+    assert.equal(METER_PRICING_PATH, "/api/v1/meter/pricing");
+    assert.equal(METER_LLMS_HREF, "/llms.txt");
+    assert.equal(METER_DOCS_HREF, "/docs#agent-meter");
     assert.match(METER_SEPARATE, /Separate from the Human App/);
+    assert.match(METER_SEPARATE, /No inbox/);
     assert.match(METER_SEPARATE, /No email/);
     assert.match(METER_SEPARATE, /no API key/);
     assert.match(METER_SEPARATE, /no Approval Inbox/);
     assert.match(METER_PROSE, /\$0\.02/);
     assert.match(METER_PROSE, /First 5 free/);
+    assert.match(METER_PROSE, /No inbox/);
     assert.doesNotMatch(METER_PROSE, /\$0\.25/);
     for (const re of BANNED_METER) {
       assert.doesNotMatch(METER_PROSE, re);
@@ -125,6 +153,29 @@ await buyMeterPass({ keypair });`,
     assert.doesNotMatch(METER_RECIPE, /\/meter(?:["'\s]|$)/);
     assert.equal(METER_DOCS_URL, "https://agent-control.net/docs#agent-meter");
   });
+
+  it("puts an Agent Meter door on /connect and leaves the homepage unchanged", () => {
+    const connect = read("src/routes/connect.tsx");
+    const home = read("src/routes/index.tsx");
+    assert.match(connect, /id=["']agent-meter["']/);
+    assert.match(connect, /METER_EYEBROW/);
+    assert.match(connect, /METER_QUESTION/);
+    assert.match(connect, /METER_CONNECT_BODY/);
+    assert.match(connect, /METER_DISCOVERY/);
+    assert.match(connect, /METER_PRICING_CURL/);
+    assert.match(connect, /METER_DOCS_HREF/);
+    assert.match(connect, /METER_LLMS_HREF/);
+    assert.match(connect, /METER_PRICING_PATH/);
+    assert.match(connect, /meter_pricing/);
+    assert.match(connect, /meter_scan/);
+    assert.match(connect, /meter_buy_pass/);
+    assert.doesNotMatch(connect, /\/api\/v1\/meter\/pass/);
+    assert.doesNotMatch(connect, /\bbroadcast/i);
+    assert.doesNotMatch(connect, /cheaper/i);
+    assert.doesNotMatch(home, /Agent Meter/);
+    assert.doesNotMatch(home, /METER_/);
+    assert.doesNotMatch(home, /First 5 free/);
+  });
 });
 
 describe("Agent Meter recipe on public discovery surfaces", () => {
@@ -142,6 +193,7 @@ describe("Agent Meter recipe on public discovery surfaces", () => {
     assert.match(docs, /METER_RECIPE/);
     assert.match(docs, /METER_PAY_SNIPPET/);
     assert.match(docs, /href=["']#agent-meter["']/);
+    assert.match(docs, /No inbox/);
     assert.match(llms, /buyMeterPass/);
     assert.match(llms, /src\/adapters\/meter-pay\.ts/);
     assert.match(llms, /X-Agent-Pass: <your-id>/);

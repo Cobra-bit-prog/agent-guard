@@ -8,13 +8,24 @@ export const METER_EYEBROW = "Agent Meter";
 /** Locked Meter headline. The look question lives in LOOK_QUESTION. */
 export const METER_HEADLINE = "Agents pay themselves";
 export const METER_LEDE = "First 5 free. Then $0.02 USDC.";
+export const METER_QUESTION = "Can I pay this address?";
 export const METER_SEPARATE =
-  "Separate from the Human App. Then scan and preflight. No email, no API key, no Approval Inbox.";
+  "Separate from the Human App. Then scan and preflight. No inbox. No email, no API key, no Approval Inbox.";
 export const METER_RISKS = "ok | new | warn | sink";
 export const METER_PACKS = "Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05.";
 export const METER_TICKET = "Take this ticket or we do not take your USDC.";
 export const METER_DOCS_HREF = "/docs#agent-meter";
 export const METER_DOCS_URL = "https://agent-control.net/docs#agent-meter";
+export const METER_LLMS_HREF = "/llms.txt";
+export const METER_LLMS_URL = "https://agent-control.net/llms.txt";
+export const METER_PRICING_PATH = "/api/v1/meter/pricing";
+export const METER_PRICING_URL = "https://agent-control.net/api/v1/meter/pricing";
+export const METER_PRICING_CURL = "curl -s https://agent-control.net/api/v1/meter/pricing";
+export const METER_DISCOVERY =
+  "llms.txt → GET /api/v1/meter/pricing → 402 → MCP meter_* tools.";
+export const METER_CONNECT_BODY =
+  "First 5 free. Then $0.02 USDC. Agents pay themselves. No inbox. No email. No API key.";
+export const METER_MCP_TOOLS = "meter_pricing, meter_scan, meter_buy_pass";
 
 /** Copy-paste agent pay — no Phantom. Same file as src/adapters/meter-pay.ts. */
 export const METER_PAY_SNIPPET = `import { buyMeterPass } from "./src/adapters/meter-pay.ts";
@@ -55,7 +66,7 @@ export const METER_STEPS = [
     n: "1",
     t: "Discover",
     d: "Read /llms.txt then GET pricing. Public. No key.",
-    code: "curl -s https://agent-control.net/api/v1/meter/pricing",
+    code: METER_PRICING_CURL,
   },
   {
     n: "2",
