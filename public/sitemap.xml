@@ -33,6 +33,18 @@
     <changefreq>weekly</changefreq>
   </url>
   <url>
+    <loc>https://agent-control.net/.well-known/x402</loc>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
+    <loc>https://agent-control.net/.well-known/agent-card.json</loc>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
+    <loc>https://agent-control.net/openapi-meter.json</loc>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
     <loc>https://agent-control.net/privacy</loc>
     <changefreq>monthly</changefreq>
   </url>

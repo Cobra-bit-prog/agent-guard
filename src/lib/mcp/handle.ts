@@ -32,7 +32,7 @@ export type McpCallTool = (
 const SERVER_INFO = { name: "Agent Control", version: "1.0.0" } as const;
 
 const INSTRUCTIONS =
-  "Human App: call check_transfer before a send (Bearer agent API key). Agent Meter: meter_pricing / meter_buy_pass / meter_watch / meter_scan / meter_preflight / meter_scan_batch / meter_stamp / meter_verify_stamp with no email — First 5 free. Then $0.02 USDC. look / looks_20 / addresses_100 / stamp_tx. Then meter_watch, then X-Agent-Pass. get_pricing is public. You keep the keys.";
+  "Can I pay this address? First 5 free. Then $0.02. No inbox. Agent Meter: meter_pricing / meter_buy_pass / meter_watch / meter_scan / meter_preflight / meter_scan_batch / meter_stamp / meter_verify_stamp with no email — First 5 free. Then $0.02 USDC. look / looks_20 / addresses_100 / stamp_tx. Then meter_watch, then X-Agent-Pass. Human App (separate): call check_transfer before a send (Bearer agent API key). get_pricing is public. You keep the keys.";
 
 function rpcError(id: JsonRpcId, code: number, message: string) {
   return { jsonrpc: "2.0" as const, id, error: { code, message } };

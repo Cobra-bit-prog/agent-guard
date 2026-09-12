@@ -99,6 +99,10 @@ function ConnectPage() {
             <a href={METER_PRICING_PATH} className="font-medium text-navy hover:text-coral">
               GET {METER_PRICING_PATH}
             </a>
+            {" · "}
+            <a href="/.well-known/x402" className="font-medium text-navy hover:text-coral">
+              /.well-known/x402
+            </a>
           </p>
           <CopyCode code={METER_PRICING_CURL} label="Copy" />
         </section>

@@ -49,7 +49,7 @@ Check API (machine-readable):
 1-day full console trial, no card, no KYC. Then Starter $29 / Pro $49 / Team $149. Humans pay at /billing/pay — $29 USDC on Solana, QR + Pay. No in-page Phantom. Agents use POST /api/v1/billing/checkout.
 
 ## Agent Meter (no human on the site)
-Separate from the Human App. Agents pay themselves. Can I pay this address? First 5 free. Then $0.02 USDC. Then scan and preflight. ok | new | warn | sink. Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. Take this ticket or we do not take your USDC. No inbox. No email, no trial, no API key, no Approval Inbox. Discovery: llms → pricing → 402 → MCP. Docs: https://agent-control.net/docs#agent-meter
+Separate from the Human App. Agents pay themselves. Can I pay this address? First 5 free. Then $0.02 USDC. Then scan and preflight. ok | new | warn | sink. Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. Take this ticket or we do not take your USDC. No inbox. No email, no trial, no API key, no Approval Inbox. Discovery: GET /.well-known/x402 then llms → pricing → 402 → MCP. OpenAPI: https://agent-control.net/openapi-meter.json Agent card: https://agent-control.net/.well-known/agent-card.json Docs: https://agent-control.net/docs#agent-meter
 
 One-file recipe (no SDK):
 
@@ -99,7 +99,7 @@ APIs (machine-readable):
 - POST /api/v1/storefront/attach — attach_human: same body; does not move the customer of record
 - POST /api/v1/billing/checkout — create_checkout: Bearer agent API key → pay request for that human (plan starter|pro|team; default asset usdc, chain solana)
 - GET /api/v1/storefront/status — subscription or trial status for the human principal (Bearer agent API key)
-- POST /api/v1/mcp — Streamable HTTP. Human App tools: get_pricing, start_trial, attach_human, create_checkout, get_status, check_transfer, get_approval, get_agent_status (Bearer key except get_pricing). Agent Meter tools: meter_pricing, meter_buy_pass, meter_watch, meter_scan, meter_preflight, meter_scan_batch, meter_stamp, meter_verify_stamp (no email; pass token for scan/preflight/batch/stamp).
+- POST /api/v1/mcp — Streamable HTTP. Can I pay this address? First 5 free. Then $0.02. No inbox. Agent Meter tools: meter_pricing, meter_buy_pass, meter_watch, meter_scan, meter_preflight, meter_scan_batch, meter_stamp, meter_verify_stamp (no email; pass token for scan/preflight/batch/stamp). Human App tools (separate): get_pricing, start_trial, attach_human, create_checkout, get_status, check_transfer, get_approval, get_agent_status (Bearer key except get_pricing).
 
 ## Not the same as
 - A package scanner — they scan code packages. Agent Control is agent payments control, not a package scanner. We are Approval Inbox and spend limits for agent wallets.

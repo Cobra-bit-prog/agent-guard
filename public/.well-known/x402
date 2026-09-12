@@ -1,0 +1,46 @@
+{
+  "x402Version": 2,
+  "kind": "resource-server",
+  "name": "Agent Meter",
+  "description": "Can I pay this address? First 5 free. Then $0.02. No inbox. Solana USDC look door. Human App is separate.",
+  "accepts": [
+    {
+      "scheme": "exact",
+      "network": "solana",
+      "maxAmountRequired": "20000",
+      "amount": "20000",
+      "payTo": "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR",
+      "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "extra": {
+        "sku": "look",
+        "price_usd": 0.02,
+        "symbol": "USDC",
+        "decimals": 6,
+        "resource": "https://agent-control.net/api/v1/meter/pass",
+        "question": "Can I pay this address?"
+      }
+    }
+  ],
+  "resources": [
+    {
+      "url": "https://agent-control.net/api/v1/meter/pass",
+      "method": "POST",
+      "description": "Look door. Empty body {} → HTTP 402 look $0.02 Solana USDC. First 5 free. Then $0.02 USDC."
+    },
+    {
+      "url": "https://agent-control.net/api/v1/meter/scan",
+      "method": "POST",
+      "description": "Can I pay this address? First 5 free. Then $0.02 USDC. Header X-Agent-Pass."
+    },
+    {
+      "url": "https://agent-control.net/api/v1/meter/pricing",
+      "method": "GET",
+      "description": "Public catalog. Default sku look $0.02."
+    }
+  ],
+  "docs": "https://agent-control.net/docs#agent-meter",
+  "contact": "support@agent-control.net",
+  "openapi": "https://agent-control.net/openapi-meter.json",
+  "mcp": "https://agent-control.net/api/v1/mcp",
+  "updated": "2026-09-12T00:00:00Z"
+}

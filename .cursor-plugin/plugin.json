@@ -2,7 +2,7 @@
   "name": "agent-control",
   "displayName": "Agent Control",
   "version": "1.0.0",
-  "description": "External audit for your agents. Connect your agent so it asks before every send. Hold vs block. You keep the keys.",
+  "description": "Can I pay this address? First 5 free. Then $0.02. No inbox. Agent Meter is public. Human App (separate): External audit for your agents. Connect your agent so it asks before every send. Hold vs block. You keep the keys.",
   "author": {
     "name": "Agent Control",
     "email": "support@agent-control.net"
