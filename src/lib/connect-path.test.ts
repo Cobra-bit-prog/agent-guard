@@ -120,6 +120,10 @@ describe("Connect your agent path", () => {
     assert.match(connect, /ConnectSteps/);
     assert.match(connect, /CONNECT_BUILDERS_HEADING/);
     assert.match(connect, /CONNECT_CHECK_CODE/);
+    assert.match(connect, /id=["']agent-meter["']/);
+    assert.match(connect, /METER_QUESTION/);
+    assert.match(connect, /METER_CONNECT_BODY/);
+    assert.match(connect, /METER_DOCS_HREF/);
     assert.doesNotMatch(connect, /About three minutes/);
     assert.doesNotMatch(connect, /Call the same check/);
     assert.doesNotMatch(connect, /Connect AgentKit \/ x402/);

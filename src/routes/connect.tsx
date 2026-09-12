@@ -16,6 +16,16 @@ import {
   CONNECT_STARTER_LINE,
   CONNECT_X402_CODE,
 } from "@/lib/connect-path";
+import {
+  METER_CONNECT_BODY,
+  METER_DISCOVERY,
+  METER_DOCS_HREF,
+  METER_EYEBROW,
+  METER_LLMS_HREF,
+  METER_PRICING_CURL,
+  METER_PRICING_PATH,
+  METER_QUESTION,
+} from "@/lib/meter-recipe";
 
 export const Route = createFileRoute("/connect")({
   component: ConnectPage,
@@ -60,6 +70,38 @@ function ConnectPage() {
         <p className="mt-2 text-meta font-medium leading-snug text-muted">
           1-day (24 hour) trial, then $29 USDC on Solana. No card. No KYC.
         </p>
+
+        <section
+          id="agent-meter"
+          className="mt-10 rounded-[20px] border border-border bg-surface p-6 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]"
+        >
+          <p className="text-meta font-medium uppercase tracking-[0.18em] text-coral">
+            {METER_EYEBROW}
+          </p>
+          <h2 className="mt-3 text-title font-semibold tracking-tight">{METER_QUESTION}</h2>
+          <p className="mt-3 max-w-[52ch] text-body text-muted">{METER_CONNECT_BODY}</p>
+          <p className="mt-3 max-w-[52ch] text-body text-muted">{METER_DISCOVERY}</p>
+          <p className="mt-3 text-body text-muted">
+            MCP:{" "}
+            <code className="font-mono text-fg">meter_pricing</code>,{" "}
+            <code className="font-mono text-fg">meter_scan</code>,{" "}
+            <code className="font-mono text-fg">meter_buy_pass</code>.
+          </p>
+          <p className="mt-3 text-body text-muted">
+            <a href={METER_DOCS_HREF} className="font-medium text-navy hover:text-coral">
+              Docs
+            </a>
+            {" · "}
+            <a href={METER_LLMS_HREF} className="font-medium text-navy hover:text-coral">
+              llms.txt
+            </a>
+            {" · "}
+            <a href={METER_PRICING_PATH} className="font-medium text-navy hover:text-coral">
+              GET {METER_PRICING_PATH}
+            </a>
+          </p>
+          <CopyCode code={METER_PRICING_CURL} label="Copy" />
+        </section>
 
         <h2 className="mt-14 text-title font-semibold tracking-tight">
           {CONNECT_HOW_HEADING}

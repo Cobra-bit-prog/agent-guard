@@ -258,6 +258,7 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
   assert.match(meterRecipe, /First 5 free\. Then \$0\.02 USDC\./);
   assert.match(meterRecipe, /Separate from the Human App/);
   assert.match(meterDocs, /X-Agent-Pass/);
+  assert.match(meterDocs, /No inbox/);
   assert.match(meterRecipe, /curl -s https:\/\/agent-control\.net\/api\/v1\/meter\/pricing/);
   assert.match(meterRecipe, /\/api\/v1\/meter\/pass/);
   assert.match(meterRecipe, /\/api\/v1\/meter\/watch/);
@@ -609,6 +610,18 @@ test("Connect your agent path is trial then Pay $29 on the same check", () => {
   assert.match(src, /External audit for your agents/);
   assert.match(copy, /Connect your agent/);
   assert.doesNotMatch(copy, /Connect AgentKit \/ x402/);
+  assert.match(connect, /id=["']agent-meter["']/);
+  assert.match(connect, /METER_QUESTION/);
+  assert.match(connect, /METER_CONNECT_BODY/);
+  assert.match(connect, /METER_PRICING_CURL/);
+  assert.match(connect, /METER_DOCS_HREF/);
+  assert.match(connect, /meter_pricing/);
+  assert.match(connect, /meter_scan/);
+  assert.match(connect, /meter_buy_pass/);
+  assert.doesNotMatch(connect, /\/api\/v1\/meter\/pass/);
+  assert.doesNotMatch(connect, /cheaper/i);
+  assert.doesNotMatch(home, /Agent Meter/);
+  assert.doesNotMatch(home, /METER_/);
   assert.doesNotMatch(connect, /About three minutes/);
   assert.doesNotMatch(connect, /Call the same check/);
   assert.doesNotMatch(copy, /poll_url/);
