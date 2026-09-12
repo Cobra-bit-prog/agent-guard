@@ -1,0 +1,57 @@
+{
+  "name": "Agent Control",
+  "description": "Can I pay this address? First 5 free. Then $0.02. No inbox. Agent Meter is public. Human App is separate.",
+  "version": "1.0.0",
+  "protocolVersion": "1.0",
+  "url": "https://agent-control.net/api/v1/mcp",
+  "provider": {
+    "organization": "Agent Control",
+    "url": "https://agent-control.net"
+  },
+  "documentationUrl": "https://agent-control.net/docs#agent-meter",
+  "capabilities": {
+    "streaming": true,
+    "pushNotifications": false
+  },
+  "defaultInputModes": [
+    "application/json",
+    "text/plain"
+  ],
+  "defaultOutputModes": [
+    "application/json"
+  ],
+  "supportedInterfaces": [
+    {
+      "url": "https://agent-control.net/api/v1/mcp",
+      "protocolBinding": "HTTP+JSON",
+      "protocolVersion": "2025-06-18"
+    }
+  ],
+  "skills": [
+    {
+      "id": "meter-look",
+      "name": "Can I pay this address?",
+      "description": "First 5 free. Then $0.02 USDC. Risk ok|new|warn|sink. No inbox. No email. No API key.",
+      "tags": [
+        "meter",
+        "x402",
+        "solana",
+        "usdc",
+        "look"
+      ],
+      "examples": [
+        "POST https://agent-control.net/api/v1/meter/pass {}",
+        "POST https://agent-control.net/api/v1/meter/scan"
+      ]
+    },
+    {
+      "id": "human-app",
+      "name": "Human App (separate)",
+      "description": "Spend limits and Approval Inbox. Humans pay $29. Agents use a Bearer API key. Not the Meter look door.",
+      "tags": [
+        "human-app",
+        "inbox"
+      ]
+    }
+  ]
+}

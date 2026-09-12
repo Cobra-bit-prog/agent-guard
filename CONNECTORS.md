@@ -1,10 +1,12 @@
 # Connect your agent
 
-External audit for your agents. Point Cursor or Grok at the live MCP so the agent asks before a send. You keep the keys.
+Can I pay this address? First 5 free. Then $0.02. No inbox. Agent Meter is public — no API key. Discovery: `GET /.well-known/x402`.
+
+Human App (separate): External audit for your agents. Point Cursor or Grok at the live MCP so the agent asks before a send. You keep the keys.
 
 **URL:** `https://agent-control.net/api/v1/mcp`  
-**Auth:** `Authorization: Bearer ${AGENT_CONTROL_API_KEY}`  
-**Env var:** `AGENT_CONTROL_API_KEY` — agent API key from the Agent Control console.
+**Auth (Human App):** `Authorization: Bearer ${AGENT_CONTROL_API_KEY}`  
+**Env var:** `AGENT_CONTROL_API_KEY` — agent API key from the Agent Control console. Meter tools do not need it.
 
 `get_pricing` is public. Spend checks, checkout, and status need the key. This is Streamable HTTP. Official registry publish (`net.agent-control/agent-control`) is a separate track.
 

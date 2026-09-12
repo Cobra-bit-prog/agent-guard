@@ -4,11 +4,13 @@
 #
 # Agent Control — two products. Do not collapse them.
 #
-# Human App: spend limits and Approval Inbox. Humans pay $29. Agents use a Bearer API key. They ask before they pay. You keep the keys. Connect: https://agent-control.net/docs#connect-your-agent
-# Agent Meter: Agents pay themselves. Can I pay this address? First 5 free. Then $0.02 USDC. ok | new | warn | sink. Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. No inbox. No email, no trial, no API key, no Approval Inbox.
+# Can I pay this address? First 5 free. Then $0.02. No inbox.
+# Agent Meter: Agents pay themselves. Can I pay this address? First 5 free. Then $0.02 USDC. ok | new | warn | sink. Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. No email, no trial, no API key, no Approval Inbox.
+# Human App (separate): spend limits and Approval Inbox. Humans pay $29. Agents use a Bearer API key. They ask before they pay. You keep the keys. Connect: https://agent-control.net/docs#connect-your-agent
 #
 # Brief (Layer 3): https://agent-control.net/llms.txt
 # Meter pricing (public): https://agent-control.net/api/v1/meter/pricing
+# x402 look door: https://agent-control.net/.well-known/x402
 # Meter recipe (curl, X-Agent-Pass): https://agent-control.net/docs#agent-meter
 
 MCP: https://agent-control.net/api/v1/mcp

@@ -154,7 +154,48 @@ function oauthDiscoveryPlugin(): Plugin {
         try {
           const rawUrl = req.url ?? "";
           const pathOnly = rawUrl.split("?", 1)[0] ?? "";
-          if (!pathOnly.startsWith("/.well-known/oauth-")) {
+          if (pathOnly.startsWith("/.well-known/oauth-")) {
+            const host = String(
+              req.headers["x-forwarded-host"] ?? req.headers.host ?? "localhost:8080",
+            );
+            const proto = String(
+              req.headers["x-forwarded-proto"] ??
+                ((req.socket as { encrypted?: boolean } | undefined)?.encrypted ? "https" : "http"),
+            );
+            const requestHeaders = new Headers();
+            for (const [key, value] of Object.entries(req.headers)) {
+              if (value === undefined) continue;
+              if (Array.isArray(value)) {
+                for (const v of value) requestHeaders.append(key, v);
+              } else {
+                requestHeaders.set(key, value);
+              }
+            }
+            const request = new Request(`${proto}://${host}${rawUrl}`, {
+              method: (req.method ?? "GET").toUpperCase(),
+              headers: requestHeaders,
+            });
+            const mod = (await server.ssrLoadModule("/src/lib/oauth/http.ts")) as {
+              handleOauthDiscovery: (req: Request) => Response | null;
+            };
+            const response = mod.handleOauthDiscovery(request);
+            if (!response) {
+              next();
+              return;
+            }
+            res.statusCode = response.status;
+            response.headers.forEach((value, key) => {
+              res.setHeader(key, value);
+            });
+            const body = Buffer.from(await response.arrayBuffer());
+            res.end(body);
+            return;
+          }
+          if (
+            pathOnly !== "/.well-known/x402" &&
+            pathOnly !== "/.well-known/agent-card.json" &&
+            pathOnly !== "/.well-known/agent.json"
+          ) {
             next();
             return;
           }
@@ -178,10 +219,10 @@ function oauthDiscoveryPlugin(): Plugin {
             method: (req.method ?? "GET").toUpperCase(),
             headers: requestHeaders,
           });
-          const mod = (await server.ssrLoadModule("/src/lib/oauth/http.ts")) as {
-            handleOauthDiscovery: (req: Request) => Response | null;
+          const mod = (await server.ssrLoadModule("/src/lib/meter/discovery.ts")) as {
+            handleMeterWellKnown: (req: Request) => Response | null;
           };
-          const response = mod.handleOauthDiscovery(request);
+          const response = mod.handleMeterWellKnown(request);
           if (!response) {
             next();
             return;
@@ -193,11 +234,11 @@ function oauthDiscoveryPlugin(): Plugin {
           const body = Buffer.from(await response.arrayBuffer());
           res.end(body);
         } catch (err) {
-          console.error("[app-builder] OAuth discovery handler failed:", err);
+          console.error("[app-builder] well-known discovery handler failed:", err);
           if (!res.headersSent) {
             res.statusCode = 500;
             res.setHeader("content-type", "text/plain; charset=utf-8");
-            res.end("oauth discovery failed");
+            res.end("discovery failed");
           }
         }
       });

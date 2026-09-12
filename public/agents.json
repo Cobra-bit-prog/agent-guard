@@ -5,13 +5,13 @@
   "site": {
     "name": "Agent Control",
     "url": "https://agent-control.net",
-    "description": "Two products. Human App: spend limits and Approval Inbox. Humans pay $29. Agents use a Bearer API key. They ask before they pay. You keep the keys. Agent Meter: Agents pay themselves. Can I pay this address? First 5 free. Then $0.02 USDC. ok | new | warn | sink. Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. No inbox. No email, no trial, no API key, no Approval Inbox. Brief: https://agent-control.net/llms.txt Meter pricing: https://agent-control.net/api/v1/meter/pricing Recipe: https://agent-control.net/docs#agent-meter"
+    "description": "Can I pay this address? First 5 free. Then $0.02. No inbox. Agent Meter: Agents pay themselves. Then $0.02 USDC. ok | new | warn | sink. Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. No email, no trial, no API key, no Approval Inbox. Human App (separate): spend limits and Approval Inbox. Humans pay $29. Agents use a Bearer API key. They ask before they pay. You keep the keys. Brief: https://agent-control.net/llms.txt Meter pricing: https://agent-control.net/api/v1/meter/pricing x402: https://agent-control.net/.well-known/x402 Recipe: https://agent-control.net/docs#agent-meter"
   },
   "mcp": [
     {
       "url": "https://agent-control.net/api/v1/mcp",
       "type": "streamable-http",
-      "description": "Streamable HTTP. Two products on one MCP. Human App tools (Bearer agent API key except get_pricing): get_pricing, start_trial, attach_human, create_checkout, get_status, check_transfer, get_approval, get_agent_status. Agent Meter tools (no email; pass token for scan and preflight): meter_pricing, meter_buy_pass, meter_watch, meter_scan, meter_preflight. Meter pricing: https://agent-control.net/api/v1/meter/pricing Recipe: https://agent-control.net/docs#agent-meter Brief: https://agent-control.net/llms.txt"
+      "description": "Can I pay this address? First 5 free. Then $0.02. No inbox. Streamable HTTP. Agent Meter tools (no email; pass token for scan and preflight): meter_pricing, meter_buy_pass, meter_watch, meter_scan, meter_preflight. Human App tools (separate; Bearer agent API key except get_pricing): get_pricing, start_trial, attach_human, create_checkout, get_status, check_transfer, get_approval, get_agent_status. Meter pricing: https://agent-control.net/api/v1/meter/pricing x402: https://agent-control.net/.well-known/x402 Recipe: https://agent-control.net/docs#agent-meter Brief: https://agent-control.net/llms.txt"
     }
   ]
 }

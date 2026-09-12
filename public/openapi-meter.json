@@ -1,0 +1,112 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Agent Meter",
+    "version": "1.0.0",
+    "description": "Can I pay this address? First 5 free. Then $0.02. No inbox. First 5 free. Then $0.02 USDC. Solana USDC to 49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR. Human App is separate."
+  },
+  "servers": [
+    {
+      "url": "https://agent-control.net"
+    }
+  ],
+  "paths": {
+    "/api/v1/meter/pricing": {
+      "get": {
+        "summary": "Public Meter catalog",
+        "description": "Can I pay this address? First 5 free. Then $0.02 USDC. Default sku look.",
+        "responses": {
+          "200": {
+            "description": "Catalog. default_sku is look. funds.pay_to is locked."
+          }
+        }
+      }
+    },
+    "/api/v1/meter/pass": {
+      "post": {
+        "summary": "Look door",
+        "description": "Empty body {} mints look $0.02. No release without payment. First 5 looks on an X-Agent-Pass id are free.",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sku": {
+                    "type": "string",
+                    "enum": [
+                      "look",
+                      "looks_20",
+                      "addresses_100",
+                      "stamp_tx"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Pass issued after proof or a prior payment watch."
+          },
+          "402": {
+            "description": "Pay look $0.02 Solana USDC to the locked payTo with the invoice reference."
+          }
+        }
+      }
+    },
+    "/api/v1/meter/scan": {
+      "post": {
+        "summary": "Can I pay this address?",
+        "description": "First 5 free. Then $0.02 USDC. Header X-Agent-Pass.",
+        "parameters": [
+          {
+            "name": "X-Agent-Pass",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "chain",
+                  "address"
+                ],
+                "properties": {
+                  "chain": {
+                    "type": "string",
+                    "enum": [
+                      "solana",
+                      "ethereum",
+                      "base"
+                    ]
+                  },
+                  "address": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "risk ok|new|warn|sink. Never hold."
+          },
+          "402": {
+            "description": "Look door after free looks are used."
+          }
+        }
+      }
+    }
+  }
+}

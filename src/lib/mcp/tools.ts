@@ -3,6 +3,130 @@ const writes = { readOnlyHint: false, destructiveHint: false } as const;
 
 export const MCP_TOOLS = [
   {
+    name: "meter_pricing",
+    title: "Agent Meter pricing",
+    description:
+      "Can I pay this address? First 5 free. Then $0.02. No inbox. Public catalog: look, looks_20, addresses_100, stamp_tx. No email. No API key. Human App $29 plans are separate.",
+    annotations: readOnly,
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "meter_buy_pass",
+    title: "Buy an Agent Meter pass",
+    description:
+      "Can I pay this address? First 5 free. Then $0.02. No inbox. Returns HTTP 402 invoice to pay look $0.02 USDC on Solana (or looks_20 / addresses_100 / stamp_tx), or issues a pass when proof is accepted. No human account.",
+    annotations: writes,
+    inputSchema: {
+      type: "object",
+      properties: {
+        sku: {
+          type: "string",
+          description: "look (default $0.02), looks_20 ($0.20), addresses_100 ($0.15), stamp_tx ($0.05). pass_1h stays in catalog only.",
+        },
+        proof: { type: "object", description: "Payment proof. { type: dev } only when METER_DEV_GRANT=1" },
+        pass_token: { type: "string" },
+      },
+    },
+  },
+  {
+    name: "meter_watch",
+    title: "Watch a Meter invoice",
+    description:
+      "Can I pay this address? First 5 free. Then $0.02. No inbox. After paying the 402 invoice, send invoice_id until the pass token comes back. No human account.",
+    annotations: writes,
+    inputSchema: {
+      type: "object",
+      properties: {
+        invoice_id: { type: "string" },
+        sku: { type: "string" },
+      },
+    },
+  },
+  {
+    name: "meter_scan",
+    title: "Scan a destination",
+    description:
+      "Can I pay this address? First 5 free. Then $0.02. No inbox. One look = one address. Send X-Agent-Pass with any string; first 5 looks on that id are free; then 402 look $0.02. Risk ok|new|warn|sink. Never hold.",
+    annotations: readOnly,
+    inputSchema: {
+      type: "object",
+      properties: {
+        chain: { type: "string", description: "solana, ethereum, or base" },
+        address: { type: "string" },
+        pass_token: { type: "string" },
+      },
+      required: ["chain", "address"],
+    },
+  },
+  {
+    name: "meter_preflight",
+    title: "Preflight against a self cap",
+    description:
+      "Can I pay this address? First 5 free. Then $0.02. No inbox. One look = one address. Send X-Agent-Pass with any string; first 5 looks on that id are free; then 402 look $0.02. Body: chain, wallet, to, value_usd, cap_usd. allow or stop vs cap_usd. Never hold.",
+    annotations: writes,
+    inputSchema: {
+      type: "object",
+      properties: {
+        chain: { type: "string" },
+        wallet: { type: "string" },
+        to: { type: "string" },
+        value_usd: { type: "number" },
+        cap_usd: { type: "number" },
+        pass_token: { type: "string" },
+      },
+      required: ["chain", "wallet", "to", "value_usd", "cap_usd"],
+    },
+  },
+  {
+    name: "meter_scan_batch",
+    title: "Scan a batch of destinations",
+    description:
+      "Can I pay this address? First 5 free. Then $0.02. No inbox. Risk scores for up to 100 addresses. Sku addresses_100 ($0.15) covers scan_batch. Never hold. ok|new|warn|sink.",
+    annotations: readOnly,
+    inputSchema: {
+      type: "object",
+      properties: {
+        chain: { type: "string", description: "solana, ethereum, or base" },
+        addresses: { type: "array", items: { type: "string" }, description: "Up to 100 addresses" },
+        pass_token: { type: "string" },
+        sku: { type: "string" },
+      },
+      required: ["chain", "addresses"],
+    },
+  },
+  {
+    name: "meter_stamp",
+    title: "Stamp an allow or stop receipt",
+    description:
+      "Can I pay this address? First 5 free. Then $0.02. No inbox. stamp_tx $0.05. Take this ticket or we do not take your USDC. Signed allow|stop receipt. HMAC-SHA256.",
+    annotations: writes,
+    inputSchema: {
+      type: "object",
+      properties: {
+        decision: { type: "string", description: "allow or stop. Optional if value_usd and cap_usd are set." },
+        chain: { type: "string" },
+        wallet: { type: "string" },
+        to: { type: "string" },
+        value_usd: { type: "number" },
+        cap_usd: { type: "number" },
+        pass_token: { type: "string" },
+      },
+    },
+  },
+  {
+    name: "meter_verify_stamp",
+    title: "Verify a Meter stamp",
+    description: "Can I pay this address? First 5 free. Then $0.02. No inbox. Public. GET a signed allow|stop receipt by stamp_id. No email. No API key.",
+    annotations: readOnly,
+    inputSchema: {
+      type: "object",
+      properties: {
+        stamp_id: { type: "string" },
+        id: { type: "string" },
+      },
+    },
+  },
+  {
     name: "check_transfer",
     title: "Check a transfer",
     description:
@@ -101,130 +225,6 @@ export const MCP_TOOLS = [
     annotations: readOnly,
     inputSchema: { type: "object", properties: {} },
   },
-  {
-    name: "meter_pricing",
-    title: "Agent Meter pricing",
-    description:
-      "Public. Can I pay this address? First 5 free. Then $0.02 USDC. SKUs: look, looks_20, addresses_100, stamp_tx. No email. No API key. Separate from the Human App $29 plans.",
-    annotations: readOnly,
-    inputSchema: { type: "object", properties: {} },
-  },
-  {
-    name: "meter_buy_pass",
-    title: "Buy an Agent Meter pass",
-    description:
-      "Public. Returns HTTP 402 invoice to pay look $0.02 USDC on Solana (or looks_20 / addresses_100 / stamp_tx), or issues a pass when proof is accepted. No human account.",
-    annotations: writes,
-    inputSchema: {
-      type: "object",
-      properties: {
-        sku: {
-          type: "string",
-          description: "look (default $0.02), looks_20 ($0.20), addresses_100 ($0.15), stamp_tx ($0.05). pass_1h stays in catalog only.",
-        },
-        proof: { type: "object", description: "Payment proof. { type: dev } only when METER_DEV_GRANT=1" },
-        pass_token: { type: "string" },
-      },
-    },
-  },
-  {
-    name: "meter_watch",
-    title: "Watch a Meter invoice",
-    description:
-      "Public. After paying the 402 invoice, send invoice_id until the pass token comes back. No human account.",
-    annotations: writes,
-    inputSchema: {
-      type: "object",
-      properties: {
-        invoice_id: { type: "string" },
-        sku: { type: "string" },
-      },
-    },
-  },
-  {
-    name: "meter_scan",
-    title: "Scan a destination",
-    description:
-      "Can I pay this address? One look = one address. Send X-Agent-Pass with any string; first 5 looks on that id are free; then 402 look $0.02. Risk ok|new|warn|sink. Never hold. No Inbox.",
-    annotations: readOnly,
-    inputSchema: {
-      type: "object",
-      properties: {
-        chain: { type: "string", description: "solana, ethereum, or base" },
-        address: { type: "string" },
-        pass_token: { type: "string" },
-      },
-      required: ["chain", "address"],
-    },
-  },
-  {
-    name: "meter_preflight",
-    title: "Preflight against a self cap",
-    description:
-      "One look = one address. Send X-Agent-Pass with any string; first 5 looks on that id are free; then 402 look $0.02. Body: chain, wallet, to, value_usd, cap_usd. allow or stop vs cap_usd. Never hold. No Inbox.",
-    annotations: writes,
-    inputSchema: {
-      type: "object",
-      properties: {
-        chain: { type: "string" },
-        wallet: { type: "string" },
-        to: { type: "string" },
-        value_usd: { type: "number" },
-        cap_usd: { type: "number" },
-        pass_token: { type: "string" },
-      },
-      required: ["chain", "wallet", "to", "value_usd", "cap_usd"],
-    },
-  },
-  {
-    name: "meter_scan_batch",
-    title: "Scan a batch of destinations",
-    description:
-      "Risk scores for up to 100 addresses. Sku addresses_100 ($0.15) covers scan_batch. Never hold. ok|new|warn|sink.",
-    annotations: readOnly,
-    inputSchema: {
-      type: "object",
-      properties: {
-        chain: { type: "string", description: "solana, ethereum, or base" },
-        addresses: { type: "array", items: { type: "string" }, description: "Up to 100 addresses" },
-        pass_token: { type: "string" },
-        sku: { type: "string" },
-      },
-      required: ["chain", "addresses"],
-    },
-  },
-  {
-    name: "meter_stamp",
-    title: "Stamp an allow or stop receipt",
-    description:
-      "stamp_tx $0.05. Take this ticket or we do not take your USDC. Signed allow|stop receipt. HMAC-SHA256.",
-    annotations: writes,
-    inputSchema: {
-      type: "object",
-      properties: {
-        decision: { type: "string", description: "allow or stop. Optional if value_usd and cap_usd are set." },
-        chain: { type: "string" },
-        wallet: { type: "string" },
-        to: { type: "string" },
-        value_usd: { type: "number" },
-        cap_usd: { type: "number" },
-        pass_token: { type: "string" },
-      },
-    },
-  },
-  {
-    name: "meter_verify_stamp",
-    title: "Verify a Meter stamp",
-    description: "Public. GET a signed allow|stop receipt by stamp_id. No email. No API key.",
-    annotations: readOnly,
-    inputSchema: {
-      type: "object",
-      properties: {
-        stamp_id: { type: "string" },
-        id: { type: "string" },
-      },
-    },
-  },
 ] as const;
 
 export const MCP_STOREFRONT_TOOLS = [
@@ -238,9 +238,10 @@ export const MCP_STOREFRONT_TOOLS = [
 export function mcpDiscovery() {
   return {
     name: "Agent Control",
+    description: "Can I pay this address? First 5 free. Then $0.02. No inbox. Agent Meter is public. Human App is separate.",
     protocol: "mcp",
     tools: MCP_TOOLS,
-    auth: "Bearer agent API key or Claude Connector OAuth (required for check, approval, checkout, and status; get_pricing and meter_* are public; meter scan/preflight/batch/stamp need X-Agent-Pass)",
+    auth: "Agent Meter is public (X-Agent-Pass after 5 free looks). Human App: Bearer agent API key or Claude Connector OAuth (required for check, approval, checkout, and status; get_pricing is public)",
     storefront: MCP_STOREFRONT_TOOLS,
     meter: [
       "meter_pricing",
