@@ -24,6 +24,7 @@ import {
   skuCovers,
   type MeterSku,
 } from "./pricing.ts";
+import { invalidAddressResponse, validateMeterAddress } from "./address.ts";
 import { evaluateScan, type MeterChain } from "./scan.ts";
 import { evaluatePreflightSelf, missingPreflightFields, PREFLIGHT_REQUIRED } from "./preflight.ts";
 import {
@@ -442,6 +443,9 @@ async function runScan(request: Request, body: Record<string, unknown>, store: M
   const address = String(body.address ?? "").trim();
   if (!chain || !address) return json({ error: "Provide chain and address." }, 400);
 
+  const destination = validateMeterAddress(chain, address);
+  if (!destination.ok) return json(invalidAddressResponse(chain, destination.reason), 400);
+
   const gate = await requireLookOrPack(request, body, store, source, "scan");
   if (gate.response) return gate.response;
 
@@ -495,6 +499,9 @@ async function runPreflight(request: Request, body: Record<string, unknown>, sto
     );
   }
 
+  const destination = validateMeterAddress(chain, to);
+  if (!destination.ok) return json(invalidAddressResponse(chain, destination.reason), 400);
+
   const gate = await requireLookOrPack(request, body, store, source, "preflight");
   if (gate.response) return gate.response;
 
@@ -541,6 +548,13 @@ async function runScanBatch(request: Request, body: Record<string, unknown>, sto
   const parsed = parseAddressList(body);
   if (!Array.isArray(parsed)) {
     return json(parsed.max ? { error: parsed.error, max: parsed.max } : { error: parsed.error }, 400);
+  }
+
+  for (const [index, address] of parsed.entries()) {
+    const destination = validateMeterAddress(chain, address);
+    if (!destination.ok) {
+      return json({ ...invalidAddressResponse(chain, destination.reason), index }, 400);
+    }
   }
 
   const gate = await requireLookOrPack(request, body, store, source, "scan_batch");

@@ -222,6 +222,124 @@ describe("meter http", () => {
     assert.match(body.reason, /no_history/);
   });
 
+  it("rejects a malformed solana destination with 400 invalid_address and no look consumed", async () => {
+    const store = createMeterStore();
+    const res = await handleMeterRequest(
+      post("/api/v1/meter/scan", { chain: "solana", address: "not-an-address" }),
+      "/api/v1/meter/scan",
+      store,
+    );
+    assert.equal(res.status, 400);
+    const body = (await res.json()) as { error: string; code: string; chain: string; reason: string };
+    assert.equal(body.error, "invalid_address");
+    assert.equal(body.code, "invalid_address");
+    assert.equal(body.chain, "solana");
+    assert.equal(body.reason, "not_base58");
+
+    for (let i = 1; i <= 5; i += 1) {
+      const free = await handleMeterRequest(
+        post("/api/v1/meter/scan", { chain: "solana", address: SCAN_SINK_FIXTURE }),
+        "/api/v1/meter/scan",
+        store,
+      );
+      assert.equal(free.status, 200, `free look ${i} after rejection`);
+      const freeBody = (await free.json()) as { free_looks_remaining: number };
+      assert.equal(freeBody.free_looks_remaining, 5 - i);
+    }
+    const sixth = await handleMeterRequest(
+      post("/api/v1/meter/scan", { chain: "solana", address: SCAN_SINK_FIXTURE }),
+      "/api/v1/meter/scan",
+      store,
+    );
+    assert.equal(sixth.status, 402);
+  });
+
+  it("rejects a malformed ethereum destination with 400 invalid_address and no look consumed", async () => {
+    const store = createMeterStore();
+    const res = await handleMeterRequest(
+      post("/api/v1/meter/scan", { chain: "ethereum", address: "0xdeadbeef" }),
+      "/api/v1/meter/scan",
+      store,
+    );
+    assert.equal(res.status, 400);
+    const body = (await res.json()) as { error: string; reason: string };
+    assert.equal(body.error, "invalid_address");
+    assert.equal(body.reason, "wrong_length");
+
+    for (let i = 1; i <= 5; i += 1) {
+      const free = await handleMeterRequest(
+        post("/api/v1/meter/scan", { chain: "ethereum", address: "0x1111111111111111111111111111111111111111" }),
+        "/api/v1/meter/scan",
+        store,
+      );
+      assert.equal(free.status, 200, `free look ${i} after rejection`);
+    }
+  });
+
+  it("rejects a mixed-case EVM destination with a broken EIP-55 checksum", async () => {
+    const store = createMeterStore();
+    const res = await handleMeterRequest(
+      post("/api/v1/meter/scan", { chain: "base", address: "0x5aaeb6053F3E94C9b9A09f33669435E7Ef1BeAed" }),
+      "/api/v1/meter/scan",
+      store,
+    );
+    assert.equal(res.status, 400);
+    const body = (await res.json()) as { error: string; reason: string };
+    assert.equal(body.error, "invalid_address");
+    assert.equal(body.reason, "bad_checksum");
+  });
+
+  it("rejects a scan-batch containing one malformed address without consuming the batch", async () => {
+    process.env.NODE_ENV = "test";
+    const store = createMeterStore();
+    const issued = await handleMeterRequest(
+      post("/api/v1/meter/pass", { sku: "addresses_100", proof: { type: "dev" } }),
+      "/api/v1/meter/pass",
+      store,
+    );
+    const pass = (await issued.json()) as { token: string };
+    const res = await handleMeterRequest(
+      post(
+        "/api/v1/meter/scan-batch",
+        { chain: "solana", addresses: [SCAN_SINK_FIXTURE, "0xdeadbeef"] },
+        { "X-Agent-Pass": pass.token },
+      ),
+      "/api/v1/meter/scan-batch",
+      store,
+    );
+    assert.equal(res.status, 400);
+    const body = (await res.json()) as { error: string; index: number };
+    assert.equal(body.error, "invalid_address");
+    assert.equal(body.index, 1);
+
+    const still = await handleMeterRequest(
+      post("/api/v1/meter/scan-batch", { chain: "solana", addresses: [SCAN_SINK_FIXTURE] }, { "X-Agent-Pass": pass.token }),
+      "/api/v1/meter/scan-batch",
+      store,
+    );
+    assert.equal(still.status, 200);
+    const stillBody = (await still.json()) as { pass_remaining_calls: number };
+    assert.equal(stillBody.pass_remaining_calls, 0);
+  });
+
+  it("rejects a preflight to a malformed destination with 400 invalid_address", async () => {
+    const store = createMeterStore();
+    const res = await handleMeterRequest(
+      post("/api/v1/meter/preflight", {
+        chain: "solana",
+        wallet: "W",
+        to: "not-an-address",
+        value_usd: 10,
+        cap_usd: 100,
+      }),
+      "/api/v1/meter/preflight",
+      store,
+    );
+    assert.equal(res.status, 400);
+    const body = (await res.json()) as { error: string };
+    assert.equal(body.error, "invalid_address");
+  });
+
   it("preflight 30 over cap 20 stops", async () => {
     process.env.NODE_ENV = "test";
     const store = createMeterStore();
@@ -234,7 +352,7 @@ describe("meter http", () => {
     const res = await handleMeterRequest(
       post(
         "/api/v1/meter/preflight",
-        { chain: "solana", wallet: "Agent111", to: "Shop111", value_usd: 30, cap_usd: 20 },
+        { chain: "solana", wallet: "Agent111", to: "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR", value_usd: 30, cap_usd: 20 },
         { "X-Agent-Pass": pass.token },
       ),
       "/api/v1/meter/preflight",
@@ -257,7 +375,7 @@ describe("meter http", () => {
     const res = await handleMeterRequest(
       post(
         "/api/v1/meter/preflight",
-        { chain: "base", wallet: "Agent222", to: "Shop222", value_usd: 5, cap_usd: 20 },
+        { chain: "base", wallet: "Agent222", to: "0x000000000000000000000000000000000000dead", value_usd: 5, cap_usd: 20 },
         { "X-Agent-Pass": pass.token },
       ),
       "/api/v1/meter/preflight",
@@ -280,7 +398,7 @@ describe("meter http", () => {
     const first = await handleMeterRequest(
       post(
         "/api/v1/meter/preflight",
-        { chain: "solana", wallet: "Agent333", to: "ShopA", value_usd: 12, cap_usd: 20 },
+        { chain: "solana", wallet: "Agent333", to: "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR", value_usd: 12, cap_usd: 20 },
         { "X-Agent-Pass": pass.token },
       ),
       "/api/v1/meter/preflight",
@@ -290,7 +408,7 @@ describe("meter http", () => {
     const second = await handleMeterRequest(
       post(
         "/api/v1/meter/preflight",
-        { chain: "solana", wallet: "Agent333", to: "ShopB", value_usd: 12, cap_usd: 20 },
+        { chain: "solana", wallet: "Agent333", to: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", value_usd: 12, cap_usd: 20 },
         { "X-Agent-Pass": pass.token },
       ),
       "/api/v1/meter/preflight",
@@ -439,7 +557,7 @@ describe("extra meter skus", () => {
     const batch = await handleMeterRequest(
       post(
         "/api/v1/meter/scan-batch",
-        { chain: "solana", addresses: [SCAN_SINK_FIXTURE, "UnknownWallet111111111111111111111111111"] },
+        { chain: "solana", addresses: [SCAN_SINK_FIXTURE, "11111111111111111111111111111111"] },
         { "X-Agent-Pass": pass.token },
       ),
       "/api/v1/meter/scan-batch",
@@ -639,7 +757,7 @@ describe("invoice origin", { concurrency: false }, () => {
         post("/api/v1/meter/preflight", {
           chain: "solana",
           wallet: "W",
-          to: "T",
+          to: "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR",
           value_usd: 10,
           cap_usd: 100,
         }),
@@ -1034,7 +1152,7 @@ describe("paying agents A–H", () => {
     const pass = (await issued.json()) as { token: string; sku: string; included_calls: number };
     assert.equal(pass.sku, "addresses_100");
     assert.equal(pass.included_calls, 1);
-    const addresses = Array.from({ length: 100 }, (_, i) => `BatchWallet${String(i).padStart(3, "0")}`);
+    const addresses = Array.from({ length: 100 }, () => "11111111111111111111111111111111");
     const batch = await handleMeterRequest(
       post("/api/v1/meter/scan-batch", { chain: "solana", addresses }, { "X-Agent-Pass": pass.token }),
       "/api/v1/meter/scan-batch",
@@ -1097,7 +1215,7 @@ describe("paying agents A–H", () => {
       post("/api/v1/meter/preflight", {
         chain: "solana",
         wallet: "AgentG",
-        to: "ShopG",
+        to: "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR",
         value_usd: 5,
         cap_usd: 20,
       }),
