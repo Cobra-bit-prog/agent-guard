@@ -13,6 +13,26 @@
   ],
   "redirects": [
     {
+      "source": "/docs/connect",
+      "destination": "/connect",
+      "permanent": true
+    },
+    {
+      "source": "/pay",
+      "destination": "/billing/pay",
+      "permanent": true
+    },
+    {
+      "source": "/meter",
+      "destination": "/connect#agent-meter",
+      "permanent": false
+    },
+    {
+      "source": "/.well-known/llms.txt",
+      "destination": "/llms.txt",
+      "permanent": true
+    },
+    {
       "source": "/",
       "has": [
         {

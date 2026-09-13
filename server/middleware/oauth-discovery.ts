@@ -1,7 +1,9 @@
 /**
  * Nitro (deployed) well-known discovery for Claude Connectors OAuth
- * and Agent Meter x402 / agent-card. Vite dev uses the plugin in vite.config.ts.
+ * and Agent Meter x402 / agent-card, plus dead discovery URL redirects.
+ * Vite dev uses the plugin in vite.config.ts.
  */
+import { handleDiscoveryRedirect } from "../../src/lib/discovery-redirects.ts";
 import { handleMeterWellKnown } from "../../src/lib/meter/discovery.ts";
 import { handleOauthDiscovery } from "../../src/lib/oauth/http.ts";
 
@@ -16,7 +18,10 @@ export default async function oauthDiscoveryMiddleware(
 ): Promise<unknown> {
   const method = (event.req.method ?? "GET").toUpperCase();
   const request = new Request(event.url, { method, headers: event.req.headers });
-  const handled = handleOauthDiscovery(request) ?? handleMeterWellKnown(request);
+  const handled =
+    handleDiscoveryRedirect(request) ??
+    handleOauthDiscovery(request) ??
+    handleMeterWellKnown(request);
   if (handled) return handled;
   return next();
 }
