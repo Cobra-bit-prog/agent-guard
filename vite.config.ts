@@ -154,48 +154,17 @@ function oauthDiscoveryPlugin(): Plugin {
         try {
           const rawUrl = req.url ?? "";
           const pathOnly = rawUrl.split("?", 1)[0] ?? "";
-          if (pathOnly.startsWith("/.well-known/oauth-")) {
-            const host = String(
-              req.headers["x-forwarded-host"] ?? req.headers.host ?? "localhost:8080",
-            );
-            const proto = String(
-              req.headers["x-forwarded-proto"] ??
-                ((req.socket as { encrypted?: boolean } | undefined)?.encrypted ? "https" : "http"),
-            );
-            const requestHeaders = new Headers();
-            for (const [key, value] of Object.entries(req.headers)) {
-              if (value === undefined) continue;
-              if (Array.isArray(value)) {
-                for (const v of value) requestHeaders.append(key, v);
-              } else {
-                requestHeaders.set(key, value);
-              }
-            }
-            const request = new Request(`${proto}://${host}${rawUrl}`, {
-              method: (req.method ?? "GET").toUpperCase(),
-              headers: requestHeaders,
-            });
-            const mod = (await server.ssrLoadModule("/src/lib/oauth/http.ts")) as {
-              handleOauthDiscovery: (req: Request) => Response | null;
-            };
-            const response = mod.handleOauthDiscovery(request);
-            if (!response) {
-              next();
-              return;
-            }
-            res.statusCode = response.status;
-            response.headers.forEach((value, key) => {
-              res.setHeader(key, value);
-            });
-            const body = Buffer.from(await response.arrayBuffer());
-            res.end(body);
-            return;
-          }
-          if (
-            pathOnly !== "/.well-known/x402" &&
-            pathOnly !== "/.well-known/agent-card.json" &&
-            pathOnly !== "/.well-known/agent.json"
-          ) {
+          const isDiscoveryRedirect =
+            pathOnly === "/docs/connect" ||
+            pathOnly === "/pay" ||
+            pathOnly === "/meter" ||
+            pathOnly === "/.well-known/llms.txt";
+          const isOauthDiscovery = pathOnly.startsWith("/.well-known/oauth-");
+          const isMeterDiscovery =
+            pathOnly === "/.well-known/x402" ||
+            pathOnly === "/.well-known/agent-card.json" ||
+            pathOnly === "/.well-known/agent.json";
+          if (!isDiscoveryRedirect && !isOauthDiscovery && !isMeterDiscovery) {
             next();
             return;
           }
@@ -219,6 +188,42 @@ function oauthDiscoveryPlugin(): Plugin {
             method: (req.method ?? "GET").toUpperCase(),
             headers: requestHeaders,
           });
+
+          if (isDiscoveryRedirect) {
+            const mod = (await server.ssrLoadModule("/src/lib/discovery-redirects.ts")) as {
+              handleDiscoveryRedirect: (req: Request) => Response | null;
+            };
+            const response = mod.handleDiscoveryRedirect(request);
+            if (!response) {
+              next();
+              return;
+            }
+            res.statusCode = response.status;
+            response.headers.forEach((value, key) => {
+              res.setHeader(key, value);
+            });
+            const body = Buffer.from(await response.arrayBuffer());
+            res.end(body);
+            return;
+          }
+
+          if (isOauthDiscovery) {
+            const mod = (await server.ssrLoadModule("/src/lib/oauth/http.ts")) as {
+              handleOauthDiscovery: (req: Request) => Response | null;
+            };
+            const response = mod.handleOauthDiscovery(request);
+            if (!response) {
+              next();
+              return;
+            }
+            res.statusCode = response.status;
+            response.headers.forEach((value, key) => {
+              res.setHeader(key, value);
+            });
+            const body = Buffer.from(await response.arrayBuffer());
+            res.end(body);
+            return;
+          }
           const mod = (await server.ssrLoadModule("/src/lib/meter/discovery.ts")) as {
             handleMeterWellKnown: (req: Request) => Response | null;
           };
