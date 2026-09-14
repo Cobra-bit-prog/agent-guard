@@ -1,5 +1,6 @@
-/** Fixture + small static sink list. Scan is information only — never blocks a send. */
-export const SCAN_SINK_FIXTURE = "MeterSink111111111111111111111111111111111";
+/** Fixture + small static sink list. Scan is information only — never blocks a send.
+ * Fixture address is a deterministic off-curve 32-byte Base58 key for regression tests. */
+export const SCAN_SINK_FIXTURE = "5mWoJT7n2fBpwNMLDgbE5ri8DWW3vukFzjs3BLmF1oqn";
 
 const SINKS = new Set(
   [
