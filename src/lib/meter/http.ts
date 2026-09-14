@@ -117,6 +117,7 @@ export async function handleMeterRequest(
 
   // Health / uptime: GET pricing (no invoice). Do not POST /pass from probes —
   // that mints unpaid 402s. If a probe must POST, send {"source":"smoke"} or X-Meter-Smoke: 1.
+  // Directory/liveness probe UAs (nohumans.directory-probe) are auto-tagged smoke.
   if (request.method === "GET" && (suffix === "pricing" || suffix === "")) {
     return json(meterPricing());
   }

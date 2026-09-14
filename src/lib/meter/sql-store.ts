@@ -5,6 +5,7 @@ import {
   blankInvoiceOrigin,
   isMeterInvoiceSource,
   METER_INVOICE_LIST_LIMIT,
+  METER_SMOKE_OR_PROBE_SQL,
 } from "./origin.ts";
 import { utcDayKey } from "./preflight.ts";
 import { METER_ANON_IDENTITY, METER_FREE_LOOKS, METER_LOOK, METER_LOOK_SKU } from "./pricing.ts";
@@ -532,22 +533,22 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
          count(*)::int as invoices_created,
          count(*) filter (where status = 'paid')::int as invoices_paid,
          count(*) filter (
-           where status in ('pending', 'underpaid') and coalesce(source, '') <> 'smoke'
+           where status in ('pending', 'underpaid') and not ${METER_SMOKE_OR_PROBE_SQL}
          )::int as invoices_pending,
          count(*) filter (
            where status in ('pending', 'underpaid')
              and expires_at > now()
-             and coalesce(source, '') <> 'smoke'
+             and not ${METER_SMOKE_OR_PROBE_SQL}
          )::int as invoices_pending_fresh,
          count(*) filter (
-           where coalesce(source, '') <> 'smoke'
+           where not ${METER_SMOKE_OR_PROBE_SQL}
              and (
                status = 'expired'
                or (status in ('pending', 'underpaid') and expires_at <= now())
              )
          )::int as invoices_pending_stale,
          count(*) filter (
-           where source = 'smoke'
+           where ${METER_SMOKE_OR_PROBE_SQL}
              and (
                status = 'expired'
                or status in ('pending', 'underpaid')
@@ -555,22 +556,22 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
          )::int as invoices_pending_smoke,
          coalesce(sum(paid_amount_usd) filter (where status = 'paid'), 0) as usdc_received,
          coalesce(sum(amount_usd) filter (
-           where status in ('pending', 'underpaid') and coalesce(source, '') <> 'smoke'
+           where status in ('pending', 'underpaid') and not ${METER_SMOKE_OR_PROBE_SQL}
          ), 0) as usdc_pending,
          coalesce(sum(amount_usd) filter (
            where status in ('pending', 'underpaid')
              and expires_at > now()
-             and coalesce(source, '') <> 'smoke'
+             and not ${METER_SMOKE_OR_PROBE_SQL}
          ), 0) as usdc_pending_fresh,
          coalesce(sum(amount_usd) filter (
-           where coalesce(source, '') <> 'smoke'
+           where not ${METER_SMOKE_OR_PROBE_SQL}
              and (
                status = 'expired'
                or (status in ('pending', 'underpaid') and expires_at <= now())
              )
          ), 0) as usdc_pending_stale,
          coalesce(sum(amount_usd) filter (
-           where source = 'smoke'
+           where ${METER_SMOKE_OR_PROBE_SQL}
              and (
                status = 'expired'
                or status in ('pending', 'underpaid')
