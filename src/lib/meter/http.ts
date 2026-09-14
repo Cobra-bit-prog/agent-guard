@@ -325,6 +325,9 @@ async function issueOrInvoice(
         token: watched.token,
         invoice_id: watched.invoice.invoice_id,
         signature: watched.invoice.signature,
+        status: "paid",
+        header: "X-Agent-Pass",
+        next: "Retry scan with X-Agent-Pass set to this token (MCP: meter_scan pass_token). We never take keys.",
       });
     }
     return json(

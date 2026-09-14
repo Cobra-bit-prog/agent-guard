@@ -201,6 +201,10 @@ export function meterPricing() {
   };
 }
 
+/** Public watch door. Amounts always come from the live catalog row, not a frozen price. */
+export const METER_WATCH_PATH = "/api/v1/meter/watch";
+export const METER_WATCH_URL = `https://agent-control.net${METER_WATCH_PATH}`;
+
 export function meter402Body(invoice: {
   invoice_id: string;
   pay_to: string;
@@ -214,6 +218,7 @@ export function meter402Body(invoice: {
   const sku = (invoice.sku as MeterSkuId) || METER_DEFAULT_SKU;
   const catalog = METER_SKUS[sku] ?? METER_LOOK;
   const price = invoice.amount_usd || catalog.price_usd;
+  const amountBase = invoice.amount_base_units || catalog.amount_base_units;
   return {
     error: "payment_required",
     http: 402,
@@ -223,13 +228,15 @@ export function meter402Body(invoice: {
     chain: invoice.chain,
     pay_to: invoice.pay_to,
     amount_usd: price,
-    amount_base_units: invoice.amount_base_units,
+    amount_base_units: amountBase,
     invoice_id: invoice.invoice_id,
     reference: invoice.reference,
     question: LOOK_QUESTION,
     note: catalog.id === "stamp_tx" ? STAMP_TICKET_COPY : METER_FREE_THEN_LOOK,
-    pay_url: `solana:${invoice.pay_to}?amount=${price}&spl-token=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v&reference=${invoice.reference}&label=Agent%20Control&message=Pay%20$${price}%20${catalog.id}`,
-    next: `Pay ${price} USDC on Solana with the reference, then POST /api/v1/meter/watch { invoice_id }, then retry scan with the same X-Agent-Pass.`,
+    pay_url: `solana:${invoice.pay_to}?amount=${price}&spl-token=${USDC_MINT}&reference=${invoice.reference}&label=Agent%20Control&message=Pay%20$${price}%20${catalog.id}`,
+    watch_url: METER_WATCH_URL,
+    sign: "Sign USDC on your agent machine to pay_to WITH the reference. We never take keys. Copy src/adapters/meter-pay.ts.",
+    next: `Pay ${price} USDC on Solana with the reference, then POST ${METER_WATCH_PATH} { invoice_id }, then retry scan with the same X-Agent-Pass.`,
   };
 }
 

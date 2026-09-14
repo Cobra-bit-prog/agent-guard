@@ -1,6 +1,7 @@
 import { agentStatusForKey, checkTransferIntent, pollApprovalIntent } from "@/lib/server/intent";
 import { dispatchStorefrontTool } from "@/lib/server/storefront";
 import type { McpToolCallResult } from "@/lib/mcp/handle.ts";
+import { meterMcpToolResult, rejectMeterKeyUpload } from "@/lib/mcp/meter-result.ts";
 import { handleMeterRequest } from "@/lib/meter/http";
 import { meterInvoiceSourceForMcpTool } from "@/lib/meter/origin.ts";
 import type { MeterStore } from "@/lib/meter/store.ts";
@@ -15,6 +16,8 @@ async function meterTool(
   store?: MeterStore,
   source?: ReturnType<typeof meterInvoiceSourceForMcpTool>,
 ): Promise<McpToolCallResult> {
+  const rejected = rejectMeterKeyUpload(args);
+  if (rejected) return rejected;
   const headers = new Headers({ "content-type": "application/json" });
   if (typeof args.pass_token === "string" && args.pass_token) {
     headers.set("X-Agent-Pass", args.pass_token);
@@ -32,15 +35,7 @@ async function meterTool(
   });
   const res = await handleMeterRequest(request, path, store, source ? { source } : {});
   const payload = await res.json().catch(() => ({ error: "meter_parse" }));
-  if (res.status >= 400) {
-    return {
-      ok: false,
-      status: res.status,
-      code: res.status,
-      message: typeof payload === "object" ? JSON.stringify(payload) : String(payload),
-    };
-  }
-  return { ok: true, result: payload };
+  return meterMcpToolResult(res.status, payload);
 }
 
 export async function dispatchMcpTool(

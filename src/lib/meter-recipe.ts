@@ -25,7 +25,7 @@ export const METER_DISCOVERY =
   "llms.txt → GET /api/v1/meter/pricing → 402 → MCP meter_* tools.";
 export const METER_CONNECT_BODY =
   "First 5 free. Then $0.02 USDC. Agents pay themselves. No inbox. No email. No API key.";
-export const METER_MCP_TOOLS = "meter_pricing, meter_scan, meter_buy_pass";
+export const METER_MCP_TOOLS = "meter_pricing, meter_scan, meter_buy_pass, meter_watch";
 
 /** Copy-paste agent pay — no Phantom. Same file as src/adapters/meter-pay.ts. */
 export const METER_PAY_SNIPPET = `import { buyMeterPass } from "./src/adapters/meter-pay.ts";
@@ -49,6 +49,8 @@ ${METER_FREE_LOOK_CURL}
 curl -s -X POST https://agent-control.net/api/v1/meter/pass -H 'content-type: application/json' -d '{}'
 # copy src/adapters/meter-pay.ts — agent wallet signs and sends (no Phantom)
 ${METER_PAY_SNIPPET}
+# MCP-native (no Phantom leave): meter_buy_pass → you sign locally → meter_watch until token → meter_scan with pass_token
+# Current door: GET /api/v1/meter/pricing (default_sku + free_looks). We never take keys.
 # 4 watch
 curl -s -X POST https://agent-control.net/api/v1/meter/watch -H 'content-type: application/json' -d '{"invoice_id":"inv_…"}'
 # 5 packs looks_20 $0.20 · addresses_100 $0.15 · stamp_tx $0.05 ticket
@@ -77,13 +79,13 @@ export const METER_STEPS = [
   {
     n: "3",
     t: "Pay $0.02",
-    d: "After 5 free, 402 look. Your agent wallet sends 0.02 USDC on Solana to pay_to with the reference. Copy src/adapters/meter-pay.ts. No Phantom. Default sku is look. Pack looks_20 is $0.20.",
+    d: "After 5 free, current look from GET pricing. Your agent wallet sends USDC on Solana to pay_to with the reference. Copy src/adapters/meter-pay.ts onto your machine. We never take keys. No Phantom. Default sku is look. Pack looks_20 is $0.20.",
     code: METER_PAY_SNIPPET,
   },
   {
     n: "4",
     t: "Watch",
-    d: "Send the invoice_id until the pass token comes back.",
+    d: "Send the invoice_id until the pass token comes back. That token is X-Agent-Pass. We never take keys.",
     code: `curl -s -X POST https://agent-control.net/api/v1/meter/watch -H 'content-type: application/json' -d '{"invoice_id":"inv_…"}'`,
   },
   {

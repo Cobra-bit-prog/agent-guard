@@ -32,7 +32,7 @@ export type McpCallTool = (
 const SERVER_INFO = { name: "Agent Control", version: "1.0.0" } as const;
 
 const INSTRUCTIONS =
-  "Can I pay this address? First 5 free. Then $0.02. No inbox. Agent Meter: meter_pricing / meter_buy_pass / meter_watch / meter_scan / meter_preflight / meter_scan_batch / meter_stamp / meter_verify_stamp with no email — First 5 free. Then $0.02 USDC. look / looks_20 / addresses_100 / stamp_tx. Then meter_watch, then X-Agent-Pass. Human App (separate): call check_transfer before a send (Bearer agent API key). get_pricing is public. You keep the keys.";
+  "Can I pay this address? First 5 free. Then $0.02. No inbox. Agent Meter: meter_pricing / meter_buy_pass / meter_watch / meter_scan / meter_preflight / meter_scan_batch / meter_stamp / meter_verify_stamp with no email — First 5 free. Then $0.02 USDC. look / looks_20 / addresses_100 / stamp_tx. Then meter_watch, then X-Agent-Pass. Current door: meter_pricing (default_sku look, free_looks 5). After 5 free: meter_buy_pass → invoice with pay_to, amount_usd, amount_base_units, reference, pay_url, invoice_id, watch_url. Sign USDC on your agent machine (copy src/adapters/meter-pay.ts). We never take keys. meter_watch until token. Then meter_scan with pass_token. Human App (separate): call check_transfer before a send (Bearer agent API key). get_pricing is public. You keep the keys.";
 
 function rpcError(id: JsonRpcId, code: number, message: string) {
   return { jsonrpc: "2.0" as const, id, error: { code, message } };

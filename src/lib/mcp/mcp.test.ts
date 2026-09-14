@@ -10,7 +10,8 @@ import {
   handleMcpPost,
   type McpCallTool,
 } from "./handle.ts";
-import { mcpDiscovery, MCP_TOOLS } from "./tools.ts";
+import { MCP_TOOLS, mcpDiscovery } from "./tools.ts";
+import { meterMcpToolResult, rejectMeterKeyUpload } from "./meter-result.ts";
 import {
   DEFAULT_PROTOCOL_VERSION,
   MCP_SESSION_HEADER,
@@ -179,6 +180,9 @@ describe("POST initialize is Streamable HTTP", () => {
     assert.match(instructions, /First 5 free\. Then \$0\.02 USDC/);
     assert.match(instructions, /look \/ looks_20 \/ addresses_100 \/ stamp_tx/);
     assert.match(instructions, /meter_watch, then X-Agent-Pass/);
+    assert.match(instructions, /We never take keys/);
+    assert.match(instructions, /watch_url/);
+    assert.match(instructions, /Sign USDC on your agent machine/);
     const meterSlice = instructions.slice(instructions.indexOf("Agent Meter:"));
     assert.doesNotMatch(meterSlice, /\bhold\b/i);
     assert.doesNotMatch(meterSlice, /Inbox/);
@@ -241,6 +245,50 @@ describe("initialized notification and session reuse", () => {
     assert.match(preflight, /first 5 looks on that id are free/);
     assert.match(preflight, /value_usd/);
     assert.match(preflight, /cap_usd/);
+    const buy = MCP_TOOLS.find((tool) => tool.name === "meter_buy_pass");
+    const watch = MCP_TOOLS.find((tool) => tool.name === "meter_watch");
+    assert.match(buy?.description ?? "", /pay_to/);
+    assert.match(buy?.description ?? "", /amount_base_units/);
+    assert.match(buy?.description ?? "", /reference/);
+    assert.match(buy?.description ?? "", /pay_url/);
+    assert.match(buy?.description ?? "", /watch_url/);
+    assert.match(buy?.description ?? "", /We never take keys/);
+    assert.match(watch?.description ?? "", /invoice_id/);
+    assert.match(watch?.description ?? "", /X-Agent-Pass/);
+    assert.match(watch?.description ?? "", /We never take keys/);
+    const schemas = JSON.stringify(MCP_TOOLS.map((tool) => tool.inputSchema));
+    assert.doesNotMatch(schemas, /secret_key|secretKey|private_key|privateKey|base58_secret/);
+    assert.equal(buy?.inputSchema.properties && "secret_key" in (buy.inputSchema.properties as object), false);
+  });
+
+  it("treats HTTP 402 invoices as MCP tool content and refuses secret keys", () => {
+    const invoice = {
+      error: "payment_required",
+      http: 402,
+      sku: "look",
+      pay_to: "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR",
+      amount_usd: 0.02,
+      amount_base_units: "20000",
+      reference: "ref_mcp",
+      pay_url: "solana:49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR?amount=0.02",
+      invoice_id: "inv_mcp",
+      watch_url: "https://agent-control.net/api/v1/meter/watch",
+    };
+    const asContent = meterMcpToolResult(402, invoice);
+    assert.equal(asContent.ok, true);
+    if (!asContent.ok) return;
+    const body = asContent.result as typeof invoice;
+    assert.equal(body.pay_to, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
+    assert.equal(body.amount_base_units, "20000");
+    assert.equal(body.watch_url, "https://agent-control.net/api/v1/meter/watch");
+    const minted = meterMcpToolResult(200, { token: "pass_abc", header: "X-Agent-Pass" });
+    assert.equal(minted.ok, true);
+    if (!minted.ok) return;
+    assert.equal((minted.result as { token: string }).token, "pass_abc");
+    const rejected = rejectMeterKeyUpload({ sku: "look", secret_key: "do-not-send" });
+    assert.ok(rejected && !rejected.ok);
+    assert.match(rejected.message, /We never take keys/);
+    assert.equal(rejectMeterKeyUpload({ sku: "look", invoice_id: "inv_ok" }), null);
   });
 
   it("returns 404 for a malformed session id", async () => {
