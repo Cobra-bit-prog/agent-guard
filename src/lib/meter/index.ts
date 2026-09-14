@@ -38,6 +38,7 @@ export { handleMeterRequest, handleInternalMeterInvoices, readPassToken } from "
 export {
   extractMeterInvoiceOrigin,
   hashMeterClientIp,
+  isMeterSmokeInvoice,
   isMeterSmokeSource,
   isSmokeUserAgent,
   METER_INVOICE_SOURCES,

@@ -11,6 +11,7 @@ import { handleInternalMeterInvoices, handleMeterRequest } from "./http.ts";
 import {
   extractMeterInvoiceOrigin,
   hashMeterClientIp,
+  isMeterSmokeInvoice,
   isSmokeUserAgent,
   meterInvoiceSourceForMcpTool,
   METER_USER_AGENT_MAX,
@@ -892,6 +893,72 @@ describe("invoice origin", { concurrency: false }, () => {
       assert.equal(invoice?.source, "smoke", ua);
       assert.equal(invoice?.user_agent, ua);
     }
+  });
+
+  it("auto-tags directory and liveness probe UAs as smoke and excludes them from pending_fresh", async () => {
+    const directoryProbe =
+      "nohumans.directory-probe/1.0 (+https://nohumans.directory; liveness check, no payment sent)";
+    const livenessProbe = "uptime-bot/2.0 (liveness check, no payment sent)";
+    assert.equal(isSmokeUserAgent(directoryProbe), true);
+    assert.equal(isSmokeUserAgent(livenessProbe), true);
+    assert.equal(isSmokeUserAgent("catalog.directory-probe/0.9"), true);
+    assert.equal(isMeterSmokeInvoice("http_pass", directoryProbe), true);
+    assert.equal(isMeterSmokeInvoice("http_pass", "Mozilla/5.0 Phantom/24.0"), false);
+    assert.equal(isSmokeUserAgent("Mozilla/5.0 Phantom/24.0"), false);
+    assert.equal(isSmokeUserAgent("mcp-inspector/1"), false);
+    assert.equal(isSmokeUserAgent("MeterClient/1.0"), false);
+
+    const store = createMeterStore();
+    for (const ua of [directoryProbe, livenessProbe]) {
+      const res = await handleMeterRequest(
+        post("/api/v1/meter/pass", {}, { "user-agent": ua }),
+        "/api/v1/meter/pass",
+        store,
+      );
+      assert.equal(res.status, 402);
+      const invoice = await store.getInvoice(((await res.json()) as { invoice_id: string }).invoice_id);
+      assert.equal(invoice?.source, "smoke", ua);
+      assert.equal(invoice?.user_agent, ua);
+    }
+
+    const phantom = await handleMeterRequest(
+      post("/api/v1/meter/pass", {}, { "user-agent": "Mozilla/5.0 Phantom/24.0" }),
+      "/api/v1/meter/pass",
+      store,
+    );
+    assert.equal(phantom.status, 402);
+    assert.equal(
+      (await store.getInvoice(((await phantom.json()) as { invoice_id: string }).invoice_id))?.source,
+      "http_pass",
+    );
+
+    const report = await store.report();
+    assert.equal(report.invoices_created, 3);
+    assert.equal(report.invoices_pending_fresh, 1);
+    assert.equal(report.invoices_pending_stale, 0);
+    assert.equal(report.invoices_pending_smoke, 2);
+    assert.equal(report.usdc_pending_fresh, 0.02);
+    assert.equal(report.usdc_pending_smoke, 0.04);
+  });
+
+  it("excludes already-minted directory probe UAs from pending_fresh even if source is http_pass", async () => {
+    const store = createMeterStore();
+    const probeUa =
+      "nohumans.directory-probe/1.0 (+https://nohumans.directory; liveness check, no payment sent)";
+    store.createInvoice({
+      origin: { source: "http_pass", user_agent: probeUa },
+    });
+    store.createInvoice({
+      origin: { source: "http_pass", user_agent: "Mozilla/5.0 Phantom/24.0" },
+    });
+    const report = await store.report();
+    assert.equal(report.invoices_created, 2);
+    assert.equal(report.invoices_pending, 1);
+    assert.equal(report.invoices_pending_fresh, 1);
+    assert.equal(report.invoices_pending_stale, 0);
+    assert.equal(report.invoices_pending_smoke, 1);
+    assert.equal(report.usdc_pending_fresh, 0.02);
+    assert.equal(report.usdc_pending_smoke, 0.02);
   });
 
   it("never auto-tags Phantom, browser, or MCP agent clients as smoke", async () => {

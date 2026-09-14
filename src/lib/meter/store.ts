@@ -4,6 +4,7 @@ import { PAY_EXPIRY_MS, SOLANA_PAYOUT_ADDRESS } from "../solana-pay.ts";
 import {
   applyInvoiceOrigin,
   blankInvoiceOrigin,
+  isMeterSmokeInvoice,
   isMeterSmokeSource,
   METER_INVOICE_LIST_LIMIT,
   type MeterInvoiceCreateOrigin,
@@ -439,11 +440,12 @@ export function createMeterStore(): MeterStore {
       const paidRows = all.filter((row) => row.status === "paid");
       const pendingRows = all.filter(
         (row) =>
-          (row.status === "pending" || row.status === "underpaid") && !isMeterSmokeSource(row.source),
+          (row.status === "pending" || row.status === "underpaid") &&
+          !isMeterSmokeInvoice(row.source, row.user_agent),
       );
       const pendingFresh = pendingRows.filter((row) => Date.parse(row.expires_at) > nowMs);
       const pendingStale = all.filter((row) => {
-        if (isMeterSmokeSource(row.source)) return false;
+        if (isMeterSmokeInvoice(row.source, row.user_agent)) return false;
         if (row.status === "expired") return true;
         if (row.status === "pending" || row.status === "underpaid") {
           return Date.parse(row.expires_at) <= nowMs;
@@ -451,7 +453,7 @@ export function createMeterStore(): MeterStore {
         return false;
       });
       const pendingSmoke = all.filter((row) => {
-        if (!isMeterSmokeSource(row.source)) return false;
+        if (!isMeterSmokeInvoice(row.source, row.user_agent)) return false;
         return row.status === "expired" || row.status === "pending" || row.status === "underpaid";
       });
       const payers = new Set(

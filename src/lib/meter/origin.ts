@@ -72,12 +72,36 @@ const REAL_CLIENT_UA =
   /mozilla\/|phantom\/|chrome\/|safari\/|firefox\/|edg\/|mcp-inspector|modelcontextprotocol/i;
 
 /**
- * Conservative bot UAs: curl, python-requests, httpx, and CoS/meter health probes.
- * Do not match Node fetch / undici — that is the real meter-pay adapter path.
+ * Directory / liveness probes that mint unpaid 402s and never pay.
+ * Checked before REAL_CLIENT_UA so a probe string always wins.
+ */
+const DIRECTORY_LIVENESS_PROBE_UA =
+  /nohumans\.directory-probe|\bdirectory-probe\b|liveness check[\s\S]{0,80}no payment/i;
+
+/**
+ * SQL: invoice is tagged smoke or carries a directory/liveness probe UA.
+ * Used by GET /meter/report so already-minted http_pass probes drop out of
+ * pending_fresh / pending_stale without a data rewrite.
+ */
+export const METER_SMOKE_OR_PROBE_SQL = `(
+  coalesce(source, '') = 'smoke'
+  OR coalesce(user_agent, '') ILIKE '%directory-probe%'
+  OR (
+    coalesce(user_agent, '') ILIKE '%liveness check%'
+    AND coalesce(user_agent, '') ILIKE '%no payment%'
+  )
+)`;
+
+/**
+ * Conservative bot UAs: curl, python-requests, httpx, CoS/meter health probes,
+ * and directory/liveness probes (nohumans.directory-probe and "liveness check,
+ * no payment" style). Do not match Node fetch / undici — that is the real
+ * meter-pay adapter path.
  */
 export function isSmokeUserAgent(value: string | null | undefined): boolean {
   const ua = (value ?? "").trim();
   if (!ua) return false;
+  if (DIRECTORY_LIVENESS_PROBE_UA.test(ua)) return true;
   if (REAL_CLIENT_UA.test(ua)) return false;
   if (/^(curl|wget|httpie)\//i.test(ua)) return true;
   if (/^(python-requests|python-httpx|python-urllib|httpx|aiohttp)\//i.test(ua)) return true;
@@ -90,6 +114,14 @@ export function isSmokeUserAgent(value: string | null | undefined): boolean {
     return true;
   }
   return false;
+}
+
+/** Smoke-tagged source or a directory/liveness probe UA — exclude from fresh/stale. */
+export function isMeterSmokeInvoice(
+  source: unknown,
+  userAgent?: string | null,
+): boolean {
+  return isMeterSmokeSource(source) || isSmokeUserAgent(userAgent);
 }
 
 export function resolveMeterInvoiceSource(
