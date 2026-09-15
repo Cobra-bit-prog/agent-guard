@@ -204,6 +204,16 @@ export function meterPricing() {
 /** Public watch door. Amounts always come from the live catalog row, not a frozen price. */
 export const METER_WATCH_PATH = "/api/v1/meter/watch";
 export const METER_WATCH_URL = `https://agent-control.net${METER_WATCH_PATH}`;
+/** Public raw adapter. Site paths 404; agents must fetch this URL, not copy from the homepage. */
+export const METER_ADAPTER_URL =
+  "https://raw.githubusercontent.com/Cobra-bit-prog/agent-guard/main/src/adapters/meter-pay.ts";
+export const METER_NEXT_TOOL = "meter_watch" as const;
+export const METER_402_SIGN =
+  "Sign USDC on YOUR machine to pay_to WITH the reference. Fetch adapter_url (buyMeterPass / payMeterPass). We never take keys.";
+
+export function meter402Next(invoiceId: string): string {
+  return `1) Pay with adapter_url locally. 2) Call meter_watch with {"invoice_id":"${invoiceId}"} until token. 3) Retry meter_scan with that token as pass_token / X-Agent-Pass.`;
+}
 
 export function meter402Body(invoice: {
   invoice_id: string;
@@ -235,8 +245,10 @@ export function meter402Body(invoice: {
     note: catalog.id === "stamp_tx" ? STAMP_TICKET_COPY : METER_FREE_THEN_LOOK,
     pay_url: `solana:${invoice.pay_to}?amount=${price}&spl-token=${USDC_MINT}&reference=${invoice.reference}&label=Agent%20Control&message=Pay%20$${price}%20${catalog.id}`,
     watch_url: METER_WATCH_URL,
-    sign: "Sign USDC on your agent machine to pay_to WITH the reference. We never take keys. Copy src/adapters/meter-pay.ts.",
-    next: `Pay ${price} USDC on Solana with the reference, then POST ${METER_WATCH_PATH} { invoice_id }, then retry scan with the same X-Agent-Pass.`,
+    adapter_url: METER_ADAPTER_URL,
+    next_tool: METER_NEXT_TOOL,
+    sign: METER_402_SIGN,
+    next: meter402Next(invoice.invoice_id),
   };
 }
 
