@@ -19,7 +19,17 @@ import {
 import { evaluatePreflightSelf, missingPreflightFields, PREFLIGHT_REQUIRED } from "./preflight.ts";
 import { evaluateScan } from "./scan.ts";
 import { createMeterStore, meterIdentityKey } from "./store.ts";
-import { METER_ANON_IDENTITY, meter402Body, meter402PaymentRequiredPayload, METER_LOOK, METER_WATCH_URL } from "./pricing.ts";
+import {
+  METER_ANON_IDENTITY,
+  meter402Body,
+  meter402Next,
+  meter402PaymentRequiredPayload,
+  METER_402_SIGN,
+  METER_ADAPTER_URL,
+  METER_LOOK,
+  METER_NEXT_TOOL,
+  METER_WATCH_URL,
+} from "./pricing.ts";
 
 const ORIGIN = "https://agent-control.net";
 
@@ -143,7 +153,7 @@ describe("meter http", () => {
     assert.deepEqual(body.missing, ["wallet", "to", "value_usd", "cap_usd"]);
   });
 
-  it("402 next tells the agent to pay 0.02, watch, then retry with the same X-Agent-Pass", () => {
+  it("402 next names adapter_url, meter_watch, and this invoice_id", () => {
     const body = meter402Body({
       invoice_id: "inv_test",
       pay_to: "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR",
@@ -154,9 +164,21 @@ describe("meter http", () => {
       asset: "usdc",
       sku: "look",
     });
-    assert.match(body.next, /0\.02 USDC/);
-    assert.match(body.next, /watch/);
-    assert.match(body.next, /same X-Agent-Pass/);
+    assert.equal(body.adapter_url, METER_ADAPTER_URL);
+    assert.match(body.adapter_url, /raw\.githubusercontent\.com\/Cobra-bit-prog\/agent-guard\/main\/src\/adapters\/meter-pay\.ts/);
+    assert.equal(body.next_tool, METER_NEXT_TOOL);
+    assert.equal(body.next_tool, "meter_watch");
+    assert.equal(body.next, meter402Next("inv_test"));
+    assert.match(body.next, /adapter_url/);
+    assert.match(body.next, /meter_watch/);
+    assert.match(body.next, /"invoice_id":"inv_test"/);
+    assert.match(body.next, /meter_scan/);
+    assert.match(body.next, /X-Agent-Pass/);
+    assert.doesNotMatch(body.next, /POST \/api\/v1\/meter\/watch/);
+    assert.equal(body.sign, METER_402_SIGN);
+    assert.match(body.sign, /buyMeterPass \/ payMeterPass/);
+    assert.match(body.sign, /adapter_url/);
+    assert.doesNotMatch(body.sign, /Copy src\/adapters\/meter-pay\.ts/);
     assert.equal(body.sku, "look");
     assert.equal(body.amount_usd, METER_LOOK.price_usd);
     assert.equal(body.amount_base_units, METER_LOOK.amount_base_units);
@@ -164,6 +186,8 @@ describe("meter http", () => {
     assert.equal(body.watch_url, METER_WATCH_URL);
     assert.match(body.pay_url, /^solana:49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR\?/);
     assert.match(body.sign, /We never take keys/);
+    assert.equal(body.error, "payment_required");
+    assert.equal(body.http, 402);
   });
 
   it("402index PAYMENT-REQUIRED payTo stays on the locked wallet", () => {
@@ -487,15 +511,27 @@ describe("meter http", () => {
       pay_url: string;
       invoice_id: string;
       watch_url: string;
+      adapter_url: string;
+      next_tool: string;
       sign: string;
+      next: string;
+      error: string;
+      http: number;
     };
     assert.equal(body.sku, "look");
     assert.equal(body.amount_usd, METER_LOOK.price_usd);
     assert.equal(body.amount_base_units, METER_LOOK.amount_base_units);
     assert.equal(body.pay_to, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
     assert.equal(body.watch_url, METER_WATCH_URL);
+    assert.equal(body.adapter_url, METER_ADAPTER_URL);
+    assert.equal(body.next_tool, "meter_watch");
+    assert.equal(body.error, "payment_required");
+    assert.equal(body.http, 402);
     assert.match(body.pay_url, new RegExp(`reference=${body.reference}`));
     assert.match(body.sign, /We never take keys/);
+    assert.match(body.sign, /buyMeterPass/);
+    assert.match(body.next, new RegExp(`"invoice_id":"${body.invoice_id}"`));
+    assert.match(body.next, /meter_watch/);
     assert.ok(body.invoice_id);
   });
 
@@ -509,9 +545,19 @@ describe("meter http", () => {
       { findPayment: async () => ({ kind: "none" }) },
     );
     assert.equal(pending.status, 402);
-    const pendingBody = (await pending.json()) as { invoice_id: string; watch_url: string; token?: string };
+    const pendingBody = (await pending.json()) as {
+      invoice_id: string;
+      watch_url: string;
+      adapter_url: string;
+      next_tool: string;
+      next: string;
+      token?: string;
+    };
     assert.equal(pendingBody.invoice_id, invoice.invoice_id);
     assert.equal(pendingBody.watch_url, METER_WATCH_URL);
+    assert.equal(pendingBody.adapter_url, METER_ADAPTER_URL);
+    assert.equal(pendingBody.next_tool, "meter_watch");
+    assert.match(pendingBody.next, new RegExp(`"invoice_id":"${invoice.invoice_id}"`));
     assert.equal(pendingBody.token, undefined);
 
     await store.fulfillInvoice(invoice.invoice_id, { signature: "sig_local", amountUsdc: METER_LOOK.price_usd });
@@ -1241,6 +1287,10 @@ describe("paying agents A–H", () => {
       pay_to: string;
       error: string;
       next: string;
+      next_tool: string;
+      adapter_url: string;
+      sign: string;
+      invoice_id: string;
       reference: string;
     };
     assert.equal(body.error, "payment_required");
@@ -1249,9 +1299,13 @@ describe("paying agents A–H", () => {
     assert.equal(body.pay_to, PAY_TO);
     assert.equal((body as { amount_base_units?: string }).amount_base_units, "20000");
     assert.equal((body as { watch_url?: string }).watch_url, "https://agent-control.net/api/v1/meter/watch");
-    assert.match(body.next, /0\.02 USDC/);
-    assert.match(body.next, /watch/);
-    assert.match(body.next, /same X-Agent-Pass/);
+    assert.equal(body.adapter_url, METER_ADAPTER_URL);
+    assert.equal(body.next_tool, "meter_watch");
+    assert.match(body.next, /adapter_url/);
+    assert.match(body.next, /meter_watch/);
+    assert.match(body.next, new RegExp(`"invoice_id":"${body.invoice_id}"`));
+    assert.match(body.next, /X-Agent-Pass/);
+    assert.match(body.sign, /buyMeterPass/);
     assertMeter402IndexHeaders(res, body.reference);
   });
 
