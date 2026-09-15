@@ -19,7 +19,7 @@ import {
 import { evaluatePreflightSelf, missingPreflightFields, PREFLIGHT_REQUIRED } from "./preflight.ts";
 import { evaluateScan } from "./scan.ts";
 import { createMeterStore, meterIdentityKey } from "./store.ts";
-import { METER_ANON_IDENTITY, meter402Body, meter402PaymentRequiredPayload } from "./pricing.ts";
+import { METER_ANON_IDENTITY, meter402Body, meter402PaymentRequiredPayload, METER_LOOK, METER_WATCH_URL } from "./pricing.ts";
 
 const ORIGIN = "https://agent-control.net";
 
@@ -157,6 +157,13 @@ describe("meter http", () => {
     assert.match(body.next, /0\.02 USDC/);
     assert.match(body.next, /watch/);
     assert.match(body.next, /same X-Agent-Pass/);
+    assert.equal(body.sku, "look");
+    assert.equal(body.amount_usd, METER_LOOK.price_usd);
+    assert.equal(body.amount_base_units, METER_LOOK.amount_base_units);
+    assert.equal(body.pay_to, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
+    assert.equal(body.watch_url, METER_WATCH_URL);
+    assert.match(body.pay_url, /^solana:49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR\?/);
+    assert.match(body.sign, /We never take keys/);
   });
 
   it("402index PAYMENT-REQUIRED payTo stays on the locked wallet", () => {
@@ -465,6 +472,68 @@ describe("meter http", () => {
     assert.equal(body.pay_to, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
     assert.match(body.pay_url, /^solana:49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR\?/);
     assert.match(body.pay_url, new RegExp(`reference=${invoice.reference}`));
+  });
+
+  it("POST pass invoice includes watch_url and catalog look amounts", async () => {
+    const store = createMeterStore();
+    const res = await handleMeterRequest(post("/api/v1/meter/pass", {}), "/api/v1/meter/pass", store);
+    assert.equal(res.status, 402);
+    const body = (await res.json()) as {
+      sku: string;
+      amount_usd: number;
+      amount_base_units: string;
+      pay_to: string;
+      reference: string;
+      pay_url: string;
+      invoice_id: string;
+      watch_url: string;
+      sign: string;
+    };
+    assert.equal(body.sku, "look");
+    assert.equal(body.amount_usd, METER_LOOK.price_usd);
+    assert.equal(body.amount_base_units, METER_LOOK.amount_base_units);
+    assert.equal(body.pay_to, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
+    assert.equal(body.watch_url, METER_WATCH_URL);
+    assert.match(body.pay_url, new RegExp(`reference=${body.reference}`));
+    assert.match(body.sign, /We never take keys/);
+    assert.ok(body.invoice_id);
+  });
+
+  it("watch pending stays 402; paid watch returns X-Agent-Pass token", async () => {
+    const store = createMeterStore();
+    const invoice = await store.createInvoice({ sku: "look" });
+    const pending = await handleMeterRequest(
+      post("/api/v1/meter/watch", { invoice_id: invoice.invoice_id }),
+      "/api/v1/meter/watch",
+      store,
+      { findPayment: async () => ({ kind: "none" }) },
+    );
+    assert.equal(pending.status, 402);
+    const pendingBody = (await pending.json()) as { invoice_id: string; watch_url: string; token?: string };
+    assert.equal(pendingBody.invoice_id, invoice.invoice_id);
+    assert.equal(pendingBody.watch_url, METER_WATCH_URL);
+    assert.equal(pendingBody.token, undefined);
+
+    await store.fulfillInvoice(invoice.invoice_id, { signature: "sig_local", amountUsdc: METER_LOOK.price_usd });
+    const minted = await handleMeterRequest(
+      post("/api/v1/meter/watch", { invoice_id: invoice.invoice_id }),
+      "/api/v1/meter/watch",
+      store,
+      { findPayment: async () => ({ kind: "none" }) },
+    );
+    assert.equal(minted.status, 200);
+    const mintedBody = (await minted.json()) as {
+      token: string;
+      header: string;
+      status: string;
+      invoice_id: string;
+      next: string;
+    };
+    assert.ok(mintedBody.token);
+    assert.equal(mintedBody.header, "X-Agent-Pass");
+    assert.equal(mintedBody.status, "paid");
+    assert.equal(mintedBody.invoice_id, invoice.invoice_id);
+    assert.match(mintedBody.next, /X-Agent-Pass/);
   });
 });
 
@@ -803,6 +872,8 @@ describe("invoice origin", { concurrency: false }, () => {
     );
     assert.match(dispatch, /meterInvoiceSourceForMcpTool/);
     assert.match(dispatch, /source: "mcp_buy_pass"|source = meterInvoiceSourceForMcpTool\(name\)/);
+    assert.match(dispatch, /meterMcpToolResult/);
+    assert.match(dispatch, /rejectMeterKeyUpload/);
     assert.match(dispatch, /cf-connecting-ip/);
     assert.match(dispatch, /x-forwarded-for/);
     await withStatsSecret(async () => {
@@ -1176,6 +1247,8 @@ describe("paying agents A–H", () => {
     assert.equal(body.sku, "look");
     assert.equal(body.amount_usd, 0.02);
     assert.equal(body.pay_to, PAY_TO);
+    assert.equal((body as { amount_base_units?: string }).amount_base_units, "20000");
+    assert.equal((body as { watch_url?: string }).watch_url, "https://agent-control.net/api/v1/meter/watch");
     assert.match(body.next, /0\.02 USDC/);
     assert.match(body.next, /watch/);
     assert.match(body.next, /same X-Agent-Pass/);

@@ -6,7 +6,7 @@ export const MCP_TOOLS = [
     name: "meter_pricing",
     title: "Agent Meter pricing",
     description:
-      "Can I pay this address? First 5 free. Then $0.02. No inbox. Public catalog: look, looks_20, addresses_100, stamp_tx. No email. No API key. Human App $29 plans are separate.",
+      "Can I pay this address? First 5 free. Then $0.02. No inbox. Public catalog from this tool: look, looks_20, addresses_100, stamp_tx. Current door is default_sku + free_looks + skus[]. No email. No API key. Human App $29 plans are separate.",
     annotations: readOnly,
     inputSchema: { type: "object", properties: {} },
   },
@@ -14,17 +14,21 @@ export const MCP_TOOLS = [
     name: "meter_buy_pass",
     title: "Buy an Agent Meter pass",
     description:
-      "Can I pay this address? First 5 free. Then $0.02. No inbox. Returns HTTP 402 invoice to pay look $0.02 USDC on Solana (or looks_20 / addresses_100 / stamp_tx), or issues a pass when proof is accepted. No human account.",
+      "Can I pay this address? First 5 free. Then $0.02. No inbox. Current door: call with sku look (or omit) to create a look invoice from GET meter_pricing. Returns pay_to, amount_usd, amount_base_units, reference, pay_url, invoice_id, watch_url. Sign USDC on YOUR machine to pay_to WITH the reference. We never take keys. Copy src/adapters/meter-pay.ts. Then meter_watch until token. Packs: looks_20 / addresses_100 / stamp_tx. No human account.",
     annotations: writes,
     inputSchema: {
       type: "object",
       properties: {
         sku: {
           type: "string",
-          description: "look (default $0.02), looks_20 ($0.20), addresses_100 ($0.15), stamp_tx ($0.05). pass_1h stays in catalog only.",
+          description: "Catalog id from meter_pricing. Default look (current door). Packs: looks_20, addresses_100, stamp_tx. pass_1h stays in catalog only.",
         },
-        proof: { type: "object", description: "Payment proof. { type: dev } only when METER_DEV_GRANT=1" },
+        proof: { type: "object", description: "Payment proof. { type: dev } only when METER_DEV_GRANT=1. Never send a secret key." },
         pass_token: { type: "string" },
+        signature: {
+          type: "string",
+          description: "Optional on-chain tx signature after you sign locally. Not a private key.",
+        },
       },
     },
   },
@@ -32,13 +36,17 @@ export const MCP_TOOLS = [
     name: "meter_watch",
     title: "Watch a Meter invoice",
     description:
-      "Can I pay this address? First 5 free. Then $0.02. No inbox. After paying the 402 invoice, send invoice_id until the pass token comes back. No human account.",
+      "Can I pay this address? First 5 free. Then $0.02. No inbox. After you sign locally and send USDC, call with invoice_id until token. Repeat until the result includes token — that is X-Agent-Pass. Then meter_scan with pass_token. Optional signature (tx sig only). We never take keys. No human account.",
     annotations: writes,
     inputSchema: {
       type: "object",
       properties: {
-        invoice_id: { type: "string" },
+        invoice_id: { type: "string", description: "From meter_buy_pass / 402 invoice." },
         sku: { type: "string" },
+        signature: {
+          type: "string",
+          description: "Optional Solana tx signature after local sign. Not a private key.",
+        },
       },
     },
   },

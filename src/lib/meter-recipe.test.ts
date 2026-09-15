@@ -92,7 +92,7 @@ describe("Agent Meter recipe", () => {
       METER_DISCOVERY,
       "llms.txt → GET /api/v1/meter/pricing → 402 → MCP meter_* tools.",
     );
-    assert.equal(METER_MCP_TOOLS, "meter_pricing, meter_scan, meter_buy_pass");
+    assert.equal(METER_MCP_TOOLS, "meter_pricing, meter_scan, meter_buy_pass, meter_watch");
     assert.equal(METER_PRICING_CURL, "curl -s https://agent-control.net/api/v1/meter/pricing");
     assert.equal(METER_PRICING_PATH, "/api/v1/meter/pricing");
     assert.equal(METER_LLMS_HREF, "/llms.txt");
@@ -123,6 +123,9 @@ describe("Agent Meter recipe", () => {
     assert.match(METER_RECIPE, /stamp_tx \$0\.05/);
     assert.match(METER_RECIPE, /Take this ticket or we do not take your USDC/);
     assert.match(METER_RECIPE, /# 6 MCP meter_\* at \/api\/v1\/mcp/);
+    assert.match(METER_RECIPE, /MCP-native \(no Phantom leave\)/);
+    assert.match(METER_RECIPE, /We never take keys/);
+    assert.match(METER_RECIPE, /Current door: GET \/api\/v1\/meter\/pricing/);
     assert.match(METER_RECIPE, /src\/adapters\/meter-pay\.ts/);
     assert.match(METER_RECIPE, /buyMeterPass/);
     assert.equal(
@@ -133,6 +136,8 @@ await buyMeterPass({ keypair });`,
     assert.equal(METER_STEPS[2]?.code, METER_PAY_SNIPPET);
     assert.match(METER_STEPS[2]?.d ?? "", /looks_20/);
     assert.match(METER_STEPS[2]?.d ?? "", /No Phantom/);
+    assert.match(METER_STEPS[2]?.d ?? "", /We never take keys/);
+    assert.match(METER_STEPS[2]?.d ?? "", /current look from GET pricing/);
     assert.doesNotMatch(METER_RECIPE, /\bbroadcast/i);
     assert.doesNotMatch(METER_RECIPE, /^# 4 poll/m);
     assert.match(METER_RECIPE, /^# 4 watch$/m);
@@ -197,6 +202,12 @@ describe("Agent Meter recipe on public discovery surfaces", () => {
     assert.match(llms, /buyMeterPass/);
     assert.match(llms, /src\/adapters\/meter-pay\.ts/);
     assert.match(llms, /X-Agent-Pass: <your-id>/);
+    assert.match(llms, /MCP-native \(no Phantom leave\)/);
+    assert.match(llms, /We never take keys/);
+    assert.match(llms, /meter_buy_pass → you sign locally → meter_watch until token/);
+    assert.doesNotMatch(llms, /locked forever/i);
+    assert.doesNotMatch(llms, /sacred/i);
+    assert.doesNotMatch(llms, /secret_key|private_key|base58_secret/);
     assert.doesNotMatch(llms, /^# 4 poll/m);
     assert.match(llms, /^# 4 watch$/m);
     const lookCurl = llms
