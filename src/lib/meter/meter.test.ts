@@ -14,6 +14,7 @@ import {
   isMeterSmokeInvoice,
   isSmokeUserAgent,
   meterInvoiceSourceForMcpTool,
+  METER_SMOKE_OR_PROBE_SQL,
   METER_USER_AGENT_MAX,
 } from "./origin.ts";
 import { evaluatePreflightSelf, missingPreflightFields, PREFLIGHT_REQUIRED } from "./preflight.ts";
@@ -938,6 +939,22 @@ describe("invoice origin", { concurrency: false }, () => {
       ((await headerFlag.json()) as { invoice_id: string }).invoice_id,
     );
     assert.equal(headerInvoice?.source, "smoke");
+
+    const phantomHeader = await handleMeterRequest(
+      post(
+        "/api/v1/meter/pass",
+        { source: "http_pass" },
+        { "user-agent": "Mozilla/5.0 Phantom/24.0", "x-meter-smoke": "1" },
+      ),
+      "/api/v1/meter/pass",
+      store,
+    );
+    assert.equal(phantomHeader.status, 402);
+    assert.equal(
+      (await store.getInvoice(((await phantomHeader.json()) as { invoice_id: string }).invoice_id))
+        ?.source,
+      "smoke",
+    );
   });
 
   it("auto-tags curl, python-requests, and httpx UAs as smoke", async () => {
@@ -1010,6 +1027,93 @@ describe("invoice origin", { concurrency: false }, () => {
     assert.equal(report.invoices_pending_smoke, 2);
     assert.equal(report.usdc_pending_fresh, 0.02);
     assert.equal(report.usdc_pending_smoke, 0.04);
+  });
+
+  it("auto-tags exact node, cloud-crawler, and x402-list-monitor UAs as smoke", async () => {
+    const cloudCrawler = "agent-tools.cloud-crawler/0.1 (+https://agent-tools.cloud)";
+    const listMonitor = "x402-list-monitor/1.0 (+https://x402-list.com)";
+    const directoryHost = "nohumans.directory/1.0 (+https://nohumans.directory)";
+    assert.equal(isSmokeUserAgent("node"), true);
+    assert.equal(isSmokeUserAgent("NODE"), true);
+    assert.equal(isSmokeUserAgent(" node "), true);
+    assert.equal(isSmokeUserAgent(cloudCrawler), true);
+    assert.equal(isSmokeUserAgent(listMonitor), true);
+    assert.equal(isSmokeUserAgent(directoryHost), true);
+    assert.equal(isSmokeUserAgent("node-fetch/1.0"), false);
+    assert.equal(isSmokeUserAgent("undici"), false);
+    assert.equal(isSmokeUserAgent("undici/6.21.0"), false);
+    assert.equal(isSmokeUserAgent("MeterClient/1.0 node/22"), false);
+    assert.equal(isSmokeUserAgent("Mozilla/5.0 Phantom/24.0"), false);
+    assert.equal(isMeterSmokeInvoice("http_pass", "node"), true);
+    assert.equal(isMeterSmokeInvoice("http_pass", cloudCrawler), true);
+    assert.equal(isMeterSmokeInvoice("http_pass", "node-fetch/1.0"), false);
+    assert.match(METER_SMOKE_OR_PROBE_SQL, /lower\(btrim\(coalesce\(user_agent, ''\)\)\) = 'node'/);
+    assert.match(METER_SMOKE_OR_PROBE_SQL, /agent-tools\.cloud-crawler/);
+    assert.match(METER_SMOKE_OR_PROBE_SQL, /x402-list-monitor/);
+    assert.match(METER_SMOKE_OR_PROBE_SQL, /nohumans\.directory/);
+
+    const store = createMeterStore();
+    for (const ua of ["node", cloudCrawler, listMonitor]) {
+      const res = await handleMeterRequest(
+        post("/api/v1/meter/pass", {}, { "user-agent": ua }),
+        "/api/v1/meter/pass",
+        store,
+      );
+      assert.equal(res.status, 402);
+      const invoice = await store.getInvoice(((await res.json()) as { invoice_id: string }).invoice_id);
+      assert.equal(invoice?.source, "smoke", ua);
+      assert.equal(invoice?.user_agent, ua);
+    }
+
+    const richerNode = await handleMeterRequest(
+      post("/api/v1/meter/pass", {}, { "user-agent": "node-fetch/1.0" }),
+      "/api/v1/meter/pass",
+      store,
+    );
+    assert.equal(richerNode.status, 402);
+    assert.equal(
+      (await store.getInvoice(((await richerNode.json()) as { invoice_id: string }).invoice_id))
+        ?.source,
+      "http_pass",
+    );
+
+    const report = await store.report();
+    assert.equal(report.invoices_created, 4);
+    assert.equal(report.invoices_pending_fresh, 1);
+    assert.equal(report.invoices_pending_stale, 0);
+    assert.equal(report.invoices_pending_smoke, 3);
+    assert.equal(report.usdc_pending_fresh, 0.02);
+    assert.equal(report.usdc_pending_smoke, 0.06);
+  });
+
+  it("excludes already-minted node and crawler UAs from pending_fresh even if source is http_pass", async () => {
+    const store = createMeterStore();
+    store.createInvoice({
+      origin: { source: "http_pass", user_agent: "node" },
+    });
+    store.createInvoice({
+      origin: {
+        source: "http_pass",
+        user_agent: "agent-tools.cloud-crawler/0.1 (+https://agent-tools.cloud)",
+      },
+    });
+    store.createInvoice({
+      origin: {
+        source: "http_pass",
+        user_agent: "x402-list-monitor/1.0 (+https://x402-list.com)",
+      },
+    });
+    store.createInvoice({
+      origin: { source: "http_pass", user_agent: "Mozilla/5.0 Phantom/24.0" },
+    });
+    const report = await store.report();
+    assert.equal(report.invoices_created, 4);
+    assert.equal(report.invoices_pending, 1);
+    assert.equal(report.invoices_pending_fresh, 1);
+    assert.equal(report.invoices_pending_stale, 0);
+    assert.equal(report.invoices_pending_smoke, 3);
+    assert.equal(report.usdc_pending_fresh, 0.02);
+    assert.equal(report.usdc_pending_smoke, 0.06);
   });
 
   it("excludes already-minted directory probe UAs from pending_fresh even if source is http_pass", async () => {

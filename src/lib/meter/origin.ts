@@ -72,20 +72,28 @@ const REAL_CLIENT_UA =
   /mozilla\/|phantom\/|chrome\/|safari\/|firefox\/|edg\/|mcp-inspector|modelcontextprotocol/i;
 
 /**
- * Directory / liveness probes that mint unpaid 402s and never pay.
+ * Directory / crawler / list-monitor probes that mint unpaid 402s and never pay.
  * Checked before REAL_CLIENT_UA so a probe string always wins.
+ * Named monitors only — do not treat all Node SDK traffic as smoke.
  */
-const DIRECTORY_LIVENESS_PROBE_UA =
-  /nohumans\.directory-probe|\bdirectory-probe\b|liveness check[\s\S]{0,80}no payment/i;
+const DIRECTORY_MONITOR_PROBE_UA =
+  /nohumans\.directory(?:-probe)?|\bdirectory-probe\b|liveness check[\s\S]{0,80}no payment|agent-tools\.cloud-crawler|x402-list-monitor/i;
+
+/** Undici's default UA is exactly `node`. Richer Node UAs (node-fetch/1, undici/6, meter-pay) stay real. */
+const BARE_NODE_FETCH_UA = /^node$/i;
 
 /**
- * SQL: invoice is tagged smoke or carries a directory/liveness probe UA.
+ * SQL: invoice is tagged smoke or carries a known probe/monitor UA.
  * Used by GET /meter/report so already-minted http_pass probes drop out of
  * pending_fresh / pending_stale without a data rewrite.
  */
 export const METER_SMOKE_OR_PROBE_SQL = `(
   coalesce(source, '') = 'smoke'
+  OR lower(btrim(coalesce(user_agent, ''))) = 'node'
   OR coalesce(user_agent, '') ILIKE '%directory-probe%'
+  OR coalesce(user_agent, '') ILIKE '%nohumans.directory%'
+  OR coalesce(user_agent, '') ILIKE '%agent-tools.cloud-crawler%'
+  OR coalesce(user_agent, '') ILIKE '%x402-list-monitor%'
   OR (
     coalesce(user_agent, '') ILIKE '%liveness check%'
     AND coalesce(user_agent, '') ILIKE '%no payment%'
@@ -94,14 +102,16 @@ export const METER_SMOKE_OR_PROBE_SQL = `(
 
 /**
  * Conservative bot UAs: curl, python-requests, httpx, CoS/meter health probes,
- * and directory/liveness probes (nohumans.directory-probe and "liveness check,
- * no payment" style). Do not match Node fetch / undici — that is the real
- * meter-pay adapter path.
+ * directory/liveness probes (nohumans.directory-probe and "liveness check,
+ * no payment" style), plus named crawlers/monitors (agent-tools.cloud-crawler,
+ * x402-list-monitor). Exact `node` (undici default) is smoke; richer Node UAs
+ * used by real meter-pay agents are not.
  */
 export function isSmokeUserAgent(value: string | null | undefined): boolean {
   const ua = (value ?? "").trim();
   if (!ua) return false;
-  if (DIRECTORY_LIVENESS_PROBE_UA.test(ua)) return true;
+  if (DIRECTORY_MONITOR_PROBE_UA.test(ua)) return true;
+  if (BARE_NODE_FETCH_UA.test(ua)) return true;
   if (REAL_CLIENT_UA.test(ua)) return false;
   if (/^(curl|wget|httpie)\//i.test(ua)) return true;
   if (/^(python-requests|python-httpx|python-urllib|httpx|aiohttp)\//i.test(ua)) return true;
