@@ -12,7 +12,7 @@ import {
 } from "./handle.ts";
 import { MCP_TOOLS, mcpDiscovery } from "./tools.ts";
 import { meterMcpToolResult, rejectMeterKeyUpload, reshapeMeter402Invoice } from "./meter-result.ts";
-import { dispatchMcpTool } from "../server/mcp-dispatch.ts";
+import { handleMeterRequest } from "../meter/http.ts";
 import { createMeterStore } from "../meter/store.ts";
 import { meter402Body } from "../meter/pricing.ts";
 import {
@@ -351,13 +351,27 @@ describe("initialized notification and session reuse", () => {
 
   it("meter_buy_pass MCP tool content is an ok payable invoice, not an error label", async () => {
     const store = createMeterStore();
+    const httpRes = await handleMeterRequest(
+      new Request("https://agent-control.net/api/v1/meter/pass", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ sku: "look" }),
+      }),
+      "/api/v1/meter/pass",
+      store,
+    );
+    assert.equal(httpRes.status, 402);
+    const invoice = (await httpRes.json()) as Record<string, unknown>;
+    assert.equal(invoice.error, "payment_required");
+    assert.equal(invoice.http, 402);
+    assert.equal(invoice.pay_to, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
+
+    const outcome = meterMcpToolResult(httpRes.status, invoice);
     const res = await handleMcpPost(
       post(jsonRpc("tools/call", { params: { name: "meter_buy_pass", arguments: { sku: "look" } } }), {
         Accept: "application/json",
       }),
-      {
-        callTool: (name, args, apiKey) => dispatchMcpTool(name, args, apiKey, undefined, store),
-      },
+      { callTool: async () => outcome },
     );
     assert.equal(res.status, 200);
     const rpc = (await res.json()) as { result: { content: { text: string }[] }; error?: unknown };
