@@ -11,7 +11,10 @@ import {
   type McpCallTool,
 } from "./handle.ts";
 import { MCP_TOOLS, mcpDiscovery } from "./tools.ts";
-import { meterMcpToolResult, rejectMeterKeyUpload } from "./meter-result.ts";
+import { meterMcpToolResult, rejectMeterKeyUpload, reshapeMeter402Invoice } from "./meter-result.ts";
+import { dispatchMcpTool } from "../server/mcp-dispatch.ts";
+import { createMeterStore } from "../meter/store.ts";
+import { meter402Body } from "../meter/pricing.ts";
 import {
   DEFAULT_PROTOCOL_VERSION,
   MCP_SESSION_HEADER,
@@ -247,12 +250,16 @@ describe("initialized notification and session reuse", () => {
     assert.match(preflight, /cap_usd/);
     const buy = MCP_TOOLS.find((tool) => tool.name === "meter_buy_pass");
     const watch = MCP_TOOLS.find((tool) => tool.name === "meter_watch");
+    assert.match(buy?.description ?? "", /ok:true \/ status payment_required/);
+    assert.match(buy?.description ?? "", /payable invoice as tool content/);
     assert.match(buy?.description ?? "", /pay_to/);
     assert.match(buy?.description ?? "", /amount_base_units/);
     assert.match(buy?.description ?? "", /reference/);
     assert.match(buy?.description ?? "", /pay_url/);
     assert.match(buy?.description ?? "", /watch_url/);
     assert.match(buy?.description ?? "", /We never take keys/);
+    assert.match(buy?.description ?? "", /then meter_watch/);
+    assert.doesNotMatch(buy?.description ?? "", /returns HTTP 402/i);
     assert.match(watch?.description ?? "", /invoice_id/);
     assert.match(watch?.description ?? "", /X-Agent-Pass/);
     assert.match(watch?.description ?? "", /We never take keys/);
@@ -262,33 +269,125 @@ describe("initialized notification and session reuse", () => {
   });
 
   it("treats HTTP 402 invoices as MCP tool content and refuses secret keys", () => {
-    const invoice = {
-      error: "payment_required",
-      http: 402,
-      sku: "look",
+    const invoice = meter402Body({
+      invoice_id: "inv_mcp",
       pay_to: "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR",
+      reference: "ref_mcp",
       amount_usd: 0.02,
       amount_base_units: "20000",
-      reference: "ref_mcp",
-      pay_url: "solana:49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR?amount=0.02",
-      invoice_id: "inv_mcp",
-      watch_url: "https://agent-control.net/api/v1/meter/watch",
-    };
+      chain: "solana",
+      asset: "usdc",
+      sku: "look",
+    });
+    assert.equal(invoice.error, "payment_required");
+    assert.equal(invoice.http, 402);
+
     const asContent = meterMcpToolResult(402, invoice);
     assert.equal(asContent.ok, true);
     if (!asContent.ok) return;
-    const body = asContent.result as typeof invoice;
+    const body = asContent.result as Record<string, unknown>;
+    assert.equal(body.ok, true);
+    assert.equal(body.status, "payment_required");
+    assert.equal(body.sku, "look");
+    assert.equal(body.price_usd, 0.02);
+    assert.equal(body.asset, "usdc");
+    assert.equal(body.chain, "solana");
     assert.equal(body.pay_to, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
+    assert.equal(body.amount_usd, 0.02);
     assert.equal(body.amount_base_units, "20000");
+    assert.equal(body.invoice_id, "inv_mcp");
+    assert.equal(body.reference, "ref_mcp");
+    assert.equal(body.question, invoice.question);
+    assert.equal(body.note, invoice.note);
+    assert.equal(body.pay_url, invoice.pay_url);
     assert.equal(body.watch_url, "https://agent-control.net/api/v1/meter/watch");
+    assert.equal(body.sign, invoice.sign);
+    assert.equal(body.next, invoice.next);
+    assert.equal("error" in body, false);
+    assert.equal("http" in body, false);
+    const text = JSON.stringify(body);
+    assert.match(text, /^\{"ok":true,"status":"payment_required"/);
+    assert.doesNotMatch(text, /"error":/);
+    assert.doesNotMatch(text, /"http":/);
+
     const minted = meterMcpToolResult(200, { token: "pass_abc", header: "X-Agent-Pass" });
     assert.equal(minted.ok, true);
     if (!minted.ok) return;
     assert.equal((minted.result as { token: string }).token, "pass_abc");
+    assert.equal("ok" in (minted.result as object), false);
+
     const rejected = rejectMeterKeyUpload({ sku: "look", secret_key: "do-not-send" });
     assert.ok(rejected && !rejected.ok);
     assert.match(rejected.message, /We never take keys/);
     assert.equal(rejectMeterKeyUpload({ sku: "look", invoice_id: "inv_ok" }), null);
+
+    const failed = meterMcpToolResult(400, { error: "bad_request" });
+    assert.equal(failed.ok, false);
+    if (failed.ok) return;
+    assert.equal(failed.status, 400);
+    assert.match(failed.message, /bad_request/);
+  });
+
+  it("defaults 402 status to payment_required and keeps extra invoice fields", () => {
+    const reshaped = reshapeMeter402Invoice({
+      sku: "looks_20",
+      pay_to: "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR",
+      kind: "scan",
+      http: 402,
+    });
+    assert.equal(reshaped.ok, true);
+    assert.equal(reshaped.status, "payment_required");
+    assert.equal(reshaped.sku, "looks_20");
+    assert.equal(reshaped.kind, "scan");
+    assert.equal("error" in reshaped, false);
+    assert.equal("http" in reshaped, false);
+    const custom = meterMcpToolResult(402, { error: "payment_required", extra: "keep-me" });
+    assert.equal(custom.ok, true);
+    if (!custom.ok) return;
+    const body = custom.result as { status: string; extra: string };
+    assert.equal(body.status, "payment_required");
+    assert.equal(body.extra, "keep-me");
+  });
+
+  it("meter_buy_pass MCP tool content is an ok payable invoice, not an error label", async () => {
+    const store = createMeterStore();
+    const res = await handleMcpPost(
+      post(jsonRpc("tools/call", { params: { name: "meter_buy_pass", arguments: { sku: "look" } } }), {
+        Accept: "application/json",
+      }),
+      {
+        callTool: (name, args, apiKey) => dispatchMcpTool(name, args, apiKey, undefined, store),
+      },
+    );
+    assert.equal(res.status, 200);
+    const rpc = (await res.json()) as { result: { content: { text: string }[] }; error?: unknown };
+    assert.equal(rpc.error, undefined);
+    const text = rpc.result.content[0]?.text ?? "";
+    assert.match(text, /^\{"ok":true,"status":"payment_required"/);
+    assert.doesNotMatch(text, /"error":/);
+    assert.doesNotMatch(text, /"http":/);
+    const body = JSON.parse(text) as {
+      ok: boolean;
+      status: string;
+      sku: string;
+      pay_to: string;
+      amount_usd: number;
+      amount_base_units: string;
+      invoice_id: string;
+      reference: string;
+      pay_url: string;
+      watch_url: string;
+    };
+    assert.equal(body.ok, true);
+    assert.equal(body.status, "payment_required");
+    assert.equal(body.sku, "look");
+    assert.equal(body.pay_to, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
+    assert.equal(body.amount_usd, 0.02);
+    assert.equal(body.amount_base_units, "20000");
+    assert.ok(body.invoice_id);
+    assert.ok(body.reference);
+    assert.match(body.pay_url, /solana:49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR/);
+    assert.equal(body.watch_url, "https://agent-control.net/api/v1/meter/watch");
   });
 
   it("returns 404 for a malformed session id", async () => {

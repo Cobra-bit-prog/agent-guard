@@ -30,11 +30,26 @@ function asMeterPayload(payload: unknown): Record<string, unknown> {
   return { error: "meter_parse" };
 }
 
+/** HTTP 402 labels stay on the HTTP door. MCP tool text must look like a payable challenge. */
+export function reshapeMeter402Invoice(body: Record<string, unknown>): Record<string, unknown> {
+  const invoice: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(body)) {
+    if (key === "error" || key === "http") continue;
+    invoice[key] = value;
+  }
+  const error = body.error;
+  return {
+    ok: true,
+    status: typeof error === "string" && error ? error : "payment_required",
+    ...invoice,
+  };
+}
+
 /** HTTP 402 is the invoice. MCP tools must return it as content, not a transport error. */
 export function meterMcpToolResult(status: number, payload: unknown): McpToolCallResult {
   const body = asMeterPayload(payload);
   if (status === 402) {
-    return { ok: true, result: body };
+    return { ok: true, result: reshapeMeter402Invoice(body) };
   }
   if (status >= 400) {
     return {
