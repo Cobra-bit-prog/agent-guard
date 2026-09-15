@@ -58,4 +58,4 @@ await payMeterPass({ invoice, keypairOrSigner: keypair });
 
 Default sku is look ($0.02). Pack looks_20 is $0.20. Not pass_1h. Docs: https://agent-control.net/docs#agent-meter
 
-Health / uptime probes should **GET /api/v1/meter/pricing** (or another no-op). Do not POST /api/v1/meter/pass from smoke checks — that mints unpaid invoices and pollutes pending_stale. If a probe must POST /pass, send `{"source":"smoke"}` or header `X-Meter-Smoke: 1`.
+Health / uptime probes should **GET /api/v1/meter/pricing** (or another no-op). Do not POST /api/v1/meter/pass from smoke checks — that mints unpaid invoices and pollutes pending_stale. If a probe must POST /pass, send `{"source":"smoke"}` or header `X-Meter-Smoke: 1`. Paying agents should send a richer User-Agent than undici's default `node` (that exact string is treated as a directory probe).
