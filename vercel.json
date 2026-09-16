@@ -23,6 +23,11 @@
       "permanent": true
     },
     {
+      "source": "/pay/meter",
+      "destination": "/meter/pay",
+      "permanent": true
+    },
+    {
       "source": "/meter",
       "destination": "/connect#agent-meter",
       "permanent": false

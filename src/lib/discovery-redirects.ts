@@ -2,6 +2,9 @@
  * Dead discovery URLs that still bounce agents and humans.
  * Same table is mirrored in vercel.json so Vercel edge and the app agree.
  *
+ * /pay/meter is a guessed Meter pay URL after 402 invoices; the live door is
+ * /meter/pay. Preserve the query string (especially invoice_id).
+ *
  * /meter is a temporary soft bounce until the owner merges PR #43
  * (visualize). Do not implement that page here.
  */
@@ -19,6 +22,12 @@ export const DISCOVERY_REDIRECTS = [
   {
     source: "/pay",
     destination: "/billing/pay",
+    status: 308,
+    permanent: true,
+  },
+  {
+    source: "/pay/meter",
+    destination: "/meter/pay",
     status: 308,
     permanent: true,
   },

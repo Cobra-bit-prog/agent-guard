@@ -24,12 +24,13 @@ function hit(path: string, method = "GET") {
 }
 
 describe("discovery path redirects", () => {
-  it("maps the four dead URLs to live doors", () => {
+  it("maps the dead URLs to live doors", () => {
     assert.deepEqual(
       DISCOVERY_REDIRECTS.map((rule) => [rule.source, rule.destination, rule.status, rule.permanent]),
       [
         ["/docs/connect", "/connect", 308, true],
         ["/pay", "/billing/pay", 308, true],
+        ["/pay/meter", "/meter/pay", 308, true],
         ["/meter", "/connect#agent-meter", 307, false],
         [LLMS_WELL_KNOWN_PATH, LLMS_TXT_PATH, 308, true],
       ],
@@ -53,6 +54,18 @@ describe("discovery path redirects", () => {
     assert.ok(withQuery);
     assert.equal(withQuery.status, 308);
     assert.equal(withQuery.headers.get("location"), "/billing/pay?plan=starter&id=pay_1");
+  });
+
+  it("308s /pay/meter to /meter/pay and keeps invoice_id", () => {
+    const bare = hit("/pay/meter");
+    assert.ok(bare);
+    assert.equal(bare.status, 308);
+    assert.equal(bare.headers.get("location"), "/meter/pay");
+
+    const withQuery = hit("/pay/meter?invoice_id=inv_202f5a771d4c6f77");
+    assert.ok(withQuery);
+    assert.equal(withQuery.status, 308);
+    assert.equal(withQuery.headers.get("location"), "/meter/pay?invoice_id=inv_202f5a771d4c6f77");
   });
 
   it("soft-redirects /meter to the Agent Meter door until PR #43", () => {
@@ -79,6 +92,8 @@ describe("discovery path redirects", () => {
   it("leaves live doors and meter APIs alone", () => {
     assert.equal(hit("/connect"), null);
     assert.equal(hit("/billing/pay?plan=starter"), null);
+    assert.equal(hit("/meter/pay"), null);
+    assert.equal(hit("/meter/pay?invoice_id=inv_1"), null);
     assert.equal(hit("/llms.txt"), null);
     assert.equal(hit("/docs"), null);
     assert.equal(hit("/.well-known/x402"), null);
@@ -118,5 +133,11 @@ describe("discovery redirects stay wired", () => {
     assert.match(vite, /handleDiscoveryRedirect/);
     assert.match(nitro, /handleDiscoveryRedirect/);
     assert.match(nitro, /handleMeterWellKnown/);
+    for (const rule of DISCOVERY_REDIRECTS) {
+      assert.ok(
+        vite.includes(`pathOnly === "${rule.source}"`),
+        `vite plugin filter missing ${rule.source}`,
+      );
+    }
   });
 });
