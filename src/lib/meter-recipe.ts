@@ -7,7 +7,7 @@
 export const METER_EYEBROW = "Agent Meter";
 /** Locked Meter headline. The look question lives in LOOK_QUESTION. */
 export const METER_HEADLINE = "Agents pay themselves";
-export const METER_LEDE = "First 5 free. Then $0.02 USDC.";
+export const METER_LEDE = "First 5 free. Then $0.10 USDC.";
 export const METER_QUESTION = "Can I pay this address?";
 export const METER_SEPARATE =
   "Separate from the Human App. Then scan and preflight. No inbox. No email, no API key, no Approval Inbox.";
@@ -24,7 +24,7 @@ export const METER_PRICING_CURL = "curl -s https://agent-control.net/api/v1/mete
 export const METER_DISCOVERY =
   "llms.txt → GET /api/v1/meter/pricing → 402 → MCP meter_* tools.";
 export const METER_CONNECT_BODY =
-  "First 5 free. Then $0.02 USDC. Agents pay themselves. No inbox. No email. No API key.";
+  "First 5 free. Then $0.10 USDC. Agents pay themselves. No inbox. No email. No API key.";
 export const METER_MCP_TOOLS = "meter_pricing, meter_scan, meter_buy_pass, meter_watch";
 
 /** Copy-paste agent pay — no Phantom. Same file as src/adapters/meter-pay.ts. */
@@ -33,7 +33,7 @@ await buyMeterPass({ keypair });`;
 
 /** Free-look header. Pick any string; first 5 looks on that id are free. */
 export const METER_FREE_LOOK_NOTE =
-  "pick any string; first 5 looks on that id are free; then 402 look $0.02";
+  "pick any string; first 5 looks on that id are free; then 402 look $0.10";
 
 export const METER_FREE_LOOK_CURL =
   "curl -s -X POST https://agent-control.net/api/v1/meter/scan -H 'content-type: application/json' -H 'X-Agent-Pass: <your-id>' -d '{\"chain\":\"solana\",\"address\":\"<destination>\"}'";
@@ -42,10 +42,10 @@ export const METER_FREE_LOOK_CURL =
 export const METER_RECIPE = `# 1 discover
 # https://agent-control.net/llms.txt
 curl -s https://agent-control.net/api/v1/meter/pricing
-# 2 look — First 5 free. Then $0.02 USDC. One address. ok | new | warn | sink
+# 2 look — First 5 free. Then $0.10 USDC. One address. ok | new | warn | sink
 # ${METER_FREE_LOOK_NOTE}
 ${METER_FREE_LOOK_CURL}
-# 3 after 5, POST /api/v1/meter/pass → 402 look $0.02 USDC on Solana to pay_to WITH reference
+# 3 after 5, POST /api/v1/meter/pass → 402 look $0.10 USDC on Solana to pay_to WITH reference
 curl -s -X POST https://agent-control.net/api/v1/meter/pass -H 'content-type: application/json' -d '{}'
 # copy src/adapters/meter-pay.ts — agent wallet signs and sends (no Phantom)
 ${METER_PAY_SNIPPET}
@@ -73,12 +73,12 @@ export const METER_STEPS = [
   {
     n: "2",
     t: "Look",
-    d: "Can I pay this address? First 5 free. Then $0.02 USDC. ok | new | warn | sink. Never hold. Pick any string; first 5 looks on that id are free; then 402 look $0.02.",
+    d: "Can I pay this address? First 5 free. Then $0.10 USDC. ok | new | warn | sink. Never hold. Pick any string; first 5 looks on that id are free; then 402 look $0.10.",
     code: METER_FREE_LOOK_CURL,
   },
   {
     n: "3",
-    t: "Pay $0.02",
+    t: "Pay $0.10",
     d: "After 5 free, current look from GET pricing. Your agent wallet sends USDC on Solana to pay_to with the reference. Copy src/adapters/meter-pay.ts onto your machine. We never take keys. No Phantom. Default sku is look. Pack looks_20 is $0.20.",
     code: METER_PAY_SNIPPET,
   },

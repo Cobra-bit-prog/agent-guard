@@ -1,3 +1,4 @@
+import { METER_LOOK_USD } from "./meter/pricing.ts";
 import {
   buildSolanaPayUrl,
   formatUsdcExact,
@@ -91,7 +92,7 @@ function intentFromParts(opts: {
   reference: string;
 }): MeterPayIntent {
   const recipient = lockedSolanaUsdcRecipient();
-  const amountUsdc = parseAmount(opts.amountUsdc, 0.02);
+  const amountUsdc = parseAmount(opts.amountUsdc, METER_LOOK_USD);
   const amountBaseUnits = opts.amountBaseUnits?.trim() || usdcBaseUnits(amountUsdc);
   const payUrl = buildSolanaPayUrl({
     recipient,
@@ -131,7 +132,7 @@ export function resolveMeterPayIntent(opts: {
 
   const amountUsdc = parseAmount(
     invoice?.amount_usd ?? parsedInvoiceUrl?.amountUsdc ?? parsedUrl?.amountUsdc ?? opts.search.amount,
-    0.02,
+    METER_LOOK_USD,
   );
   const amountBaseUnits =
     asTrimmed(invoice?.amount_base_units) || usdcBaseUnits(amountUsdc);

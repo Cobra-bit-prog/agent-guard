@@ -1,6 +1,6 @@
 # Connect your agent
 
-Can I pay this address? First 5 free. Then $0.02. No inbox. Agent Meter is public — no API key. Discovery: `GET /.well-known/x402`.
+Can I pay this address? First 5 free. Then $0.10. No inbox. Agent Meter is public — no API key. Discovery: `GET /.well-known/x402`.
 
 Human App (separate): External audit for your agents. Point Cursor or Grok at the live MCP so the agent asks before a send. You keep the keys.
 
