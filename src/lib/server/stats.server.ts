@@ -10,6 +10,48 @@ export type AccountStats = {
   generatedAt: string;
 };
 
+export type AccountLead = {
+  email: string;
+  name: string;
+  createdAt: string;
+  emailVerified: boolean;
+  plan: string | null;
+  status: string | null;
+  trial_ends_at: string | null;
+  period_ends_at: string | null;
+};
+
+export type UnpaidStarterCheckout = {
+  id: string;
+  guest_email: string | null;
+  amount: number;
+  status: string;
+  created_at: string;
+};
+
+export type AccountLeads = {
+  generatedAt: string;
+  freeOrTrial: AccountLead[];
+  unverified: AccountLead[];
+  unpaidStarterCheckouts: UnpaidStarterCheckout[];
+};
+
+/** Same free/trial definition as collectAccountStats. */
+export const FREE_OR_TRIAL_SQL = `s.user_id is null
+        or s.plan = 'free'
+        or (s.plan in ('starter', 'pro', 'team') and s.period_ends_at is not null and s.period_ends_at <= now())`;
+
+const ACCOUNT_LEAD_SELECT = `
+  u.email,
+  u.name,
+  u."createdAt" as created_at,
+  u."emailVerified" as email_verified,
+  s.plan,
+  s.status,
+  s.trial_ends_at,
+  s.period_ends_at
+`;
+
 function secretsEqual(a: string, b: string): boolean {
   const left = Buffer.from(a);
   const right = Buffer.from(b);
@@ -32,6 +74,45 @@ function asInt(value: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+function asIso(value: unknown): string | null {
+  if (value == null || value === "") return null;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value.toISOString();
+  }
+  const text = String(value);
+  const parsed = new Date(text);
+  if (!Number.isNaN(parsed.getTime())) return parsed.toISOString();
+  return text;
+}
+
+function asBool(value: unknown): boolean {
+  return value === true || value === "t" || value === "true";
+}
+
+type AccountLeadRow = {
+  email: string | null;
+  name: string | null;
+  created_at: unknown;
+  email_verified: unknown;
+  plan: string | null;
+  status: string | null;
+  trial_ends_at: unknown;
+  period_ends_at: unknown;
+};
+
+function mapAccountLead(row: AccountLeadRow): AccountLead {
+  return {
+    email: String(row.email ?? "").trim(),
+    name: String(row.name ?? ""),
+    createdAt: asIso(row.created_at) ?? "",
+    emailVerified: asBool(row.email_verified),
+    plan: row.plan ?? null,
+    status: row.status ?? null,
+    trial_ends_at: asIso(row.trial_ends_at),
+    period_ends_at: asIso(row.period_ends_at),
+  };
+}
+
 export async function collectAccountStats(sql: Sql): Promise<AccountStats> {
   const users = await sql.query<{ signed_up: number; unverified: number }>(
     `select count(*)::int as signed_up,
@@ -50,9 +131,7 @@ export async function collectAccountStats(sql: Sql): Promise<AccountStats> {
     `select count(*)::int as n
      from "user" u
      left join subscriptions s on s.user_id = u.id
-     where s.user_id is null
-        or s.plan = 'free'
-        or (s.plan in ('starter', 'pro', 'team') and s.period_ends_at is not null and s.period_ends_at <= now())`,
+     where ${FREE_OR_TRIAL_SQL}`,
   );
   const paid = { starter: 0, pro: 0, team: 0 };
   for (const row of paidRows) {
@@ -82,6 +161,60 @@ export async function collectAccountStats(sql: Sql): Promise<AccountStats> {
     paid,
     partners,
     generatedAt: new Date().toISOString(),
+  };
+}
+
+export async function collectAccountLeads(sql: Sql): Promise<AccountLeads> {
+  const freeOrTrialRows = await sql.query<AccountLeadRow>(
+    `select ${ACCOUNT_LEAD_SELECT}
+     from "user" u
+     left join subscriptions s on s.user_id = u.id
+     where ${FREE_OR_TRIAL_SQL}
+     order by u."createdAt" desc`,
+  );
+  const unverifiedRows = await sql.query<AccountLeadRow>(
+    `select ${ACCOUNT_LEAD_SELECT}
+     from "user" u
+     left join subscriptions s on s.user_id = u.id
+     where u."emailVerified" is not true
+     order by u."createdAt" desc`,
+  );
+  let unpaidStarterCheckouts: UnpaidStarterCheckout[] = [];
+  try {
+    const checkoutRows = await sql.query<{
+      id: string;
+      guest_email: string | null;
+      amount: unknown;
+      status: string;
+      created_at: unknown;
+    }>(
+      `select p.id,
+              coalesce(nullif(btrim(p.guest_email), ''), u.email) as guest_email,
+              p.amount_usdc as amount,
+              p.status,
+              p.created_at
+       from pay_requests p
+       left join "user" u on u.id = p.user_id
+       where coalesce(p.source, 'human') = 'human'
+         and p.plan = 'starter'
+         and p.status in ('pending', 'underpaid')
+       order by p.created_at desc`,
+    );
+    unpaidStarterCheckouts = checkoutRows.map((row) => ({
+      id: String(row.id),
+      guest_email: row.guest_email?.trim() || null,
+      amount: asInt(row.amount),
+      status: String(row.status ?? ""),
+      created_at: asIso(row.created_at) ?? "",
+    }));
+  } catch {
+    console.error("[stats] unpaid starter checkout query failed");
+  }
+  return {
+    generatedAt: new Date().toISOString(),
+    freeOrTrial: freeOrTrialRows.map(mapAccountLead),
+    unverified: unverifiedRows.map(mapAccountLead),
+    unpaidStarterCheckouts,
   };
 }
 
