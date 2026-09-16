@@ -35,30 +35,30 @@ describe("Agent Meter well-known discovery", () => {
     assert.equal(accepts.length, 1);
     assert.equal(accepts[0]?.scheme, "exact");
     assert.equal(accepts[0]?.network, "solana");
-    assert.equal(accepts[0]?.maxAmountRequired, "20000");
-    assert.equal(accepts[0]?.amount, "20000");
+    assert.equal(accepts[0]?.maxAmountRequired, "100000");
+    assert.equal(accepts[0]?.amount, "100000");
     assert.equal(accepts[0]?.payTo, SOLANA_PAYOUT_ADDRESS);
     assert.equal(accepts[0]?.payTo, PAY_TO);
     assert.equal(accepts[0]?.asset, USDC_MINT);
     assert.equal(accepts[0]?.extra.sku, "look");
-    assert.equal(accepts[0]?.extra.price_usd, 0.02);
+    assert.equal(accepts[0]?.extra.price_usd, 0.10);
     assert.match(accepts[0]?.extra.question ?? "", /Can I pay this address\?/);
   });
 
-  it("describes Agent Meter look $0.02 Solana USDC for crawlers", () => {
+  it("describes Agent Meter look $0.10 Solana USDC for crawlers", () => {
     const body = x402WellKnown();
     assert.equal(body.x402Version, 2);
     assert.equal(body.kind, "resource-server");
     assert.equal(body.name, "Agent Meter");
-    assert.equal(METER_DISCOVERY_LEAD, "Can I pay this address? First 5 free. Then $0.02. No inbox.");
+    assert.equal(METER_DISCOVERY_LEAD, "Can I pay this address? First 5 free. Then $0.10. No inbox.");
     assert.match(body.description, /Can I pay this address\?/);
-    assert.match(body.description, /First 5 free\. Then \$0\.02/);
+    assert.match(body.description, /First 5 free\. Then \$0\.10/);
     assert.match(body.description, /No inbox/);
     assert.match(body.description, /Human App is separate/);
     assert.equal(body.accepts[0]?.payTo, PAY_TO);
     assert.equal(body.resources[0]?.url, `${PUBLIC_ORIGIN}/api/v1/meter/pass`);
     assert.equal(body.resources[0]?.method, "POST");
-    assert.match(body.resources[0]?.description ?? "", /402 look \$0\.02/);
+    assert.match(body.resources[0]?.description ?? "", /402 look \$0\.10/);
     assert.equal(body.docs, `${PUBLIC_ORIGIN}/docs#agent-meter`);
     assert.doesNotMatch(JSON.stringify(body), /facilitator/i);
     assert.doesNotMatch(JSON.stringify(body), /Hostile/);
@@ -125,15 +125,15 @@ describe("Meter-first registry-facing blurbs", () => {
       const bearer = blob.search(/Bearer agent API key|Agents use a Bearer API key/);
       assert.ok(look >= 0, "missing look question");
       assert.match(blob, /First 5 free/);
-      assert.match(blob, /\$0\.02/);
+      assert.match(blob, /\$0\.10/);
       assert.match(blob, /No inbox/i);
       if (bearer >= 0) {
         assert.ok(look < bearer, "Meter look must lead Bearer");
       }
     }
 
-    assert.match(tools, /Can I pay this address\? First 5 free\. Then \$0\.02/);
-    assert.match(handle, /Can I pay this address\? First 5 free\. Then \$0\.02\. No inbox\./);
+    assert.match(tools, /Can I pay this address\? First 5 free\. Then \$0\.10/);
+    assert.match(handle, /Can I pay this address\? First 5 free\. Then \$0\.10\. No inbox\./);
     const instructionsLead = handle.indexOf("Can I pay this address?");
     const humanLead = handle.indexOf("Human App (separate):");
     assert.ok(instructionsLead >= 0 && humanLead > instructionsLead);

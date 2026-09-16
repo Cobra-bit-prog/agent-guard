@@ -3,7 +3,7 @@
   "info": {
     "title": "Agent Meter",
     "version": "1.0.0",
-    "description": "Can I pay this address? First 5 free. Then $0.02. No inbox. First 5 free. Then $0.02 USDC. Solana USDC to 49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR. Human App is separate."
+    "description": "Can I pay this address? First 5 free. Then $0.10. No inbox. First 5 free. Then $0.10 USDC. Solana USDC to 49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR. Human App is separate."
   },
   "servers": [
     {
@@ -14,7 +14,7 @@
     "/api/v1/meter/pricing": {
       "get": {
         "summary": "Public Meter catalog",
-        "description": "Can I pay this address? First 5 free. Then $0.02 USDC. Default sku look.",
+        "description": "Can I pay this address? First 5 free. Then $0.10 USDC. Default sku look.",
         "responses": {
           "200": {
             "description": "Catalog. default_sku is look. funds.pay_to is locked."
@@ -25,7 +25,7 @@
     "/api/v1/meter/pass": {
       "post": {
         "summary": "Look door",
-        "description": "Empty body {} mints look $0.02. No release without payment. First 5 looks on an X-Agent-Pass id are free.",
+        "description": "Empty body {} mints look $0.10. No release without payment. First 5 looks on an X-Agent-Pass id are free.",
         "requestBody": {
           "required": false,
           "content": {
@@ -52,7 +52,7 @@
             "description": "Pass issued after proof or a prior payment watch."
           },
           "402": {
-            "description": "Pay look $0.02 Solana USDC to the locked payTo with the invoice reference."
+            "description": "Pay look $0.10 Solana USDC to the locked payTo with the invoice reference."
           }
         }
       }
@@ -60,7 +60,7 @@
     "/api/v1/meter/scan": {
       "post": {
         "summary": "Can I pay this address?",
-        "description": "First 5 free. Then $0.02 USDC. Header X-Agent-Pass.",
+        "description": "First 5 free. Then $0.10 USDC. Header X-Agent-Pass.",
         "parameters": [
           {
             "name": "X-Agent-Pass",

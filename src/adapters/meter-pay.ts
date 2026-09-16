@@ -31,8 +31,8 @@ export const METER_USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 export const DEFAULT_METER_SKU = "look";
 export const DEFAULT_METER_ORIGIN = "https://agent-control.net";
 export const DEFAULT_METER_RPC = "https://api.mainnet-beta.solana.com";
-export const DEFAULT_PASS_USD = 0.02;
-export const DEFAULT_PASS_BASE_UNITS = "20000";
+export const DEFAULT_PASS_USD = 0.1;
+export const DEFAULT_PASS_BASE_UNITS = "100000";
 
 export type MeterFetchLike = (
   input: string,

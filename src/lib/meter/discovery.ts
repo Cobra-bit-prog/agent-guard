@@ -13,6 +13,7 @@ import {
   METER_LOOK,
   METER_LOOK_SKU,
   METER_LOOK_USD,
+  METER_LOOK_USD_LABEL,
 } from "./pricing.ts";
 
 export const PUBLIC_ORIGIN = "https://agent-control.net";
@@ -21,7 +22,7 @@ export const AGENT_CARD_PATH = "/.well-known/agent-card.json";
 export const AGENT_JSON_PATH = "/.well-known/agent.json";
 export const OPENAPI_METER_PATH = "/openapi-meter.json";
 
-export const METER_DISCOVERY_LEAD = `${LOOK_QUESTION} First 5 free. Then $0.02. No inbox.`;
+export const METER_DISCOVERY_LEAD = `${LOOK_QUESTION} First 5 free. Then $0.10. No inbox.`;
 
 export const WELL_KNOWN_CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -69,7 +70,7 @@ export function x402WellKnown() {
       {
         url: PASS_URL,
         method: "POST",
-        description: `Look door. Empty body {} → HTTP 402 look $${METER_LOOK_USD} Solana USDC. ${METER_FREE_THEN_LOOK}`,
+        description: `Look door. Empty body {} → HTTP 402 look $${METER_LOOK_USD_LABEL} Solana USDC. ${METER_FREE_THEN_LOOK}`,
       },
       {
         url: SCAN_URL,
@@ -79,7 +80,7 @@ export function x402WellKnown() {
       {
         url: PRICING_URL,
         method: "GET",
-        description: `Public catalog. Default sku ${METER_LOOK_SKU} $${METER_LOOK_USD}.`,
+        description: `Public catalog. Default sku ${METER_LOOK_SKU} $${METER_LOOK_USD_LABEL}.`,
       },
     ],
     docs: DOCS_URL,
@@ -156,7 +157,7 @@ export function meterOpenApi() {
       "/api/v1/meter/pass": {
         post: {
           summary: "Look door",
-          description: `Empty body {} mints look $${METER_LOOK_USD}. No release without payment. First ${METER_FREE_LOOKS} looks on an X-Agent-Pass id are free.`,
+          description: `Empty body {} mints look $${METER_LOOK_USD_LABEL}. No release without payment. First ${METER_FREE_LOOKS} looks on an X-Agent-Pass id are free.`,
           requestBody: {
             required: false,
             content: {
@@ -172,7 +173,7 @@ export function meterOpenApi() {
           },
           responses: {
             "402": {
-              description: `Pay look $${METER_LOOK_USD} Solana USDC to the locked payTo with the invoice reference.`,
+              description: `Pay look $${METER_LOOK_USD_LABEL} Solana USDC to the locked payTo with the invoice reference.`,
             },
             "200": { description: "Pass issued after proof or a prior payment watch." },
           },

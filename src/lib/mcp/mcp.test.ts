@@ -180,7 +180,7 @@ describe("POST initialize is Streamable HTTP", () => {
     for (const name of mcpDiscovery().meter) {
       assert.match(instructions, new RegExp(`\\b${name}\\b`));
     }
-    assert.match(instructions, /First 5 free\. Then \$0\.02 USDC/);
+    assert.match(instructions, /First 5 free\. Then \$0\.10 USDC/);
     assert.match(instructions, /look \/ looks_20 \/ addresses_100 \/ stamp_tx/);
     assert.match(instructions, /meter_watch, then X-Agent-Pass/);
     assert.match(instructions, /We never take keys/);
@@ -243,7 +243,7 @@ describe("initialized notification and session reuse", () => {
     const preflight = MCP_TOOLS.find((tool) => tool.name === "meter_preflight")?.description ?? "";
     assert.match(scan, /X-Agent-Pass/);
     assert.match(scan, /first 5 looks on that id are free/);
-    assert.match(scan, /402 look \$0\.02/);
+    assert.match(scan, /402 look \$0\.10/);
     assert.match(scan, /pay_page for Phantom laptop/);
     assert.match(preflight, /X-Agent-Pass/);
     assert.match(preflight, /first 5 looks on that id are free/);
@@ -279,8 +279,8 @@ describe("initialized notification and session reuse", () => {
       invoice_id: "inv_mcp",
       pay_to: "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR",
       reference: "ref_mcp",
-      amount_usd: 0.02,
-      amount_base_units: "20000",
+      amount_usd: 0.10,
+      amount_base_units: "100000",
       chain: "solana",
       asset: "usdc",
       sku: "look",
@@ -295,12 +295,12 @@ describe("initialized notification and session reuse", () => {
     assert.equal(body.ok, true);
     assert.equal(body.status, "payment_required");
     assert.equal(body.sku, "look");
-    assert.equal(body.price_usd, 0.02);
+    assert.equal(body.price_usd, 0.10);
     assert.equal(body.asset, "usdc");
     assert.equal(body.chain, "solana");
     assert.equal(body.pay_to, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
-    assert.equal(body.amount_usd, 0.02);
-    assert.equal(body.amount_base_units, "20000");
+    assert.equal(body.amount_usd, 0.10);
+    assert.equal(body.amount_base_units, "100000");
     assert.equal(body.invoice_id, "inv_mcp");
     assert.equal(body.reference, "ref_mcp");
     assert.equal(body.question, invoice.question);
@@ -424,8 +424,8 @@ describe("initialized notification and session reuse", () => {
     assert.equal(body.status, "payment_required");
     assert.equal(body.sku, "look");
     assert.equal(body.pay_to, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
-    assert.equal(body.amount_usd, 0.02);
-    assert.equal(body.amount_base_units, "20000");
+    assert.equal(body.amount_usd, 0.10);
+    assert.equal(body.amount_base_units, "100000");
     assert.ok(body.invoice_id);
     assert.ok(body.reference);
     assert.match(body.pay_url, /solana:49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR/);

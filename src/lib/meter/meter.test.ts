@@ -160,8 +160,8 @@ describe("meter http", () => {
       invoice_id: "inv_test",
       pay_to: "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR",
       reference: "ref_test",
-      amount_usd: 0.02,
-      amount_base_units: "20000",
+      amount_usd: 0.10,
+      amount_base_units: "100000",
       chain: "solana",
       asset: "usdc",
       sku: "look",
@@ -201,8 +201,8 @@ describe("meter http", () => {
       invoice_id: "inv_hostile",
       pay_to: "HostileWalletDoNotPay11111111111111111111",
       reference: "ref_lock",
-      amount_usd: 0.02,
-      amount_base_units: "20000",
+      amount_usd: 0.10,
+      amount_base_units: "100000",
       chain: "solana",
       asset: "usdc",
       sku: "look",
@@ -477,7 +477,7 @@ describe("meter http", () => {
     assert.equal(res.status, 200);
     const body = (await res.json()) as { product: string; pass: { price_usd: number }; default_sku: string };
     assert.equal(body.product, "Agent Meter");
-    assert.equal(body.pass.price_usd, 0.02);
+    assert.equal(body.pass.price_usd, 0.10);
     assert.equal(body.default_sku, "look");
   });
 
@@ -498,7 +498,7 @@ describe("meter http", () => {
       pay_url: string;
     };
     assert.equal(body.invoice_id, invoice.invoice_id);
-    assert.equal(body.amount_usd, 0.02);
+    assert.equal(body.amount_usd, 0.10);
     assert.equal(body.pay_to, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
     assert.match(body.pay_url, /^solana:49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR\?/);
     assert.match(body.pay_url, new RegExp(`reference=${invoice.reference}`));
@@ -598,32 +598,41 @@ describe("extra meter skus", () => {
     const res = await handleMeterRequest(get("/api/v1/meter/pricing"), "/api/v1/meter/pricing", createMeterStore());
     const body = (await res.json()) as {
       default_sku: string;
+      look: { price_usd: number };
       pass: { id: string; price_usd: number };
+      packs: { looks_20: { price_usd: number }; addresses_100: { price_usd: number } };
+      ticket: { price_usd: number };
       skus: { id: string; price_usd: number }[];
       funds: { pay_to: string };
       free_looks: number;
     };
     assert.equal(body.default_sku, "look");
+    assert.equal(body.look.price_usd, 0.1);
     assert.equal(body.pass.id, "look");
-    assert.equal(body.pass.price_usd, 0.02);
+    assert.equal(body.pass.price_usd, 0.1);
     assert.equal(body.free_looks, 5);
     assert.deepEqual(
       body.skus.map((row) => row.id),
       ["look", "looks_20", "addresses_100", "stamp_tx", "pass_1h"],
     );
+    assert.equal(body.skus.find((row) => row.id === "look")?.price_usd, 0.1);
     assert.equal(body.skus.find((row) => row.id === "looks_20")?.price_usd, 0.2);
     assert.equal(body.skus.find((row) => row.id === "addresses_100")?.price_usd, 0.15);
     assert.equal(body.skus.find((row) => row.id === "stamp_tx")?.price_usd, 0.05);
+    assert.equal(body.skus.find((row) => row.id === "pass_1h")?.price_usd, 0.25);
+    assert.equal(body.packs.looks_20.price_usd, 0.2);
+    assert.equal(body.packs.addresses_100.price_usd, 0.15);
+    assert.equal(body.ticket.price_usd, 0.05);
     assert.equal(body.funds.pay_to, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
   });
 
-  it("POST pass {} invoices look $0.02", async () => {
+  it("POST pass {} invoices look $0.10", async () => {
     const store = createMeterStore();
     const res = await handleMeterRequest(post("/api/v1/meter/pass", {}), "/api/v1/meter/pass", store);
     assert.equal(res.status, 402);
     const body = (await res.json()) as { sku: string; amount_usd: number; pay_to: string; reference: string };
     assert.equal(body.sku, "look");
-    assert.equal(body.amount_usd, 0.02);
+    assert.equal(body.amount_usd, 0.10);
     assert.equal(body.pay_to, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
     assertMeter402IndexHeaders(res, body.reference);
   });
@@ -967,8 +976,8 @@ describe("invoice origin", { concurrency: false }, () => {
     assert.equal(report.invoices_pending, 1);
     assert.equal(report.invoices_pending_fresh, 1);
     assert.equal(report.invoices_pending_stale, 1);
-    assert.equal(report.usdc_pending_fresh, 0.02);
-    assert.equal(report.usdc_pending_stale, 0.02);
+    assert.equal(report.usdc_pending_fresh, 0.10);
+    assert.equal(report.usdc_pending_stale, 0.10);
     assert.equal(report.invoices_pending_smoke, 0);
     assert.equal(report.usdc_pending_smoke, 0);
   });
@@ -1080,8 +1089,8 @@ describe("invoice origin", { concurrency: false }, () => {
     assert.equal(report.invoices_pending_fresh, 1);
     assert.equal(report.invoices_pending_stale, 0);
     assert.equal(report.invoices_pending_smoke, 2);
-    assert.equal(report.usdc_pending_fresh, 0.02);
-    assert.equal(report.usdc_pending_smoke, 0.04);
+    assert.equal(report.usdc_pending_fresh, 0.1);
+    assert.equal(report.usdc_pending_smoke, 0.2);
   });
 
   it("auto-tags exact node, cloud-crawler, and x402-list-monitor UAs as smoke", async () => {
@@ -1137,8 +1146,8 @@ describe("invoice origin", { concurrency: false }, () => {
     assert.equal(report.invoices_pending_fresh, 1);
     assert.equal(report.invoices_pending_stale, 0);
     assert.equal(report.invoices_pending_smoke, 3);
-    assert.equal(report.usdc_pending_fresh, 0.02);
-    assert.equal(report.usdc_pending_smoke, 0.06);
+    assert.equal(report.usdc_pending_fresh, 0.1);
+    assert.equal(report.usdc_pending_smoke, 0.3);
   });
 
   it("excludes already-minted node and crawler UAs from pending_fresh even if source is http_pass", async () => {
@@ -1167,8 +1176,8 @@ describe("invoice origin", { concurrency: false }, () => {
     assert.equal(report.invoices_pending_fresh, 1);
     assert.equal(report.invoices_pending_stale, 0);
     assert.equal(report.invoices_pending_smoke, 3);
-    assert.equal(report.usdc_pending_fresh, 0.02);
-    assert.equal(report.usdc_pending_smoke, 0.06);
+    assert.equal(report.usdc_pending_fresh, 0.1);
+    assert.equal(report.usdc_pending_smoke, 0.3);
   });
 
   it("excludes already-minted directory probe UAs from pending_fresh even if source is http_pass", async () => {
@@ -1187,8 +1196,8 @@ describe("invoice origin", { concurrency: false }, () => {
     assert.equal(report.invoices_pending_fresh, 1);
     assert.equal(report.invoices_pending_stale, 0);
     assert.equal(report.invoices_pending_smoke, 1);
-    assert.equal(report.usdc_pending_fresh, 0.02);
-    assert.equal(report.usdc_pending_smoke, 0.02);
+    assert.equal(report.usdc_pending_fresh, 0.10);
+    assert.equal(report.usdc_pending_smoke, 0.10);
   });
 
   it("never auto-tags Phantom, browser, or MCP agent clients as smoke", async () => {
@@ -1236,10 +1245,10 @@ describe("invoice origin", { concurrency: false }, () => {
     assert.equal(report.invoices_pending_fresh, 2);
     assert.equal(report.invoices_pending_stale, 1);
     assert.equal(report.invoices_pending_smoke, 2);
-    assert.equal(report.usdc_pending, 0.04);
-    assert.equal(report.usdc_pending_fresh, 0.04);
-    assert.equal(report.usdc_pending_stale, 0.02);
-    assert.equal(report.usdc_pending_smoke, 0.04);
+    assert.equal(report.usdc_pending, 0.2);
+    assert.equal(report.usdc_pending_fresh, 0.2);
+    assert.equal(report.usdc_pending_stale, 0.1);
+    assert.equal(report.usdc_pending_smoke, 0.2);
   });
 
   it("internal invoice list returns 401 without the bearer secret", async () => {
@@ -1292,7 +1301,7 @@ describe("invoice origin", { concurrency: false }, () => {
       assert.equal(row.source, "http_pass");
       assert.equal(row.user_agent, "list-agent");
       assert.equal(row.partner, "x402");
-      assert.equal(row.amount_usd, 0.02);
+      assert.equal(row.amount_usd, 0.10);
       assert.equal(row.status, "pending");
       assert.ok(row.invoice_id);
       assert.ok(row.created_at);
@@ -1387,7 +1396,7 @@ describe("paying agents A–H", () => {
     }
   });
 
-  it("B 402 $0.02 pay_to locked wallet after free5", async () => {
+  it("B 402 $0.10 pay_to locked wallet after free5", async () => {
     const store = createMeterStore();
     for (let i = 0; i < 5; i += 1) {
       assert.equal((await scanOnce(store)).status, 200);
@@ -1409,9 +1418,9 @@ describe("paying agents A–H", () => {
     };
     assert.equal(body.error, "payment_required");
     assert.equal(body.sku, "look");
-    assert.equal(body.amount_usd, 0.02);
+    assert.equal(body.amount_usd, 0.10);
     assert.equal(body.pay_to, PAY_TO);
-    assert.equal((body as { amount_base_units?: string }).amount_base_units, "20000");
+    assert.equal((body as { amount_base_units?: string }).amount_base_units, "100000");
     assert.equal((body as { watch_url?: string }).watch_url, "https://agent-control.net/api/v1/meter/watch");
     assert.equal(body.adapter_url, METER_ADAPTER_URL);
     assert.equal(body.pay_page, meter402PayPage(body.invoice_id));
@@ -1447,7 +1456,7 @@ describe("paying agents A–H", () => {
     assert.equal(done.status, 402);
     const doneBody = (await done.json()) as { sku: string; amount_usd: number; reference: string };
     assert.equal(doneBody.sku, "look");
-    assert.equal(doneBody.amount_usd, 0.02);
+    assert.equal(doneBody.amount_usd, 0.10);
     assertMeter402IndexHeaders(done, doneBody.reference);
   });
 
@@ -1549,6 +1558,6 @@ describe("paying agents A–H", () => {
     const invoice = await store.getInvoice(((await headerFlag.json()) as { invoice_id: string }).invoice_id);
     assert.equal(invoice?.source, "smoke");
     assert.equal(invoice?.sku, "look");
-    assert.equal(invoice?.amount_usd, 0.02);
+    assert.equal(invoice?.amount_usd, 0.10);
   });
 });

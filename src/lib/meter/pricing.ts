@@ -6,12 +6,13 @@ export const METER_DEFAULT_SKU = METER_LOOK_SKU;
 export const METER_PASS_SKU = "pass_1h" as const;
 
 export const METER_FREE_LOOKS = 5;
-export const METER_LOOK_USD = 0.02;
+export const METER_LOOK_USD = 0.1;
+export const METER_LOOK_USD_LABEL = "0.10";
 export const METER_ANON_IDENTITY = "anon" as const;
 
 export const LOOK_QUESTION = "Can I pay this address?";
 export const LOOK_RISKS = ["ok", "new", "warn", "sink"] as const;
-export const METER_FREE_THEN_LOOK = "First 5 free. Then $0.02 USDC.";
+export const METER_FREE_THEN_LOOK = "First 5 free. Then $0.10 USDC.";
 export const STAMP_TICKET_COPY = "Take this ticket or we do not take your USDC.";
 
 export type MeterSkuId = "look" | "looks_20" | "addresses_100" | "stamp_tx" | "pass_1h";
@@ -36,7 +37,7 @@ export const METER_LOOK: MeterSku = {
   covers: ["scan", "preflight"],
   asset: "usdc",
   chain: "solana",
-  amount_base_units: "20000",
+  amount_base_units: "100000",
   job: "One look. One address. Can I pay this address?",
 };
 
