@@ -1089,8 +1089,8 @@ describe("invoice origin", { concurrency: false }, () => {
     assert.equal(report.invoices_pending_fresh, 1);
     assert.equal(report.invoices_pending_stale, 0);
     assert.equal(report.invoices_pending_smoke, 2);
-    assert.equal(report.usdc_pending_fresh, 0.10);
-    assert.equal(report.usdc_pending_smoke, 0.04);
+    assert.equal(report.usdc_pending_fresh, 0.1);
+    assert.equal(report.usdc_pending_smoke, 0.2);
   });
 
   it("auto-tags exact node, cloud-crawler, and x402-list-monitor UAs as smoke", async () => {
@@ -1146,8 +1146,8 @@ describe("invoice origin", { concurrency: false }, () => {
     assert.equal(report.invoices_pending_fresh, 1);
     assert.equal(report.invoices_pending_stale, 0);
     assert.equal(report.invoices_pending_smoke, 3);
-    assert.equal(report.usdc_pending_fresh, 0.10);
-    assert.equal(report.usdc_pending_smoke, 0.06);
+    assert.equal(report.usdc_pending_fresh, 0.1);
+    assert.equal(report.usdc_pending_smoke, 0.3);
   });
 
   it("excludes already-minted node and crawler UAs from pending_fresh even if source is http_pass", async () => {
@@ -1176,8 +1176,8 @@ describe("invoice origin", { concurrency: false }, () => {
     assert.equal(report.invoices_pending_fresh, 1);
     assert.equal(report.invoices_pending_stale, 0);
     assert.equal(report.invoices_pending_smoke, 3);
-    assert.equal(report.usdc_pending_fresh, 0.10);
-    assert.equal(report.usdc_pending_smoke, 0.06);
+    assert.equal(report.usdc_pending_fresh, 0.1);
+    assert.equal(report.usdc_pending_smoke, 0.3);
   });
 
   it("excludes already-minted directory probe UAs from pending_fresh even if source is http_pass", async () => {
@@ -1245,10 +1245,10 @@ describe("invoice origin", { concurrency: false }, () => {
     assert.equal(report.invoices_pending_fresh, 2);
     assert.equal(report.invoices_pending_stale, 1);
     assert.equal(report.invoices_pending_smoke, 2);
-    assert.equal(report.usdc_pending, 0.04);
-    assert.equal(report.usdc_pending_fresh, 0.04);
-    assert.equal(report.usdc_pending_stale, 0.10);
-    assert.equal(report.usdc_pending_smoke, 0.04);
+    assert.equal(report.usdc_pending, 0.2);
+    assert.equal(report.usdc_pending_fresh, 0.2);
+    assert.equal(report.usdc_pending_stale, 0.1);
+    assert.equal(report.usdc_pending_smoke, 0.2);
   });
 
   it("internal invoice list returns 401 without the bearer secret", async () => {
