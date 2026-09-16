@@ -157,6 +157,7 @@ function oauthDiscoveryPlugin(): Plugin {
           const isDiscoveryRedirect =
             pathOnly === "/docs/connect" ||
             pathOnly === "/pay" ||
+            pathOnly === "/pay/meter" ||
             pathOnly === "/meter" ||
             pathOnly === "/.well-known/llms.txt";
           const isOauthDiscovery = pathOnly.startsWith("/.well-known/oauth-");
