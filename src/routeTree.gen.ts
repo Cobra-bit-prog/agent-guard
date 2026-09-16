@@ -15,7 +15,6 @@ import { Route as ConnectRouteImport } from './routes/connect'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LogosRouteImport } from './routes/logos'
-import { Route as MeterPayRouteImport } from './routes/meter.pay'
 import { Route as PartnersRouteImport } from './routes/partners'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as SignupRouteImport } from './routes/signup'
@@ -28,6 +27,7 @@ import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppInboxRouteImport } from './routes/_app/inbox'
 import { Route as AppPoliciesRouteImport } from './routes/_app/policies'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
+import { Route as MeterPayRouteImport } from './routes/meter.pay'
 import { Route as OauthAuthorizeRouteImport } from './routes/oauth/authorize'
 import { Route as OauthRegisterRouteImport } from './routes/oauth/register'
 import { Route as OauthTokenRouteImport } from './routes/oauth/token'
@@ -84,11 +84,6 @@ const LoginRoute = LoginRouteImport.update({
 const LogosRoute = LogosRouteImport.update({
   id: '/logos',
   path: '/logos',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MeterPayRoute = MeterPayRouteImport.update({
-  id: '/meter/pay',
-  path: '/meter/pay',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PartnersRoute = PartnersRouteImport.update({
@@ -150,6 +145,11 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
   getParentRoute: () => AppRoute,
+} as any)
+const MeterPayRoute = MeterPayRouteImport.update({
+  id: '/meter/pay',
+  path: '/meter/pay',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const OauthAuthorizeRoute = OauthAuthorizeRouteImport.update({
   id: '/oauth/authorize',
@@ -299,7 +299,6 @@ export interface FileRoutesByFullPath {
   '/docs': typeof DocsRoute
   '/login': typeof LoginRoute
   '/logos': typeof LogosRoute
-  '/meter/pay': typeof MeterPayRoute
   '/partners': typeof PartnersRoute
   '/privacy': typeof PrivacyRoute
   '/signup': typeof SignupRoute
@@ -312,6 +311,7 @@ export interface FileRoutesByFullPath {
   '/inbox': typeof AppInboxRoute
   '/policies': typeof AppPoliciesRoute
   '/settings': typeof AppSettingsRoute
+  '/meter/pay': typeof MeterPayRoute
   '/oauth/authorize': typeof OauthAuthorizeRoute
   '/oauth/register': typeof OauthRegisterRoute
   '/oauth/token': typeof OauthTokenRoute
@@ -347,7 +347,6 @@ export interface FileRoutesByTo {
   '/docs': typeof DocsRoute
   '/login': typeof LoginRoute
   '/logos': typeof LogosRoute
-  '/meter/pay': typeof MeterPayRoute
   '/partners': typeof PartnersRoute
   '/privacy': typeof PrivacyRoute
   '/signup': typeof SignupRoute
@@ -358,6 +357,7 @@ export interface FileRoutesByTo {
   '/inbox': typeof AppInboxRoute
   '/policies': typeof AppPoliciesRoute
   '/settings': typeof AppSettingsRoute
+  '/meter/pay': typeof MeterPayRoute
   '/oauth/authorize': typeof OauthAuthorizeRoute
   '/oauth/register': typeof OauthRegisterRoute
   '/oauth/token': typeof OauthTokenRoute
@@ -395,7 +395,6 @@ export interface FileRoutesById {
   '/docs': typeof DocsRoute
   '/login': typeof LoginRoute
   '/logos': typeof LogosRoute
-  '/meter/pay': typeof MeterPayRoute
   '/partners': typeof PartnersRoute
   '/privacy': typeof PrivacyRoute
   '/signup': typeof SignupRoute
@@ -408,6 +407,7 @@ export interface FileRoutesById {
   '/_app/inbox': typeof AppInboxRoute
   '/_app/policies': typeof AppPoliciesRoute
   '/_app/settings': typeof AppSettingsRoute
+  '/meter/pay': typeof MeterPayRoute
   '/oauth/authorize': typeof OauthAuthorizeRoute
   '/oauth/register': typeof OauthRegisterRoute
   '/oauth/token': typeof OauthTokenRoute
@@ -445,7 +445,6 @@ export interface FileRouteTypes {
     | '/docs'
     | '/login'
     | '/logos'
-    | '/meter/pay'
     | '/partners'
     | '/privacy'
     | '/signup'
@@ -458,6 +457,7 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/policies'
     | '/settings'
+    | '/meter/pay'
     | '/oauth/authorize'
     | '/oauth/register'
     | '/oauth/token'
@@ -493,7 +493,6 @@ export interface FileRouteTypes {
     | '/docs'
     | '/login'
     | '/logos'
-    | '/meter/pay'
     | '/partners'
     | '/privacy'
     | '/signup'
@@ -504,6 +503,7 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/policies'
     | '/settings'
+    | '/meter/pay'
     | '/oauth/authorize'
     | '/oauth/register'
     | '/oauth/token'
@@ -540,7 +540,6 @@ export interface FileRouteTypes {
     | '/docs'
     | '/login'
     | '/logos'
-    | '/meter/pay'
     | '/partners'
     | '/privacy'
     | '/signup'
@@ -553,6 +552,7 @@ export interface FileRouteTypes {
     | '/_app/inbox'
     | '/_app/policies'
     | '/_app/settings'
+    | '/meter/pay'
     | '/oauth/authorize'
     | '/oauth/register'
     | '/oauth/token'
@@ -590,11 +590,11 @@ export interface RootRouteChildren {
   DocsRoute: typeof DocsRoute
   LoginRoute: typeof LoginRoute
   LogosRoute: typeof LogosRoute
-  MeterPayRoute: typeof MeterPayRoute
   PartnersRoute: typeof PartnersRoute
   PrivacyRoute: typeof PrivacyRoute
   SignupRoute: typeof SignupRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
+  MeterPayRoute: typeof MeterPayRoute
   OauthAuthorizeRoute: typeof OauthAuthorizeRoute
   OauthRegisterRoute: typeof OauthRegisterRoute
   OauthTokenRoute: typeof OauthTokenRoute
@@ -662,13 +662,6 @@ declare module '@tanstack/react-router' {
       path: '/logos'
       fullPath: '/logos'
       preLoaderRoute: typeof LogosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/meter/pay': {
-      id: '/meter/pay'
-      path: '/meter/pay'
-      fullPath: '/meter/pay'
-      preLoaderRoute: typeof MeterPayRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/partners': {
@@ -754,6 +747,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/settings'
       preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/meter/pay': {
+      id: '/meter/pay'
+      path: '/meter/pay'
+      fullPath: '/meter/pay'
+      preLoaderRoute: typeof MeterPayRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/oauth/authorize': {
       id: '/oauth/authorize'
@@ -1024,11 +1024,11 @@ const rootRouteChildren: RootRouteChildren = {
   DocsRoute: DocsRoute,
   LoginRoute: LoginRoute,
   LogosRoute: LogosRoute,
-  MeterPayRoute: MeterPayRoute,
   PartnersRoute: PartnersRoute,
   PrivacyRoute: PrivacyRoute,
   SignupRoute: SignupRoute,
   VerifyEmailRoute: VerifyEmailRoute,
+  MeterPayRoute: MeterPayRoute,
   OauthAuthorizeRoute: OauthAuthorizeRoute,
   OauthRegisterRoute: OauthRegisterRoute,
   OauthTokenRoute: OauthTokenRoute,
