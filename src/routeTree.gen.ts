@@ -15,7 +15,6 @@ import { Route as ConnectRouteImport } from './routes/connect'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LogosRouteImport } from './routes/logos'
-import { Route as MeterPayRouteImport } from './routes/meter.pay'
 import { Route as PartnersRouteImport } from './routes/partners'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as SignupRouteImport } from './routes/signup'
@@ -28,6 +27,7 @@ import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppInboxRouteImport } from './routes/_app/inbox'
 import { Route as AppPoliciesRouteImport } from './routes/_app/policies'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
+import { Route as MeterPayRouteImport } from './routes/meter.pay'
 import { Route as OauthAuthorizeRouteImport } from './routes/oauth/authorize'
 import { Route as OauthRegisterRouteImport } from './routes/oauth/register'
 import { Route as OauthTokenRouteImport } from './routes/oauth/token'
@@ -45,6 +45,7 @@ import { Route as ApiV1BillingHeliusRouteImport } from './routes/api/v1/billing.
 import { Route as ApiV1BillingHeliusSetupRouteImport } from './routes/api/v1/billing.helius-setup'
 import { Route as ApiV1BillingInvoiceRouteImport } from './routes/api/v1/billing.invoice'
 import { Route as ApiV1BillingWatchRouteImport } from './routes/api/v1/billing.watch'
+import { Route as ApiV1InternalAccountsRouteImport } from './routes/api/v1/internal/accounts'
 import { Route as ApiV1InternalMeterRouteImport } from './routes/api/v1/internal/meter'
 import { Route as ApiV1InternalStatsRouteImport } from './routes/api/v1/internal/stats'
 import { Route as ApiV1InternalTrialMailRouteImport } from './routes/api/v1/internal/trial-mail'
@@ -83,11 +84,6 @@ const LoginRoute = LoginRouteImport.update({
 const LogosRoute = LogosRouteImport.update({
   id: '/logos',
   path: '/logos',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MeterPayRoute = MeterPayRouteImport.update({
-  id: '/meter/pay',
-  path: '/meter/pay',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PartnersRoute = PartnersRouteImport.update({
@@ -149,6 +145,11 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
   getParentRoute: () => AppRoute,
+} as any)
+const MeterPayRoute = MeterPayRouteImport.update({
+  id: '/meter/pay',
+  path: '/meter/pay',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const OauthAuthorizeRoute = OauthAuthorizeRouteImport.update({
   id: '/oauth/authorize',
@@ -235,6 +236,11 @@ const ApiV1BillingWatchRoute = ApiV1BillingWatchRouteImport.update({
   path: '/api/v1/billing/watch',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1InternalAccountsRoute = ApiV1InternalAccountsRouteImport.update({
+  id: '/api/v1/internal/accounts',
+  path: '/api/v1/internal/accounts',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1InternalMeterRoute = ApiV1InternalMeterRouteImport.update({
   id: '/api/v1/internal/meter',
   path: '/api/v1/internal/meter',
@@ -293,7 +299,6 @@ export interface FileRoutesByFullPath {
   '/docs': typeof DocsRoute
   '/login': typeof LoginRoute
   '/logos': typeof LogosRoute
-  '/meter/pay': typeof MeterPayRoute
   '/partners': typeof PartnersRoute
   '/privacy': typeof PrivacyRoute
   '/signup': typeof SignupRoute
@@ -306,6 +311,7 @@ export interface FileRoutesByFullPath {
   '/inbox': typeof AppInboxRoute
   '/policies': typeof AppPoliciesRoute
   '/settings': typeof AppSettingsRoute
+  '/meter/pay': typeof MeterPayRoute
   '/oauth/authorize': typeof OauthAuthorizeRoute
   '/oauth/register': typeof OauthRegisterRoute
   '/oauth/token': typeof OauthTokenRoute
@@ -323,6 +329,7 @@ export interface FileRoutesByFullPath {
   '/api/v1/billing/helius-setup': typeof ApiV1BillingHeliusSetupRoute
   '/api/v1/billing/invoice': typeof ApiV1BillingInvoiceRoute
   '/api/v1/billing/watch': typeof ApiV1BillingWatchRoute
+  '/api/v1/internal/accounts': typeof ApiV1InternalAccountsRoute
   '/api/v1/internal/meter': typeof ApiV1InternalMeterRouteWithChildren
   '/api/v1/internal/stats': typeof ApiV1InternalStatsRoute
   '/api/v1/internal/trial-mail': typeof ApiV1InternalTrialMailRoute
@@ -340,7 +347,6 @@ export interface FileRoutesByTo {
   '/docs': typeof DocsRoute
   '/login': typeof LoginRoute
   '/logos': typeof LogosRoute
-  '/meter/pay': typeof MeterPayRoute
   '/partners': typeof PartnersRoute
   '/privacy': typeof PrivacyRoute
   '/signup': typeof SignupRoute
@@ -351,6 +357,7 @@ export interface FileRoutesByTo {
   '/inbox': typeof AppInboxRoute
   '/policies': typeof AppPoliciesRoute
   '/settings': typeof AppSettingsRoute
+  '/meter/pay': typeof MeterPayRoute
   '/oauth/authorize': typeof OauthAuthorizeRoute
   '/oauth/register': typeof OauthRegisterRoute
   '/oauth/token': typeof OauthTokenRoute
@@ -368,6 +375,7 @@ export interface FileRoutesByTo {
   '/api/v1/billing/helius-setup': typeof ApiV1BillingHeliusSetupRoute
   '/api/v1/billing/invoice': typeof ApiV1BillingInvoiceRoute
   '/api/v1/billing/watch': typeof ApiV1BillingWatchRoute
+  '/api/v1/internal/accounts': typeof ApiV1InternalAccountsRoute
   '/api/v1/internal/meter': typeof ApiV1InternalMeterRouteWithChildren
   '/api/v1/internal/stats': typeof ApiV1InternalStatsRoute
   '/api/v1/internal/trial-mail': typeof ApiV1InternalTrialMailRoute
@@ -387,7 +395,6 @@ export interface FileRoutesById {
   '/docs': typeof DocsRoute
   '/login': typeof LoginRoute
   '/logos': typeof LogosRoute
-  '/meter/pay': typeof MeterPayRoute
   '/partners': typeof PartnersRoute
   '/privacy': typeof PrivacyRoute
   '/signup': typeof SignupRoute
@@ -400,6 +407,7 @@ export interface FileRoutesById {
   '/_app/inbox': typeof AppInboxRoute
   '/_app/policies': typeof AppPoliciesRoute
   '/_app/settings': typeof AppSettingsRoute
+  '/meter/pay': typeof MeterPayRoute
   '/oauth/authorize': typeof OauthAuthorizeRoute
   '/oauth/register': typeof OauthRegisterRoute
   '/oauth/token': typeof OauthTokenRoute
@@ -417,6 +425,7 @@ export interface FileRoutesById {
   '/api/v1/billing/helius-setup': typeof ApiV1BillingHeliusSetupRoute
   '/api/v1/billing/invoice': typeof ApiV1BillingInvoiceRoute
   '/api/v1/billing/watch': typeof ApiV1BillingWatchRoute
+  '/api/v1/internal/accounts': typeof ApiV1InternalAccountsRoute
   '/api/v1/internal/meter': typeof ApiV1InternalMeterRouteWithChildren
   '/api/v1/internal/stats': typeof ApiV1InternalStatsRoute
   '/api/v1/internal/trial-mail': typeof ApiV1InternalTrialMailRoute
@@ -436,7 +445,6 @@ export interface FileRouteTypes {
     | '/docs'
     | '/login'
     | '/logos'
-    | '/meter/pay'
     | '/partners'
     | '/privacy'
     | '/signup'
@@ -449,6 +457,7 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/policies'
     | '/settings'
+    | '/meter/pay'
     | '/oauth/authorize'
     | '/oauth/register'
     | '/oauth/token'
@@ -466,6 +475,7 @@ export interface FileRouteTypes {
     | '/api/v1/billing/helius-setup'
     | '/api/v1/billing/invoice'
     | '/api/v1/billing/watch'
+    | '/api/v1/internal/accounts'
     | '/api/v1/internal/meter'
     | '/api/v1/internal/stats'
     | '/api/v1/internal/trial-mail'
@@ -483,7 +493,6 @@ export interface FileRouteTypes {
     | '/docs'
     | '/login'
     | '/logos'
-    | '/meter/pay'
     | '/partners'
     | '/privacy'
     | '/signup'
@@ -494,6 +503,7 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/policies'
     | '/settings'
+    | '/meter/pay'
     | '/oauth/authorize'
     | '/oauth/register'
     | '/oauth/token'
@@ -511,6 +521,7 @@ export interface FileRouteTypes {
     | '/api/v1/billing/helius-setup'
     | '/api/v1/billing/invoice'
     | '/api/v1/billing/watch'
+    | '/api/v1/internal/accounts'
     | '/api/v1/internal/meter'
     | '/api/v1/internal/stats'
     | '/api/v1/internal/trial-mail'
@@ -529,7 +540,6 @@ export interface FileRouteTypes {
     | '/docs'
     | '/login'
     | '/logos'
-    | '/meter/pay'
     | '/partners'
     | '/privacy'
     | '/signup'
@@ -542,6 +552,7 @@ export interface FileRouteTypes {
     | '/_app/inbox'
     | '/_app/policies'
     | '/_app/settings'
+    | '/meter/pay'
     | '/oauth/authorize'
     | '/oauth/register'
     | '/oauth/token'
@@ -559,6 +570,7 @@ export interface FileRouteTypes {
     | '/api/v1/billing/helius-setup'
     | '/api/v1/billing/invoice'
     | '/api/v1/billing/watch'
+    | '/api/v1/internal/accounts'
     | '/api/v1/internal/meter'
     | '/api/v1/internal/stats'
     | '/api/v1/internal/trial-mail'
@@ -578,11 +590,11 @@ export interface RootRouteChildren {
   DocsRoute: typeof DocsRoute
   LoginRoute: typeof LoginRoute
   LogosRoute: typeof LogosRoute
-  MeterPayRoute: typeof MeterPayRoute
   PartnersRoute: typeof PartnersRoute
   PrivacyRoute: typeof PrivacyRoute
   SignupRoute: typeof SignupRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
+  MeterPayRoute: typeof MeterPayRoute
   OauthAuthorizeRoute: typeof OauthAuthorizeRoute
   OauthRegisterRoute: typeof OauthRegisterRoute
   OauthTokenRoute: typeof OauthTokenRoute
@@ -596,6 +608,7 @@ export interface RootRouteChildren {
   ApiV1BillingHeliusSetupRoute: typeof ApiV1BillingHeliusSetupRoute
   ApiV1BillingInvoiceRoute: typeof ApiV1BillingInvoiceRoute
   ApiV1BillingWatchRoute: typeof ApiV1BillingWatchRoute
+  ApiV1InternalAccountsRoute: typeof ApiV1InternalAccountsRoute
   ApiV1InternalMeterRoute: typeof ApiV1InternalMeterRouteWithChildren
   ApiV1InternalStatsRoute: typeof ApiV1InternalStatsRoute
   ApiV1InternalTrialMailRoute: typeof ApiV1InternalTrialMailRoute
@@ -649,13 +662,6 @@ declare module '@tanstack/react-router' {
       path: '/logos'
       fullPath: '/logos'
       preLoaderRoute: typeof LogosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/meter/pay': {
-      id: '/meter/pay'
-      path: '/meter/pay'
-      fullPath: '/meter/pay'
-      preLoaderRoute: typeof MeterPayRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/partners': {
@@ -741,6 +747,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/settings'
       preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/meter/pay': {
+      id: '/meter/pay'
+      path: '/meter/pay'
+      fullPath: '/meter/pay'
+      preLoaderRoute: typeof MeterPayRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/oauth/authorize': {
       id: '/oauth/authorize'
@@ -859,6 +872,13 @@ declare module '@tanstack/react-router' {
       path: '/api/v1/billing/watch'
       fullPath: '/api/v1/billing/watch'
       preLoaderRoute: typeof ApiV1BillingWatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/internal/accounts': {
+      id: '/api/v1/internal/accounts'
+      path: '/api/v1/internal/accounts'
+      fullPath: '/api/v1/internal/accounts'
+      preLoaderRoute: typeof ApiV1InternalAccountsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/v1/internal/meter': {
@@ -1004,11 +1024,11 @@ const rootRouteChildren: RootRouteChildren = {
   DocsRoute: DocsRoute,
   LoginRoute: LoginRoute,
   LogosRoute: LogosRoute,
-  MeterPayRoute: MeterPayRoute,
   PartnersRoute: PartnersRoute,
   PrivacyRoute: PrivacyRoute,
   SignupRoute: SignupRoute,
   VerifyEmailRoute: VerifyEmailRoute,
+  MeterPayRoute: MeterPayRoute,
   OauthAuthorizeRoute: OauthAuthorizeRoute,
   OauthRegisterRoute: OauthRegisterRoute,
   OauthTokenRoute: OauthTokenRoute,
@@ -1022,6 +1042,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiV1BillingHeliusSetupRoute: ApiV1BillingHeliusSetupRoute,
   ApiV1BillingInvoiceRoute: ApiV1BillingInvoiceRoute,
   ApiV1BillingWatchRoute: ApiV1BillingWatchRoute,
+  ApiV1InternalAccountsRoute: ApiV1InternalAccountsRoute,
   ApiV1InternalMeterRoute: ApiV1InternalMeterRouteWithChildren,
   ApiV1InternalStatsRoute: ApiV1InternalStatsRoute,
   ApiV1InternalTrialMailRoute: ApiV1InternalTrialMailRoute,
