@@ -20,6 +20,7 @@ export {
   METER_NEXT_TOOL,
   METER_402_SIGN,
   meter402Next,
+  meter402PayPage,
   LOOK_QUESTION,
   METER_FREE_THEN_LOOK,
   STAMP_TICKET_COPY,

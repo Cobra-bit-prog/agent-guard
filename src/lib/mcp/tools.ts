@@ -14,7 +14,7 @@ export const MCP_TOOLS = [
     name: "meter_buy_pass",
     title: "Buy an Agent Meter pass",
     description:
-      "Can I pay this address? First 5 free. Then $0.02. No inbox. Current door: call with sku look (or omit) to create a look invoice from GET meter_pricing. Returns a payable invoice as tool content (ok:true / status payment_required) with pay_to, amount_usd, amount_base_units, reference, pay_url, invoice_id, watch_url, adapter_url, next_tool. After invoice, fetch adapter_url, then meter_watch. Sign USDC on YOUR machine to pay_to WITH the reference. We never take keys. Packs: looks_20 / addresses_100 / stamp_tx. No human account.",
+      "Can I pay this address? First 5 free. Then $0.02. No inbox. Current door: call with sku look (or omit) to create a look invoice from GET meter_pricing. Returns a payable invoice as tool content (ok:true / status payment_required) with pay_to, amount_usd, amount_base_units, reference, pay_url, invoice_id, watch_url, adapter_url, pay_page, next_tool. After invoice, fetch adapter_url, then meter_watch. 402 invoice includes pay_page for Phantom laptop if no local signer. Sign USDC on YOUR machine to pay_to WITH the reference. We never take keys. Packs: looks_20 / addresses_100 / stamp_tx. No human account.",
     annotations: writes,
     inputSchema: {
       type: "object",
@@ -54,7 +54,7 @@ export const MCP_TOOLS = [
     name: "meter_scan",
     title: "Scan a destination",
     description:
-      "Can I pay this address? First 5 free. Then $0.02. No inbox. One look = one address. Send X-Agent-Pass with any string; first 5 looks on that id are free; then 402 look $0.02. Risk ok|new|warn|sink. Never hold.",
+      "Can I pay this address? First 5 free. Then $0.02. No inbox. One look = one address. Send X-Agent-Pass with any string; first 5 looks on that id are free; then 402 look $0.02. 402 invoice includes pay_page for Phantom laptop if no local signer. Risk ok|new|warn|sink. Never hold.",
     annotations: readOnly,
     inputSchema: {
       type: "object",

@@ -211,8 +211,12 @@ export const METER_NEXT_TOOL = "meter_watch" as const;
 export const METER_402_SIGN =
   "Sign USDC on YOUR machine to pay_to WITH the reference. Fetch adapter_url (buyMeterPass / payMeterPass). We never take keys.";
 
+export function meter402PayPage(invoiceId: string): string {
+  return `https://agent-control.net/meter/pay?invoice_id=${invoiceId}`;
+}
+
 export function meter402Next(invoiceId: string): string {
-  return `1) Pay with adapter_url locally. 2) Call meter_watch with {"invoice_id":"${invoiceId}"} until token. 3) Retry meter_scan with that token as pass_token / X-Agent-Pass.`;
+  return `1) If you can sign: fetch adapter_url (buyMeterPass). 2) Else open pay_page on a laptop with Phantom. 3) Call meter_watch {"invoice_id":"${invoiceId}"} until token. 4) Retry meter_scan with that token as pass_token / X-Agent-Pass.`;
 }
 
 export function meter402Body(invoice: {
@@ -246,6 +250,7 @@ export function meter402Body(invoice: {
     pay_url: `solana:${invoice.pay_to}?amount=${price}&spl-token=${USDC_MINT}&reference=${invoice.reference}&label=Agent%20Control&message=Pay%20$${price}%20${catalog.id}`,
     watch_url: METER_WATCH_URL,
     adapter_url: METER_ADAPTER_URL,
+    pay_page: meter402PayPage(invoice.invoice_id),
     next_tool: METER_NEXT_TOOL,
     sign: METER_402_SIGN,
     next: meter402Next(invoice.invoice_id),

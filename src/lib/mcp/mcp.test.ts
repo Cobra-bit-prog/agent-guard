@@ -14,7 +14,7 @@ import { MCP_TOOLS, mcpDiscovery } from "./tools.ts";
 import { meterMcpToolResult, rejectMeterKeyUpload, reshapeMeter402Invoice } from "./meter-result.ts";
 import { handleMeterRequest } from "../meter/http.ts";
 import { createMeterStore } from "../meter/store.ts";
-import { METER_ADAPTER_URL, METER_NEXT_TOOL, meter402Body, meter402Next } from "../meter/pricing.ts";
+import { METER_ADAPTER_URL, METER_NEXT_TOOL, meter402Body, meter402Next, meter402PayPage } from "../meter/pricing.ts";
 import {
   DEFAULT_PROTOCOL_VERSION,
   MCP_SESSION_HEADER,
@@ -244,6 +244,7 @@ describe("initialized notification and session reuse", () => {
     assert.match(scan, /X-Agent-Pass/);
     assert.match(scan, /first 5 looks on that id are free/);
     assert.match(scan, /402 look \$0\.02/);
+    assert.match(scan, /pay_page for Phantom laptop/);
     assert.match(preflight, /X-Agent-Pass/);
     assert.match(preflight, /first 5 looks on that id are free/);
     assert.match(preflight, /value_usd/);
@@ -260,7 +261,9 @@ describe("initialized notification and session reuse", () => {
     assert.match(buy?.description ?? "", /We never take keys/);
     assert.match(buy?.description ?? "", /then meter_watch/);
     assert.match(buy?.description ?? "", /adapter_url/);
+    assert.match(buy?.description ?? "", /pay_page/);
     assert.match(buy?.description ?? "", /fetch adapter_url, then meter_watch/);
+    assert.match(buy?.description ?? "", /pay_page for Phantom laptop/);
     assert.doesNotMatch(buy?.description ?? "", /Copy src\/adapters\/meter-pay\.ts/);
     assert.doesNotMatch(buy?.description ?? "", /returns HTTP 402/i);
     assert.match(watch?.description ?? "", /invoice_id/);
@@ -305,6 +308,7 @@ describe("initialized notification and session reuse", () => {
     assert.equal(body.pay_url, invoice.pay_url);
     assert.equal(body.watch_url, "https://agent-control.net/api/v1/meter/watch");
     assert.equal(body.adapter_url, METER_ADAPTER_URL);
+    assert.equal(body.pay_page, meter402PayPage("inv_mcp"));
     assert.equal(body.next_tool, METER_NEXT_TOOL);
     assert.equal(body.sign, invoice.sign);
     assert.equal(body.next, invoice.next);
@@ -344,6 +348,7 @@ describe("initialized notification and session reuse", () => {
       kind: "scan",
       http: 402,
       adapter_url: METER_ADAPTER_URL,
+      pay_page: meter402PayPage("inv_keep"),
       next_tool: METER_NEXT_TOOL,
       sign: "Sign USDC on YOUR machine to pay_to WITH the reference. Fetch adapter_url (buyMeterPass / payMeterPass). We never take keys.",
       next: meter402Next("inv_keep"),
@@ -353,6 +358,7 @@ describe("initialized notification and session reuse", () => {
     assert.equal(reshaped.sku, "looks_20");
     assert.equal(reshaped.kind, "scan");
     assert.equal(reshaped.adapter_url, METER_ADAPTER_URL);
+    assert.equal(reshaped.pay_page, meter402PayPage("inv_keep"));
     assert.equal(reshaped.next_tool, "meter_watch");
     assert.equal(reshaped.next, meter402Next("inv_keep"));
     assert.match(String(reshaped.sign), /buyMeterPass/);
@@ -409,6 +415,7 @@ describe("initialized notification and session reuse", () => {
       pay_url: string;
       watch_url: string;
       adapter_url: string;
+      pay_page: string;
       next_tool: string;
       sign: string;
       next: string;
@@ -424,9 +431,11 @@ describe("initialized notification and session reuse", () => {
     assert.match(body.pay_url, /solana:49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR/);
     assert.equal(body.watch_url, "https://agent-control.net/api/v1/meter/watch");
     assert.equal(body.adapter_url, METER_ADAPTER_URL);
+    assert.equal(body.pay_page, meter402PayPage(body.invoice_id));
     assert.equal(body.next_tool, "meter_watch");
     assert.match(body.sign, /buyMeterPass \/ payMeterPass/);
     assert.match(body.next, /meter_watch/);
+    assert.match(body.next, /pay_page/);
     assert.match(body.next, new RegExp(`"invoice_id":"${body.invoice_id}"`));
     assert.match(body.next, /meter_scan/);
   });

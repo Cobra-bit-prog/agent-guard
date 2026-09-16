@@ -24,6 +24,7 @@ import {
   METER_ANON_IDENTITY,
   meter402Body,
   meter402Next,
+  meter402PayPage,
   meter402PaymentRequiredPayload,
   METER_402_SIGN,
   METER_ADAPTER_URL,
@@ -154,7 +155,7 @@ describe("meter http", () => {
     assert.deepEqual(body.missing, ["wallet", "to", "value_usd", "cap_usd"]);
   });
 
-  it("402 next names adapter_url, meter_watch, and this invoice_id", () => {
+  it("402 next names adapter_url, pay_page, meter_watch, and this invoice_id", () => {
     const body = meter402Body({
       invoice_id: "inv_test",
       pay_to: "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR",
@@ -167,10 +168,14 @@ describe("meter http", () => {
     });
     assert.equal(body.adapter_url, METER_ADAPTER_URL);
     assert.match(body.adapter_url, /raw\.githubusercontent\.com\/Cobra-bit-prog\/agent-guard\/main\/src\/adapters\/meter-pay\.ts/);
+    assert.equal(body.pay_page, meter402PayPage("inv_test"));
+    assert.equal(body.pay_page, "https://agent-control.net/meter/pay?invoice_id=inv_test");
     assert.equal(body.next_tool, METER_NEXT_TOOL);
     assert.equal(body.next_tool, "meter_watch");
     assert.equal(body.next, meter402Next("inv_test"));
     assert.match(body.next, /adapter_url/);
+    assert.match(body.next, /pay_page/);
+    assert.match(body.next, /Phantom/);
     assert.match(body.next, /meter_watch/);
     assert.match(body.next, /"invoice_id":"inv_test"/);
     assert.match(body.next, /meter_scan/);
@@ -513,6 +518,7 @@ describe("meter http", () => {
       invoice_id: string;
       watch_url: string;
       adapter_url: string;
+      pay_page: string;
       next_tool: string;
       sign: string;
       next: string;
@@ -525,6 +531,7 @@ describe("meter http", () => {
     assert.equal(body.pay_to, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
     assert.equal(body.watch_url, METER_WATCH_URL);
     assert.equal(body.adapter_url, METER_ADAPTER_URL);
+    assert.equal(body.pay_page, meter402PayPage(body.invoice_id));
     assert.equal(body.next_tool, "meter_watch");
     assert.equal(body.error, "payment_required");
     assert.equal(body.http, 402);
@@ -550,6 +557,7 @@ describe("meter http", () => {
       invoice_id: string;
       watch_url: string;
       adapter_url: string;
+      pay_page: string;
       next_tool: string;
       next: string;
       token?: string;
@@ -557,6 +565,7 @@ describe("meter http", () => {
     assert.equal(pendingBody.invoice_id, invoice.invoice_id);
     assert.equal(pendingBody.watch_url, METER_WATCH_URL);
     assert.equal(pendingBody.adapter_url, METER_ADAPTER_URL);
+    assert.equal(pendingBody.pay_page, meter402PayPage(invoice.invoice_id));
     assert.equal(pendingBody.next_tool, "meter_watch");
     assert.match(pendingBody.next, new RegExp(`"invoice_id":"${invoice.invoice_id}"`));
     assert.equal(pendingBody.token, undefined);
@@ -1393,6 +1402,7 @@ describe("paying agents A–H", () => {
       next: string;
       next_tool: string;
       adapter_url: string;
+      pay_page: string;
       sign: string;
       invoice_id: string;
       reference: string;
@@ -1404,8 +1414,10 @@ describe("paying agents A–H", () => {
     assert.equal((body as { amount_base_units?: string }).amount_base_units, "20000");
     assert.equal((body as { watch_url?: string }).watch_url, "https://agent-control.net/api/v1/meter/watch");
     assert.equal(body.adapter_url, METER_ADAPTER_URL);
+    assert.equal(body.pay_page, meter402PayPage(body.invoice_id));
     assert.equal(body.next_tool, "meter_watch");
     assert.match(body.next, /adapter_url/);
+    assert.match(body.next, /pay_page/);
     assert.match(body.next, /meter_watch/);
     assert.match(body.next, new RegExp(`"invoice_id":"${body.invoice_id}"`));
     assert.match(body.next, /X-Agent-Pass/);
