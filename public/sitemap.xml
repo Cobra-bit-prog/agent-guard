@@ -41,6 +41,10 @@
     <changefreq>weekly</changefreq>
   </url>
   <url>
+    <loc>https://agent-control.net/.well-known/mcp.json</loc>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
     <loc>https://agent-control.net/openapi-meter.json</loc>
     <changefreq>weekly</changefreq>
   </url>

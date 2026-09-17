@@ -1,6 +1,6 @@
 /**
  * Nitro (deployed) well-known discovery for Claude Connectors OAuth
- * and Agent Meter x402 / agent-card, plus dead discovery URL redirects.
+ * and Agent Meter x402 / agent-card / mcp.json, plus dead discovery URL redirects.
  * Vite dev uses the plugin in vite.config.ts.
  */
 import { handleDiscoveryRedirect } from "../../src/lib/discovery-redirects.ts";

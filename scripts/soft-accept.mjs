@@ -71,6 +71,17 @@ export function isOauthMachinePath(pathname) {
   return false;
 }
 
+/** Public JSON discovery — must not 406 when Accept is application/json. */
+export function isWellKnownMachineJsonPath(pathname) {
+  const path = String(pathname ?? "");
+  return (
+    path === "/.well-known/mcp.json" ||
+    path === "/.well-known/x402" ||
+    path === "/.well-known/agent-card.json" ||
+    path === "/.well-known/agent.json"
+  );
+}
+
 /**
  * True when a request would otherwise fall through to Start HTML SSR and 500.
  * GET/HEAD only so POST server-function / RPC traffic is untouched.
@@ -82,6 +93,7 @@ export function shouldSoftReject({ method, pathname, accept }) {
   const path = String(pathname ?? "");
   if (isApiPath(path)) return false;
   if (isOauthMachinePath(path)) return false;
+  if (isWellKnownMachineJsonPath(path)) return false;
   if (path === "/__grok" || path.startsWith("/__grok/")) return false;
   return !acceptAllowsHtml(accept);
 }

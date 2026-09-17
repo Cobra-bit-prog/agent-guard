@@ -4,6 +4,7 @@ Allow: /agents.txt
 Allow: /agents.json
 Allow: /.well-known/x402
 Allow: /.well-known/agent-card.json
+Allow: /.well-known/mcp.json
 Allow: /openapi-meter.json
 Allow: /
 Disallow: /api/

@@ -55,7 +55,7 @@ test("shouldSoftReject: browser HTML on / is allowed", () => {
 });
 
 test("shouldSoftReject: JSON / Streamable Accept on page routes", () => {
-  for (const pathname of ["/", "/docs", "/dashboard", "/___server", "/.well-known/mcp.json", "/mcp.json", "/agents.json"]) {
+  for (const pathname of ["/", "/docs", "/dashboard", "/___server", "/mcp.json", "/agents.json"]) {
     assert.equal(
       shouldSoftReject({ method: "GET", pathname, accept: "application/json" }),
       true,
@@ -91,6 +91,26 @@ test("shouldSoftReject: leaves /api/v1/mcp and other API routes alone", () => {
     shouldSoftReject({ method: "POST", pathname: "/api/v1/check", accept: "application/json" }),
     false,
   );
+});
+
+test("shouldSoftReject: leaves public well-known MCP / Meter JSON alone", () => {
+  for (const pathname of [
+    "/.well-known/mcp.json",
+    "/.well-known/x402",
+    "/.well-known/agent-card.json",
+    "/.well-known/agent.json",
+  ]) {
+    assert.equal(
+      shouldSoftReject({ method: "GET", pathname, accept: "application/json" }),
+      false,
+      pathname,
+    );
+    assert.equal(
+      shouldSoftReject({ method: "GET", pathname, accept: STREAMABLE }),
+      false,
+      pathname,
+    );
+  }
 });
 
 test("shouldSoftReject: leaves Claude OAuth discovery and token/register JSON alone", () => {
