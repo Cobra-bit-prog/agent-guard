@@ -17,6 +17,7 @@ import {
   METER_FREE_LOOKS,
   METER_FREE_THEN_LOOK,
   METER_LOOK_SKU,
+  METER_PAID_SKU,
   meter402Body,
   meter402ChallengeHeaders,
   meterPricing,
@@ -39,9 +40,17 @@ import {
   meterIdentityKey,
   newMeterId,
   publicPassView,
+  type MeterInvoice,
   type MeterPass,
   type MeterStore,
 } from "./store.ts";
+import {
+  invoiceIdFromPayment,
+  readX402Payment,
+  referenceFromPayment,
+  settleExactEvmPayment,
+  type ExactEvmSettler,
+} from "./x402-evm.ts";
 
 const CHAINS = new Set(["solana", "ethereum", "base"]);
 const SCAN_BATCH_MAX = 100;
@@ -49,6 +58,7 @@ const SCAN_BATCH_MAX = 100;
 export type MeterHttpDeps = {
   findPayment?: MeterChainFinder;
   source?: MeterInvoiceSource;
+  settleExactEvm?: ExactEvmSettler;
 };
 
 export function readPassToken(request: Request, body?: Record<string, unknown>) {
@@ -79,7 +89,7 @@ function skuFromBody(
   fallback?: string,
 ): MeterSku | { error: "unknown_sku"; sku: string } {
   if (body.sku == null || body.sku === "") {
-    return resolveMeterSku(fallback ?? METER_LOOK_SKU);
+    return resolveMeterSku(fallback ?? METER_PAID_SKU);
   }
   return resolveMeterSku(body.sku);
 }
@@ -104,6 +114,50 @@ async function invoiceForBody(
       origin: extractMeterInvoiceOrigin(request, source, body),
     }),
   };
+}
+
+async function settleExactIfPresent(
+  store: MeterStore,
+  request: Request,
+  body: Record<string, unknown>,
+  deps: MeterHttpDeps,
+  invoiceHint?: MeterInvoice | null,
+): Promise<{ token: string; invoice: MeterInvoice; pass: Awaited<ReturnType<MeterStore["fulfillInvoice"]>>["pass"] } | { error: string } | null> {
+  const payload = readX402Payment(request, body);
+  if (!payload) return null;
+  const invoiceKey =
+    invoiceIdFromPayment(payload) ||
+    referenceFromPayment(payload) ||
+    String(body.invoice_id ?? body.invoiceId ?? body.reference ?? "").trim() ||
+    invoiceHint?.invoice_id ||
+    "";
+  const invoice = invoiceKey ? await store.getInvoice(invoiceKey) : (invoiceHint ?? null);
+  if (!invoice) return { error: "unknown_invoice" };
+  const settled = await settleExactEvmPayment(payload, invoice, { settler: deps.settleExactEvm });
+  if (!settled.ok) return { error: settled.error };
+  const issued = await store.fulfillInvoice(invoice.invoice_id, {
+    signature: settled.transaction,
+    amountUsdc: invoice.amount_usd,
+    payer_address: settled.payer,
+    extend_token: readPassToken(request, body) || null,
+  });
+  return { token: issued.token, invoice: issued.invoice, pass: issued.pass };
+}
+
+function paidPassResponse(issued: {
+  token: string;
+  invoice: MeterInvoice;
+  pass: Awaited<ReturnType<MeterStore["fulfillInvoice"]>>["pass"];
+}, storePass: Awaited<ReturnType<MeterStore["getPassById"]>>) {
+  return json({
+    ...(storePass ? publicPassView(storePass) : publicPassView(issued.pass)),
+    token: issued.token,
+    invoice_id: issued.invoice.invoice_id,
+    signature: issued.invoice.signature,
+    status: "paid",
+    header: "X-Agent-Pass",
+    next: "Retry scan with X-Agent-Pass set to this token (MCP: meter_scan pass_token). We never take keys.",
+  });
 }
 
 export async function handleMeterRequest(
@@ -170,19 +224,19 @@ export async function handleMeterRequest(
   }
 
   if (request.method === "POST" && suffix === "scan") {
-    return runScan(request, body, resolved);
+    return runScan(request, body, resolved, deps);
   }
 
   if (request.method === "POST" && suffix === "preflight") {
-    return runPreflight(request, body, resolved);
+    return runPreflight(request, body, resolved, deps);
   }
 
   if (request.method === "POST" && (suffix === "scan-batch" || suffix === "scan_batch")) {
-    return runScanBatch(request, body, resolved);
+    return runScanBatch(request, body, resolved, deps);
   }
 
   if (request.method === "POST" && suffix === "stamp") {
-    return runStamp(request, body, resolved);
+    return runStamp(request, body, resolved, deps);
   }
 
   return json({ error: "unknown_meter_route", usage: meterPricing().endpoints }, 404);
@@ -296,6 +350,15 @@ async function issueOrInvoice(
     return json({ ok: true, matched: paid.length, paid });
   }
 
+  const settled = await settleExactIfPresent(store, request, body, deps);
+  if (settled && "token" in settled) {
+    const pass = await store.getPassById(settled.invoice.pass_id ?? "");
+    return paidPassResponse(settled, pass);
+  }
+  if (settled && "error" in settled) {
+    return json({ error: settled.error }, 400);
+  }
+
   const invoiceKey = String(
     body.invoice_id ?? body.invoiceId ?? proof.invoice_id ?? body.reference ?? proof.reference ?? "",
   ).trim();
@@ -401,7 +464,7 @@ async function requireLookOrPack(
       pass: null,
       identity,
       token,
-      response: await paymentRequired(store, request, source, body, METER_LOOK_SKU),
+      response: await paymentRequired(store, request, source, body, METER_PAID_SKU),
     };
   }
 
@@ -442,7 +505,22 @@ function lookAccessFields(opts: {
   };
 }
 
-async function runScan(request: Request, body: Record<string, unknown>, store: MeterStore): Promise<Response> {
+async function applySettledPass(
+  request: Request,
+  body: Record<string, unknown>,
+  store: MeterStore,
+  deps: MeterHttpDeps,
+): Promise<{ body: Record<string, unknown>; error: Response | null }> {
+  const settled = await settleExactIfPresent(store, request, body, deps);
+  if (!settled) return { body, error: null };
+  if ("error" in settled) return { body, error: json({ error: settled.error }, 400) };
+  return { body: { ...body, pass_token: settled.token }, error: null };
+}
+
+async function runScan(request: Request, body: Record<string, unknown>, store: MeterStore, deps: MeterHttpDeps = {}): Promise<Response> {
+  const applied = await applySettledPass(request, body, store, deps);
+  if (applied.error) return applied.error;
+  body = applied.body;
   const source = invoiceSourceForMeterPath("scan");
   const chain = chainOf(body.chain);
   const address = String(body.address ?? "").trim();
@@ -457,7 +535,7 @@ async function runScan(request: Request, body: Record<string, unknown>, store: M
   const scanned = evaluateScan({ address, chain });
   const consumed = await consumeLookGrant(store, gate);
   if (consumed === "exhausted") {
-    return paymentRequired(store, request, source, body, METER_LOOK_SKU);
+    return paymentRequired(store, request, source, body, METER_PAID_SKU);
   }
   await store.logCall({
     pass_id: consumed.after?.id ?? `free:${gate.identity}`,
@@ -475,7 +553,10 @@ async function runScan(request: Request, body: Record<string, unknown>, store: M
   });
 }
 
-async function runPreflight(request: Request, body: Record<string, unknown>, store: MeterStore): Promise<Response> {
+async function runPreflight(request: Request, body: Record<string, unknown>, store: MeterStore, deps: MeterHttpDeps = {}): Promise<Response> {
+  const applied = await applySettledPass(request, body, store, deps);
+  if (applied.error) return applied.error;
+  body = applied.body;
   const source = invoiceSourceForMeterPath("preflight");
   const missing = missingPreflightFields(body);
   if (missing.length) {
@@ -517,7 +598,7 @@ async function runPreflight(request: Request, body: Record<string, unknown>, sto
 
   const consumed = await consumeLookGrant(store, gate);
   if (consumed === "exhausted") {
-    return paymentRequired(store, request, source, body, METER_LOOK_SKU);
+    return paymentRequired(store, request, source, body, METER_PAID_SKU);
   }
   if (verdict.decision === "allow") await store.addAllowSpend(wallet, value_usd);
   await store.logCall({
@@ -546,7 +627,10 @@ function parseAddressList(body: Record<string, unknown>): string[] | { error: st
   return addresses;
 }
 
-async function runScanBatch(request: Request, body: Record<string, unknown>, store: MeterStore): Promise<Response> {
+async function runScanBatch(request: Request, body: Record<string, unknown>, store: MeterStore, deps: MeterHttpDeps = {}): Promise<Response> {
+  const applied = await applySettledPass(request, body, store, deps);
+  if (applied.error) return applied.error;
+  body = applied.body;
   const source = invoiceSourceForMeterPath("scan-batch");
   const chain = chainOf(body.chain);
   if (!chain) return json({ error: "Provide chain and addresses[]." }, 400);
@@ -610,7 +694,10 @@ function stampDecisionOf(body: Record<string, unknown>): StampDecision | null {
   return null;
 }
 
-async function runStamp(request: Request, body: Record<string, unknown>, store: MeterStore): Promise<Response> {
+async function runStamp(request: Request, body: Record<string, unknown>, store: MeterStore, deps: MeterHttpDeps = {}): Promise<Response> {
+  const applied = await applySettledPass(request, body, store, deps);
+  if (applied.error) return applied.error;
+  body = applied.body;
   const source = invoiceSourceForMeterPath("stamp");
   const chain = chainOf(body.chain) ?? "solana";
   const decision = stampDecisionOf(body);

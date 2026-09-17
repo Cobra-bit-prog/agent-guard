@@ -243,7 +243,8 @@ describe("initialized notification and session reuse", () => {
     const preflight = MCP_TOOLS.find((tool) => tool.name === "meter_preflight")?.description ?? "";
     assert.match(scan, /X-Agent-Pass/);
     assert.match(scan, /first 5 looks on that id are free/);
-    assert.match(scan, /402 look \$0\.10/);
+    assert.match(scan, /402 looks_20 pack \$0\.20/);
+    assert.match(scan, /sku look is \$0\.10/);
     assert.match(scan, /pay_page for Phantom laptop/);
     assert.match(preflight, /X-Agent-Pass/);
     assert.match(preflight, /first 5 looks on that id are free/);
@@ -262,7 +263,8 @@ describe("initialized notification and session reuse", () => {
     assert.match(buy?.description ?? "", /then meter_watch/);
     assert.match(buy?.description ?? "", /adapter_url/);
     assert.match(buy?.description ?? "", /pay_page/);
-    assert.match(buy?.description ?? "", /fetch adapter_url, then meter_watch/);
+    assert.match(buy?.description ?? "", /fetch adapter_url or sign Base EIP-3009 exact, then meter_watch/);
+    assert.match(buy?.description ?? "", /base_pay_to/);
     assert.match(buy?.description ?? "", /pay_page for Phantom laptop/);
     assert.doesNotMatch(buy?.description ?? "", /Copy src\/adapters\/meter-pay\.ts/);
     assert.doesNotMatch(buy?.description ?? "", /returns HTTP 402/i);

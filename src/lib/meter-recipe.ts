@@ -33,7 +33,7 @@ await buyMeterPass({ keypair });`;
 
 /** Free-look header. Pick any string; first 5 looks on that id are free. */
 export const METER_FREE_LOOK_NOTE =
-  "pick any string; first 5 looks on that id are free; then 402 look $0.10";
+  "pick any string; first 5 looks on that id are free; then 402 looks_20 $0.20 pack (sku look $0.10)";
 
 export const METER_FREE_LOOK_CURL =
   "curl -s -X POST https://agent-control.net/api/v1/meter/scan -H 'content-type: application/json' -H 'X-Agent-Pass: <your-id>' -d '{\"chain\":\"solana\",\"address\":\"<destination>\"}'";
@@ -45,12 +45,12 @@ curl -s https://agent-control.net/api/v1/meter/pricing
 # 2 look — First 5 free. Then $0.10 USDC. One address. ok | new | warn | sink
 # ${METER_FREE_LOOK_NOTE}
 ${METER_FREE_LOOK_CURL}
-# 3 after 5, POST /api/v1/meter/pass → 402 look $0.10 USDC on Solana to pay_to WITH reference
+# 3 after 5, POST /api/v1/meter/pass → 402 looks_20 $0.20 pack. sku look $0.10. Base USDC (EIP-3009 exact) or Solana USDC to pay_to WITH reference
 curl -s -X POST https://agent-control.net/api/v1/meter/pass -H 'content-type: application/json' -d '{}'
 # copy src/adapters/meter-pay.ts — agent wallet signs and sends (no Phantom)
 ${METER_PAY_SNIPPET}
 # MCP-native (no Phantom leave): meter_buy_pass → you sign locally → meter_watch until token → meter_scan with pass_token
-# Current door: GET /api/v1/meter/pricing (default_sku + free_looks). We never take keys.
+# Current door: GET /api/v1/meter/pricing (default_sku look, paid_sku looks_20, free_looks). We never take keys.
 # 4 watch
 curl -s -X POST https://agent-control.net/api/v1/meter/watch -H 'content-type: application/json' -d '{"invoice_id":"inv_…"}'
 # 5 packs looks_20 $0.20 · addresses_100 $0.15 · stamp_tx $0.05 ticket
@@ -73,13 +73,13 @@ export const METER_STEPS = [
   {
     n: "2",
     t: "Look",
-    d: "Can I pay this address? First 5 free. Then $0.10 USDC. ok | new | warn | sink. Never hold. Pick any string; first 5 looks on that id are free; then 402 look $0.10.",
+    d: "Can I pay this address? First 5 free. Then $0.10 USDC. ok | new | warn | sink. Never hold. Pick any string; first 5 looks on that id are free; then 402 looks_20 $0.20 pack (sku look $0.10).",
     code: METER_FREE_LOOK_CURL,
   },
   {
     n: "3",
-    t: "Pay $0.10",
-    d: "After 5 free, current look from GET pricing. Your agent wallet sends USDC on Solana to pay_to with the reference. Copy src/adapters/meter-pay.ts onto your machine. We never take keys. No Phantom. Default sku is look. Pack looks_20 is $0.20.",
+    t: "Pay a pack",
+    d: "After 5 free, looks_20 $0.20 pack (20 looks). sku look is $0.10 one-shot. Base USDC (EIP-3009 exact) or Solana USDC to pay_to with the reference. Copy src/adapters/meter-pay.ts onto your machine for Solana. We never take keys. No Phantom. Not pass_1h.",
     code: METER_PAY_SNIPPET,
   },
   {

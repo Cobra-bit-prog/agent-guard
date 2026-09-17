@@ -4,6 +4,8 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { SOLANA_PAYOUT_ADDRESS, USDC_MINT } from "../solana-pay.ts";
+import { EVM_PAYOUT_ADDRESS } from "../evm-pay.ts";
+import { BASE_USDC } from "./accepts.ts";
 import {
   AGENT_CARD_PATH,
   AGENT_JSON_PATH,
@@ -32,7 +34,7 @@ function get(path: string, method = "GET") {
 describe("Agent Meter well-known discovery", () => {
   it("locks the look door accepts on the payout wallet", () => {
     const accepts = meterLookAccepts();
-    assert.equal(accepts.length, 1);
+    assert.equal(accepts.length, 2);
     assert.equal(accepts[0]?.scheme, "exact");
     assert.equal(accepts[0]?.network, "solana");
     assert.equal(accepts[0]?.maxAmountRequired, "100000");
@@ -42,7 +44,16 @@ describe("Agent Meter well-known discovery", () => {
     assert.equal(accepts[0]?.asset, USDC_MINT);
     assert.equal(accepts[0]?.extra.sku, "look");
     assert.equal(accepts[0]?.extra.price_usd, 0.10);
-    assert.match(accepts[0]?.extra.question ?? "", /Can I pay this address\?/);
+    assert.match(String(accepts[0]?.extra.question ?? ""), /Can I pay this address\?/);
+    assert.equal(accepts[1]?.scheme, "exact");
+    assert.equal(accepts[1]?.network, "base");
+    assert.equal(accepts[1]?.payTo, EVM_PAYOUT_ADDRESS);
+    assert.equal(accepts[1]?.payTo, "0xc5df91Fd7D9578A63efe9B0ee96Bacc5e7742E98");
+    assert.equal(accepts[1]?.asset, BASE_USDC);
+    assert.equal(accepts[1]?.extra.name, "USD Coin");
+    assert.equal(accepts[1]?.extra.version, "2");
+    assert.equal(accepts[1]?.extra.assetTransferMethod, "eip3009");
+    assert.equal(accepts[1]?.extra.caip2, "eip155:8453");
   });
 
   it("describes Agent Meter look $0.10 Solana USDC for crawlers", () => {
@@ -55,10 +66,14 @@ describe("Agent Meter well-known discovery", () => {
     assert.match(body.description, /First 5 free\. Then \$0\.10/);
     assert.match(body.description, /No inbox/);
     assert.match(body.description, /Human App is separate/);
+    assert.match(body.description, /Base USDC \(EIP-3009 exact\)/);
+    assert.match(body.description, /Solana USDC/);
     assert.equal(body.accepts[0]?.payTo, PAY_TO);
+    assert.equal(body.accepts[1]?.payTo, EVM_PAYOUT_ADDRESS);
+    assert.equal(body.accepts.length, 2);
     assert.equal(body.resources[0]?.url, `${PUBLIC_ORIGIN}/api/v1/meter/pass`);
     assert.equal(body.resources[0]?.method, "POST");
-    assert.match(body.resources[0]?.description ?? "", /402 look \$0\.10/);
+    assert.match(body.resources[0]?.description ?? "", /402 looks_20 \$0\.20/);
     assert.equal(body.docs, `${PUBLIC_ORIGIN}/docs#agent-meter`);
     assert.doesNotMatch(JSON.stringify(body), /facilitator/i);
     assert.doesNotMatch(JSON.stringify(body), /Hostile/);

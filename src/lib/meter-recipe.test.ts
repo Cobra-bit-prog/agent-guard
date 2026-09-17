@@ -117,7 +117,8 @@ describe("Agent Meter recipe", () => {
       /^# 1 discover\n# https:\/\/agent-control\.net\/llms\.txt\ncurl -s https:\/\/agent-control\.net\/api\/v1\/meter\/pricing$/m,
     );
     assert.match(METER_RECIPE, /First 5 free\. Then \$0\.10 USDC/);
-    assert.match(METER_RECIPE, /402 look \$0\.10/);
+    assert.match(METER_RECIPE, /402 looks_20 \$0\.20 pack/);
+    assert.match(METER_RECIPE, /sku look \$0\.10/);
     assert.match(METER_RECIPE, /looks_20 \$0\.20/);
     assert.match(METER_RECIPE, /addresses_100 \$0\.15/);
     assert.match(METER_RECIPE, /stamp_tx \$0\.05/);
@@ -137,7 +138,8 @@ await buyMeterPass({ keypair });`,
     assert.match(METER_STEPS[2]?.d ?? "", /looks_20/);
     assert.match(METER_STEPS[2]?.d ?? "", /No Phantom/);
     assert.match(METER_STEPS[2]?.d ?? "", /We never take keys/);
-    assert.match(METER_STEPS[2]?.d ?? "", /current look from GET pricing/);
+    assert.match(METER_STEPS[2]?.d ?? "", /EIP-3009 exact/);
+    assert.match(METER_STEPS[2]?.d ?? "", /sku look is \$0\.10/);
     assert.doesNotMatch(METER_RECIPE, /\bbroadcast/i);
     assert.doesNotMatch(METER_RECIPE, /^# 4 poll/m);
     assert.match(METER_RECIPE, /^# 4 watch$/m);
@@ -146,8 +148,11 @@ await buyMeterPass({ keypair });`,
       /curl -s -X POST https:\/\/agent-control\.net\/api\/v1\/meter\/watch -H 'content-type: application\/json' -d '\{"invoice_id":"inv_…"\}'/,
     );
     assert.match(METER_RECIPE, /X-Agent-Pass: <your-id>/);
-    assert.match(METER_RECIPE, /pick any string; first 5 looks on that id are free; then 402 look \$0\.10/);
-    assert.equal(METER_FREE_LOOK_NOTE, "pick any string; first 5 looks on that id are free; then 402 look $0.10");
+    assert.match(METER_RECIPE, /pick any string; first 5 looks on that id are free; then 402 looks_20 \$0\.20 pack \(sku look \$0\.10\)/);
+    assert.equal(
+      METER_FREE_LOOK_NOTE,
+      "pick any string; first 5 looks on that id are free; then 402 looks_20 $0.20 pack (sku look $0.10)",
+    );
     assert.match(METER_FREE_LOOK_CURL, /\/api\/v1\/meter\/scan/);
     assert.match(METER_FREE_LOOK_CURL, /X-Agent-Pass: <your-id>/);
     assert.equal(METER_STEPS[1]?.code, METER_FREE_LOOK_CURL);

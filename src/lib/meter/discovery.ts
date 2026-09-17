@@ -4,16 +4,17 @@
  * Origin and payTo are pinned — never from Host or a request body.
  */
 
-import { SOLANA_PAYOUT_ADDRESS, USDC_MINT } from "../solana-pay.ts";
+import { SOLANA_PAYOUT_ADDRESS } from "../solana-pay.ts";
+import { EVM_PAYOUT_ADDRESS } from "../evm-pay.ts";
+import { meterLookAccepts } from "./accepts.ts";
 import {
   LOOK_QUESTION,
   LOOK_RISKS,
   METER_FREE_LOOKS,
   METER_FREE_THEN_LOOK,
-  METER_LOOK,
   METER_LOOK_SKU,
-  METER_LOOK_USD,
   METER_LOOK_USD_LABEL,
+  METER_PAID_SKU,
 } from "./pricing.ts";
 
 export const PUBLIC_ORIGIN = "https://agent-control.net";
@@ -37,40 +38,21 @@ const PRICING_URL = `${PUBLIC_ORIGIN}/api/v1/meter/pricing`;
 const MCP_URL = `${PUBLIC_ORIGIN}/api/v1/mcp`;
 const DOCS_URL = `${PUBLIC_ORIGIN}/docs#agent-meter`;
 
-/** Look-door accepts. Same payTo / asset / amount as the live 402 challenge. */
-export function meterLookAccepts() {
-  return [
-    {
-      scheme: "exact",
-      network: "solana",
-      maxAmountRequired: METER_LOOK.amount_base_units,
-      amount: METER_LOOK.amount_base_units,
-      payTo: SOLANA_PAYOUT_ADDRESS,
-      asset: USDC_MINT,
-      extra: {
-        sku: METER_LOOK_SKU,
-        price_usd: METER_LOOK_USD,
-        symbol: "USDC",
-        decimals: 6,
-        resource: PASS_URL,
-        question: LOOK_QUESTION,
-      },
-    },
-  ];
-}
+/** Look-door accepts. Dual rail: Solana USDC + Base USDC (EIP-3009 exact). */
+export { meterLookAccepts } from "./accepts.ts";
 
 export function x402WellKnown() {
   return {
     x402Version: 2,
     kind: "resource-server",
     name: "Agent Meter",
-    description: `${METER_DISCOVERY_LEAD} Solana USDC look door. Human App is separate.`,
+    description: `${METER_DISCOVERY_LEAD} Base USDC (EIP-3009 exact) and Solana USDC. After 5 free, packs mint X-Agent-Pass. Human App is separate.`,
     accepts: meterLookAccepts(),
     resources: [
       {
         url: PASS_URL,
         method: "POST",
-        description: `Look door. Empty body {} → HTTP 402 look $${METER_LOOK_USD_LABEL} Solana USDC. ${METER_FREE_THEN_LOOK}`,
+        description: `Paid door. Empty body {} → HTTP 402 ${METER_PAID_SKU} $0.20 pack. sku look is $${METER_LOOK_USD_LABEL}. ${METER_FREE_THEN_LOOK} Base USDC (EIP-3009 exact) or Solana USDC.`,
       },
       {
         url: SCAN_URL,
@@ -80,14 +62,14 @@ export function x402WellKnown() {
       {
         url: PRICING_URL,
         method: "GET",
-        description: `Public catalog. Default sku ${METER_LOOK_SKU} $${METER_LOOK_USD_LABEL}.`,
+        description: `Public catalog. Default sku ${METER_LOOK_SKU} $${METER_LOOK_USD_LABEL}. Paid sku ${METER_PAID_SKU} $0.20.`,
       },
     ],
     docs: DOCS_URL,
     contact: "support@agent-control.net",
     openapi: `${PUBLIC_ORIGIN}${OPENAPI_METER_PATH}`,
     mcp: MCP_URL,
-    updated: "2026-09-12T00:00:00Z",
+    updated: "2026-09-17T00:00:00Z",
   };
 }
 
@@ -120,8 +102,8 @@ export function agentCard() {
       {
         id: "meter-look",
         name: LOOK_QUESTION,
-        description: `${METER_FREE_THEN_LOOK} Risk ${LOOK_RISKS.join("|")}. No inbox. No email. No API key.`,
-        tags: ["meter", "x402", "solana", "usdc", "look"],
+        description: `${METER_FREE_THEN_LOOK} Risk ${LOOK_RISKS.join("|")}. Packs mint X-Agent-Pass. Base USDC (EIP-3009 exact) and Solana USDC. No inbox. No email. No API key.`,
+        tags: ["meter", "x402", "solana", "base", "usdc", "look"],
         examples: [`POST ${PASS_URL} {}`, `POST ${SCAN_URL}`],
       },
       {
@@ -141,23 +123,23 @@ export function meterOpenApi() {
     info: {
       title: "Agent Meter",
       version: "1.0.0",
-      description: `${METER_DISCOVERY_LEAD} ${METER_FREE_THEN_LOOK} Solana USDC to ${SOLANA_PAYOUT_ADDRESS}. Human App is separate.`,
+      description: `${METER_DISCOVERY_LEAD} Base USDC (EIP-3009 exact) to ${EVM_PAYOUT_ADDRESS}. Solana USDC to ${SOLANA_PAYOUT_ADDRESS}. Human App is separate.`,
     },
     servers: [{ url: PUBLIC_ORIGIN }],
     paths: {
       "/api/v1/meter/pricing": {
         get: {
           summary: "Public Meter catalog",
-          description: `${LOOK_QUESTION} ${METER_FREE_THEN_LOOK} Default sku look.`,
+          description: `${LOOK_QUESTION} ${METER_FREE_THEN_LOOK} Default sku look. Paid sku looks_20.`,
           responses: {
-            "200": { description: "Catalog. default_sku is look. funds.pay_to is locked." },
+            "200": { description: "Catalog. default_sku is look. paid_sku is looks_20. funds.pay_to is locked." },
           },
         },
       },
       "/api/v1/meter/pass": {
         post: {
           summary: "Look door",
-          description: `Empty body {} mints look $${METER_LOOK_USD_LABEL}. No release without payment. First ${METER_FREE_LOOKS} looks on an X-Agent-Pass id are free.`,
+          description: `Empty body {} invoices looks_20 $0.20 pack. sku look is $${METER_LOOK_USD_LABEL}. No release without payment. First ${METER_FREE_LOOKS} looks on an X-Agent-Pass id are free.`,
           requestBody: {
             required: false,
             content: {
@@ -173,7 +155,7 @@ export function meterOpenApi() {
           },
           responses: {
             "402": {
-              description: `Pay look $${METER_LOOK_USD_LABEL} Solana USDC to the locked payTo with the invoice reference.`,
+              description: `Pay Base USDC (EIP-3009 exact) or Solana USDC to the locked payTo. After 5 free, looks_20 pack mints X-Agent-Pass.`,
             },
             "200": { description: "Pass issued after proof or a prior payment watch." },
           },

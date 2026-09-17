@@ -31,11 +31,12 @@
     {
       "id": "meter-look",
       "name": "Can I pay this address?",
-      "description": "First 5 free. Then $0.10 USDC. Risk ok|new|warn|sink. No inbox. No email. No API key.",
+      "description": "First 5 free. Then $0.10 USDC. Risk ok|new|warn|sink. Packs mint X-Agent-Pass. Base USDC (EIP-3009 exact) and Solana USDC. No inbox. No email. No API key.",
       "tags": [
         "meter",
         "x402",
         "solana",
+        "base",
         "usdc",
         "look"
       ],

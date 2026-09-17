@@ -143,15 +143,20 @@ export type CreateInvoiceInput = {
   origin?: MeterInvoiceCreateOrigin;
 };
 
+export type FulfillMatch = {
+  signature: string;
+  amountUsdc: number;
+  payer_address?: string | null;
+  /** Existing X-Agent-Pass to mint/extend instead of issuing a new token. */
+  extend_token?: string | null;
+};
+
 export type MeterStore = {
   createInvoice(opts?: CreateInvoiceInput): Awaitable<MeterInvoice>;
   getInvoice(idOrRef: string): Awaitable<MeterInvoice | null>;
   listInvoices(opts?: MeterInvoiceListOpts): Awaitable<MeterInvoice[]>;
   noteUnderpaid(invoiceId: string, signature: string, amountUsd: number): Awaitable<MeterInvoice | null>;
-  fulfillInvoice(
-    invoiceId: string,
-    match: { signature: string; amountUsdc: number; payer_address?: string | null },
-  ): Awaitable<{ invoice: MeterInvoice; pass: MeterPass; token: string }>;
+  fulfillInvoice(invoiceId: string, match: FulfillMatch): Awaitable<{ invoice: MeterInvoice; pass: MeterPass; token: string }>;
   issuePass(input?: IssuePassInput): Awaitable<{ pass: MeterPass; token: string }>;
   getPassByToken(token: string, nowMs?: number): Awaitable<MeterPass | null>;
   findPassByToken(token: string): Awaitable<MeterPass | null>;
@@ -177,6 +182,32 @@ export function meterIdentityKey(token: string): string {
   const raw = token.trim();
   if (!raw) return METER_ANON_IDENTITY;
   return createHash("sha256").update(`meter-id:${raw}`).digest("hex");
+}
+
+export function canStackMeterCredits(existingSku: string, purchasedSku: string): boolean {
+  if (existingSku === purchasedSku) return true;
+  const a = coversForSku(existingSku);
+  const b = coversForSku(purchasedSku);
+  return a.includes("scan") && b.includes("scan");
+}
+
+export function stackedPassSku(existingSku: string, purchasedSku: string): string {
+  if (existingSku === "looks_20" || purchasedSku === "looks_20") return "looks_20";
+  if (existingSku === "pass_1h") return existingSku;
+  if (purchasedSku === "pass_1h") return purchasedSku;
+  return purchasedSku || existingSku;
+}
+
+export function extendPassRecord(pass: MeterPass, sku: MeterSku, nowMs = Date.now()): MeterPass {
+  const addedExpiry = nowMs + sku.duration_sec * 1000;
+  const currentExpiry = Date.parse(pass.expires_at);
+  return {
+    ...pass,
+    sku: stackedPassSku(pass.sku, sku.id),
+    included_calls: pass.included_calls + sku.included_calls,
+    expires_at: new Date(Math.max(currentExpiry, addedExpiry)).toISOString(),
+    paid_amount_usd: Number(((pass.paid_amount_usd ?? 0) + sku.price_usd).toFixed(6)),
+  };
 }
 
 export function invoiceDraft(opts: CreateInvoiceInput = {}): MeterInvoice {
@@ -305,7 +336,44 @@ export function createMeterStore(): MeterStore {
     },
     fulfillInvoice(invoiceId, match) {
       const row = invoices.get(invoiceId);
+      const sku = meterSkuOrDefault(row?.sku);
+      const extendToken = typeof match.extend_token === "string" ? match.extend_token.trim() : "";
+      const existingPass = extendToken ? (store.findPassByToken(extendToken) as MeterPass | null) : null;
+
       if (!row) {
+        if (existingPass && extendToken && canStackMeterCredits(existingPass.sku, sku.id)) {
+          const nextPass = {
+            ...extendPassRecord(existingPass, sku),
+            signature: match.signature,
+            payer_address: match.payer_address ?? existingPass.payer_address,
+            invoice_id: invoiceId,
+          };
+          passes.set(nextPass.id, nextPass);
+          const paidAt = new Date().toISOString();
+          return {
+            invoice: {
+              invoice_id: invoiceId,
+              reference: "",
+              sku: nextPass.sku,
+              pay_to: SOLANA_PAYOUT_ADDRESS,
+              amount_usd: sku.price_usd,
+              amount_base_units: sku.amount_base_units,
+              chain: sku.chain,
+              asset: sku.asset,
+              status: "paid" as const,
+              signature: match.signature,
+              paid_amount_usd: match.amountUsdc,
+              payer_address: match.payer_address ?? null,
+              pass_id: nextPass.id,
+              created_at: nextPass.created_at,
+              expires_at: nextPass.expires_at,
+              paid_at: paidAt,
+              ...blankInvoiceOrigin(),
+            },
+            pass: nextPass,
+            token: extendToken,
+          };
+        }
         const issued = store.issuePass({
           sku: METER_LOOK_SKU,
           payer_address: match.payer_address ?? null,
@@ -341,13 +409,26 @@ export function createMeterStore(): MeterStore {
         const pass = passes.get(row.pass_id);
         if (pass) return { invoice: row, pass, token: existingToken };
       }
-      const issued = store.issuePass({
-        sku: row.sku,
-        payer_address: match.payer_address ?? row.payer_address,
-        invoice_id: invoiceId,
-        signature: match.signature,
-        paid_amount_usd: match.amountUsdc,
-      }) as { pass: MeterPass; token: string };
+
+      let issued: { pass: MeterPass; token: string };
+      if (existingPass && extendToken && canStackMeterCredits(existingPass.sku, sku.id)) {
+        const nextPass = {
+          ...extendPassRecord(existingPass, sku),
+          signature: match.signature,
+          payer_address: match.payer_address ?? existingPass.payer_address ?? row.payer_address,
+          invoice_id: invoiceId,
+        };
+        passes.set(nextPass.id, nextPass);
+        issued = { pass: nextPass, token: extendToken };
+      } else {
+        issued = store.issuePass({
+          sku: row.sku,
+          payer_address: match.payer_address ?? row.payer_address,
+          invoice_id: invoiceId,
+          signature: match.signature,
+          paid_amount_usd: match.amountUsdc,
+        }) as { pass: MeterPass; token: string };
+      }
       const paidAt = new Date().toISOString();
       const next: MeterInvoice = {
         ...row,

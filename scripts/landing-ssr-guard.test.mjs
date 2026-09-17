@@ -425,7 +425,10 @@ test("llms.txt is the public AI-crawler brief", () => {
   assert.match(meterBlock, /docs#agent-meter/);
   assert.match(meterBlock, /curl -s https:\/\/agent-control\.net\/api\/v1\/meter\/pricing/);
   assert.match(meterBlock, /POST https:\/\/agent-control\.net\/api\/v1\/meter\/pass/);
-  assert.match(meterBlock, /0\.10 USDC on Solana to pay_to/);
+  assert.match(meterBlock, /Base USDC \(EIP-3009 exact\)/);
+  assert.match(meterBlock, /Solana USDC to pay_to/);
+  assert.match(meterBlock, /looks_20 \$0\.20/);
+  assert.match(meterBlock, /paid_sku looks_20/);
   assert.match(meterBlock, /POST https:\/\/agent-control\.net\/api\/v1\/meter\/watch/);
   assert.match(meterBlock, /X-Agent-Pass/);
   assert.match(meterBlock, /\/api\/v1\/meter\/scan/);
