@@ -2,7 +2,7 @@
   "x402Version": 2,
   "kind": "resource-server",
   "name": "Agent Meter",
-  "description": "Can I pay this address? First 5 free. Then $0.10. No inbox. Solana USDC look door. Human App is separate.",
+  "description": "Can I pay this address? First 5 free. Then $0.10. No inbox. Base USDC (EIP-3009 exact) and Solana USDC. After 5 free, packs mint X-Agent-Pass. Human App is separate.",
   "accepts": [
     {
       "scheme": "exact",
@@ -11,13 +11,36 @@
       "amount": "100000",
       "payTo": "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR",
       "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "maxTimeoutSeconds": 300,
       "extra": {
         "sku": "look",
         "price_usd": 0.1,
         "symbol": "USDC",
         "decimals": 6,
-        "resource": "https://agent-control.net/api/v1/meter/pass",
-        "question": "Can I pay this address?"
+        "question": "Can I pay this address?",
+        "match": "solana-pay-reference",
+        "resource": "https://agent-control.net/api/v1/meter/pass"
+      }
+    },
+    {
+      "scheme": "exact",
+      "network": "base",
+      "maxAmountRequired": "100000",
+      "amount": "100000",
+      "payTo": "0xc5df91Fd7D9578A63efe9B0ee96Bacc5e7742E98",
+      "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "maxTimeoutSeconds": 300,
+      "extra": {
+        "sku": "look",
+        "price_usd": 0.1,
+        "symbol": "USDC",
+        "decimals": 6,
+        "name": "USD Coin",
+        "version": "2",
+        "assetTransferMethod": "eip3009",
+        "caip2": "eip155:8453",
+        "question": "Can I pay this address?",
+        "resource": "https://agent-control.net/api/v1/meter/pass"
       }
     }
   ],
@@ -25,7 +48,7 @@
     {
       "url": "https://agent-control.net/api/v1/meter/pass",
       "method": "POST",
-      "description": "Look door. Empty body {} → HTTP 402 look $0.10 Solana USDC. First 5 free. Then $0.10 USDC."
+      "description": "Paid door. Empty body {} → HTTP 402 looks_20 $0.20 pack. sku look is $0.10. First 5 free. Then $0.10 USDC. Base USDC (EIP-3009 exact) or Solana USDC."
     },
     {
       "url": "https://agent-control.net/api/v1/meter/scan",
@@ -35,12 +58,12 @@
     {
       "url": "https://agent-control.net/api/v1/meter/pricing",
       "method": "GET",
-      "description": "Public catalog. Default sku look $0.10."
+      "description": "Public catalog. Default sku look $0.10. Paid sku looks_20 $0.20."
     }
   ],
   "docs": "https://agent-control.net/docs#agent-meter",
   "contact": "support@agent-control.net",
   "openapi": "https://agent-control.net/openapi-meter.json",
   "mcp": "https://agent-control.net/api/v1/mcp",
-  "updated": "2026-09-12T00:00:00Z"
+  "updated": "2026-09-17T00:00:00Z"
 }

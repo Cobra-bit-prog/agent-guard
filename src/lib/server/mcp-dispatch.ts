@@ -22,6 +22,9 @@ async function meterTool(
   if (typeof args.pass_token === "string" && args.pass_token) {
     headers.set("X-Agent-Pass", args.pass_token);
   }
+  if (args.payment && typeof args.payment === "object") {
+    headers.set("PAYMENT-SIGNATURE", Buffer.from(JSON.stringify(args.payment), "utf8").toString("base64"));
+  }
   if (originRequest) {
     for (const name of ATTRIBUTION_HEADERS) {
       const value = originRequest.headers.get(name);

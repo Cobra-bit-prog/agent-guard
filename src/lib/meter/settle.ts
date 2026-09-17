@@ -1,5 +1,6 @@
 import { paymentsFromHeliusPayload, type HeliusPayment, type MatchResult } from "../pay-invoice.ts";
 import { lockedSolanaUsdcRecipient } from "../solana-pay.ts";
+import { meterFundsAccepts } from "./accepts.ts";
 import { METER_LOOK } from "./pricing.ts";
 import type { MeterInvoice, MeterStore } from "./store.ts";
 
@@ -11,11 +12,8 @@ export type MeterChainFinder = (opts: {
 
 export function meterFundsDestination() {
   return {
-    pay_to: lockedSolanaUsdcRecipient(),
-    chain: "solana" as const,
-    asset: "usdc" as const,
-    mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-    note: "Same locked Phantom receive wallet as Human App $29. Query strings and env overrides cannot retarget funds.",
+    ...meterFundsAccepts(),
+    note: "Same locked wallets as Human App. Query strings and env overrides cannot retarget funds. Base USDC (EIP-3009 exact) and Solana USDC.",
   };
 }
 

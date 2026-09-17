@@ -6,7 +6,7 @@ export const MCP_TOOLS = [
     name: "meter_pricing",
     title: "Agent Meter pricing",
     description:
-      "Can I pay this address? First 5 free. Then $0.10. No inbox. Public catalog from this tool: look, looks_20, addresses_100, stamp_tx. Current door is default_sku + free_looks + skus[]. No email. No API key. Human App $29 plans are separate.",
+      "Can I pay this address? First 5 free. Then $0.10. No inbox. Public catalog from this tool: look, looks_20, addresses_100, stamp_tx. default_sku is look. After 5 free, paid_sku looks_20 mints X-Agent-Pass so you do not re-sign every look. Base USDC (EIP-3009 exact) and Solana USDC. No email. No API key. Human App $29 plans are separate.",
     annotations: readOnly,
     inputSchema: { type: "object", properties: {} },
   },
@@ -14,20 +14,24 @@ export const MCP_TOOLS = [
     name: "meter_buy_pass",
     title: "Buy an Agent Meter pass",
     description:
-      "Can I pay this address? First 5 free. Then $0.10. No inbox. Current door: call with sku look (or omit) to create a look invoice from GET meter_pricing. Returns a payable invoice as tool content (ok:true / status payment_required) with pay_to, amount_usd, amount_base_units, reference, pay_url, invoice_id, watch_url, adapter_url, pay_page, next_tool. After invoice, fetch adapter_url, then meter_watch. 402 invoice includes pay_page for Phantom laptop if no local signer. Sign USDC on YOUR machine to pay_to WITH the reference. We never take keys. Packs: looks_20 / addresses_100 / stamp_tx. No human account.",
+      "Can I pay this address? First 5 free. Then $0.10. No inbox. After 5 free, call with sku looks_20 (or omit) to buy a pack that mints/extends X-Agent-Pass. sku look is one $0.10 look. Returns a payable invoice as tool content (ok:true / status payment_required) with pay_to, base_pay_to, accepts (Base USDC EIP-3009 exact and Solana USDC), amount_usd, amount_base_units, reference, pay_url, invoice_id, watch_url, adapter_url, pay_page, next_tool. After invoice, fetch adapter_url or sign Base EIP-3009 exact, then meter_watch. 402 invoice includes pay_page for Phantom laptop if no local signer. Sign USDC on YOUR machine. We never take keys. Packs: looks_20 / addresses_100 / stamp_tx. No human account.",
     annotations: writes,
     inputSchema: {
       type: "object",
       properties: {
         sku: {
           type: "string",
-          description: "Catalog id from meter_pricing. Default look (current door). Packs: looks_20, addresses_100, stamp_tx. pass_1h stays in catalog only.",
+          description: "Catalog id from meter_pricing. Omit or looks_20 is the pack after 5 free. sku look is $0.10 one-shot. Packs: looks_20, addresses_100, stamp_tx. pass_1h stays in catalog only.",
         },
         proof: { type: "object", description: "Payment proof. { type: dev } only when METER_DEV_GRANT=1. Never send a secret key." },
-        pass_token: { type: "string" },
+        pass_token: { type: "string", description: "Existing X-Agent-Pass to extend with a pack." },
         signature: {
           type: "string",
           description: "Optional on-chain tx signature after you sign locally. Not a private key.",
+        },
+        payment: {
+          type: "object",
+          description: "Optional Base EIP-3009 exact payload. Same JSON as PAYMENT-SIGNATURE. Never send a secret key.",
         },
       },
     },
@@ -36,7 +40,7 @@ export const MCP_TOOLS = [
     name: "meter_watch",
     title: "Watch a Meter invoice",
     description:
-      "Can I pay this address? First 5 free. Then $0.10. No inbox. After you sign locally and send USDC, call with invoice_id until token. Repeat until the result includes token — that is X-Agent-Pass. Then meter_scan with pass_token. Optional signature (tx sig only). We never take keys. No human account.",
+      "Can I pay this address? First 5 free. Then $0.10. No inbox. After you sign locally (Base EIP-3009 exact or Solana USDC), call with invoice_id until token. Optional payment payload for Base. Repeat until the result includes token — that is X-Agent-Pass. Then meter_scan with pass_token. Optional signature (tx sig only). We never take keys. No human account.",
     annotations: writes,
     inputSchema: {
       type: "object",
@@ -47,6 +51,10 @@ export const MCP_TOOLS = [
           type: "string",
           description: "Optional Solana tx signature after local sign. Not a private key.",
         },
+        payment: {
+          type: "object",
+          description: "Optional Base EIP-3009 exact payload. Never send a secret key.",
+        },
       },
     },
   },
@@ -54,7 +62,7 @@ export const MCP_TOOLS = [
     name: "meter_scan",
     title: "Scan a destination",
     description:
-      "Can I pay this address? First 5 free. Then $0.10. No inbox. One look = one address. Send X-Agent-Pass with any string; first 5 looks on that id are free; then 402 look $0.10. 402 invoice includes pay_page for Phantom laptop if no local signer. Risk ok|new|warn|sink. Never hold.",
+      "Can I pay this address? First 5 free. Then $0.10. No inbox. One look = one address. Send X-Agent-Pass with any string; first 5 looks on that id are free; then 402 looks_20 pack $0.20 (sku look is $0.10). Base USDC (EIP-3009 exact) or Solana USDC. 402 invoice includes pay_page for Phantom laptop if no local signer. Risk ok|new|warn|sink. Never hold.",
     annotations: readOnly,
     inputSchema: {
       type: "object",
@@ -70,7 +78,7 @@ export const MCP_TOOLS = [
     name: "meter_preflight",
     title: "Preflight against a self cap",
     description:
-      "Can I pay this address? First 5 free. Then $0.10. No inbox. One look = one address. Send X-Agent-Pass with any string; first 5 looks on that id are free; then 402 look $0.10. Body: chain, wallet, to, value_usd, cap_usd. allow or stop vs cap_usd. Never hold.",
+      "Can I pay this address? First 5 free. Then $0.10. No inbox. One look = one address. Send X-Agent-Pass with any string; first 5 looks on that id are free; then 402 looks_20 pack $0.20. Body: chain, wallet, to, value_usd, cap_usd. allow or stop vs cap_usd. Never hold.",
     annotations: writes,
     inputSchema: {
       type: "object",

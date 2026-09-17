@@ -8,12 +8,14 @@ import {
   METER_SMOKE_OR_PROBE_SQL,
 } from "./origin.ts";
 import { utcDayKey } from "./preflight.ts";
-import { METER_ANON_IDENTITY, METER_FREE_LOOKS, METER_LOOK, METER_LOOK_SKU } from "./pricing.ts";
+import { METER_ANON_IDENTITY, METER_FREE_LOOKS, METER_LOOK, METER_LOOK_SKU, meterSkuOrDefault } from "./pricing.ts";
 import {
   getMemoryMeterStore,
   invoiceDraft,
   newMeterId,
   passDraft,
+  canStackMeterCredits,
+  extendPassRecord,
   type MeterCallLog,
   type MeterInvoice,
   type MeterInvoiceListOpts,
@@ -322,6 +324,77 @@ export function createSqlMeterStore(db: Sql): MeterStore {
         if (passRows[0]?.token) {
           return { invoice: existing, pass: mapPass(passRows[0]), token: passRows[0].token };
         }
+      }
+      const sku = meterSkuOrDefault(existing?.sku);
+      const extendToken = typeof match.extend_token === "string" ? match.extend_token.trim() : "";
+      const existingPass = extendToken ? await store.findPassByToken(extendToken) : null;
+      if (existingPass && extendToken && canStackMeterCredits(existingPass.sku, sku.id)) {
+        const nextPass = {
+          ...extendPassRecord(existingPass, sku),
+          signature: match.signature,
+          payer_address: match.payer_address ?? existingPass.payer_address,
+          invoice_id: invoiceId,
+        };
+        await db`
+          update meter_passes
+          set sku = ${nextPass.sku},
+              included_calls = ${nextPass.included_calls},
+              expires_at = ${nextPass.expires_at},
+              signature = ${match.signature},
+              paid_amount_usd = ${nextPass.paid_amount_usd},
+              invoice_id = ${invoiceId},
+              payer_address = ${nextPass.payer_address}
+          where id = ${nextPass.id}
+        `;
+        const paidAt = new Date().toISOString();
+        if (existing) {
+          await db`
+            update meter_invoices
+            set status = ${"paid"},
+                signature = ${match.signature},
+                paid_amount_usd = ${match.amountUsdc},
+                payer_address = ${match.payer_address ?? existing.payer_address},
+                pass_id = ${nextPass.id},
+                paid_at = ${paidAt}
+            where id = ${invoiceId}
+          `;
+          return {
+            invoice: {
+              ...existing,
+              status: "paid",
+              signature: match.signature,
+              paid_amount_usd: match.amountUsdc,
+              payer_address: match.payer_address ?? existing.payer_address,
+              pass_id: nextPass.id,
+              paid_at: paidAt,
+            },
+            pass: nextPass,
+            token: extendToken,
+          };
+        }
+        return {
+          invoice: {
+            invoice_id: invoiceId,
+            reference: "",
+            sku: nextPass.sku,
+            pay_to: SOLANA_PAYOUT_ADDRESS,
+            amount_usd: sku.price_usd,
+            amount_base_units: sku.amount_base_units,
+            chain: sku.chain,
+            asset: sku.asset,
+            status: "paid",
+            signature: match.signature,
+            paid_amount_usd: match.amountUsdc,
+            payer_address: match.payer_address ?? null,
+            pass_id: nextPass.id,
+            created_at: nextPass.created_at,
+            expires_at: nextPass.expires_at,
+            paid_at: paidAt,
+            ...blankInvoiceOrigin(),
+          },
+          pass: nextPass,
+          token: extendToken,
+        };
       }
       const issued = await store.issuePass({
         sku: existing?.sku ?? METER_LOOK_SKU,

@@ -295,14 +295,14 @@ function invoiceFromBody(body: Record<string, unknown>): MeterPassInvoice {
 
 /**
  * End-to-end: invoice → agent wallet pays → watch until X-Agent-Pass token.
- * Current door sku is look (amounts from GET /api/v1/meter/pricing). Pack looks_20. Not pass_1h.
+ * Current door after 5 free is looks_20 pack (amounts from GET /api/v1/meter/pricing). sku look is $0.10. Not pass_1h.
  */
 export async function buyMeterPass(opts: BuyMeterPassOptions): Promise<BuyMeterPassResult> {
   assertPayerIsNotReceiveWallet(opts.keypair.publicKey);
   const origin = originOf(opts.origin);
   const fetchFn = opts.fetch ?? fetch;
   const sku = asTrimmed(opts.sku);
-  const passBody = sku && sku !== DEFAULT_METER_SKU ? { sku } : {};
+  const passBody = sku ? { sku } : {};
 
   const passRes = await fetchFn(`${origin}/api/v1/meter/pass`, {
     method: "POST",

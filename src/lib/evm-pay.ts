@@ -2,6 +2,18 @@
 
 export const EVM_USDC_DECIMALS = 6;
 
+/**
+ * Production EVM receive address for Meter Base USDC (EIP-3009 exact).
+ * Ethereum/Base. Must match Vercel Production `EVM_PAYOUT_ADDRESS`.
+ * Do not read this from query params, JSON bodies, or env overrides on Meter.
+ */
+export const EVM_PAYOUT_ADDRESS = "0xc5df91Fd7D9578A63efe9B0ee96Bacc5e7742E98";
+
+/** Ignore any candidate wallet — env mistakes and query strings cannot retarget Meter Base funds. */
+export function lockedEvmUsdcRecipient(_candidate?: string | null): string {
+  return EVM_PAYOUT_ADDRESS;
+}
+
 export const EVM_USDC = {
   ethereum: {
     chain: "ethereum" as const,

@@ -1,7 +1,11 @@
 import { SOLANA_PAYOUT_ADDRESS, USDC_MINT } from "../solana-pay.ts";
+import { EVM_PAYOUT_ADDRESS } from "../evm-pay.ts";
+import { meterFundsAccepts, meterPaymentAccepts } from "./accepts.ts";
 
 export const METER_LOOK_SKU = "look" as const;
 export const METER_DEFAULT_SKU = METER_LOOK_SKU;
+/** Credit-first paid door after 5 free looks. Packs mint/extend X-Agent-Pass. */
+export const METER_PAID_SKU = "looks_20" as const;
 /** @deprecated Default door is `look`. pass_1h stays in catalog only. */
 export const METER_PASS_SKU = "pass_1h" as const;
 
@@ -103,7 +107,7 @@ export const METER_SKU_IDS = Object.keys(METER_SKUS) as MeterSkuId[];
 export function defaultSkuForKind(kind: string): MeterSku {
   if (kind === "stamp") return METER_STAMP_TX;
   if (kind === "scan_batch") return METER_ADDRESSES_100;
-  return METER_LOOK;
+  return METER_LOOKS_20;
 }
 
 export function resolveMeterSku(raw: unknown): MeterSku | { error: "unknown_sku"; sku: string } {
@@ -135,6 +139,7 @@ export function meterPricing() {
     risks: [...LOOK_RISKS],
     note: `${LOOK_QUESTION} ${METER_FREE_THEN_LOOK} No email. No API key. Human App ($29 Inbox) is separate.`,
     default_sku: METER_DEFAULT_SKU,
+    paid_sku: METER_PAID_SKU,
     free_looks: METER_FREE_LOOKS,
     look: {
       id: METER_LOOK.id,
@@ -179,12 +184,7 @@ export function meterPricing() {
         job: row.job,
       };
     }),
-    funds: {
-      pay_to: "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR",
-      chain: "solana",
-      asset: "usdc",
-      match: "solana-pay-reference",
-    },
+    funds: meterFundsAccepts(),
     endpoints: {
       pricing: "GET /api/v1/meter/pricing",
       pass: "POST /api/v1/meter/pass",
@@ -210,14 +210,14 @@ export const METER_ADAPTER_URL =
   "https://raw.githubusercontent.com/Cobra-bit-prog/agent-guard/main/src/adapters/meter-pay.ts";
 export const METER_NEXT_TOOL = "meter_watch" as const;
 export const METER_402_SIGN =
-  "Sign USDC on YOUR machine to pay_to WITH the reference. Fetch adapter_url (buyMeterPass / payMeterPass). We never take keys.";
+  "Sign USDC on YOUR machine. Base: EIP-3009 exact to base_pay_to. Solana: pay_to WITH the reference. Fetch adapter_url (buyMeterPass / payMeterPass). After 5 free, sku looks_20 mints X-Agent-Pass so you do not re-sign every look. We never take keys.";
 
 export function meter402PayPage(invoiceId: string): string {
   return `https://agent-control.net/meter/pay?invoice_id=${invoiceId}`;
 }
 
 export function meter402Next(invoiceId: string): string {
-  return `1) If you can sign: fetch adapter_url (buyMeterPass). 2) Else open pay_page on a laptop with Phantom. 3) Call meter_watch {"invoice_id":"${invoiceId}"} until token. 4) Retry meter_scan with that token as pass_token / X-Agent-Pass.`;
+  return `1) Base: sign EIP-3009 exact and retry with PAYMENT-SIGNATURE. 2) Solana: fetch adapter_url (buyMeterPass) or open pay_page on a laptop with Phantom. 3) Call meter_watch {"invoice_id":"${invoiceId}"} until token. 4) Retry meter_scan with that token as pass_token / X-Agent-Pass. After 5 free, sku looks_20 is the pack.`;
 }
 
 export function meter402Body(invoice: {
@@ -234,21 +234,38 @@ export function meter402Body(invoice: {
   const catalog = METER_SKUS[sku] ?? METER_LOOK;
   const price = invoice.amount_usd || catalog.price_usd;
   const amountBase = invoice.amount_base_units || catalog.amount_base_units;
+  const accepts = meterPaymentAccepts(
+    {
+      invoice_id: invoice.invoice_id,
+      reference: invoice.reference,
+      amount_base_units: amountBase,
+      sku: catalog.id,
+      amount_usd: price,
+    },
+    catalog,
+  );
   return {
     error: "payment_required",
     http: 402,
     sku: catalog.id,
+    paid_sku: METER_PAID_SKU,
     price_usd: catalog.price_usd,
     asset: invoice.asset,
     chain: invoice.chain,
-    pay_to: invoice.pay_to,
+    pay_to: SOLANA_PAYOUT_ADDRESS,
+    base_pay_to: EVM_PAYOUT_ADDRESS,
     amount_usd: price,
     amount_base_units: amountBase,
     invoice_id: invoice.invoice_id,
     reference: invoice.reference,
     question: LOOK_QUESTION,
     note: catalog.id === "stamp_tx" ? STAMP_TICKET_COPY : METER_FREE_THEN_LOOK,
-    pay_url: `solana:${invoice.pay_to}?amount=${price}&spl-token=${USDC_MINT}&reference=${invoice.reference}&label=Agent%20Control&message=Pay%20$${price}%20${catalog.id}`,
+    packs: {
+      looks_20: { price_usd: METER_LOOKS_20.price_usd, included_calls: METER_LOOKS_20.included_calls },
+      addresses_100: { price_usd: METER_ADDRESSES_100.price_usd, included_calls: METER_ADDRESSES_100.included_calls },
+    },
+    accepts,
+    pay_url: `solana:${SOLANA_PAYOUT_ADDRESS}?amount=${price}&spl-token=${USDC_MINT}&reference=${invoice.reference}&label=Agent%20Control&message=Pay%20$${price}%20${catalog.id}`,
     watch_url: METER_WATCH_URL,
     adapter_url: METER_ADAPTER_URL,
     pay_page: meter402PayPage(invoice.invoice_id),
@@ -274,16 +291,16 @@ export function meter402PaymentRequiredPayload(invoice: Meter402Invoice) {
   const catalog = METER_SKUS[sku] ?? METER_LOOK;
   return {
     x402Version: 2,
-    accepts: [
+    accepts: meterPaymentAccepts(
       {
-        scheme: "exact",
-        network: "solana",
-        maxAmountRequired: invoice.amount_base_units || catalog.amount_base_units,
-        payTo: SOLANA_PAYOUT_ADDRESS,
-        asset: USDC_MINT,
-        extra: { reference: invoice.reference },
+        invoice_id: invoice.invoice_id,
+        reference: invoice.reference,
+        amount_base_units: invoice.amount_base_units || catalog.amount_base_units,
+        sku: catalog.id,
+        amount_usd: invoice.amount_usd || catalog.price_usd,
       },
-    ],
+      catalog,
+    ),
   };
 }
 

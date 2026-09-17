@@ -5,6 +5,8 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { PAY_EXPIRY_MS, SOLANA_PAYOUT_ADDRESS, USDC_MINT } from "../solana-pay.ts";
+import { EVM_PAYOUT_ADDRESS } from "../evm-pay.ts";
+import { BASE_USDC } from "./accepts.ts";
 import { evaluateTransfer } from "../policy.ts";
 import { SCAN_SINK_FIXTURE } from "./denylist.ts";
 import { handleInternalMeterInvoices, handleMeterRequest } from "./http.ts";
@@ -19,7 +21,7 @@ import {
 } from "./origin.ts";
 import { evaluatePreflightSelf, missingPreflightFields, PREFLIGHT_REQUIRED } from "./preflight.ts";
 import { evaluateScan } from "./scan.ts";
-import { createMeterStore, meterIdentityKey } from "./store.ts";
+import { canStackMeterCredits, createMeterStore, meterIdentityKey, stackedPassSku } from "./store.ts";
 import {
   METER_ANON_IDENTITY,
   meter402Body,
@@ -29,9 +31,12 @@ import {
   METER_402_SIGN,
   METER_ADAPTER_URL,
   METER_LOOK,
+  METER_LOOKS_20,
   METER_NEXT_TOOL,
+  METER_PAID_SKU,
   METER_WATCH_URL,
 } from "./pricing.ts";
+import { assertExactEvmAuthorization } from "./x402-evm.ts";
 
 const ORIGIN = "https://agent-control.net";
 
@@ -66,16 +71,62 @@ function assertMeter402IndexHeaders(res: Response, reference?: string) {
       maxAmountRequired: string;
       payTo: string;
       asset: string;
-      extra: { reference: string };
+      extra: {
+        reference?: string;
+        name?: string;
+        version?: string;
+        assetTransferMethod?: string;
+        caip2?: string;
+      };
     }>;
   };
   assert.equal(decoded.x402Version, 2);
+  assert.equal(decoded.accepts.length, 2);
   assert.equal(decoded.accepts[0]?.scheme, "exact");
   assert.equal(decoded.accepts[0]?.network, "solana");
   assert.equal(decoded.accepts[0]?.payTo, SOLANA_PAYOUT_ADDRESS);
   assert.equal(decoded.accepts[0]?.asset, USDC_MINT);
   if (reference) assert.equal(decoded.accepts[0]?.extra.reference, reference);
   assert.match(www, new RegExp(`reference="${decoded.accepts[0]?.extra.reference}"`));
+  assert.equal(decoded.accepts[1]?.scheme, "exact");
+  assert.equal(decoded.accepts[1]?.network, "base");
+  assert.equal(decoded.accepts[1]?.payTo, EVM_PAYOUT_ADDRESS);
+  assert.equal(decoded.accepts[1]?.asset, BASE_USDC);
+  assert.equal(decoded.accepts[1]?.extra.name, "USD Coin");
+  assert.equal(decoded.accepts[1]?.extra.version, "2");
+  assert.equal(decoded.accepts[1]?.extra.assetTransferMethod, "eip3009");
+  assert.equal(decoded.accepts[1]?.extra.caip2, "eip155:8453");
+}
+
+const EIP3009_FROM = "0x1111111111111111111111111111111111111111";
+
+function eip3009Payment(opts: {
+  invoice_id?: string;
+  reference?: string;
+  value: string;
+  to?: string;
+}) {
+  return {
+    x402Version: 2,
+    payload: {
+      authorization: {
+        from: EIP3009_FROM,
+        to: opts.to ?? EVM_PAYOUT_ADDRESS,
+        value: opts.value,
+        validAfter: "0",
+        validBefore: "9999999999",
+        nonce: `0x${"11".repeat(32)}`,
+      },
+      signature: `0x${"ab".repeat(65)}`,
+    },
+    accepted: {
+      network: "base",
+      extra: {
+        invoice_id: opts.invoice_id,
+        reference: opts.reference,
+      },
+    },
+  };
 }
 
 describe("scan heuristics", () => {
@@ -211,6 +262,12 @@ describe("meter http", () => {
     assert.equal(payload.accepts[0]?.payTo, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
     assert.notEqual(payload.accepts[0]?.payTo, "HostileWalletDoNotPay11111111111111111111");
     assert.equal(payload.accepts[0]?.asset, USDC_MINT);
+    assert.equal(payload.accepts.length, 2);
+    assert.equal(payload.accepts[1]?.payTo, EVM_PAYOUT_ADDRESS);
+    assert.equal(payload.accepts[1]?.payTo, "0xc5df91Fd7D9578A63efe9B0ee96Bacc5e7742E98");
+    assert.equal(payload.accepts[1]?.asset, BASE_USDC);
+    assert.equal(payload.accepts[1]?.network, "base");
+    assert.equal(payload.accepts[1]?.extra.assetTransferMethod, "eip3009");
   });
 
   it("scans a sink after a looks_20 pack", async () => {
@@ -475,10 +532,21 @@ describe("meter http", () => {
   it("pricing is public", async () => {
     const res = await handleMeterRequest(get("/api/v1/meter/pricing"), "/api/v1/meter/pricing", createMeterStore());
     assert.equal(res.status, 200);
-    const body = (await res.json()) as { product: string; pass: { price_usd: number }; default_sku: string };
+    const body = (await res.json()) as {
+      product: string;
+      pass: { price_usd: number };
+      default_sku: string;
+      paid_sku: string;
+      funds: { pay_to: string; base_pay_to: string; accepts: { chain: string; pay_to: string }[] };
+    };
     assert.equal(body.product, "Agent Meter");
     assert.equal(body.pass.price_usd, 0.10);
     assert.equal(body.default_sku, "look");
+    assert.equal(body.paid_sku, METER_PAID_SKU);
+    assert.equal(body.paid_sku, "looks_20");
+    assert.equal(body.funds.pay_to, SOLANA_PAYOUT_ADDRESS);
+    assert.equal(body.funds.base_pay_to, EVM_PAYOUT_ADDRESS);
+    assert.equal(body.funds.accepts.length, 2);
   });
 
   it("GET invoice returns pay_url to the locked payout wallet", async () => {
@@ -504,15 +572,18 @@ describe("meter http", () => {
     assert.match(body.pay_url, new RegExp(`reference=${invoice.reference}`));
   });
 
-  it("POST pass invoice includes watch_url and catalog look amounts", async () => {
+  it("POST pass invoice includes watch_url and catalog looks_20 pack amounts", async () => {
     const store = createMeterStore();
     const res = await handleMeterRequest(post("/api/v1/meter/pass", {}), "/api/v1/meter/pass", store);
     assert.equal(res.status, 402);
     const body = (await res.json()) as {
       sku: string;
+      paid_sku: string;
       amount_usd: number;
       amount_base_units: string;
       pay_to: string;
+      base_pay_to: string;
+      accepts: { network: string; payTo: string }[];
       reference: string;
       pay_url: string;
       invoice_id: string;
@@ -525,10 +596,16 @@ describe("meter http", () => {
       error: string;
       http: number;
     };
-    assert.equal(body.sku, "look");
-    assert.equal(body.amount_usd, METER_LOOK.price_usd);
-    assert.equal(body.amount_base_units, METER_LOOK.amount_base_units);
+    assert.equal(body.sku, "looks_20");
+    assert.equal(body.paid_sku, "looks_20");
+    assert.equal(body.amount_usd, METER_LOOKS_20.price_usd);
+    assert.equal(body.amount_base_units, METER_LOOKS_20.amount_base_units);
     assert.equal(body.pay_to, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
+    assert.equal(body.base_pay_to, EVM_PAYOUT_ADDRESS);
+    assert.equal(body.accepts.length, 2);
+    assert.equal(body.accepts[0]?.network, "solana");
+    assert.equal(body.accepts[1]?.network, "base");
+    assert.equal(body.accepts[1]?.payTo, EVM_PAYOUT_ADDRESS);
     assert.equal(body.watch_url, METER_WATCH_URL);
     assert.equal(body.adapter_url, METER_ADAPTER_URL);
     assert.equal(body.pay_page, meter402PayPage(body.invoice_id));
@@ -598,15 +675,17 @@ describe("extra meter skus", () => {
     const res = await handleMeterRequest(get("/api/v1/meter/pricing"), "/api/v1/meter/pricing", createMeterStore());
     const body = (await res.json()) as {
       default_sku: string;
+      paid_sku: string;
       look: { price_usd: number };
       pass: { id: string; price_usd: number };
       packs: { looks_20: { price_usd: number }; addresses_100: { price_usd: number } };
       ticket: { price_usd: number };
       skus: { id: string; price_usd: number }[];
-      funds: { pay_to: string };
+      funds: { pay_to: string; base_pay_to: string; accepts: { chain: string }[] };
       free_looks: number;
     };
     assert.equal(body.default_sku, "look");
+    assert.equal(body.paid_sku, "looks_20");
     assert.equal(body.look.price_usd, 0.1);
     assert.equal(body.pass.id, "look");
     assert.equal(body.pass.price_usd, 0.1);
@@ -624,17 +703,34 @@ describe("extra meter skus", () => {
     assert.equal(body.packs.addresses_100.price_usd, 0.15);
     assert.equal(body.ticket.price_usd, 0.05);
     assert.equal(body.funds.pay_to, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
+    assert.equal(body.funds.base_pay_to, EVM_PAYOUT_ADDRESS);
+    assert.equal(body.funds.accepts.length, 2);
   });
 
-  it("POST pass {} invoices look $0.10", async () => {
+  it("POST pass {} invoices looks_20 $0.20 pack", async () => {
     const store = createMeterStore();
     const res = await handleMeterRequest(post("/api/v1/meter/pass", {}), "/api/v1/meter/pass", store);
     assert.equal(res.status, 402);
     const body = (await res.json()) as { sku: string; amount_usd: number; pay_to: string; reference: string };
-    assert.equal(body.sku, "look");
-    assert.equal(body.amount_usd, 0.10);
+    assert.equal(body.sku, "looks_20");
+    assert.equal(body.amount_usd, 0.20);
     assert.equal(body.pay_to, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
     assertMeter402IndexHeaders(res, body.reference);
+  });
+
+  it("POST pass sku=look still invoices one $0.10 look", async () => {
+    const store = createMeterStore();
+    const res = await handleMeterRequest(
+      post("/api/v1/meter/pass", { sku: "look" }),
+      "/api/v1/meter/pass",
+      store,
+    );
+    assert.equal(res.status, 402);
+    const body = (await res.json()) as { sku: string; amount_usd: number; amount_base_units: string };
+    assert.equal(body.sku, "look");
+    assert.equal(body.amount_usd, 0.10);
+    assert.equal(body.amount_base_units, "100000");
+    assertMeter402IndexHeaders(res);
   });
 
   it("POST pass sku=looks_20 invoices $0.20", async () => {
@@ -1089,8 +1185,8 @@ describe("invoice origin", { concurrency: false }, () => {
     assert.equal(report.invoices_pending_fresh, 1);
     assert.equal(report.invoices_pending_stale, 0);
     assert.equal(report.invoices_pending_smoke, 2);
-    assert.equal(report.usdc_pending_fresh, 0.1);
-    assert.equal(report.usdc_pending_smoke, 0.2);
+    assert.equal(report.usdc_pending_fresh, 0.2);
+    assert.equal(report.usdc_pending_smoke, 0.4);
   });
 
   it("auto-tags exact node, cloud-crawler, and x402-list-monitor UAs as smoke", async () => {
@@ -1146,8 +1242,8 @@ describe("invoice origin", { concurrency: false }, () => {
     assert.equal(report.invoices_pending_fresh, 1);
     assert.equal(report.invoices_pending_stale, 0);
     assert.equal(report.invoices_pending_smoke, 3);
-    assert.equal(report.usdc_pending_fresh, 0.1);
-    assert.equal(report.usdc_pending_smoke, 0.3);
+    assert.equal(report.usdc_pending_fresh, 0.2);
+    assert.equal(report.usdc_pending_smoke, 0.6);
   });
 
   it("excludes already-minted node and crawler UAs from pending_fresh even if source is http_pass", async () => {
@@ -1301,7 +1397,7 @@ describe("invoice origin", { concurrency: false }, () => {
       assert.equal(row.source, "http_pass");
       assert.equal(row.user_agent, "list-agent");
       assert.equal(row.partner, "x402");
-      assert.equal(row.amount_usd, 0.10);
+      assert.equal(row.amount_usd, 0.20);
       assert.equal(row.status, "pending");
       assert.ok(row.invoice_id);
       assert.ok(row.created_at);
@@ -1396,7 +1492,7 @@ describe("paying agents A–H", () => {
     }
   });
 
-  it("B 402 $0.10 pay_to locked wallet after free5", async () => {
+  it("B 402 looks_20 pack pay_to locked wallet after free5", async () => {
     const store = createMeterStore();
     for (let i = 0; i < 5; i += 1) {
       assert.equal((await scanOnce(store)).status, 200);
@@ -1417,10 +1513,12 @@ describe("paying agents A–H", () => {
       reference: string;
     };
     assert.equal(body.error, "payment_required");
-    assert.equal(body.sku, "look");
-    assert.equal(body.amount_usd, 0.10);
+    assert.equal(body.sku, "looks_20");
+    assert.equal(body.amount_usd, 0.20);
     assert.equal(body.pay_to, PAY_TO);
-    assert.equal((body as { amount_base_units?: string }).amount_base_units, "100000");
+    assert.equal((body as { amount_base_units?: string }).amount_base_units, "200000");
+    assert.equal((body as { base_pay_to?: string }).base_pay_to, EVM_PAYOUT_ADDRESS);
+    assert.equal((body as { paid_sku?: string }).paid_sku, "looks_20");
     assert.equal((body as { watch_url?: string }).watch_url, "https://agent-control.net/api/v1/meter/watch");
     assert.equal(body.adapter_url, METER_ADAPTER_URL);
     assert.equal(body.pay_page, meter402PayPage(body.invoice_id));
@@ -1455,8 +1553,8 @@ describe("paying agents A–H", () => {
     const done = await scanOnce(store, { "X-Agent-Pass": pass.token });
     assert.equal(done.status, 402);
     const doneBody = (await done.json()) as { sku: string; amount_usd: number; reference: string };
-    assert.equal(doneBody.sku, "look");
-    assert.equal(doneBody.amount_usd, 0.10);
+    assert.equal(doneBody.sku, "looks_20");
+    assert.equal(doneBody.amount_usd, 0.20);
     assertMeter402IndexHeaders(done, doneBody.reference);
   });
 
@@ -1520,8 +1618,9 @@ describe("paying agents A–H", () => {
     const invoice = await store.createInvoice({ sku: "look" });
     assert.equal(invoice.pay_to, PAY_TO);
     const pricing = await handleMeterRequest(get("/api/v1/meter/pricing"), "/api/v1/meter/pricing", store);
-    const body = (await pricing.json()) as { funds: { pay_to: string } };
+    const body = (await pricing.json()) as { funds: { pay_to: string; base_pay_to: string } };
     assert.equal(body.funds.pay_to, PAY_TO);
+    assert.equal(body.funds.base_pay_to, EVM_PAYOUT_ADDRESS);
   });
 
   it("G scan and preflight never hold", async () => {
@@ -1557,7 +1656,154 @@ describe("paying agents A–H", () => {
     assert.equal(headerFlag.status, 402);
     const invoice = await store.getInvoice(((await headerFlag.json()) as { invoice_id: string }).invoice_id);
     assert.equal(invoice?.source, "smoke");
-    assert.equal(invoice?.sku, "look");
-    assert.equal(invoice?.amount_usd, 0.10);
+    assert.equal(invoice?.sku, "looks_20");
+    assert.equal(invoice?.amount_usd, 0.20);
+  });
+});
+
+describe("Base EIP-3009 exact + credit-first packs", () => {
+  it("stacks look credits onto looks_20 and not onto addresses_100", () => {
+    assert.equal(canStackMeterCredits("looks_20", "look"), true);
+    assert.equal(canStackMeterCredits("look", "looks_20"), true);
+    assert.equal(canStackMeterCredits("looks_20", "addresses_100"), false);
+    assert.equal(stackedPassSku("look", "looks_20"), "looks_20");
+    assert.equal(stackedPassSku("looks_20", "look"), "looks_20");
+  });
+
+  it("rejects a hostile Base payTo before calling the settler", () => {
+    const payload = eip3009Payment({
+      value: "200000",
+      to: "0x000000000000000000000000000000000000dEaD",
+    });
+    const checked = assertExactEvmAuthorization(payload, { amount_base_units: "200000" });
+    assert.equal(checked.ok, false);
+    if (!checked.ok) assert.match(checked.error, /payTo is locked/);
+  });
+
+  it("mints looks_20 from a mocked Base EIP-3009 settle", async () => {
+    const store = createMeterStore();
+    const quote = await handleMeterRequest(post("/api/v1/meter/pass", {}), "/api/v1/meter/pass", store);
+    const invoice = (await quote.json()) as {
+      invoice_id: string;
+      reference: string;
+      amount_base_units: string;
+      sku: string;
+    };
+    assert.equal(invoice.sku, "looks_20");
+    const payment = eip3009Payment({
+      invoice_id: invoice.invoice_id,
+      reference: invoice.reference,
+      value: invoice.amount_base_units,
+    });
+    let settled = 0;
+    const paid = await handleMeterRequest(
+      post("/api/v1/meter/pass", { invoice_id: invoice.invoice_id, payment }),
+      "/api/v1/meter/pass",
+      store,
+      {
+        settleExactEvm: async () => {
+          settled += 1;
+          return { ok: true, transaction: "0xbasepaid", payer: EIP3009_FROM };
+        },
+      },
+    );
+    assert.equal(paid.status, 200);
+    assert.equal(settled, 1);
+    const body = (await paid.json()) as { token: string; sku: string; included_calls: number; header: string };
+    assert.ok(body.token);
+    assert.equal(body.sku, "looks_20");
+    assert.equal(body.included_calls, 20);
+    assert.equal(body.header, "X-Agent-Pass");
+
+    const scan = await handleMeterRequest(
+      post("/api/v1/meter/scan", { chain: "solana", address: SCAN_SINK_FIXTURE }, { "X-Agent-Pass": body.token }),
+      "/api/v1/meter/scan",
+      store,
+    );
+    assert.equal(scan.status, 200);
+    const scanBody = (await scan.json()) as { pass_remaining_calls: number };
+    assert.equal(scanBody.pass_remaining_calls, 19);
+  });
+
+  it("returns 400 and does not mint when Base payTo is retargeted", async () => {
+    const store = createMeterStore();
+    const quote = await handleMeterRequest(post("/api/v1/meter/pass", {}), "/api/v1/meter/pass", store);
+    const invoice = (await quote.json()) as { invoice_id: string; reference: string; amount_base_units: string };
+    const payment = eip3009Payment({
+      invoice_id: invoice.invoice_id,
+      reference: invoice.reference,
+      value: invoice.amount_base_units,
+      to: "0x000000000000000000000000000000000000dEaD",
+    });
+    let settled = 0;
+    const denied = await handleMeterRequest(
+      post("/api/v1/meter/pass", { invoice_id: invoice.invoice_id, payment }),
+      "/api/v1/meter/pass",
+      store,
+      {
+        settleExactEvm: async () => {
+          settled += 1;
+          return { ok: true, transaction: "0xshouldnot", payer: EIP3009_FROM };
+        },
+      },
+    );
+    assert.equal(denied.status, 400);
+    assert.equal(settled, 0);
+    const body = (await denied.json()) as { error: string };
+    assert.match(body.error, /payTo is locked/);
+  });
+
+  it("extends an existing looks_20 pass instead of re-signing a new token", async () => {
+    process.env.NODE_ENV = "test";
+    const store = createMeterStore();
+    const issued = await handleMeterRequest(
+      post("/api/v1/meter/pass", { sku: "looks_20", proof: { type: "dev" } }),
+      "/api/v1/meter/pass",
+      store,
+    );
+    const pass = (await issued.json()) as { token: string; included_calls: number };
+    assert.equal(pass.included_calls, 20);
+    const first = await handleMeterRequest(
+      post("/api/v1/meter/scan", { chain: "solana", address: SCAN_SINK_FIXTURE }, { "X-Agent-Pass": pass.token }),
+      "/api/v1/meter/scan",
+      store,
+    );
+    assert.equal(((await first.json()) as { pass_remaining_calls: number }).pass_remaining_calls, 19);
+
+    const quote = await handleMeterRequest(
+      post("/api/v1/meter/pass", { sku: "looks_20" }),
+      "/api/v1/meter/pass",
+      store,
+    );
+    const invoice = (await quote.json()) as { invoice_id: string; reference: string; amount_base_units: string };
+    const payment = eip3009Payment({
+      invoice_id: invoice.invoice_id,
+      reference: invoice.reference,
+      value: invoice.amount_base_units,
+    });
+    const extended = await handleMeterRequest(
+      post(
+        "/api/v1/meter/pass",
+        { invoice_id: invoice.invoice_id, payment, pass_token: pass.token },
+        { "X-Agent-Pass": pass.token },
+      ),
+      "/api/v1/meter/pass",
+      store,
+      {
+        settleExactEvm: async () => ({ ok: true, transaction: "0xextend", payer: EIP3009_FROM }),
+      },
+    );
+    assert.equal(extended.status, 200);
+    const next = (await extended.json()) as { token: string; sku: string; included_calls: number };
+    assert.equal(next.token, pass.token);
+    assert.equal(next.sku, "looks_20");
+    assert.equal(next.included_calls, 40);
+    const scan = await handleMeterRequest(
+      post("/api/v1/meter/scan", { chain: "solana", address: SCAN_SINK_FIXTURE }, { "X-Agent-Pass": next.token }),
+      "/api/v1/meter/scan",
+      store,
+    );
+    assert.equal(scan.status, 200);
+    assert.equal(((await scan.json()) as { pass_remaining_calls: number }).pass_remaining_calls, 38);
   });
 });
