@@ -1,7 +1,6 @@
 # Connect your agent
 
-Can I pay this address? First 5 free. Then $0.10. No inbox. Agent Meter is public — no API key. Discovery: `GET /.well-known/x402`. Base USDC (EIP-3009 exact) and Solana USDC. After 5 free, packs mint X-Agent-Pass.
-
+Can I pay this address? First 5 free. Then $0.10. No inbox. Agent Meter is public — no API key. Discovery: `GET /.well-known/mcp.json` (Streamable HTTP) and `GET /.well-known/x402`. Base USDC (EIP-3009 exact) and Solana USDC. After 5 free, packs mint X-Agent-Pass.
 Human App (separate): External audit for your agents. Point Cursor or Grok at the live MCP so the agent asks before a send. You keep the keys.
 
 **URL:** `https://agent-control.net/api/v1/mcp`  

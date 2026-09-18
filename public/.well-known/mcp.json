@@ -1,0 +1,18 @@
+{
+  "name": "net.agent-control/agent-control",
+  "title": "Agent Control",
+  "description": "Can I pay this address? First 5 free. Then $0.10 USDC. No inbox. Agent Meter is public (Bearer empty). Human App is separate ($29).",
+  "version": "1.0.0",
+  "mcp": "https://agent-control.net/api/v1/mcp",
+  "transport": "streamable-http",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://agent-control.net/api/v1/mcp"
+    }
+  ],
+  "products": {
+    "meter": "Can I pay this address? First 5 free. Then $0.10 USDC. No inbox. Bearer empty for Meter tools.",
+    "human_app": "Spend limits and Approval Inbox. Humans pay $29. Agents use a Bearer API key."
+  }
+}

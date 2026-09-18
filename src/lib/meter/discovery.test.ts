@@ -9,12 +9,14 @@ import { BASE_USDC } from "./accepts.ts";
 import {
   AGENT_CARD_PATH,
   AGENT_JSON_PATH,
+  MCP_WELL_KNOWN_PATH,
   METER_DISCOVERY_LEAD,
   OPENAPI_METER_PATH,
   PUBLIC_ORIGIN,
   X402_WELL_KNOWN_PATH,
   agentCard,
   handleMeterWellKnown,
+  mcpWellKnown,
   meterLookAccepts,
   meterOpenApi,
   x402WellKnown,
@@ -80,7 +82,7 @@ describe("Agent Meter well-known discovery", () => {
     assert.notEqual(body.accepts[0]?.payTo, "HostileWalletDoNotPay11111111111111111111");
   });
 
-  it("serves GET /.well-known/x402 and agent-card.json", async () => {
+  it("serves GET /.well-known/x402, agent-card.json, and mcp.json", async () => {
     const x402 = get(X402_WELL_KNOWN_PATH);
     assert.ok(x402);
     assert.equal(x402.status, 200);
@@ -95,6 +97,25 @@ describe("Agent Meter well-known discovery", () => {
     assert.equal(cardBody.skills[0]?.id, "meter-look");
     assert.match(JSON.stringify(cardBody), /Can I pay this address\?/);
     assert.match(JSON.stringify(cardBody), /Human App is separate|Human App \(separate\)/);
+
+    const mcp = get(MCP_WELL_KNOWN_PATH);
+    assert.ok(mcp);
+    assert.equal(mcp.status, 200);
+    assert.match(mcp.headers.get("content-type") ?? "", /application\/json/);
+    assert.equal(mcp.headers.get("access-control-allow-origin"), "*");
+    const mcpBody = (await mcp.json()) as ReturnType<typeof mcpWellKnown>;
+    assert.deepEqual(mcpBody, mcpWellKnown());
+    assert.equal(mcpBody.mcp, `${PUBLIC_ORIGIN}/api/v1/mcp`);
+    assert.equal(mcpBody.transport, "streamable-http");
+    assert.equal(mcpBody.remotes[0]?.type, "streamable-http");
+    assert.equal(mcpBody.remotes[0]?.url, `${PUBLIC_ORIGIN}/api/v1/mcp`);
+    assert.match(mcpBody.description, /Can I pay this address\?/);
+    assert.match(mcpBody.description, /First 5 free\. Then \$0\.10 USDC/);
+    assert.match(mcpBody.description, /No inbox/);
+    assert.match(mcpBody.description, /Human App is separate \(\$29\)/);
+    assert.match(mcpBody.products.meter, /Bearer empty/);
+    assert.match(mcpBody.products.human_app, /Humans pay \$29/);
+    assert.doesNotMatch(JSON.stringify(mcpBody), /pass_1h/);
 
     const alias = get(AGENT_JSON_PATH);
     assert.ok(alias);
@@ -115,13 +136,16 @@ describe("Agent Meter well-known discovery", () => {
   it("keeps public crawler files in sync with the handler", () => {
     const x402File = JSON.parse(read("public/.well-known/x402")) as ReturnType<typeof x402WellKnown>;
     const cardFile = JSON.parse(read("public/.well-known/agent-card.json")) as ReturnType<typeof agentCard>;
+    const mcpFile = JSON.parse(read("public/.well-known/mcp.json")) as ReturnType<typeof mcpWellKnown>;
     const openapiFile = JSON.parse(read("public/openapi-meter.json")) as ReturnType<typeof meterOpenApi>;
     assert.deepEqual(x402File, x402WellKnown());
     assert.deepEqual(cardFile, agentCard());
+    assert.deepEqual(mcpFile, mcpWellKnown());
     assert.deepEqual(openapiFile, meterOpenApi());
     assert.equal(x402File.accepts[0]?.payTo, PAY_TO);
     assert.match(openapiFile.info.description, /No inbox/);
     assert.equal(OPENAPI_METER_PATH, "/openapi-meter.json");
+    assert.equal(MCP_WELL_KNOWN_PATH, "/.well-known/mcp.json");
   });
 });
 
@@ -130,12 +154,13 @@ describe("Meter-first registry-facing blurbs", () => {
     const agents = read("public/agents.json");
     const agentsTxt = read("public/agents.txt");
     const server = read("server.json");
+    const mcpCard = read("public/.well-known/mcp.json");
     const tools = read("src/lib/mcp/tools.ts");
     const handle = read("src/lib/mcp/handle.ts");
     const plugin = read(".cursor-plugin/plugin.json");
     const connectors = read("CONNECTORS.md");
 
-    for (const blob of [agents, agentsTxt, server, plugin, connectors]) {
+    for (const blob of [agents, agentsTxt, server, mcpCard, plugin, connectors]) {
       const look = blob.search(/Can I pay this address\?/);
       const bearer = blob.search(/Bearer agent API key|Agents use a Bearer API key/);
       assert.ok(look >= 0, "missing look question");
@@ -154,19 +179,25 @@ describe("Meter-first registry-facing blurbs", () => {
     assert.ok(instructionsLead >= 0 && humanLead > instructionsLead);
   });
 
-  it("exposes well-known x402 on robots, sitemap, vercel, and llms", () => {
+  it("exposes well-known x402 and mcp.json on robots, sitemap, vercel, and llms", () => {
     const robots = read("public/robots.txt");
     const sitemap = read("public/sitemap.xml");
     const vercel = read("vercel.json");
+    const vite = read("vite.config.ts");
     const llms = read("public/llms.txt");
 
     assert.match(robots, /Allow: \/\.well-known\/x402/);
     assert.match(robots, /Allow: \/\.well-known\/agent-card\.json/);
+    assert.match(robots, /Allow: \/\.well-known\/mcp\.json/);
     assert.match(sitemap, /<loc>https:\/\/agent-control\.net\/\.well-known\/x402<\/loc>/);
     assert.match(sitemap, /<loc>https:\/\/agent-control\.net\/\.well-known\/agent-card\.json<\/loc>/);
+    assert.match(sitemap, /<loc>https:\/\/agent-control\.net\/\.well-known\/mcp\.json<\/loc>/);
     assert.match(vercel, /"source": "\/\.well-known\/x402"/);
     assert.match(vercel, /"source": "\/\.well-known\/agent-card\.json"/);
+    assert.match(vercel, /"source": "\/\.well-known\/mcp\.json"/);
+    assert.match(vite, /pathOnly === "\/\.well-known\/mcp\.json"/);
     assert.match(llms, /\/\.well-known\/x402/);
+    assert.match(llms, /\/\.well-known\/mcp\.json/);
     assert.match(llms, /openapi-meter\.json/);
   });
 });

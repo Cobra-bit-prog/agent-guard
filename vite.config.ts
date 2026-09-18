@@ -164,7 +164,8 @@ function oauthDiscoveryPlugin(): Plugin {
           const isMeterDiscovery =
             pathOnly === "/.well-known/x402" ||
             pathOnly === "/.well-known/agent-card.json" ||
-            pathOnly === "/.well-known/agent.json";
+            pathOnly === "/.well-known/agent.json" ||
+            pathOnly === "/.well-known/mcp.json";
           if (!isDiscoveryRedirect && !isOauthDiscovery && !isMeterDiscovery) {
             next();
             return;

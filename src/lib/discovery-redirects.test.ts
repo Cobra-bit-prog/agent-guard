@@ -97,6 +97,7 @@ describe("discovery path redirects", () => {
     assert.equal(hit("/llms.txt"), null);
     assert.equal(hit("/docs"), null);
     assert.equal(hit("/.well-known/x402"), null);
+    assert.equal(hit("/.well-known/mcp.json"), null);
     assert.equal(hit("/api/v1/meter/pricing"), null);
   });
 

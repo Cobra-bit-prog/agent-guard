@@ -1,6 +1,6 @@
 /**
  * Crawler discovery for Agent Meter.
- * GET /.well-known/x402 and /.well-known/agent-card.json.
+ * GET /.well-known/x402, /.well-known/agent-card.json, and /.well-known/mcp.json.
  * Origin and payTo are pinned — never from Host or a request body.
  */
 
@@ -21,6 +21,7 @@ export const PUBLIC_ORIGIN = "https://agent-control.net";
 export const X402_WELL_KNOWN_PATH = "/.well-known/x402";
 export const AGENT_CARD_PATH = "/.well-known/agent-card.json";
 export const AGENT_JSON_PATH = "/.well-known/agent.json";
+export const MCP_WELL_KNOWN_PATH = "/.well-known/mcp.json";
 export const OPENAPI_METER_PATH = "/openapi-meter.json";
 
 export const METER_DISCOVERY_LEAD = `${LOOK_QUESTION} First 5 free. Then $0.10. No inbox.`;
@@ -70,6 +71,29 @@ export function x402WellKnown() {
     openapi: `${PUBLIC_ORIGIN}${OPENAPI_METER_PATH}`,
     mcp: MCP_URL,
     updated: "2026-09-17T00:00:00Z",
+  };
+}
+
+/** Public MCP discovery for crawlers. Streamable HTTP at /api/v1/mcp. */
+export function mcpWellKnown() {
+  return {
+    name: "net.agent-control/agent-control",
+    title: "Agent Control",
+    description: `${LOOK_QUESTION} ${METER_FREE_THEN_LOOK} No inbox. Agent Meter is public (Bearer empty). Human App is separate ($29).`,
+    version: "1.0.0",
+    mcp: MCP_URL,
+    transport: "streamable-http" as const,
+    remotes: [
+      {
+        type: "streamable-http" as const,
+        url: MCP_URL,
+      },
+    ],
+    products: {
+      meter: `${LOOK_QUESTION} ${METER_FREE_THEN_LOOK} No inbox. Bearer empty for Meter tools.`,
+      human_app:
+        "Spend limits and Approval Inbox. Humans pay $29. Agents use a Bearer API key.",
+    },
   };
 }
 
@@ -199,7 +223,18 @@ export function meterOpenApi() {
 }
 
 export function isMeterWellKnownPath(pathname: string): boolean {
-  return pathname === X402_WELL_KNOWN_PATH || pathname === AGENT_CARD_PATH || pathname === AGENT_JSON_PATH;
+  return (
+    pathname === X402_WELL_KNOWN_PATH ||
+    pathname === AGENT_CARD_PATH ||
+    pathname === AGENT_JSON_PATH ||
+    pathname === MCP_WELL_KNOWN_PATH
+  );
+}
+
+function meterWellKnownBody(pathname: string) {
+  if (pathname === AGENT_CARD_PATH) return agentCard();
+  if (pathname === MCP_WELL_KNOWN_PATH) return mcpWellKnown();
+  return x402WellKnown();
 }
 
 export function wellKnownJson(
@@ -236,7 +271,7 @@ export function handleMeterWellKnown(request: Request): Response | null {
       },
     });
   }
-  const body = url.pathname === AGENT_CARD_PATH ? agentCard() : x402WellKnown();
+  const body = meterWellKnownBody(url.pathname);
   if (method === "HEAD") {
     return new Response(null, {
       status: 200,

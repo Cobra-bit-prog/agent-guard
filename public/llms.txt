@@ -49,8 +49,7 @@ Check API (machine-readable):
 1-day full console trial, no card, no KYC. Then Starter $29 / Pro $49 / Team $149. Humans pay at /billing/pay — $29 USDC on Solana, QR + Pay. No in-page Phantom. Agents use POST /api/v1/billing/checkout.
 
 ## Agent Meter (no human on the site)
-Separate from the Human App. Agents pay themselves. Can I pay this address? First 5 free. Then $0.10 USDC. Then scan and preflight. ok | new | warn | sink. Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. Take this ticket or we do not take your USDC. Base USDC (EIP-3009 exact) and Solana USDC. After 5 free, packs mint X-Agent-Pass so you do not re-sign every look. No inbox. No email, no trial, no API key, no Approval Inbox. Discovery: GET /.well-known/x402 then llms → pricing → 402 → MCP. OpenAPI: https://agent-control.net/openapi-meter.json Agent card: https://agent-control.net/.well-known/agent-card.json Docs: https://agent-control.net/docs#agent-meter
-
+Separate from the Human App. Agents pay themselves. Can I pay this address? First 5 free. Then $0.10 USDC. Then scan and preflight. ok | new | warn | sink. Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. Take this ticket or we do not take your USDC. Base USDC (EIP-3009 exact) and Solana USDC. After 5 free, packs mint X-Agent-Pass so you do not re-sign every look. No inbox. No email, no trial, no API key, no Approval Inbox. Discovery: GET /.well-known/mcp.json then GET /.well-known/x402 then llms → pricing → 402 → MCP. OpenAPI: https://agent-control.net/openapi-meter.json Agent card: https://agent-control.net/.well-known/agent-card.json Docs: https://agent-control.net/docs#agent-meter
 One-file recipe (no SDK):
 
 # 1 discover
