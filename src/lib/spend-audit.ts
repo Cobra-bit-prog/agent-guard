@@ -42,15 +42,18 @@ export const SPEND_AUDIT_WATCH_PATH = "/api/v1/audit/watch";
 export const SPEND_AUDIT_PRODUCT = "Wallet Spend Audit";
 export const SPEND_AUDIT_HEADLINE = "External audit for your agents";
 export const SPEND_AUDIT_LEDE =
-  "Paste a wallet. Pay $49 USDC. See what would have left it — over-cap days, unknown destinations, sink-like addresses.";
+  "They ask before they pay. You keep the keys. Within policy = auto. Outside policy = stop.";
+export const SPEND_AUDIT_HONESTY = "You keep the keys. Not a package scanner.";
+export const SPEND_AUDIT_UPSELL =
+  "Wallet Spend Audit adds clearer audit reports when you need proof of what your agents tried to pay.";
+export const SPEND_AUDIT_CONSOLE_UPSELL =
+  "Started on Starter? Wallet Spend Audit adds clearer audit reports when you need proof of what your agents tried to pay.";
 export const SPEND_AUDIT_STARTER_COPY =
-  "They ask before they pay. Starter $29 — Approval Inbox and spend control. You keep the keys.";
+  "Then Starter $29. They ask before they pay. You keep the keys.";
 export const SPEND_AUDIT_STARTER_HREF = "/billing/pay?plan=starter";
 export const SPEND_AUDIT_TRIAL_HREF = "/signup";
-export const SPEND_AUDIT_SEPARATE =
-  "Separate from Agent Meter (per-look, no inbox) and from Starter $29 (Approval Inbox). This is a one-shot wallet report. You keep the keys.";
 export const SPEND_AUDIT_DISCLAIMER =
-  "Wallet Spend Audit: recent outbound transfers in the lookback window, scored with the same destination look used for risk (ok / new / warn / sink) and a hypothetical $100/day cap for over-cap patterns. Not a live policy, not Approval Inbox, and not a full chain replay.";
+  "Wallet Spend Audit: recent outbound transfers in the lookback window. Over-cap days use a hypothetical $100/day cap. Not a package scanner. You keep the keys. Not a live policy and not a full chain replay.";
 
 export const SPEND_AUDIT_SIGN =
   "Sign USDC on YOUR machine. Prefer Base EIP-3009 exact to base_pay_to. Solana: pay_to WITH the reference. We never take keys.";
@@ -164,7 +167,7 @@ export function spendAuditPricing() {
     daily_cap_usd: SPEND_AUDIT_DAILY_CAP_USD,
     headline: SPEND_AUDIT_HEADLINE,
     lede: SPEND_AUDIT_LEDE,
-    note: SPEND_AUDIT_SEPARATE,
+    note: SPEND_AUDIT_HONESTY,
     pay_to: lockedSolanaUsdcRecipient(),
     base_pay_to: lockedEvmUsdcRecipient(),
     starter: {
@@ -259,7 +262,7 @@ export function spendAudit402Body(invoice: SpendAuditInvoice) {
     chain: invoice.chain,
     lookback_days: invoice.lookback_days,
     headline: SPEND_AUDIT_HEADLINE,
-    note: SPEND_AUDIT_SEPARATE,
+    note: SPEND_AUDIT_HONESTY,
     starter: {
       price_usd: 29,
       href: SPEND_AUDIT_STARTER_HREF,
@@ -411,6 +414,8 @@ export function analyzeSpend(input: {
     `${outbound.length} outbound transfer${outbound.length === 1 ? "" : "s"} · $${outboundUsd.toFixed(2)} in ${lookbackDays} days.`,
     `${overCapDays} over-cap day${overCapDays === 1 ? "" : "s"} vs a hypothetical $${dailyCapUsd}/day cap.`,
     `${unknown} unknown destination${unknown === 1 ? "" : "s"} · ${sinks} sink-like address${sinks === 1 ? "" : "es"}.`,
+    SPEND_AUDIT_HONESTY,
+    SPEND_AUDIT_UPSELL,
     SPEND_AUDIT_STARTER_COPY,
   ];
 

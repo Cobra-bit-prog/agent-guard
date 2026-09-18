@@ -26,13 +26,14 @@ import {
 } from "@/lib/meter-recipe";
 import {
   SPEND_AUDIT_HEADLINE,
+  SPEND_AUDIT_HONESTY,
   SPEND_AUDIT_LEDE,
   SPEND_AUDIT_PATH,
   SPEND_AUDIT_PRICE_USD,
-  SPEND_AUDIT_SEPARATE,
   SPEND_AUDIT_STARTER_COPY,
   SPEND_AUDIT_STARTER_HREF,
   SPEND_AUDIT_TRIAL_HREF,
+  SPEND_AUDIT_UPSELL,
 } from "@/lib/spend-audit";
 
 const STEPS = [
@@ -571,11 +572,12 @@ client.onBeforePaymentCreation(
 
         <section id="wallet-spend-audit" className="mt-16 scroll-mt-6">
           <p className="text-meta font-medium uppercase tracking-[0.18em] text-coral">
-            Wallet Spend Audit · ${SPEND_AUDIT_PRICE_USD}
+            Wallet Spend Audit · ${SPEND_AUDIT_PRICE_USD} USDC
           </p>
           <h2 className="mt-3 text-title font-semibold tracking-tight">{SPEND_AUDIT_HEADLINE}</h2>
           <p className="mt-3 max-w-[52ch] text-muted">{SPEND_AUDIT_LEDE}</p>
-          <p className="mt-3 max-w-[52ch] text-muted">{SPEND_AUDIT_SEPARATE}</p>
+          <p className="mt-3 max-w-[52ch] text-muted">{SPEND_AUDIT_HONESTY}</p>
+          <p className="mt-3 max-w-[52ch] text-muted">{SPEND_AUDIT_UPSELL}</p>
           <p className="mt-3 max-w-[52ch] text-muted">{SPEND_AUDIT_STARTER_COPY}</p>
           <ol className="mt-8 space-y-3">
             <li className="rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]">
@@ -593,9 +595,8 @@ client.onBeforePaymentCreation(
               <p className="font-mono text-meta text-navy">2</p>
               <h3 className="mt-2 text-card font-medium">Pay $49 USDC</h3>
               <p className="mt-1 text-muted">
-                Prefer Base EIP-3009 exact, or Solana Pay with the invoice reference. Same locked
-                payout wallets as Human App / Meter. GET /api/v1/audit/pricing then POST
-                /api/v1/audit/invoice.
+                Prefer Base EIP-3009 exact, or Solana Pay with the invoice reference. Locked payouts.
+                You keep the keys. GET /api/v1/audit/pricing then POST /api/v1/audit/invoice.
               </p>
             </li>
             <li className="rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]">

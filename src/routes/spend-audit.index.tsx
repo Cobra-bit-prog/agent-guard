@@ -4,14 +4,14 @@ import { SupportedChains } from "@/components/chain-icons";
 import { Button } from "@/components/ui/button";
 import {
   SPEND_AUDIT_HEADLINE,
+  SPEND_AUDIT_HONESTY,
   SPEND_AUDIT_LEDE,
-  SPEND_AUDIT_PATH,
   SPEND_AUDIT_PAY_PATH,
   SPEND_AUDIT_PRICE_USD,
-  SPEND_AUDIT_SEPARATE,
   SPEND_AUDIT_STARTER_COPY,
   SPEND_AUDIT_STARTER_HREF,
   SPEND_AUDIT_TRIAL_HREF,
+  SPEND_AUDIT_UPSELL,
 } from "@/lib/spend-audit";
 
 export const Route = createFileRoute("/spend-audit/")({
@@ -22,14 +22,14 @@ export const Route = createFileRoute("/spend-audit/")({
       {
         name: "description",
         content:
-          "External audit for your agents. Paste a wallet. Pay $49 USDC. PDF of what would have left it. They ask before they pay. You keep the keys.",
+          "External audit for your agents. They ask before they pay. You keep the keys. Within policy = auto. Outside policy = stop. Wallet Spend Audit $49 USDC. Not a package scanner.",
       },
       { name: "theme-color", content: "#eef3f8" },
       { property: "og:title", content: "Wallet Spend Audit — External audit for your agents" },
       {
         property: "og:description",
         content:
-          "Paste a wallet. Pay $49 USDC. See over-cap days, unknown destinations, and sink-like addresses. You keep the keys.",
+          "They ask before they pay. You keep the keys. Within policy = auto. Outside policy = stop. $49 USDC. Not a package scanner.",
       },
     ],
   }),
@@ -67,11 +67,11 @@ function SpendAuditPage() {
   return (
     <main className="mx-auto max-w-lg px-6 pb-20 pt-8 md:px-10">
       <p className="text-meta font-medium uppercase tracking-[0.18em] text-coral">
-        Wallet Spend Audit · ${SPEND_AUDIT_PRICE_USD}
+        Wallet Spend Audit · ${SPEND_AUDIT_PRICE_USD} USDC
       </p>
       <h1 className="mt-3 text-display font-semibold">{SPEND_AUDIT_HEADLINE}</h1>
       <p className="mt-4 max-w-[46ch] text-card text-muted">{SPEND_AUDIT_LEDE}</p>
-      <p className="mt-3 max-w-[46ch] text-body leading-snug text-muted">{SPEND_AUDIT_SEPARATE}</p>
+      <p className="mt-3 max-w-[46ch] text-body leading-snug text-muted">{SPEND_AUDIT_HONESTY}</p>
       <SupportedChains className="mt-5" />
 
       <form
@@ -109,12 +109,12 @@ function SpendAuditPage() {
           {busy ? "Starting…" : `Pay $${SPEND_AUDIT_PRICE_USD} USDC`}
         </Button>
         <p className="text-meta text-muted">
-          Prefer Base EIP-3009 exact, or Solana Pay with the invoice reference. Locked payouts. We never take keys.
+          Locked payouts. You keep the keys. Not a package scanner.
         </p>
       </form>
 
       <div className="mt-8 rounded-[20px] border border-border bg-elevated p-5">
-        <p className="text-card font-medium">Want them to ask before they pay?</p>
+        <p className="text-card font-medium">{SPEND_AUDIT_UPSELL}</p>
         <p className="mt-2 text-body text-muted">{SPEND_AUDIT_STARTER_COPY}</p>
         <div className="mt-4 flex flex-wrap gap-3">
           <Button asChild className="rounded-full">
@@ -127,11 +127,11 @@ function SpendAuditPage() {
       </div>
 
       <p className="mt-6 text-meta text-muted">
-        Enrolled agents already on the console: generate the check trail at{" "}
+        Already on the console? Generate the enrolled trail at{" "}
         <a href="/audit" className="font-medium text-navy hover:text-coral">
           /audit
         </a>
-        . This page is the ${SPEND_AUDIT_PRICE_USD} paste-an-address report. Path {SPEND_AUDIT_PATH}.
+        . This page is ${SPEND_AUDIT_PRICE_USD} USDC.
       </p>
     </main>
   );

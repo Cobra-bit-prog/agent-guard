@@ -17,6 +17,13 @@ import {
 } from "@/lib/server/audit-reports";
 import { formatUsd, shortAddress, timeAgo } from "@/lib/utils";
 import type { AuditTrailRow } from "@/lib/audit-report";
+import {
+  SPEND_AUDIT_CONSOLE_UPSELL,
+  SPEND_AUDIT_HONESTY,
+  SPEND_AUDIT_PATH,
+  SPEND_AUDIT_PRICE_USD,
+  SPEND_AUDIT_PRODUCT,
+} from "@/lib/spend-audit";
 
 export const Route = createFileRoute("/_app/audit")({
   component: AuditPage,
@@ -105,15 +112,10 @@ function AuditPage() {
         </p>
         <p className="mt-2 text-sm text-muted">
           Wallet not enrolled?{" "}
-          <a href="/spend-audit" className="font-medium text-navy hover:text-coral">
-            Wallet Spend Audit ($49)
-          </a>{" "}
-          — paste an address, pay USDC, get a lookback PDF. They ask before they pay. You keep the
-          keys.{" "}
-          <a href="/billing/pay?plan=starter" className="font-medium text-navy hover:text-coral">
-            Starter $29
-          </a>{" "}
-          is Approval Inbox and spend control.
+          <a href={SPEND_AUDIT_PATH} className="font-medium text-navy hover:text-coral">
+            {SPEND_AUDIT_PRODUCT} (${SPEND_AUDIT_PRICE_USD} USDC)
+          </a>
+          . {SPEND_AUDIT_CONSOLE_UPSELL} {SPEND_AUDIT_HONESTY}
         </p>
       </div>
 
