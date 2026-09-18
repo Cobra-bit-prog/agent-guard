@@ -4,10 +4,14 @@
  * Customer/discovery prose stays plain English. API names stay in the curl sample.
  */
 
+import { METER_PACKS_FIRST } from "./meter/pricing.ts";
+
+export { METER_PACKS_FIRST };
+
 export const METER_EYEBROW = "Agent Meter";
 /** Locked Meter headline. The look question lives in LOOK_QUESTION. */
 export const METER_HEADLINE = "Agents pay themselves";
-export const METER_LEDE = "First 5 free. Then $0.10 USDC.";
+export const METER_LEDE = `First 5 free. ${METER_PACKS_FIRST}`;
 export const METER_QUESTION = "Can I pay this address?";
 export const METER_SEPARATE =
   "Separate from the Human App. Then scan and preflight. No inbox. No email, no API key, no Approval Inbox.";
@@ -24,7 +28,7 @@ export const METER_PRICING_CURL = "curl -s https://agent-control.net/api/v1/mete
 export const METER_DISCOVERY =
   "llms.txt → GET /api/v1/meter/pricing → 402 → MCP meter_* tools.";
 export const METER_CONNECT_BODY =
-  "First 5 free. Then $0.10 USDC. Agents pay themselves. No inbox. No email. No API key.";
+  `First 5 free. ${METER_PACKS_FIRST} Agents pay themselves. No inbox. No email. No API key.`;
 export const METER_MCP_TOOLS = "meter_pricing, meter_scan, meter_buy_pass, meter_watch";
 
 /** Copy-paste agent pay — no Phantom. Same file as src/adapters/meter-pay.ts. */
@@ -33,7 +37,7 @@ await buyMeterPass({ keypair });`;
 
 /** Free-look header. Pick any string; first 5 looks on that id are free. */
 export const METER_FREE_LOOK_NOTE =
-  "pick any string; first 5 looks on that id are free; then 402 looks_20 $0.20 pack (sku look $0.10)";
+  "pick any string; first 5 looks on that id are free; then 402 looks_20 $0.20 pack (look $0.10 is optional one-shot)";
 
 export const METER_FREE_LOOK_CURL =
   "curl -s -X POST https://agent-control.net/api/v1/meter/scan -H 'content-type: application/json' -H 'X-Agent-Pass: <your-id>' -d '{\"chain\":\"solana\",\"address\":\"<destination>\"}'";
@@ -42,15 +46,15 @@ export const METER_FREE_LOOK_CURL =
 export const METER_RECIPE = `# 1 discover
 # https://agent-control.net/llms.txt
 curl -s https://agent-control.net/api/v1/meter/pricing
-# 2 look — First 5 free. Then $0.10 USDC. One address. ok | new | warn | sink
+# 2 look — First 5 free. ${METER_PACKS_FIRST} One address. ok | new | warn | sink
 # ${METER_FREE_LOOK_NOTE}
 ${METER_FREE_LOOK_CURL}
-# 3 after 5, POST /api/v1/meter/pass → 402 looks_20 $0.20 pack. sku look $0.10. Base USDC (EIP-3009 exact) or Solana USDC to pay_to WITH reference
+# 3 after 5, POST /api/v1/meter/pass → 402 looks_20 $0.20 pack. look $0.10 is optional one-shot. Base USDC (EIP-3009 exact) or Solana USDC to pay_to WITH reference
 curl -s -X POST https://agent-control.net/api/v1/meter/pass -H 'content-type: application/json' -d '{}'
 # copy src/adapters/meter-pay.ts — agent wallet signs and sends (no Phantom)
 ${METER_PAY_SNIPPET}
 # MCP-native (no Phantom leave): meter_buy_pass → you sign locally → meter_watch until token → meter_scan with pass_token
-# Current door: GET /api/v1/meter/pricing (default_sku look, paid_sku looks_20, free_looks). We never take keys.
+# After free-5: looks_20 pack ($0.20) → X-Agent-Pass. look $0.10 is optional one-shot. GET /api/v1/meter/pricing (paid_sku looks_20, free_looks). We never take keys.
 # 4 watch
 curl -s -X POST https://agent-control.net/api/v1/meter/watch -H 'content-type: application/json' -d '{"invoice_id":"inv_…"}'
 # 5 packs looks_20 $0.20 · addresses_100 $0.15 · stamp_tx $0.05 ticket
@@ -73,13 +77,13 @@ export const METER_STEPS = [
   {
     n: "2",
     t: "Look",
-    d: "Can I pay this address? First 5 free. Then $0.10 USDC. ok | new | warn | sink. Never hold. Pick any string; first 5 looks on that id are free; then 402 looks_20 $0.20 pack (sku look $0.10).",
+    d: `Can I pay this address? First 5 free. ${METER_PACKS_FIRST} ok | new | warn | sink. Never hold. Pick any string; first 5 looks on that id are free; then 402 looks_20 $0.20 pack.`,
     code: METER_FREE_LOOK_CURL,
   },
   {
     n: "3",
     t: "Pay a pack",
-    d: "After 5 free, looks_20 $0.20 pack (20 looks). sku look is $0.10 one-shot. Base USDC (EIP-3009 exact) or Solana USDC to pay_to with the reference. Copy src/adapters/meter-pay.ts onto your machine for Solana. We never take keys. No Phantom. Not pass_1h.",
+    d: `After 5 free, looks_20 $0.20 pack (20 looks). look $0.10 is optional one-shot. Base USDC (EIP-3009 exact) or Solana USDC to pay_to with the reference. Copy src/adapters/meter-pay.ts onto your machine for Solana. We never take keys. No Phantom. Not pass_1h.`,
     code: METER_PAY_SNIPPET,
   },
   {

@@ -1,5 +1,6 @@
 import { readApiKey } from "../server/http.ts";
 import { json } from "../server/http.ts";
+import { METER_AGENT_LEAD, METER_PACKS_FIRST } from "../meter/pricing.ts";
 import { MCP_TOOLS, mcpDiscovery } from "./tools.ts";
 import {
   acceptTokens,
@@ -32,7 +33,7 @@ export type McpCallTool = (
 const SERVER_INFO = { name: "Agent Control", version: "1.0.0" } as const;
 
 const INSTRUCTIONS =
-  "Can I pay this address? First 5 free. Then $0.10. No inbox. Agent Meter: meter_pricing / meter_buy_pass / meter_watch / meter_scan / meter_preflight / meter_scan_batch / meter_stamp / meter_verify_stamp with no email — First 5 free. Then $0.10 USDC. look / looks_20 / addresses_100 / stamp_tx. Then meter_watch, then X-Agent-Pass. Current door: meter_pricing (default_sku look, paid_sku looks_20, free_looks 5). After 5 free: meter_buy_pass sku looks_20 (or omit) → invoice with pay_to, base_pay_to, accepts (Base USDC EIP-3009 exact and Solana USDC), amount_usd, amount_base_units, reference, pay_url, invoice_id, watch_url. Sign USDC on your agent machine (copy src/adapters/meter-pay.ts for Solana; Base is EIP-3009 exact). We never take keys. meter_watch until token. Then meter_scan with pass_token. Human App (separate): call check_transfer before a send (Bearer agent API key). get_pricing is public. You keep the keys.";
+  `${METER_AGENT_LEAD} Agent Meter: meter_pricing / meter_buy_pass / meter_watch / meter_scan / meter_preflight / meter_scan_batch / meter_stamp / meter_verify_stamp with no email — First 5 free. ${METER_PACKS_FIRST} look / looks_20 / addresses_100 / stamp_tx. Then meter_watch, then X-Agent-Pass. After free-5: meter_buy_pass sku looks_20 (or omit) → invoice with pay_to, base_pay_to, accepts (Base USDC EIP-3009 exact and Solana USDC), amount_usd, amount_base_units, reference, pay_url, invoice_id, watch_url. Sign USDC on your agent machine (copy src/adapters/meter-pay.ts for Solana; Base is EIP-3009 exact). We never take keys. meter_watch until token. Then meter_scan with pass_token. Human App (separate): call check_transfer before a send (Bearer agent API key). get_pricing is public. You keep the keys.`;
 
 function rpcError(id: JsonRpcId, code: number, message: string) {
   return { jsonrpc: "2.0" as const, id, error: { code, message } };

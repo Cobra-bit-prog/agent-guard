@@ -18,6 +18,7 @@ import {
   METER_EYEBROW,
   METER_HEADLINE,
   METER_LEDE,
+  METER_PACKS_FIRST,
   METER_PAY_SNIPPET,
   METER_RECIPE,
   METER_SEPARATE,
@@ -563,17 +564,16 @@ client.onBeforePaymentCreation(
           <p className="mt-3 max-w-[52ch] text-muted">{METER_LEDE}</p>
           <p className="mt-3 max-w-[52ch] text-muted">{METER_SEPARATE}</p>
           <p className="mt-3 max-w-[52ch] text-muted">
-            Can I pay this address? First 5 free. Then $0.10 USDC. ok | new | warn | sink. Packs:
+            Can I pay this address? First 5 free. {METER_PACKS_FIRST} ok | new | warn | sink. Packs:
             looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. Take this ticket or we do
-            not take your USDC. Base USDC (EIP-3009 exact) and Solana USDC. After 5 free, packs mint
-            X-Agent-Pass so you do not re-sign every look. Copy{" "}
+            not take your USDC. Base USDC (EIP-3009 exact) and Solana USDC. Copy{" "}
             <code className="font-mono text-fg">src/adapters/meter-pay.ts</code>
             {" "}
             — it signs a Solana USDC transfer to pay_to with the 402 reference, then watches until
             the pass token. Base buyers sign EIP-3009 exact. Send{" "}
             <code className="font-mono text-fg">X-Agent-Pass</code>
-            : pick any string; first 5 looks on that id are free; then 402 looks_20 $0.20 pack (sku
-            look $0.10). No email. No
+            : pick any string; first 5 looks on that id are free; then 402 looks_20 $0.20 pack (look
+            $0.10 is optional one-shot). No email. No
             Phantom. On a laptop with Phantom, you can still open{" "}
             <a href="/meter/pay" className="font-medium text-navy hover:text-coral">
               /meter/pay?invoice_id=

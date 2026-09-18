@@ -180,7 +180,9 @@ describe("POST initialize is Streamable HTTP", () => {
     for (const name of mcpDiscovery().meter) {
       assert.match(instructions, new RegExp(`\\b${name}\\b`));
     }
-    assert.match(instructions, /First 5 free\. Then \$0\.10 USDC/);
+    assert.match(instructions, /First 5 free/);
+    assert.match(instructions, /looks_20 pack \(\$0\.20\)/);
+    assert.match(instructions, /look \$0\.10 is optional one-shot/);
     assert.match(instructions, /look \/ looks_20 \/ addresses_100 \/ stamp_tx/);
     assert.match(instructions, /meter_watch, then X-Agent-Pass/);
     assert.match(instructions, /We never take keys/);
@@ -244,7 +246,7 @@ describe("initialized notification and session reuse", () => {
     assert.match(scan, /X-Agent-Pass/);
     assert.match(scan, /first 5 looks on that id are free/);
     assert.match(scan, /402 looks_20 pack \$0\.20/);
-    assert.match(scan, /sku look is \$0\.10/);
+    assert.match(scan, /look \$0\.10 is optional one-shot/);
     assert.match(scan, /pay_page for Phantom laptop/);
     assert.match(preflight, /X-Agent-Pass/);
     assert.match(preflight, /first 5 looks on that id are free/);

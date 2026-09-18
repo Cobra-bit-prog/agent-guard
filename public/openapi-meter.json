@@ -3,7 +3,7 @@
   "info": {
     "title": "Agent Meter",
     "version": "1.0.0",
-    "description": "Can I pay this address? First 5 free. Then $0.10. No inbox. Base USDC (EIP-3009 exact) to 0xc5df91Fd7D9578A63efe9B0ee96Bacc5e7742E98. Solana USDC to 49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR. Human App is separate."
+    "description": "Can I pay this address? First 5 free. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot. No inbox. Base USDC (EIP-3009 exact) to 0xc5df91Fd7D9578A63efe9B0ee96Bacc5e7742E98. Solana USDC to 49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR. Human App is separate."
   },
   "servers": [
     {
@@ -14,7 +14,7 @@
     "/api/v1/meter/pricing": {
       "get": {
         "summary": "Public Meter catalog",
-        "description": "Can I pay this address? First 5 free. Then $0.10 USDC. Default sku look. Paid sku looks_20.",
+        "description": "Can I pay this address? First 5 free. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot. Default sku look. Paid sku looks_20.",
         "responses": {
           "200": {
             "description": "Catalog. default_sku is look. paid_sku is looks_20. funds.pay_to is locked."
@@ -25,7 +25,7 @@
     "/api/v1/meter/pass": {
       "post": {
         "summary": "Look door",
-        "description": "Empty body {} invoices looks_20 $0.20 pack. sku look is $0.10. No release without payment. First 5 looks on an X-Agent-Pass id are free.",
+        "description": "Empty body {} invoices looks_20 $0.20 pack. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot. No release without payment. First 5 looks on an X-Agent-Pass id are free.",
         "requestBody": {
           "required": false,
           "content": {
@@ -52,7 +52,7 @@
             "description": "Pass issued after proof or a prior payment watch."
           },
           "402": {
-            "description": "Pay Base USDC (EIP-3009 exact) or Solana USDC to the locked payTo. After 5 free, looks_20 pack mints X-Agent-Pass."
+            "description": "Pay Base USDC (EIP-3009 exact) or Solana USDC to the locked payTo. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot."
           }
         }
       }
@@ -60,7 +60,7 @@
     "/api/v1/meter/scan": {
       "post": {
         "summary": "Can I pay this address?",
-        "description": "First 5 free. Then $0.10 USDC. Header X-Agent-Pass.",
+        "description": "First 5 free. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot. Header X-Agent-Pass.",
         "parameters": [
           {
             "name": "X-Agent-Pass",
@@ -103,7 +103,7 @@
             "description": "risk ok|new|warn|sink. Never hold."
           },
           "402": {
-            "description": "Look door after free looks are used."
+            "description": "After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot."
           }
         }
       }

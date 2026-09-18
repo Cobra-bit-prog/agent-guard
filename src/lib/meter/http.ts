@@ -16,7 +16,7 @@ import {
   defaultSkuForKind,
   LOOK_QUESTION,
   METER_FREE_LOOKS,
-  METER_FREE_THEN_LOOK,
+  METER_PACKS_FIRST,
   METER_LOOK_SKU,
   METER_PAID_SKU,
   meter402Body,
@@ -502,7 +502,7 @@ function lookAccessFields(opts: {
   return {
     free_looks_remaining: opts.freeRemaining ?? 0,
     free_looks: METER_FREE_LOOKS,
-    note: METER_FREE_THEN_LOOK,
+    note: METER_PACKS_FIRST,
     question: LOOK_QUESTION,
     covers: coversForSku(METER_LOOK_SKU),
   };

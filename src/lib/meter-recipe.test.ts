@@ -16,6 +16,7 @@ import {
   METER_LLMS_HREF,
   METER_MCP_TOOLS,
   METER_PACKS,
+  METER_PACKS_FIRST,
   METER_PAY_SNIPPET,
   METER_PREFLIGHT_CURL,
   METER_PRICING_CURL,
@@ -76,7 +77,7 @@ describe("Agent Meter recipe", () => {
   it("locks Can I pay this address / free5 / $0.10 / packs / ticket", () => {
     assert.equal(METER_EYEBROW, "Agent Meter");
     assert.equal(METER_HEADLINE, "Agents pay themselves");
-    assert.equal(METER_LEDE, "First 5 free. Then $0.10 USDC.");
+    assert.equal(METER_LEDE, `First 5 free. ${METER_PACKS_FIRST}`);
     assert.match(METER_STEPS[1]?.d ?? "", /Can I pay this address\?/);
     assert.equal(METER_RISKS, "ok | new | warn | sink");
     assert.match(METER_PACKS, /looks_20 \$0\.20/);
@@ -86,7 +87,7 @@ describe("Agent Meter recipe", () => {
     assert.equal(METER_QUESTION, "Can I pay this address?");
     assert.equal(
       METER_CONNECT_BODY,
-      "First 5 free. Then $0.10 USDC. Agents pay themselves. No inbox. No email. No API key.",
+      `First 5 free. ${METER_PACKS_FIRST} Agents pay themselves. No inbox. No email. No API key.`,
     );
     assert.equal(
       METER_DISCOVERY,
@@ -104,8 +105,11 @@ describe("Agent Meter recipe", () => {
     assert.match(METER_SEPARATE, /no Approval Inbox/);
     assert.match(METER_PROSE, /\$0\.10/);
     assert.match(METER_PROSE, /First 5 free/);
+    assert.match(METER_PROSE, /looks_20 pack \(\$0\.20\)/);
+    assert.match(METER_PROSE, /optional one-shot/);
     assert.match(METER_PROSE, /No inbox/);
     assert.doesNotMatch(METER_PROSE, /\$0\.25/);
+    assert.doesNotMatch(METER_PROSE, /\$0\.02/);
     for (const re of BANNED_METER) {
       assert.doesNotMatch(METER_PROSE, re);
     }
@@ -116,9 +120,10 @@ describe("Agent Meter recipe", () => {
       METER_RECIPE,
       /^# 1 discover\n# https:\/\/agent-control\.net\/llms\.txt\ncurl -s https:\/\/agent-control\.net\/api\/v1\/meter\/pricing$/m,
     );
-    assert.match(METER_RECIPE, /First 5 free\. Then \$0\.10 USDC/);
+    assert.match(METER_RECIPE, /First 5 free/);
+    assert.match(METER_RECIPE, /looks_20 pack \(\$0\.20\)/);
     assert.match(METER_RECIPE, /402 looks_20 \$0\.20 pack/);
-    assert.match(METER_RECIPE, /sku look \$0\.10/);
+    assert.match(METER_RECIPE, /look \$0\.10 is optional one-shot/);
     assert.match(METER_RECIPE, /looks_20 \$0\.20/);
     assert.match(METER_RECIPE, /addresses_100 \$0\.15/);
     assert.match(METER_RECIPE, /stamp_tx \$0\.05/);
@@ -126,7 +131,7 @@ describe("Agent Meter recipe", () => {
     assert.match(METER_RECIPE, /# 6 MCP meter_\* at \/api\/v1\/mcp/);
     assert.match(METER_RECIPE, /MCP-native \(no Phantom leave\)/);
     assert.match(METER_RECIPE, /We never take keys/);
-    assert.match(METER_RECIPE, /Current door: GET \/api\/v1\/meter\/pricing/);
+    assert.match(METER_RECIPE, /GET \/api\/v1\/meter\/pricing \(paid_sku looks_20, free_looks\)/);
     assert.match(METER_RECIPE, /src\/adapters\/meter-pay\.ts/);
     assert.match(METER_RECIPE, /buyMeterPass/);
     assert.equal(
@@ -139,7 +144,7 @@ await buyMeterPass({ keypair });`,
     assert.match(METER_STEPS[2]?.d ?? "", /No Phantom/);
     assert.match(METER_STEPS[2]?.d ?? "", /We never take keys/);
     assert.match(METER_STEPS[2]?.d ?? "", /EIP-3009 exact/);
-    assert.match(METER_STEPS[2]?.d ?? "", /sku look is \$0\.10/);
+    assert.match(METER_STEPS[2]?.d ?? "", /look \$0\.10 is optional one-shot/);
     assert.doesNotMatch(METER_RECIPE, /\bbroadcast/i);
     assert.doesNotMatch(METER_RECIPE, /^# 4 poll/m);
     assert.match(METER_RECIPE, /^# 4 watch$/m);
@@ -148,10 +153,10 @@ await buyMeterPass({ keypair });`,
       /curl -s -X POST https:\/\/agent-control\.net\/api\/v1\/meter\/watch -H 'content-type: application\/json' -d '\{"invoice_id":"inv_…"\}'/,
     );
     assert.match(METER_RECIPE, /X-Agent-Pass: <your-id>/);
-    assert.match(METER_RECIPE, /pick any string; first 5 looks on that id are free; then 402 looks_20 \$0\.20 pack \(sku look \$0\.10\)/);
+    assert.match(METER_RECIPE, /pick any string; first 5 looks on that id are free; then 402 looks_20 \$0\.20 pack \(look \$0\.10 is optional one-shot\)/);
     assert.equal(
       METER_FREE_LOOK_NOTE,
-      "pick any string; first 5 looks on that id are free; then 402 looks_20 $0.20 pack (sku look $0.10)",
+      "pick any string; first 5 looks on that id are free; then 402 looks_20 $0.20 pack (look $0.10 is optional one-shot)",
     );
     assert.match(METER_FREE_LOOK_CURL, /\/api\/v1\/meter\/scan/);
     assert.match(METER_FREE_LOOK_CURL, /X-Agent-Pass: <your-id>/);
@@ -194,7 +199,13 @@ describe("Agent Meter recipe on public discovery surfaces", () => {
     const docs = read("src/routes/docs.tsx");
     assert.match(llms, /## Agent Meter \(no human on the site\)/);
     assert.match(llms, /Can I pay this address\?/);
-    assert.match(llms, /First 5 free\. Then \$0\.10 USDC/);
+    assert.match(llms, /First 5 free/);
+    assert.match(llms, /looks_20 pack \(\$0\.20\)/);
+    assert.match(llms, /look \$0\.10 is optional one-shot/);
+    assert.match(llms, /Base USDC \(EIP-3009 exact\)/);
+    assert.match(llms, /Solana USDC/);
+    assert.doesNotMatch(llms, /\$0\.02/);
+    assert.doesNotMatch(llms, /\$0\.25/);
     assert.match(llms, /docs#agent-meter/);
     assert.match(llms, /curl -s https:\/\/agent-control\.net\/api\/v1\/meter\/pricing/);
     assert.match(llms, /llms → pricing → 402 → MCP/);

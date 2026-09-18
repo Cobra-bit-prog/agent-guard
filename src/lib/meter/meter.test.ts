@@ -561,12 +561,15 @@ describe("meter http", () => {
     assert.equal(res.status, 200);
     const body = (await res.json()) as {
       product: string;
+      note: string;
       pass: { price_usd: number };
       default_sku: string;
       paid_sku: string;
       funds: { pay_to: string; base_pay_to: string; accepts: { chain: string; pay_to: string }[] };
     };
     assert.equal(body.product, "Agent Meter");
+    assert.match(body.note, /After free-5, buy looks_20 pack \(\$0\.20\) → X-Agent-Pass/);
+    assert.match(body.note, /look \$0\.10 is optional one-shot/);
     assert.equal(body.pass.price_usd, 0.10);
     assert.equal(body.default_sku, "look");
     assert.equal(body.paid_sku, METER_PAID_SKU);
@@ -620,6 +623,7 @@ describe("meter http", () => {
       next_tool: string;
       sign: string;
       next: string;
+      note: string;
       error: string;
       http: number;
     };
@@ -639,11 +643,15 @@ describe("meter http", () => {
     assert.equal(body.next_tool, "meter_watch");
     assert.equal(body.error, "payment_required");
     assert.equal(body.http, 402);
+    assert.match(body.note, /After free-5, buy looks_20 pack \(\$0\.20\) → X-Agent-Pass/);
+    assert.match(body.note, /look \$0\.10 is optional one-shot/);
     assert.match(body.pay_url, new RegExp(`reference=${body.reference}`));
     assert.match(body.sign, /We never take keys/);
     assert.match(body.sign, /buyMeterPass/);
+    assert.match(body.sign, /looks_20 pack \(\$0\.20\)/);
     assert.match(body.next, new RegExp(`"invoice_id":"${body.invoice_id}"`));
     assert.match(body.next, /meter_watch/);
+    assert.match(body.next, /looks_20 pack \(\$0\.20\)/);
     assert.ok(body.invoice_id);
   });
 
