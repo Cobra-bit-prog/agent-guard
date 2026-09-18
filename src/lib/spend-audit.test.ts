@@ -345,6 +345,12 @@ describe("spend audit HTTP", () => {
     assert.doesNotMatch(landing, /Agent Meter/);
     assert.doesNotMatch(landing, /plan=growth/);
     assert.match(landing, /SPEND_AUDIT_STARTER_HREF/);
+    assert.match(landing, /text-body leading-snug text-muted">\{SPEND_AUDIT_LEDE\}/);
+    assert.match(landing, /text-body">\{SPEND_AUDIT_UPSELL\}/);
+    assert.doesNotMatch(landing, /text-card/);
+    assert.match(landing, /text-meta font-medium">Wallet address/);
+    assert.match(landing, /text-meta font-medium">Chain/);
+    assert.doesNotMatch(landing, /<span className="text-sm /);
     const catalog = readFileSync(join(ROOT, "src/lib/spend-audit.ts"), "utf8");
     assert.match(catalog, /SPEND_AUDIT_STARTER_HREF = CONNECT_PAY_HREF/);
     assert.match(catalog, /SPEND_AUDIT_PATH = "\/spend-audit"/);

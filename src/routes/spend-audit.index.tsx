@@ -71,7 +71,7 @@ function SpendAuditPage() {
         {SPEND_AUDIT_PRODUCT} · ${SPEND_AUDIT_PRICE_USD} USDC
       </p>
       <h1 className="mt-3 text-display font-semibold">{SPEND_AUDIT_HEADLINE}</h1>
-      <p className="mt-4 max-w-[46ch] text-card text-muted">{SPEND_AUDIT_LEDE}</p>
+      <p className="mt-4 max-w-[46ch] text-body leading-snug text-muted">{SPEND_AUDIT_LEDE}</p>
       <p className="mt-3 max-w-[46ch] text-body leading-snug text-muted">{SPEND_AUDIT_HONESTY}</p>
       <p className="mt-2 max-w-[46ch] text-body leading-snug text-muted">{SPEND_AUDIT_SCANNER}</p>
       <SupportedChains className="mt-5" />
@@ -81,7 +81,7 @@ function SpendAuditPage() {
         className="mt-8 space-y-4 rounded-[20px] border border-border bg-surface p-6 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]"
       >
         <label className="block space-y-1.5">
-          <span className="text-sm font-medium">Wallet address</span>
+          <span className="text-meta font-medium">Wallet address</span>
           <input
             required
             value={address}
@@ -93,7 +93,7 @@ function SpendAuditPage() {
           />
         </label>
         <label className="block space-y-1.5">
-          <span className="text-sm font-medium">Chain</span>
+          <span className="text-meta font-medium">Chain</span>
           <select
             className="h-11 w-full rounded-[var(--radius-sm)] border border-border bg-bg px-3 text-sm"
             value={chain}
@@ -116,7 +116,7 @@ function SpendAuditPage() {
       </form>
 
       <div className="mt-8 rounded-[20px] border border-border bg-elevated p-5">
-        <p className="text-card font-medium">{SPEND_AUDIT_UPSELL}</p>
+        <p className="text-body">{SPEND_AUDIT_UPSELL}</p>
         <div className="mt-4 flex flex-wrap gap-3">
           <Button asChild className="rounded-full">
             <a href={SPEND_AUDIT_TRIAL_HREF}>{SPEND_AUDIT_TRIAL_CTA}</a>
