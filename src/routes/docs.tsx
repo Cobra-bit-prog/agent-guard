@@ -29,9 +29,12 @@ import {
   SPEND_AUDIT_HONESTY,
   SPEND_AUDIT_LEDE,
   SPEND_AUDIT_PATH,
+  SPEND_AUDIT_PAY29_CTA,
   SPEND_AUDIT_PRICE_USD,
-  SPEND_AUDIT_STARTER_COPY,
+  SPEND_AUDIT_PRODUCT,
+  SPEND_AUDIT_SCANNER,
   SPEND_AUDIT_STARTER_HREF,
+  SPEND_AUDIT_TRIAL_CTA,
   SPEND_AUDIT_TRIAL_HREF,
   SPEND_AUDIT_UPSELL,
 } from "@/lib/spend-audit";
@@ -572,13 +575,13 @@ client.onBeforePaymentCreation(
 
         <section id="wallet-spend-audit" className="mt-16 scroll-mt-6">
           <p className="text-meta font-medium uppercase tracking-[0.18em] text-coral">
-            Wallet Spend Audit · ${SPEND_AUDIT_PRICE_USD} USDC
+            {SPEND_AUDIT_PRODUCT} · ${SPEND_AUDIT_PRICE_USD} USDC
           </p>
           <h2 className="mt-3 text-title font-semibold tracking-tight">{SPEND_AUDIT_HEADLINE}</h2>
           <p className="mt-3 max-w-[52ch] text-muted">{SPEND_AUDIT_LEDE}</p>
           <p className="mt-3 max-w-[52ch] text-muted">{SPEND_AUDIT_HONESTY}</p>
+          <p className="mt-3 max-w-[52ch] text-muted">{SPEND_AUDIT_SCANNER}</p>
           <p className="mt-3 max-w-[52ch] text-muted">{SPEND_AUDIT_UPSELL}</p>
-          <p className="mt-3 max-w-[52ch] text-muted">{SPEND_AUDIT_STARTER_COPY}</p>
           <ol className="mt-8 space-y-3">
             <li className="rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]">
               <p className="font-mono text-meta text-navy">1</p>
@@ -595,8 +598,8 @@ client.onBeforePaymentCreation(
               <p className="font-mono text-meta text-navy">2</p>
               <h3 className="mt-2 text-card font-medium">Pay $49 USDC</h3>
               <p className="mt-1 text-muted">
-                Prefer Base EIP-3009 exact, or Solana Pay with the invoice reference. Locked payouts.
-                You keep the keys. GET /api/v1/audit/pricing then POST /api/v1/audit/invoice.
+                Prefer Base EIP-3009 exact, or Solana Pay with the invoice reference.{" "}
+                {SPEND_AUDIT_HONESTY} GET /api/v1/audit/pricing then POST /api/v1/audit/invoice.
               </p>
             </li>
             <li className="rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]">
@@ -613,13 +616,13 @@ client.onBeforePaymentCreation(
               href={SPEND_AUDIT_PATH}
               className="inline-flex h-11 items-center rounded-full bg-primary px-5 text-body font-semibold text-primary-fg"
             >
-              Open Wallet Spend Audit
+              Open {SPEND_AUDIT_PRODUCT}
             </a>
             <a href={SPEND_AUDIT_TRIAL_HREF} className="inline-flex h-11 items-center rounded-full border border-border px-5 text-body font-semibold">
-              Start free trial
+              {SPEND_AUDIT_TRIAL_CTA}
             </a>
             <a href={SPEND_AUDIT_STARTER_HREF} className="inline-flex h-11 items-center rounded-full border border-border px-5 text-body font-semibold">
-              Pay $29
+              {SPEND_AUDIT_PAY29_CTA}
             </a>
           </div>
         </section>

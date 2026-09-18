@@ -9,14 +9,13 @@ import { SOLANA_PAYOUT_ADDRESS } from "./solana-pay.ts";
 import { handleSpendAuditRequest } from "./spend-audit-http.ts";
 import {
   SPEND_AUDIT_AMOUNT_BASE_UNITS,
-  SPEND_AUDIT_CONSOLE_UPSELL,
   SPEND_AUDIT_HEADLINE,
   SPEND_AUDIT_HONESTY,
   SPEND_AUDIT_LEDE,
   SPEND_AUDIT_PATH,
   SPEND_AUDIT_PRICE_USD,
+  SPEND_AUDIT_SCANNER,
   SPEND_AUDIT_SKU,
-  SPEND_AUDIT_STARTER_COPY,
   SPEND_AUDIT_UPSELL,
   analyzeSpend,
   inferSpendAuditChain,
@@ -57,12 +56,13 @@ describe("Wallet Spend Audit catalog", () => {
     assert.equal(pricing.base_pay_to, EVM_PAYOUT_ADDRESS);
     assert.equal(pricing.starter.price_usd, 29);
     assert.equal(pricing.starter.href, "/billing/pay?plan=starter");
-    assert.match(pricing.starter.copy, /They ask before they pay/);
+    assert.equal(pricing.starter.copy, SPEND_AUDIT_UPSELL);
     assert.match(pricing.lede, /Within policy = auto/);
-    assert.match(pricing.note, /Not a package scanner/);
-    assert.doesNotMatch(pricing.note, /Meter/);
+    assert.equal(pricing.note, SPEND_AUDIT_HONESTY);
+    assert.match(pricing.note, /Meter is separate/);
+    assert.equal(pricing.scanner, SPEND_AUDIT_SCANNER);
     assert.doesNotMatch(pricing.note, /cheaper/i);
-    assert.doesNotMatch(JSON.stringify(pricing), /growth/i);
+    assert.doesNotMatch(JSON.stringify(pricing), /plan=growth/);
     assert.doesNotMatch(JSON.stringify(pricing), /looks_20/);
   });
 
@@ -96,9 +96,10 @@ describe("Wallet Spend Audit catalog", () => {
     assert.doesNotMatch(body.pay_url, /WrongWallet/);
     assert.equal(body.accepts[0]?.extra.assetTransferMethod, "eip3009");
     assert.equal(body.sku, "wallet_spend_audit");
-    assert.match(body.note, /Not a package scanner/);
-    assert.match(body.starter.copy, /Starter \$29/);
-    assert.doesNotMatch(body.note, /Meter/);
+    assert.equal(body.note, SPEND_AUDIT_HONESTY);
+    assert.equal(body.starter.copy, SPEND_AUDIT_UPSELL);
+    assert.match(body.note, /Meter is separate/);
+    assert.doesNotMatch(body.note, /cheaper/i);
   });
 
   it("infers Solana vs EVM from the pasted address", () => {
@@ -143,7 +144,8 @@ describe("spend lookback findings", () => {
     assert.equal(snapshot.outboundCount, 2);
     assert.equal(snapshot.outboundUsd, 120);
     assert.match(snapshot.disclaimer, /hypothetical \$100\/day/);
-    assert.match(snapshot.summary.join(" "), /Starter \$29/);
+    assert.match(snapshot.summary.join(" "), /Started on Starter\?/);
+    assert.match(snapshot.summary.join(" "), /Meter is separate/);
     assert.equal(spendAuditFileStem(SOL, snapshot.generatedAt).startsWith("wallet-spend-audit-"), true);
   });
 
@@ -295,61 +297,59 @@ describe("spend audit HTTP", () => {
     }
   });
 
-  it("locks Marketing landing copy and never calls the SKU Meter", () => {
+  it("locks CoS / Marketing customer copy on every spend-audit surface", () => {
     assert.equal(SPEND_AUDIT_HEADLINE, "External audit for your agents");
     assert.equal(
       SPEND_AUDIT_LEDE,
       "They ask before they pay. You keep the keys. Within policy = auto. Outside policy = stop.",
     );
-    assert.equal(SPEND_AUDIT_HONESTY, "You keep the keys. Not a package scanner.");
+    assert.equal(SPEND_AUDIT_HONESTY, "You keep the keys. Meter is separate — never mix.");
+    assert.equal(SPEND_AUDIT_SCANNER, "Not a package scanner.");
     assert.equal(
       SPEND_AUDIT_UPSELL,
-      "Wallet Spend Audit adds clearer audit reports when you need proof of what your agents tried to pay.",
-    );
-    assert.equal(SPEND_AUDIT_STARTER_COPY, "Then Starter $29. They ask before they pay. You keep the keys.");
-    assert.equal(
-      SPEND_AUDIT_CONSOLE_UPSELL,
       "Started on Starter? Wallet Spend Audit adds clearer audit reports when you need proof of what your agents tried to pay.",
     );
     assert.equal(SPEND_AUDIT_PATH, "/spend-audit");
-    const customer = [
-      SPEND_AUDIT_HEADLINE,
-      SPEND_AUDIT_LEDE,
-      SPEND_AUDIT_HONESTY,
-      SPEND_AUDIT_UPSELL,
-      SPEND_AUDIT_CONSOLE_UPSELL,
-      SPEND_AUDIT_STARTER_COPY,
-    ].join(" ");
-    assert.doesNotMatch(customer, /\bMeter\b/);
+    const customer = [SPEND_AUDIT_HEADLINE, SPEND_AUDIT_LEDE, SPEND_AUDIT_HONESTY, SPEND_AUDIT_SCANNER, SPEND_AUDIT_UPSELL].join(
+      " ",
+    );
+    assert.match(customer, /Meter is separate — never mix/);
     assert.doesNotMatch(customer, /Checks before they pay/);
     assert.doesNotMatch(customer, /Your limits stop a spend/);
     assert.doesNotMatch(customer, /cheaper/i);
     assert.doesNotMatch(customer, /looks_20/);
     assert.doesNotMatch(customer, /First 5 free/);
+    assert.doesNotMatch(customer, /Agent Meter/);
+    assert.doesNotMatch(customer, /plan=growth/);
   });
 
   it("does not retarget pay_to from query strings on the landing route", () => {
     const landing = readFileSync(join(ROOT, "src/routes/spend-audit.index.tsx"), "utf8");
     const pay = readFileSync(join(ROOT, "src/routes/spend-audit.pay.tsx"), "utf8");
     const enrolled = readFileSync(join(ROOT, "src/routes/_app/audit.tsx"), "utf8");
+    const docs = readFileSync(join(ROOT, "src/routes/docs.tsx"), "utf8");
+    const card = readFileSync(join(ROOT, "src/components/spend-audit-pay-card.tsx"), "utf8");
+    const ui = landing + pay + enrolled + docs + card;
     assert.match(landing, /SPEND_AUDIT_HEADLINE/);
     assert.match(landing, /SPEND_AUDIT_LEDE/);
     assert.match(landing, /SPEND_AUDIT_HONESTY/);
+    assert.match(landing, /SPEND_AUDIT_SCANNER/);
     assert.match(landing, /SPEND_AUDIT_UPSELL/);
-    assert.match(landing, /SPEND_AUDIT_STARTER_COPY/);
-    assert.doesNotMatch(landing, /cheaper/i);
+    assert.match(enrolled, /SPEND_AUDIT_UPSELL/);
+    assert.match(enrolled, /SPEND_AUDIT_PATH/);
+    assert.doesNotMatch(ui, /Checks before they pay/);
+    assert.doesNotMatch(ui, /Your limits stop a spend/);
+    assert.doesNotMatch(ui, /cheaper/i);
     assert.doesNotMatch(landing + pay, /search\.pay_to/);
     assert.doesNotMatch(landing, /First 5 free/);
-    assert.doesNotMatch(landing, /Meter/);
+    assert.doesNotMatch(landing, /Agent Meter/);
+    assert.doesNotMatch(landing, /plan=growth/);
     assert.match(landing, /SPEND_AUDIT_STARTER_HREF/);
-    assert.match(enrolled, /SPEND_AUDIT_CONSOLE_UPSELL/);
-    assert.match(enrolled, /SPEND_AUDIT_PATH/);
     const catalog = readFileSync(join(ROOT, "src/lib/spend-audit.ts"), "utf8");
-    assert.match(catalog, /\/billing\/pay\?plan=starter/);
+    assert.match(catalog, /SPEND_AUDIT_STARTER_HREF = CONNECT_PAY_HREF/);
     assert.match(catalog, /SPEND_AUDIT_PATH = "\/spend-audit"/);
-    assert.match(catalog, /clearer audit reports/);
-    assert.match(catalog, /Then Starter \$29/);
-    const card = readFileSync(join(ROOT, "src/components/spend-audit-pay-card.tsx"), "utf8");
+    assert.match(catalog, /Started on Starter\?/);
+    assert.doesNotMatch(catalog, /Then Starter \$29/);
     assert.doesNotMatch(card, /Agent Meter/);
     assert.doesNotMatch(card, /cheaper/i);
     assert.doesNotMatch(card, /First 5 free/);

@@ -18,11 +18,12 @@ import {
 import { formatUsd, shortAddress, timeAgo } from "@/lib/utils";
 import type { AuditTrailRow } from "@/lib/audit-report";
 import {
-  SPEND_AUDIT_CONSOLE_UPSELL,
   SPEND_AUDIT_HONESTY,
   SPEND_AUDIT_PATH,
   SPEND_AUDIT_PRICE_USD,
   SPEND_AUDIT_PRODUCT,
+  SPEND_AUDIT_SCANNER,
+  SPEND_AUDIT_UPSELL,
 } from "@/lib/spend-audit";
 
 export const Route = createFileRoute("/_app/audit")({
@@ -115,7 +116,7 @@ function AuditPage() {
           <a href={SPEND_AUDIT_PATH} className="font-medium text-navy hover:text-coral">
             {SPEND_AUDIT_PRODUCT} (${SPEND_AUDIT_PRICE_USD} USDC)
           </a>
-          . {SPEND_AUDIT_CONSOLE_UPSELL} {SPEND_AUDIT_HONESTY}
+          . {SPEND_AUDIT_UPSELL} {SPEND_AUDIT_HONESTY} {SPEND_AUDIT_SCANNER}
         </p>
       </div>
 

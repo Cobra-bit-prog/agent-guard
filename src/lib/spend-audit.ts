@@ -4,6 +4,12 @@
  * Locked payouts match Meter / Human App. Query strings cannot retarget funds.
  */
 
+import {
+  CONNECT_PAY_CTA,
+  CONNECT_PAY_HREF,
+  CONNECT_TRIAL_CTA,
+  CONNECT_TRIAL_HREF,
+} from "./connect-path.ts";
 import { EVM_PAYOUT_ADDRESS, lockedEvmUsdcRecipient } from "./evm-pay.ts";
 import {
   BASE_CAIP2,
@@ -43,15 +49,14 @@ export const SPEND_AUDIT_PRODUCT = "Wallet Spend Audit";
 export const SPEND_AUDIT_HEADLINE = "External audit for your agents";
 export const SPEND_AUDIT_LEDE =
   "They ask before they pay. You keep the keys. Within policy = auto. Outside policy = stop.";
-export const SPEND_AUDIT_HONESTY = "You keep the keys. Not a package scanner.";
+export const SPEND_AUDIT_HONESTY = "You keep the keys. Meter is separate — never mix.";
+export const SPEND_AUDIT_SCANNER = "Not a package scanner.";
 export const SPEND_AUDIT_UPSELL =
-  "Wallet Spend Audit adds clearer audit reports when you need proof of what your agents tried to pay.";
-export const SPEND_AUDIT_CONSOLE_UPSELL =
   "Started on Starter? Wallet Spend Audit adds clearer audit reports when you need proof of what your agents tried to pay.";
-export const SPEND_AUDIT_STARTER_COPY =
-  "Then Starter $29. They ask before they pay. You keep the keys.";
-export const SPEND_AUDIT_STARTER_HREF = "/billing/pay?plan=starter";
-export const SPEND_AUDIT_TRIAL_HREF = "/signup";
+export const SPEND_AUDIT_STARTER_HREF = CONNECT_PAY_HREF;
+export const SPEND_AUDIT_TRIAL_HREF = CONNECT_TRIAL_HREF;
+export const SPEND_AUDIT_TRIAL_CTA = CONNECT_TRIAL_CTA;
+export const SPEND_AUDIT_PAY29_CTA = CONNECT_PAY_CTA;
 export const SPEND_AUDIT_DISCLAIMER =
   "Wallet Spend Audit: recent outbound transfers in the lookback window. Over-cap days use a hypothetical $100/day cap. Not a package scanner. You keep the keys. Not a live policy and not a full chain replay.";
 
@@ -168,12 +173,15 @@ export function spendAuditPricing() {
     headline: SPEND_AUDIT_HEADLINE,
     lede: SPEND_AUDIT_LEDE,
     note: SPEND_AUDIT_HONESTY,
+    scanner: SPEND_AUDIT_SCANNER,
+    upsell: SPEND_AUDIT_UPSELL,
     pay_to: lockedSolanaUsdcRecipient(),
     base_pay_to: lockedEvmUsdcRecipient(),
     starter: {
       price_usd: 29,
       href: SPEND_AUDIT_STARTER_HREF,
-      copy: SPEND_AUDIT_STARTER_COPY,
+      copy: SPEND_AUDIT_UPSELL,
+      cta: SPEND_AUDIT_PAY29_CTA,
     },
     trial_href: SPEND_AUDIT_TRIAL_HREF,
     funds: {
@@ -263,10 +271,13 @@ export function spendAudit402Body(invoice: SpendAuditInvoice) {
     lookback_days: invoice.lookback_days,
     headline: SPEND_AUDIT_HEADLINE,
     note: SPEND_AUDIT_HONESTY,
+    scanner: SPEND_AUDIT_SCANNER,
+    upsell: SPEND_AUDIT_UPSELL,
     starter: {
       price_usd: 29,
       href: SPEND_AUDIT_STARTER_HREF,
-      copy: SPEND_AUDIT_STARTER_COPY,
+      copy: SPEND_AUDIT_UPSELL,
+      cta: SPEND_AUDIT_PAY29_CTA,
     },
     accepts,
     pay_url: buildSolanaPayUrl({
@@ -415,8 +426,8 @@ export function analyzeSpend(input: {
     `${overCapDays} over-cap day${overCapDays === 1 ? "" : "s"} vs a hypothetical $${dailyCapUsd}/day cap.`,
     `${unknown} unknown destination${unknown === 1 ? "" : "s"} · ${sinks} sink-like address${sinks === 1 ? "" : "es"}.`,
     SPEND_AUDIT_HONESTY,
+    SPEND_AUDIT_SCANNER,
     SPEND_AUDIT_UPSELL,
-    SPEND_AUDIT_STARTER_COPY,
   ];
 
   return {

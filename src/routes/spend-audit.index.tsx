@@ -6,10 +6,13 @@ import {
   SPEND_AUDIT_HEADLINE,
   SPEND_AUDIT_HONESTY,
   SPEND_AUDIT_LEDE,
+  SPEND_AUDIT_PAY29_CTA,
   SPEND_AUDIT_PAY_PATH,
   SPEND_AUDIT_PRICE_USD,
-  SPEND_AUDIT_STARTER_COPY,
+  SPEND_AUDIT_PRODUCT,
+  SPEND_AUDIT_SCANNER,
   SPEND_AUDIT_STARTER_HREF,
+  SPEND_AUDIT_TRIAL_CTA,
   SPEND_AUDIT_TRIAL_HREF,
   SPEND_AUDIT_UPSELL,
 } from "@/lib/spend-audit";
@@ -18,18 +21,16 @@ export const Route = createFileRoute("/spend-audit/")({
   component: SpendAuditPage,
   head: () => ({
     meta: [
-      { title: "Wallet Spend Audit — External audit for your agents" },
+      { title: `${SPEND_AUDIT_PRODUCT} — ${SPEND_AUDIT_HEADLINE}` },
       {
         name: "description",
-        content:
-          "External audit for your agents. They ask before they pay. You keep the keys. Within policy = auto. Outside policy = stop. Wallet Spend Audit $49 USDC. Not a package scanner.",
+        content: `${SPEND_AUDIT_HEADLINE}. ${SPEND_AUDIT_LEDE} ${SPEND_AUDIT_PRODUCT} $${SPEND_AUDIT_PRICE_USD} USDC. ${SPEND_AUDIT_SCANNER} ${SPEND_AUDIT_HONESTY}`,
       },
       { name: "theme-color", content: "#eef3f8" },
-      { property: "og:title", content: "Wallet Spend Audit — External audit for your agents" },
+      { property: "og:title", content: `${SPEND_AUDIT_PRODUCT} — ${SPEND_AUDIT_HEADLINE}` },
       {
         property: "og:description",
-        content:
-          "They ask before they pay. You keep the keys. Within policy = auto. Outside policy = stop. $49 USDC. Not a package scanner.",
+        content: `${SPEND_AUDIT_LEDE} $${SPEND_AUDIT_PRICE_USD} USDC. ${SPEND_AUDIT_SCANNER} ${SPEND_AUDIT_HONESTY}`,
       },
     ],
   }),
@@ -67,11 +68,12 @@ function SpendAuditPage() {
   return (
     <main className="mx-auto max-w-lg px-6 pb-20 pt-8 md:px-10">
       <p className="text-meta font-medium uppercase tracking-[0.18em] text-coral">
-        Wallet Spend Audit · ${SPEND_AUDIT_PRICE_USD} USDC
+        {SPEND_AUDIT_PRODUCT} · ${SPEND_AUDIT_PRICE_USD} USDC
       </p>
       <h1 className="mt-3 text-display font-semibold">{SPEND_AUDIT_HEADLINE}</h1>
       <p className="mt-4 max-w-[46ch] text-card text-muted">{SPEND_AUDIT_LEDE}</p>
       <p className="mt-3 max-w-[46ch] text-body leading-snug text-muted">{SPEND_AUDIT_HONESTY}</p>
+      <p className="mt-2 max-w-[46ch] text-body leading-snug text-muted">{SPEND_AUDIT_SCANNER}</p>
       <SupportedChains className="mt-5" />
 
       <form
@@ -109,30 +111,21 @@ function SpendAuditPage() {
           {busy ? "Starting…" : `Pay $${SPEND_AUDIT_PRICE_USD} USDC`}
         </Button>
         <p className="text-meta text-muted">
-          Locked payouts. You keep the keys. Not a package scanner.
+          {SPEND_AUDIT_SCANNER} {SPEND_AUDIT_HONESTY}
         </p>
       </form>
 
       <div className="mt-8 rounded-[20px] border border-border bg-elevated p-5">
         <p className="text-card font-medium">{SPEND_AUDIT_UPSELL}</p>
-        <p className="mt-2 text-body text-muted">{SPEND_AUDIT_STARTER_COPY}</p>
         <div className="mt-4 flex flex-wrap gap-3">
           <Button asChild className="rounded-full">
-            <a href={SPEND_AUDIT_TRIAL_HREF}>Start free trial</a>
+            <a href={SPEND_AUDIT_TRIAL_HREF}>{SPEND_AUDIT_TRIAL_CTA}</a>
           </Button>
           <Button asChild variant="secondary" className="rounded-full">
-            <a href={SPEND_AUDIT_STARTER_HREF}>Pay $29</a>
+            <a href={SPEND_AUDIT_STARTER_HREF}>{SPEND_AUDIT_PAY29_CTA}</a>
           </Button>
         </div>
       </div>
-
-      <p className="mt-6 text-meta text-muted">
-        Already on the console? Generate the enrolled trail at{" "}
-        <a href="/audit" className="font-medium text-navy hover:text-coral">
-          /audit
-        </a>
-        . This page is ${SPEND_AUDIT_PRICE_USD} USDC.
-      </p>
     </main>
   );
 }

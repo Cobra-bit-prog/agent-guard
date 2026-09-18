@@ -15,8 +15,10 @@ import {
   SPEND_AUDIT_HONESTY,
   SPEND_AUDIT_LEDE,
   SPEND_AUDIT_PATH,
+  SPEND_AUDIT_PAY29_CTA,
   SPEND_AUDIT_PRICE_USD,
-  SPEND_AUDIT_STARTER_COPY,
+  SPEND_AUDIT_PRODUCT,
+  SPEND_AUDIT_SCANNER,
   SPEND_AUDIT_STARTER_HREF,
   SPEND_AUDIT_UPSELL,
 } from "@/lib/spend-audit";
@@ -234,7 +236,7 @@ export function SpendAuditPayCard({ search }: { search: MeterPaySearch }) {
   if (paid) {
     return (
       <div className="rounded-[20px] border border-border bg-surface p-6 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]">
-        <p className="text-meta font-semibold uppercase tracking-[0.16em] text-navy">Wallet Spend Audit</p>
+        <p className="text-meta font-semibold uppercase tracking-[0.16em] text-navy">{SPEND_AUDIT_PRODUCT}</p>
         <h1 className="mt-2 text-title font-semibold tracking-tight">{SPEND_AUDIT_HEADLINE}</h1>
         <p className="mt-2 text-muted">Paid. Your report is ready.</p>
         {invoice?.preview?.summary?.length ? (
@@ -253,9 +255,9 @@ export function SpendAuditPayCard({ search }: { search: MeterPaySearch }) {
           </Button>
         </div>
         <p className="mt-6 text-body text-muted">{SPEND_AUDIT_UPSELL}</p>
-        <p className="mt-2 text-body text-muted">{SPEND_AUDIT_STARTER_COPY}</p>
+        <p className="mt-2 text-body text-muted">{SPEND_AUDIT_HONESTY}</p>
         <a href={SPEND_AUDIT_STARTER_HREF} className="mt-3 inline-flex text-body font-semibold text-navy hover:text-coral">
-          Starter $29 →
+          {SPEND_AUDIT_PAY29_CTA}
         </a>
       </div>
     );
@@ -265,7 +267,7 @@ export function SpendAuditPayCard({ search }: { search: MeterPaySearch }) {
     return (
       <div className="rounded-[20px] border border-border bg-surface p-6 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]">
         <h1 className="text-title font-semibold tracking-tight">Invoice expired</h1>
-        <p className="mt-2 text-muted">Start a new $49 USDC Wallet Spend Audit from the landing page.</p>
+        <p className="mt-2 text-muted">Start a new ${SPEND_AUDIT_PRICE_USD} USDC {SPEND_AUDIT_PRODUCT} from the landing page.</p>
         <Button asChild className="mt-5 h-11 w-full rounded-full">
           <a href={SPEND_AUDIT_PATH}>Paste a wallet again</a>
         </Button>
@@ -292,10 +294,10 @@ export function SpendAuditPayCard({ search }: { search: MeterPaySearch }) {
 
   return (
     <div className="rounded-[20px] border border-border bg-surface p-6 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]">
-      <p className="text-meta font-semibold uppercase tracking-[0.16em] text-navy">Wallet Spend Audit</p>
+      <p className="text-meta font-semibold uppercase tracking-[0.16em] text-navy">{SPEND_AUDIT_PRODUCT}</p>
       <h1 className="mt-2 text-title font-semibold tracking-tight">Pay {amountLabel} USDC</h1>
       <p className="mt-2 text-muted">
-        {SPEND_AUDIT_LEDE} {SPEND_AUDIT_HONESTY}
+        {SPEND_AUDIT_LEDE} {SPEND_AUDIT_HONESTY} {SPEND_AUDIT_SCANNER}
       </p>
       {invoice?.address ? (
         <p className="mt-3 break-all font-mono text-meta text-muted">
@@ -359,7 +361,7 @@ export function SpendAuditPayCard({ search }: { search: MeterPaySearch }) {
       ) : (
         <p className="mt-4 text-center text-body font-medium text-navy">Waiting for {amountLabel} USDC.</p>
       )}
-      <p className="mt-3 text-center text-meta text-muted">Use a wallet. Do not send from Coinbase or Binance. You keep the keys. Not a package scanner.</p>
+      <p className="mt-3 text-center text-meta text-muted">Use a wallet. Do not send from Coinbase or Binance. {SPEND_AUDIT_HONESTY} {SPEND_AUDIT_SCANNER}</p>
     </div>
   );
 }
