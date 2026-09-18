@@ -28,6 +28,8 @@ import { Route as AppInboxRouteImport } from './routes/_app/inbox'
 import { Route as AppPoliciesRouteImport } from './routes/_app/policies'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as MeterPayRouteImport } from './routes/meter.pay'
+import { Route as SpendAuditRouteImport } from './routes/spend-audit'
+import { Route as SpendAuditPayRouteImport } from './routes/spend-audit.pay'
 import { Route as OauthAuthorizeRouteImport } from './routes/oauth/authorize'
 import { Route as OauthRegisterRouteImport } from './routes/oauth/register'
 import { Route as OauthTokenRouteImport } from './routes/oauth/token'
@@ -50,6 +52,7 @@ import { Route as ApiV1InternalMeterRouteImport } from './routes/api/v1/internal
 import { Route as ApiV1InternalStatsRouteImport } from './routes/api/v1/internal/stats'
 import { Route as ApiV1InternalTrialMailRouteImport } from './routes/api/v1/internal/trial-mail'
 import { Route as ApiV1MeterSplatRouteImport } from './routes/api/v1/meter.$'
+import { Route as ApiV1AuditSplatRouteImport } from './routes/api/v1/audit.$'
 import { Route as ApiV1StorefrontAttachRouteImport } from './routes/api/v1/storefront.attach'
 import { Route as ApiV1StorefrontCheckoutRouteImport } from './routes/api/v1/storefront.checkout'
 import { Route as ApiV1StorefrontPricingRouteImport } from './routes/api/v1/storefront.pricing'
@@ -149,6 +152,16 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
 const MeterPayRoute = MeterPayRouteImport.update({
   id: '/meter/pay',
   path: '/meter/pay',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SpendAuditRoute = SpendAuditRouteImport.update({
+  id: '/spend-audit',
+  path: '/spend-audit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SpendAuditPayRoute = SpendAuditPayRouteImport.update({
+  id: '/spend-audit/pay',
+  path: '/spend-audit/pay',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OauthAuthorizeRoute = OauthAuthorizeRouteImport.update({
@@ -261,6 +274,11 @@ const ApiV1MeterSplatRoute = ApiV1MeterSplatRouteImport.update({
   path: '/api/v1/meter/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1AuditSplatRoute = ApiV1AuditSplatRouteImport.update({
+  id: '/api/v1/audit/$',
+  path: '/api/v1/audit/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1StorefrontAttachRoute = ApiV1StorefrontAttachRouteImport.update({
   id: '/api/v1/storefront/attach',
   path: '/api/v1/storefront/attach',
@@ -312,6 +330,8 @@ export interface FileRoutesByFullPath {
   '/policies': typeof AppPoliciesRoute
   '/settings': typeof AppSettingsRoute
   '/meter/pay': typeof MeterPayRoute
+  '/spend-audit': typeof SpendAuditRoute
+  '/spend-audit/pay': typeof SpendAuditPayRoute
   '/oauth/authorize': typeof OauthAuthorizeRoute
   '/oauth/register': typeof OauthRegisterRoute
   '/oauth/token': typeof OauthTokenRoute
@@ -334,6 +354,7 @@ export interface FileRoutesByFullPath {
   '/api/v1/internal/stats': typeof ApiV1InternalStatsRoute
   '/api/v1/internal/trial-mail': typeof ApiV1InternalTrialMailRoute
   '/api/v1/meter/$': typeof ApiV1MeterSplatRoute
+  '/api/v1/audit/$': typeof ApiV1AuditSplatRoute
   '/api/v1/storefront/attach': typeof ApiV1StorefrontAttachRoute
   '/api/v1/storefront/checkout': typeof ApiV1StorefrontCheckoutRoute
   '/api/v1/storefront/pricing': typeof ApiV1StorefrontPricingRoute
@@ -358,6 +379,8 @@ export interface FileRoutesByTo {
   '/policies': typeof AppPoliciesRoute
   '/settings': typeof AppSettingsRoute
   '/meter/pay': typeof MeterPayRoute
+  '/spend-audit': typeof SpendAuditRoute
+  '/spend-audit/pay': typeof SpendAuditPayRoute
   '/oauth/authorize': typeof OauthAuthorizeRoute
   '/oauth/register': typeof OauthRegisterRoute
   '/oauth/token': typeof OauthTokenRoute
@@ -380,6 +403,7 @@ export interface FileRoutesByTo {
   '/api/v1/internal/stats': typeof ApiV1InternalStatsRoute
   '/api/v1/internal/trial-mail': typeof ApiV1InternalTrialMailRoute
   '/api/v1/meter/$': typeof ApiV1MeterSplatRoute
+  '/api/v1/audit/$': typeof ApiV1AuditSplatRoute
   '/api/v1/storefront/attach': typeof ApiV1StorefrontAttachRoute
   '/api/v1/storefront/checkout': typeof ApiV1StorefrontCheckoutRoute
   '/api/v1/storefront/pricing': typeof ApiV1StorefrontPricingRoute
@@ -408,6 +432,8 @@ export interface FileRoutesById {
   '/_app/policies': typeof AppPoliciesRoute
   '/_app/settings': typeof AppSettingsRoute
   '/meter/pay': typeof MeterPayRoute
+  '/spend-audit': typeof SpendAuditRoute
+  '/spend-audit/pay': typeof SpendAuditPayRoute
   '/oauth/authorize': typeof OauthAuthorizeRoute
   '/oauth/register': typeof OauthRegisterRoute
   '/oauth/token': typeof OauthTokenRoute
@@ -430,6 +456,7 @@ export interface FileRoutesById {
   '/api/v1/internal/stats': typeof ApiV1InternalStatsRoute
   '/api/v1/internal/trial-mail': typeof ApiV1InternalTrialMailRoute
   '/api/v1/meter/$': typeof ApiV1MeterSplatRoute
+  '/api/v1/audit/$': typeof ApiV1AuditSplatRoute
   '/api/v1/storefront/attach': typeof ApiV1StorefrontAttachRoute
   '/api/v1/storefront/checkout': typeof ApiV1StorefrontCheckoutRoute
   '/api/v1/storefront/pricing': typeof ApiV1StorefrontPricingRoute
@@ -458,6 +485,8 @@ export interface FileRouteTypes {
     | '/policies'
     | '/settings'
     | '/meter/pay'
+    | '/spend-audit'
+    | '/spend-audit/pay'
     | '/oauth/authorize'
     | '/oauth/register'
     | '/oauth/token'
@@ -480,6 +509,7 @@ export interface FileRouteTypes {
     | '/api/v1/internal/stats'
     | '/api/v1/internal/trial-mail'
     | '/api/v1/meter/$'
+    | '/api/v1/audit/$'
     | '/api/v1/storefront/attach'
     | '/api/v1/storefront/checkout'
     | '/api/v1/storefront/pricing'
@@ -504,6 +534,8 @@ export interface FileRouteTypes {
     | '/policies'
     | '/settings'
     | '/meter/pay'
+    | '/spend-audit'
+    | '/spend-audit/pay'
     | '/oauth/authorize'
     | '/oauth/register'
     | '/oauth/token'
@@ -526,6 +558,7 @@ export interface FileRouteTypes {
     | '/api/v1/internal/stats'
     | '/api/v1/internal/trial-mail'
     | '/api/v1/meter/$'
+    | '/api/v1/audit/$'
     | '/api/v1/storefront/attach'
     | '/api/v1/storefront/checkout'
     | '/api/v1/storefront/pricing'
@@ -553,6 +586,8 @@ export interface FileRouteTypes {
     | '/_app/policies'
     | '/_app/settings'
     | '/meter/pay'
+    | '/spend-audit'
+    | '/spend-audit/pay'
     | '/oauth/authorize'
     | '/oauth/register'
     | '/oauth/token'
@@ -575,6 +610,7 @@ export interface FileRouteTypes {
     | '/api/v1/internal/stats'
     | '/api/v1/internal/trial-mail'
     | '/api/v1/meter/$'
+    | '/api/v1/audit/$'
     | '/api/v1/storefront/attach'
     | '/api/v1/storefront/checkout'
     | '/api/v1/storefront/pricing'
@@ -595,6 +631,8 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
   MeterPayRoute: typeof MeterPayRoute
+  SpendAuditRoute: typeof SpendAuditRoute
+  SpendAuditPayRoute: typeof SpendAuditPayRoute
   OauthAuthorizeRoute: typeof OauthAuthorizeRoute
   OauthRegisterRoute: typeof OauthRegisterRoute
   OauthTokenRoute: typeof OauthTokenRoute
@@ -613,6 +651,7 @@ export interface RootRouteChildren {
   ApiV1InternalStatsRoute: typeof ApiV1InternalStatsRoute
   ApiV1InternalTrialMailRoute: typeof ApiV1InternalTrialMailRoute
   ApiV1MeterSplatRoute: typeof ApiV1MeterSplatRoute
+  ApiV1AuditSplatRoute: typeof ApiV1AuditSplatRoute
   ApiV1StorefrontAttachRoute: typeof ApiV1StorefrontAttachRoute
   ApiV1StorefrontCheckoutRoute: typeof ApiV1StorefrontCheckoutRoute
   ApiV1StorefrontPricingRoute: typeof ApiV1StorefrontPricingRoute
@@ -753,6 +792,20 @@ declare module '@tanstack/react-router' {
       path: '/meter/pay'
       fullPath: '/meter/pay'
       preLoaderRoute: typeof MeterPayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/spend-audit': {
+      id: '/spend-audit'
+      path: '/spend-audit'
+      fullPath: '/spend-audit'
+      preLoaderRoute: typeof SpendAuditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/spend-audit/pay': {
+      id: '/spend-audit/pay'
+      path: '/spend-audit/pay'
+      fullPath: '/spend-audit/pay'
+      preLoaderRoute: typeof SpendAuditPayRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/oauth/authorize': {
@@ -909,6 +962,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1MeterSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/audit/$': {
+      id: '/api/v1/audit/$'
+      path: '/api/v1/audit/$'
+      fullPath: '/api/v1/audit/$'
+      preLoaderRoute: typeof ApiV1AuditSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/storefront/attach': {
       id: '/api/v1/storefront/attach'
       path: '/api/v1/storefront/attach'
@@ -1029,6 +1089,8 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   VerifyEmailRoute: VerifyEmailRoute,
   MeterPayRoute: MeterPayRoute,
+  SpendAuditRoute: SpendAuditRoute,
+  SpendAuditPayRoute: SpendAuditPayRoute,
   OauthAuthorizeRoute: OauthAuthorizeRoute,
   OauthRegisterRoute: OauthRegisterRoute,
   OauthTokenRoute: OauthTokenRoute,
@@ -1047,6 +1109,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiV1InternalStatsRoute: ApiV1InternalStatsRoute,
   ApiV1InternalTrialMailRoute: ApiV1InternalTrialMailRoute,
   ApiV1MeterSplatRoute: ApiV1MeterSplatRoute,
+  ApiV1AuditSplatRoute: ApiV1AuditSplatRoute,
   ApiV1StorefrontAttachRoute: ApiV1StorefrontAttachRoute,
   ApiV1StorefrontCheckoutRoute: ApiV1StorefrontCheckoutRoute,
   ApiV1StorefrontPricingRoute: ApiV1StorefrontPricingRoute,

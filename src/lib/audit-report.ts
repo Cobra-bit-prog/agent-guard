@@ -13,6 +13,9 @@ export type AuditTrailRow = {
 export type AuditSnapshot = {
   generatedAt: string;
   disclaimer: string;
+  title?: string;
+  summary?: string[];
+  emptyMessage?: string;
   agent: {
     id: string;
     name: string;
@@ -22,8 +25,12 @@ export type AuditSnapshot = {
   rows: AuditTrailRow[];
 };
 
+export const AUDIT_KIND_LEGEND =
+  "Kind: check = the agent asked first; send = a recorded transfer; alert = policy ping; decision = your Inbox choice.";
+
 export const AUDIT_DISCLAIMER =
-  "Agent Control audit trail: pre-sign checks, alerts, operator decisions, and recorded transfers. This is not a full on-chain replay.";
+  "Agent Control audit trail: pre-sign checks, alerts, operator decisions, and recorded transfers. This is not a full on-chain replay. " +
+  AUDIT_KIND_LEGEND;
 
 export function resultFromTx(input: {
   status: string;

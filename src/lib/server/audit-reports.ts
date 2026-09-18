@@ -4,6 +4,7 @@ import { authMiddleware } from "@/lib/auth/middleware";
 import { getSql } from "@/lib/db";
 import {
   AUDIT_DISCLAIMER,
+  AUDIT_KIND_LEGEND,
   auditFileStem,
   buildAuditTrail,
   type AuditSnapshot,
@@ -121,9 +122,19 @@ export const generateAuditReport = createServerFn({ method: "POST" })
     });
 
     const generatedAt = new Date().toISOString();
+    const checks = rows.filter((r) => r.kind === "check").length;
+    const sends = rows.filter((r) => r.kind === "send").length;
+    const alertsN = rows.filter((r) => r.kind === "alert").length;
+    const decisionsN = rows.filter((r) => r.kind === "decision").length;
     const snapshot: AuditSnapshot = {
       generatedAt,
       disclaimer: AUDIT_DISCLAIMER,
+      title: "Agent Control audit trail",
+      summary: [
+        `${rows.length} row${rows.length === 1 ? "" : "s"} for ${String(agent.name)} — ${checks} check${checks === 1 ? "" : "s"}, ${sends} send${sends === 1 ? "" : "s"}, ${alertsN} alert${alertsN === 1 ? "" : "s"}, ${decisionsN} decision${decisionsN === 1 ? "" : "s"}.`,
+        AUDIT_KIND_LEGEND,
+      ],
+      emptyMessage: "No Agent Control history for this agent yet.",
       agent: {
         id: String(agent.id),
         name: String(agent.name),

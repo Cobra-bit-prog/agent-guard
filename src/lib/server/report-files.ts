@@ -153,7 +153,7 @@ export function buildXlsx(snapshot: AuditSnapshot): Uint8Array {
 </worksheet>`;
   const workbook = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-  <sheets><sheet name="Audit trail" sheetId="1" r:id="rId1"/></sheets>
+  <sheets><sheet name="${xmlEscape((snapshot.title || "Audit trail").slice(0, 31))}" sheetId="1" r:id="rId1"/></sheets>
 </workbook>`;
   const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
@@ -230,7 +230,7 @@ export function buildPdf(snapshot: AuditSnapshot): Uint8Array {
   const margin = 36;
   const lineH = 12;
   const header = `${snapshot.agent.name} · ${snapshot.agent.chain} · ${snapshot.agent.address}`;
-  const title = "Agent Control audit trail";
+  const title = snapshot.title || "Agent Control audit trail";
   const pages: string[] = [];
   let y = pageHeight - margin;
   let content = "";
@@ -251,6 +251,9 @@ export function buildPdf(snapshot: AuditSnapshot): Uint8Array {
   write(margin, header, 9);
   write(margin, `Generated ${formatTime(snapshot.generatedAt)}`, 8);
   write(margin, snapshot.disclaimer, 8);
+  for (const line of snapshot.summary ?? []) {
+    for (const part of wrap(line, 110)) write(margin, part, 8);
+  }
   y -= 4;
   write(
     margin,
@@ -272,7 +275,9 @@ export function buildPdf(snapshot: AuditSnapshot): Uint8Array {
       for (const part of wrap(`  ${row.detail}`, 110)) write(margin, part, 8);
     }
   }
-  if (!snapshot.rows.length) write(margin, "No Agent Control history for this agent yet.", 9);
+  if (!snapshot.rows.length) {
+    write(margin, snapshot.emptyMessage || "No Agent Control history for this agent yet.", 9);
+  }
   pushPage();
 
   const objects: string[] = [];

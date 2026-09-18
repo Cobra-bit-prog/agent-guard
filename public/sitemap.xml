@@ -49,6 +49,10 @@
     <changefreq>weekly</changefreq>
   </url>
   <url>
+    <loc>https://agent-control.net/spend-audit</loc>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
     <loc>https://agent-control.net/privacy</loc>
     <changefreq>monthly</changefreq>
   </url>

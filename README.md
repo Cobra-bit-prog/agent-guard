@@ -9,6 +9,7 @@ You set spend limits. Connect your agent so it asks before every send. Off-polic
 If the agent skips the check, Inbox cannot stop that send.
 
 - Product: [https://agent-control.net](https://agent-control.net)
+- Wallet Spend Audit ($49): [https://agent-control.net/spend-audit](https://agent-control.net/spend-audit)
 - Docs: [https://agent-control.net/docs](https://agent-control.net/docs)
 - Connect your agent: [https://agent-control.net/connect](https://agent-control.net/connect)
 - Connectors (Cursor Customize / MCPs, Grok Bot Plugins, Grok.com Custom): [CONNECTORS.md](./CONNECTORS.md) — [docs](https://agent-control.net/docs#connectors). Cursor marketplace plugin is `agent-control` (submit in progress; install from Plugins when listed).

@@ -99,8 +99,21 @@ function AuditPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Agent Audit</h1>
         <p className="text-sm text-muted">
           On-demand report of this agent’s Agent Control trail — checks, alerts, operator decisions,
-          and recorded transfers. Not a full chain replay. Generate, then download Excel, PDF, or
-          CSV.
+          and recorded transfers. Kind: check = the agent asked first; send = a recorded transfer;
+          alert = policy ping; decision = your Inbox choice. Not a full chain replay. Generate, then
+          download Excel, PDF, or CSV.
+        </p>
+        <p className="mt-2 text-sm text-muted">
+          Wallet not enrolled?{" "}
+          <a href="/spend-audit" className="font-medium text-navy hover:text-coral">
+            Wallet Spend Audit ($49)
+          </a>{" "}
+          — paste an address, pay USDC, get a lookback PDF. They ask before they pay. You keep the
+          keys.{" "}
+          <a href="/billing/pay?plan=starter" className="font-medium text-navy hover:text-coral">
+            Starter $29
+          </a>{" "}
+          is Approval Inbox and spend control.
         </p>
       </div>
 
