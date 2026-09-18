@@ -32,6 +32,13 @@ export {
   coversForSku,
   defaultSkuForKind,
 } from "./pricing.ts";
+export {
+  METER_BAZAAR_DESCRIPTION,
+  METER_BAZAAR_SERVICE_NAME,
+  meterBazaarResource,
+  meterBazaarExtensions,
+  meterBazaarKindFromSource,
+} from "./bazaar.ts";
 export { evaluateScan, type MeterChain, type ScanRisk } from "./scan.ts";
 export { evaluatePreflightSelf, utcDayKey } from "./preflight.ts";
 export {
@@ -54,7 +61,16 @@ export {
   METER_INVOICE_SOURCES,
   type MeterInvoiceSource,
 } from "./origin.ts";
-export { meterLookAccepts, meterPaymentAccepts, meterFundsAccepts, BASE_USDC, BASE_X402_NETWORK } from "./accepts.ts";
+export {
+  meterLookAccepts,
+  meterPaymentAccepts,
+  meterPaymentRequiredAccepts,
+  meterFundsAccepts,
+  BASE_USDC,
+  BASE_X402_NETWORK,
+  BASE_CAIP2,
+  SOLANA_CAIP2,
+} from "./accepts.ts";
 export { EVM_PAYOUT_ADDRESS, lockedEvmUsdcRecipient } from "../evm-pay.ts";
 export { getDefaultMeterStore, getSqlMeterStore, collectMeterSqlReport, ensureMeterSchema } from "./sql-store.ts";
 export { SCAN_SINK_FIXTURE, isListedSink } from "./denylist.ts";

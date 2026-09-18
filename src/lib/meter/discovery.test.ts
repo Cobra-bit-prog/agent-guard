@@ -21,6 +21,7 @@ import {
   meterOpenApi,
   x402WellKnown,
 } from "./discovery.ts";
+import { METER_BAZAAR_DESCRIPTION } from "./bazaar.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../..");
 const PAY_TO = "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR";
@@ -75,7 +76,12 @@ describe("Agent Meter well-known discovery", () => {
     assert.equal(body.accepts.length, 2);
     assert.equal(body.resources[0]?.url, `${PUBLIC_ORIGIN}/api/v1/meter/pass`);
     assert.equal(body.resources[0]?.method, "POST");
-    assert.match(body.resources[0]?.description ?? "", /402 looks_20 \$0\.20/);
+    assert.equal(body.resources[0]?.description, METER_BAZAAR_DESCRIPTION);
+    assert.ok((body.resources[0]?.description ?? "").length <= 500);
+    assert.equal(body.resources[0]?.extensions?.bazaar?.info?.input?.method, "POST");
+    assert.equal(body.resources[0]?.extensions?.bazaar?.info?.input?.bodyType, "json");
+    assert.equal(body.resources[1]?.url, `${PUBLIC_ORIGIN}/api/v1/meter/scan`);
+    assert.equal(body.resources[1]?.extensions?.bazaar?.info?.input?.method, "POST");
     assert.equal(body.docs, `${PUBLIC_ORIGIN}/docs#agent-meter`);
     assert.doesNotMatch(JSON.stringify(body), /facilitator/i);
     assert.doesNotMatch(JSON.stringify(body), /Hostile/);

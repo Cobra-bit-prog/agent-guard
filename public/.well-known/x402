@@ -48,12 +48,210 @@
     {
       "url": "https://agent-control.net/api/v1/meter/pass",
       "method": "POST",
-      "description": "Paid door. Empty body {} → HTTP 402 looks_20 $0.20 pack. sku look is $0.10. First 5 free. Then $0.10 USDC. Base USDC (EIP-3009 exact) or Solana USDC."
+      "mimeType": "application/json",
+      "description": "Can I pay this address? ok · new · warn · sink. First 5 free. Then $0.10 USDC per look. Packs: 20 looks $0.20 · 100-address $0.15 · stamp $0.05. Agents pay themselves. No inbox. Base USDC + Solana USDC.",
+      "extensions": {
+        "bazaar": {
+          "info": {
+            "input": {
+              "type": "http",
+              "method": "POST",
+              "bodyType": "json",
+              "body": {}
+            },
+            "output": {
+              "type": "json",
+              "example": {
+                "token": "agent-pass-token",
+                "invoice_id": "inv_example",
+                "status": "paid",
+                "header": "X-Agent-Pass",
+                "next": "Retry scan with X-Agent-Pass set to this token. We never take keys."
+              }
+            }
+          },
+          "schema": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {
+              "input": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "http"
+                  },
+                  "method": {
+                    "type": "string",
+                    "enum": [
+                      "POST",
+                      "PUT",
+                      "PATCH"
+                    ]
+                  },
+                  "bodyType": {
+                    "type": "string",
+                    "enum": [
+                      "json",
+                      "form-data",
+                      "text"
+                    ]
+                  },
+                  "body": {
+                    "type": "object",
+                    "properties": {
+                      "sku": {
+                        "type": "string",
+                        "enum": [
+                          "look",
+                          "looks_20",
+                          "addresses_100",
+                          "stamp_tx"
+                        ],
+                        "description": "Omit for looks_20 $0.20 pack. sku look is $0.10 one look."
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "type",
+                  "method",
+                  "bodyType",
+                  "body"
+                ],
+                "additionalProperties": false
+              },
+              "output": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string"
+                  },
+                  "example": {
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "type"
+                ]
+              }
+            },
+            "required": [
+              "input"
+            ]
+          }
+        }
+      }
     },
     {
       "url": "https://agent-control.net/api/v1/meter/scan",
       "method": "POST",
-      "description": "Can I pay this address? First 5 free. Then $0.10 USDC. Header X-Agent-Pass."
+      "mimeType": "application/json",
+      "description": "Can I pay this address? ok · new · warn · sink. First 5 free. Then $0.10 USDC per look. Packs: 20 looks $0.20 · 100-address $0.15 · stamp $0.05. Agents pay themselves. No inbox. Base USDC + Solana USDC.",
+      "extensions": {
+        "bazaar": {
+          "info": {
+            "input": {
+              "type": "http",
+              "method": "POST",
+              "bodyType": "json",
+              "body": {
+                "chain": "solana",
+                "address": "11111111111111111111111111111111"
+              }
+            },
+            "output": {
+              "type": "json",
+              "example": {
+                "question": "Can I pay this address?",
+                "risk": "ok",
+                "reason": "known_destination",
+                "chain": "solana",
+                "address": "11111111111111111111111111111111"
+              }
+            }
+          },
+          "schema": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {
+              "input": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "http"
+                  },
+                  "method": {
+                    "type": "string",
+                    "enum": [
+                      "POST",
+                      "PUT",
+                      "PATCH"
+                    ]
+                  },
+                  "bodyType": {
+                    "type": "string",
+                    "enum": [
+                      "json",
+                      "form-data",
+                      "text"
+                    ]
+                  },
+                  "body": {
+                    "type": "object",
+                    "properties": {
+                      "chain": {
+                        "type": "string",
+                        "enum": [
+                          "solana",
+                          "ethereum",
+                          "base"
+                        ],
+                        "description": "Chain of the destination address"
+                      },
+                      "address": {
+                        "type": "string",
+                        "description": "Destination address to look up"
+                      }
+                    },
+                    "required": [
+                      "chain",
+                      "address"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "type",
+                  "method",
+                  "bodyType",
+                  "body"
+                ],
+                "additionalProperties": false
+              },
+              "output": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string"
+                  },
+                  "example": {
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "type"
+                ]
+              }
+            },
+            "required": [
+              "input"
+            ]
+          }
+        }
+      }
     },
     {
       "url": "https://agent-control.net/api/v1/meter/pricing",
@@ -65,5 +263,5 @@
   "contact": "support@agent-control.net",
   "openapi": "https://agent-control.net/openapi-meter.json",
   "mcp": "https://agent-control.net/api/v1/mcp",
-  "updated": "2026-09-17T00:00:00Z"
+  "updated": "2026-09-18T00:00:00Z"
 }

@@ -8,6 +8,11 @@ import { SOLANA_PAYOUT_ADDRESS } from "../solana-pay.ts";
 import { EVM_PAYOUT_ADDRESS } from "../evm-pay.ts";
 import { meterLookAccepts } from "./accepts.ts";
 import {
+  METER_BAZAAR_DESCRIPTION,
+  METER_BAZAAR_MIME,
+  meterBazaarExtensions,
+} from "./bazaar.ts";
+import {
   LOOK_QUESTION,
   LOOK_RISKS,
   METER_FREE_LOOKS,
@@ -53,12 +58,16 @@ export function x402WellKnown() {
       {
         url: PASS_URL,
         method: "POST",
-        description: `Paid door. Empty body {} → HTTP 402 ${METER_PAID_SKU} $0.20 pack. sku look is $${METER_LOOK_USD_LABEL}. ${METER_FREE_THEN_LOOK} Base USDC (EIP-3009 exact) or Solana USDC.`,
+        mimeType: METER_BAZAAR_MIME,
+        description: METER_BAZAAR_DESCRIPTION,
+        extensions: meterBazaarExtensions("pass"),
       },
       {
         url: SCAN_URL,
         method: "POST",
-        description: `${LOOK_QUESTION} ${METER_FREE_THEN_LOOK} Header X-Agent-Pass.`,
+        mimeType: METER_BAZAAR_MIME,
+        description: METER_BAZAAR_DESCRIPTION,
+        extensions: meterBazaarExtensions("scan"),
       },
       {
         url: PRICING_URL,
@@ -70,7 +79,7 @@ export function x402WellKnown() {
     contact: "support@agent-control.net",
     openapi: `${PUBLIC_ORIGIN}${OPENAPI_METER_PATH}`,
     mcp: MCP_URL,
-    updated: "2026-09-17T00:00:00Z",
+    updated: "2026-09-18T00:00:00Z",
   };
 }
 
