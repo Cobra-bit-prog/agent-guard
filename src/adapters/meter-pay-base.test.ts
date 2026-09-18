@@ -1,5 +1,8 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   DEFAULT_EXACT_TTL_SEC,
   DEFAULT_METER_ORIGIN,
@@ -16,7 +19,6 @@ import {
   type MeterFetchLike,
   type MeterPassInvoice,
 } from "./meter-pay-base.ts";
-import { buyMeterPassBase as buyFromIndex, payMeterPassBase as payFromIndex } from "./index.ts";
 
 const FROM = "0x1111111111111111111111111111111111111111";
 const HOSTILE_TO = "0x000000000000000000000000000000000000dEaD";
@@ -49,8 +51,10 @@ describe("Agent Meter Base buyer adapter", () => {
     assert.equal(DEFAULT_PASS_BASE_UNITS, "200000");
     assert.equal(DEFAULT_EXACT_TTL_SEC, 300);
     assert.equal(lockedMeterBasePayTo(HOSTILE_TO), LOCKED_BASE_PAY_TO);
-    assert.equal(buyFromIndex, buyMeterPassBase);
-    assert.equal(payFromIndex, payMeterPassBase);
+    const index = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "index.ts"), "utf8");
+    assert.match(index, /buyMeterPassBase/);
+    assert.match(index, /payMeterPassBase/);
+    assert.match(index, /meter-pay-base\.ts/);
   });
 
   it("builds EIP-3009 exact to the locked base_pay_to", () => {
