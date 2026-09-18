@@ -64,9 +64,14 @@ describe("Agent Meter well-known discovery", () => {
     assert.equal(body.x402Version, 2);
     assert.equal(body.kind, "resource-server");
     assert.equal(body.name, "Agent Meter");
-    assert.equal(METER_DISCOVERY_LEAD, "Can I pay this address? First 5 free. Then $0.10. No inbox.");
+    assert.equal(
+      METER_DISCOVERY_LEAD,
+      "Can I pay this address? First 5 free. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot. No inbox.",
+    );
     assert.match(body.description, /Can I pay this address\?/);
-    assert.match(body.description, /First 5 free\. Then \$0\.10/);
+    assert.match(body.description, /First 5 free/);
+    assert.match(body.description, /looks_20 pack \(\$0\.20\)/);
+    assert.match(body.description, /look \$0\.10 is optional one-shot/);
     assert.match(body.description, /No inbox/);
     assert.match(body.description, /Human App is separate/);
     assert.match(body.description, /Base USDC \(EIP-3009 exact\)/);
@@ -116,7 +121,9 @@ describe("Agent Meter well-known discovery", () => {
     assert.equal(mcpBody.remotes[0]?.type, "streamable-http");
     assert.equal(mcpBody.remotes[0]?.url, `${PUBLIC_ORIGIN}/api/v1/mcp`);
     assert.match(mcpBody.description, /Can I pay this address\?/);
-    assert.match(mcpBody.description, /First 5 free\. Then \$0\.10 USDC/);
+    assert.match(mcpBody.description, /First 5 free/);
+    assert.match(mcpBody.description, /looks_20 pack \(\$0\.20\)/);
+    assert.match(mcpBody.description, /look \$0\.10 is optional one-shot/);
     assert.match(mcpBody.description, /No inbox/);
     assert.match(mcpBody.description, /Human App is separate \(\$29\)/);
     assert.match(mcpBody.products.meter, /Bearer empty/);
@@ -172,15 +179,17 @@ describe("Meter-first registry-facing blurbs", () => {
       assert.ok(look >= 0, "missing look question");
       assert.match(blob, /First 5 free/);
       assert.match(blob, /\$0\.10/);
+      assert.match(blob, /looks_20 pack \(\$0\.20\)/);
+      assert.match(blob, /optional one-shot/);
       assert.match(blob, /No inbox/i);
       if (bearer >= 0) {
         assert.ok(look < bearer, "Meter look must lead Bearer");
       }
     }
 
-    assert.match(tools, /Can I pay this address\? First 5 free\. Then \$0\.10/);
-    assert.match(handle, /Can I pay this address\? First 5 free\. Then \$0\.10\. No inbox\./);
-    const instructionsLead = handle.indexOf("Can I pay this address?");
+    assert.match(tools, /METER_AGENT_LEAD/);
+    assert.match(handle, /METER_AGENT_LEAD/);
+    const instructionsLead = handle.indexOf("METER_AGENT_LEAD");
     const humanLead = handle.indexOf("Human App (separate):");
     assert.ok(instructionsLead >= 0 && humanLead > instructionsLead);
   });

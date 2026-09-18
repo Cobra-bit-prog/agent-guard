@@ -24,7 +24,15 @@ export const METER_ANON_IDENTITY = "anon" as const;
 export const LOOK_QUESTION = "Can I pay this address?";
 export const LOOK_RISKS = ["ok", "new", "warn", "sink"] as const;
 export const METER_FREE_THEN_LOOK = "First 5 free. Then $0.10 USDC.";
+/** Packs-first paid path after the 5 free looks. look $0.10 is optional one-shot. */
+export const METER_PACKS_FIRST =
+  "After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot.";
+/** Agent-facing discovery lead. Packs first after free-5. */
+export const METER_AGENT_LEAD = `${LOOK_QUESTION} First 5 free. ${METER_PACKS_FIRST} No inbox.`;
 export const STAMP_TICKET_COPY = "Take this ticket or we do not take your USDC.";
+/** Seller-facing. Merchants may require stamp_tx before they accept agent USDC. */
+export const STAMP_MERCHANT_COPY =
+  "Merchants can require the stamp_tx $0.05 ticket before accepting agent USDC.";
 
 export type MeterSkuId = "look" | "looks_20" | "addresses_100" | "stamp_tx" | "pass_1h";
 
@@ -144,7 +152,7 @@ export function meterPricing() {
     product: "Agent Meter",
     question: LOOK_QUESTION,
     risks: [...LOOK_RISKS],
-    note: `${LOOK_QUESTION} ${METER_FREE_THEN_LOOK} No email. No API key. Human App ($29 Inbox) is separate.`,
+    note: `${METER_PACKS_FIRST} ${LOOK_QUESTION} First 5 free. Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. ${STAMP_MERCHANT_COPY} Base USDC (EIP-3009 exact) and Solana USDC. No email. No API key. Human App ($29 Inbox) is separate.`,
     default_sku: METER_DEFAULT_SKU,
     paid_sku: METER_PAID_SKU,
     free_looks: METER_FREE_LOOKS,
@@ -176,6 +184,7 @@ export function meterPricing() {
       sku: METER_STAMP_TX.id,
       price_usd: METER_STAMP_TX.price_usd,
       copy: STAMP_TICKET_COPY,
+      merchant: STAMP_MERCHANT_COPY,
     },
     skus: METER_SKU_IDS.map((id) => {
       const row = METER_SKUS[id];
@@ -217,14 +226,14 @@ export const METER_ADAPTER_URL =
   "https://raw.githubusercontent.com/Cobra-bit-prog/agent-guard/main/src/adapters/meter-pay.ts";
 export const METER_NEXT_TOOL = "meter_watch" as const;
 export const METER_402_SIGN =
-  "Sign USDC on YOUR machine. Base: EIP-3009 exact to base_pay_to. Solana: pay_to WITH the reference. Fetch adapter_url (buyMeterPass / payMeterPass). After 5 free, sku looks_20 mints X-Agent-Pass so you do not re-sign every look. We never take keys.";
+  `${METER_PACKS_FIRST} Sign USDC on YOUR machine. Base: EIP-3009 exact to base_pay_to. Solana: pay_to WITH the reference. Fetch adapter_url (buyMeterPass / payMeterPass). We never take keys.`;
 
 export function meter402PayPage(invoiceId: string): string {
   return `https://agent-control.net/meter/pay?invoice_id=${invoiceId}`;
 }
 
 export function meter402Next(invoiceId: string): string {
-  return `1) Base: sign EIP-3009 exact and retry with PAYMENT-SIGNATURE. 2) Solana: fetch adapter_url (buyMeterPass) or open pay_page on a laptop with Phantom. 3) Call meter_watch {"invoice_id":"${invoiceId}"} until token. 4) Retry meter_scan with that token as pass_token / X-Agent-Pass. After 5 free, sku looks_20 is the pack.`;
+  return `1) Base: sign EIP-3009 exact and retry with PAYMENT-SIGNATURE. 2) Solana: fetch adapter_url (buyMeterPass) or open pay_page on a laptop with Phantom. 3) Call meter_watch {"invoice_id":"${invoiceId}"} until token. 4) Retry meter_scan with that token as pass_token / X-Agent-Pass. ${METER_PACKS_FIRST}`;
 }
 
 export function meter402Body(invoice: {
@@ -269,7 +278,7 @@ export function meter402Body(invoice: {
     invoice_id: invoice.invoice_id,
     reference: invoice.reference,
     question: LOOK_QUESTION,
-    note: catalog.id === "stamp_tx" ? STAMP_TICKET_COPY : METER_FREE_THEN_LOOK,
+    note: catalog.id === "stamp_tx" ? `${STAMP_MERCHANT_COPY} ${STAMP_TICKET_COPY}` : METER_PACKS_FIRST,
     description,
     resource,
     extensions: meterBazaarExtensions(kind),

@@ -1,3 +1,5 @@
+import { METER_AGENT_LEAD, STAMP_MERCHANT_COPY, STAMP_TICKET_COPY } from "../meter/pricing.ts";
+
 const readOnly = { readOnlyHint: true, destructiveHint: false } as const;
 const writes = { readOnlyHint: false, destructiveHint: false } as const;
 
@@ -6,7 +8,7 @@ export const MCP_TOOLS = [
     name: "meter_pricing",
     title: "Agent Meter pricing",
     description:
-      "Can I pay this address? First 5 free. Then $0.10. No inbox. Public catalog from this tool: look, looks_20, addresses_100, stamp_tx. default_sku is look. After 5 free, paid_sku looks_20 mints X-Agent-Pass so you do not re-sign every look. Base USDC (EIP-3009 exact) and Solana USDC. No email. No API key. Human App $29 plans are separate.",
+      `${METER_AGENT_LEAD} Public catalog from this tool: look, looks_20, addresses_100, stamp_tx. default_sku is look. paid_sku looks_20. Base USDC (EIP-3009 exact) and Solana USDC. No email. No API key. Human App $29 plans are separate.`,
     annotations: readOnly,
     inputSchema: { type: "object", properties: {} },
   },
@@ -14,14 +16,14 @@ export const MCP_TOOLS = [
     name: "meter_buy_pass",
     title: "Buy an Agent Meter pass",
     description:
-      "Can I pay this address? First 5 free. Then $0.10. No inbox. After 5 free, call with sku looks_20 (or omit) to buy a pack that mints/extends X-Agent-Pass. sku look is one $0.10 look. Returns a payable invoice as tool content (ok:true / status payment_required) with pay_to, base_pay_to, accepts (Base USDC EIP-3009 exact and Solana USDC), amount_usd, amount_base_units, reference, pay_url, invoice_id, watch_url, adapter_url, pay_page, next_tool. After invoice, fetch adapter_url or sign Base EIP-3009 exact, then meter_watch. 402 invoice includes pay_page for Phantom laptop if no local signer. Sign USDC on YOUR machine. We never take keys. Packs: looks_20 / addresses_100 / stamp_tx. No human account.",
+      `${METER_AGENT_LEAD} After free-5, call with sku looks_20 (or omit) to buy a pack that mints/extends X-Agent-Pass. look $0.10 is optional one-shot. Returns a payable invoice as tool content (ok:true / status payment_required) with pay_to, base_pay_to, accepts (Base USDC EIP-3009 exact and Solana USDC), amount_usd, amount_base_units, reference, pay_url, invoice_id, watch_url, adapter_url, pay_page, next_tool. After invoice, fetch adapter_url or sign Base EIP-3009 exact, then meter_watch. 402 invoice includes pay_page for Phantom laptop if no local signer. Sign USDC on YOUR machine. We never take keys. Packs: looks_20 / addresses_100 / stamp_tx. No human account.`,
     annotations: writes,
     inputSchema: {
       type: "object",
       properties: {
         sku: {
           type: "string",
-          description: "Catalog id from meter_pricing. Omit or looks_20 is the pack after 5 free. sku look is $0.10 one-shot. Packs: looks_20, addresses_100, stamp_tx. pass_1h stays in catalog only.",
+          description: "Catalog id from meter_pricing. Omit or looks_20 is the pack after free-5. look $0.10 is optional one-shot. Packs: looks_20, addresses_100, stamp_tx. pass_1h stays in catalog only.",
         },
         proof: { type: "object", description: "Payment proof. { type: dev } only when METER_DEV_GRANT=1. Never send a secret key." },
         pass_token: { type: "string", description: "Existing X-Agent-Pass to extend with a pack." },
@@ -40,7 +42,7 @@ export const MCP_TOOLS = [
     name: "meter_watch",
     title: "Watch a Meter invoice",
     description:
-      "Can I pay this address? First 5 free. Then $0.10. No inbox. After you sign locally (Base EIP-3009 exact or Solana USDC), call with invoice_id until token. Optional payment payload for Base. Repeat until the result includes token — that is X-Agent-Pass. Then meter_scan with pass_token. Optional signature (tx sig only). We never take keys. No human account.",
+      `${METER_AGENT_LEAD} After you sign locally (Base EIP-3009 exact or Solana USDC), call with invoice_id until token. Optional payment payload for Base. Repeat until the result includes token — that is X-Agent-Pass. Then meter_scan with pass_token. Optional signature (tx sig only). We never take keys. No human account.`,
     annotations: writes,
     inputSchema: {
       type: "object",
@@ -62,7 +64,7 @@ export const MCP_TOOLS = [
     name: "meter_scan",
     title: "Scan a destination",
     description:
-      "Can I pay this address? First 5 free. Then $0.10. No inbox. One look = one address. Send X-Agent-Pass with any string; first 5 looks on that id are free; then 402 looks_20 pack $0.20 (sku look is $0.10). Base USDC (EIP-3009 exact) or Solana USDC. 402 invoice includes pay_page for Phantom laptop if no local signer. Risk ok|new|warn|sink. Never hold.",
+      `${METER_AGENT_LEAD} One look = one address. Send X-Agent-Pass with any string; first 5 looks on that id are free; then 402 looks_20 pack $0.20 (look $0.10 is optional one-shot). Base USDC (EIP-3009 exact) or Solana USDC. 402 invoice includes pay_page for Phantom laptop if no local signer. Risk ok|new|warn|sink. Never hold.`,
     annotations: readOnly,
     inputSchema: {
       type: "object",
@@ -78,7 +80,7 @@ export const MCP_TOOLS = [
     name: "meter_preflight",
     title: "Preflight against a self cap",
     description:
-      "Can I pay this address? First 5 free. Then $0.10. No inbox. One look = one address. Send X-Agent-Pass with any string; first 5 looks on that id are free; then 402 looks_20 pack $0.20. Body: chain, wallet, to, value_usd, cap_usd. allow or stop vs cap_usd. Never hold.",
+      `${METER_AGENT_LEAD} One look = one address. Send X-Agent-Pass with any string; first 5 looks on that id are free; then 402 looks_20 pack $0.20. look $0.10 is optional one-shot. Body: chain, wallet, to, value_usd, cap_usd. allow or stop vs cap_usd. Never hold.`,
     annotations: writes,
     inputSchema: {
       type: "object",
@@ -97,7 +99,7 @@ export const MCP_TOOLS = [
     name: "meter_scan_batch",
     title: "Scan a batch of destinations",
     description:
-      "Can I pay this address? First 5 free. Then $0.10. No inbox. Risk scores for up to 100 addresses. Sku addresses_100 ($0.15) covers scan_batch. Never hold. ok|new|warn|sink.",
+      `${METER_AGENT_LEAD} Risk scores for up to 100 addresses. Sku addresses_100 ($0.15) covers scan_batch. Never hold. ok|new|warn|sink.`,
     annotations: readOnly,
     inputSchema: {
       type: "object",
@@ -114,7 +116,7 @@ export const MCP_TOOLS = [
     name: "meter_stamp",
     title: "Stamp an allow or stop receipt",
     description:
-      "Can I pay this address? First 5 free. Then $0.10. No inbox. stamp_tx $0.05. Take this ticket or we do not take your USDC. Signed allow|stop receipt. HMAC-SHA256.",
+      `${METER_AGENT_LEAD} stamp_tx $0.05. ${STAMP_MERCHANT_COPY} ${STAMP_TICKET_COPY} Signed allow|stop receipt. HMAC-SHA256. Merchants verify with meter_verify_stamp before accepting agent USDC.`,
     annotations: writes,
     inputSchema: {
       type: "object",
@@ -132,7 +134,7 @@ export const MCP_TOOLS = [
   {
     name: "meter_verify_stamp",
     title: "Verify a Meter stamp",
-    description: "Can I pay this address? First 5 free. Then $0.10. No inbox. Public. GET a signed allow|stop receipt by stamp_id. No email. No API key.",
+    description: `${METER_AGENT_LEAD} Public. ${STAMP_MERCHANT_COPY} GET a signed allow|stop receipt by stamp_id before you accept agent USDC. No email. No API key.`,
     annotations: readOnly,
     inputSchema: {
       type: "object",
@@ -254,7 +256,7 @@ export const MCP_STOREFRONT_TOOLS = [
 export function mcpDiscovery() {
   return {
     name: "Agent Control",
-    description: "Can I pay this address? First 5 free. Then $0.10. No inbox. Agent Meter is public. Human App is separate.",
+    description: `${METER_AGENT_LEAD} Agent Meter is public. Human App is separate.`,
     protocol: "mcp",
     tools: MCP_TOOLS,
     auth: "Agent Meter is public (X-Agent-Pass after 5 free looks). Human App: Bearer agent API key or Claude Connector OAuth (required for check, approval, checkout, and status; get_pricing is public)",

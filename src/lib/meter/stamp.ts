@@ -1,5 +1,5 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
-import { STAMP_TICKET_COPY } from "./pricing.ts";
+import { STAMP_MERCHANT_COPY, STAMP_TICKET_COPY } from "./pricing.ts";
 
 const globalRef = globalThis as typeof globalThis & { __meterStampSecret__?: string };
 
@@ -77,6 +77,7 @@ export function publicStampView(
   alg: "HMAC-SHA256";
   verified: boolean;
   ticket: typeof STAMP_TICKET_COPY;
+  merchant: typeof STAMP_MERCHANT_COPY;
   price_usd: 0.05;
 } {
   return {
@@ -85,6 +86,7 @@ export function publicStampView(
     alg: "HMAC-SHA256",
     verified: stampHmacValid(payload, hmac),
     ticket: STAMP_TICKET_COPY,
+    merchant: STAMP_MERCHANT_COPY,
     price_usd: 0.05,
   };
 }

@@ -561,12 +561,15 @@ describe("meter http", () => {
     assert.equal(res.status, 200);
     const body = (await res.json()) as {
       product: string;
+      note: string;
       pass: { price_usd: number };
       default_sku: string;
       paid_sku: string;
       funds: { pay_to: string; base_pay_to: string; accepts: { chain: string; pay_to: string }[] };
     };
     assert.equal(body.product, "Agent Meter");
+    assert.match(body.note, /After free-5, buy looks_20 pack \(\$0\.20\) → X-Agent-Pass/);
+    assert.match(body.note, /look \$0\.10 is optional one-shot/);
     assert.equal(body.pass.price_usd, 0.10);
     assert.equal(body.default_sku, "look");
     assert.equal(body.paid_sku, METER_PAID_SKU);
@@ -620,6 +623,7 @@ describe("meter http", () => {
       next_tool: string;
       sign: string;
       next: string;
+      note: string;
       error: string;
       http: number;
     };
@@ -639,11 +643,15 @@ describe("meter http", () => {
     assert.equal(body.next_tool, "meter_watch");
     assert.equal(body.error, "payment_required");
     assert.equal(body.http, 402);
+    assert.match(body.note, /After free-5, buy looks_20 pack \(\$0\.20\) → X-Agent-Pass/);
+    assert.match(body.note, /look \$0\.10 is optional one-shot/);
     assert.match(body.pay_url, new RegExp(`reference=${body.reference}`));
     assert.match(body.sign, /We never take keys/);
     assert.match(body.sign, /buyMeterPass/);
+    assert.match(body.sign, /looks_20 pack \(\$0\.20\)/);
     assert.match(body.next, new RegExp(`"invoice_id":"${body.invoice_id}"`));
     assert.match(body.next, /meter_watch/);
+    assert.match(body.next, /looks_20 pack \(\$0\.20\)/);
     assert.ok(body.invoice_id);
   });
 
@@ -706,7 +714,7 @@ describe("extra meter skus", () => {
       look: { price_usd: number };
       pass: { id: string; price_usd: number };
       packs: { looks_20: { price_usd: number }; addresses_100: { price_usd: number } };
-      ticket: { price_usd: number };
+      ticket: { price_usd: number; copy?: string; merchant?: string };
       skus: { id: string; price_usd: number }[];
       funds: { pay_to: string; base_pay_to: string; accepts: { chain: string }[] };
       free_looks: number;
@@ -729,6 +737,7 @@ describe("extra meter skus", () => {
     assert.equal(body.packs.looks_20.price_usd, 0.2);
     assert.equal(body.packs.addresses_100.price_usd, 0.15);
     assert.equal(body.ticket.price_usd, 0.05);
+    assert.match(String(body.ticket.merchant ?? ""), /Merchants can require the stamp_tx \$0\.05 ticket/);
     assert.equal(body.funds.pay_to, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
     assert.equal(body.funds.base_pay_to, EVM_PAYOUT_ADDRESS);
     assert.equal(body.funds.accepts.length, 2);
@@ -1617,9 +1626,11 @@ describe("paying agents A–H", () => {
       store,
     );
     assert.equal(quote.status, 402);
-    const quoteBody = (await quote.json()) as { sku: string; amount_usd: number; reference: string };
+    const quoteBody = (await quote.json()) as { sku: string; amount_usd: number; reference: string; note: string };
     assert.equal(quoteBody.sku, "stamp_tx");
     assert.equal(quoteBody.amount_usd, 0.05);
+    assert.match(quoteBody.note, /Merchants can require the stamp_tx \$0\.05 ticket before accepting agent USDC/);
+    assert.match(quoteBody.note, /Take this ticket or we do not take your USDC/);
     assertMeter402IndexHeaders(quote, quoteBody.reference);
 
     const issued = await handleMeterRequest(
@@ -1634,8 +1645,17 @@ describe("paying agents A–H", () => {
       store,
     );
     assert.equal(stamp.status, 200);
-    const body = (await stamp.json()) as { ticket: string; price_usd: number; verified: boolean };
+    const body = (await stamp.json()) as {
+      ticket: string;
+      merchant: string;
+      price_usd: number;
+      verified: boolean;
+    };
     assert.equal(body.ticket, "Take this ticket or we do not take your USDC.");
+    assert.equal(
+      body.merchant,
+      "Merchants can require the stamp_tx $0.05 ticket before accepting agent USDC.",
+    );
     assert.equal(body.price_usd, 0.05);
     assert.equal(body.verified, true);
   });

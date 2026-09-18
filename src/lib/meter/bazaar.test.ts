@@ -18,7 +18,7 @@ describe("CDP Bazaar discovery metadata", () => {
   it("keeps the short description within the 500-character facilitator cap", () => {
     assert.equal(
       METER_BAZAAR_DESCRIPTION,
-      "Can I pay this address? ok · new · warn · sink. First 5 free. Then $0.10 USDC per look. Packs: 20 looks $0.20 · 100-address $0.15 · stamp $0.05. Agents pay themselves. No inbox. Base USDC + Solana USDC.",
+      "Can I pay this address? ok · new · warn · sink. First 5 free. Then looks_20 $0.20 → X-Agent-Pass; look $0.10 optional. Packs: 20/$0.20 · 100-addr $0.15 · stamp $0.05. Agents pay themselves. No inbox. Base + Solana USDC.",
     );
     assert.ok(METER_BAZAAR_DESCRIPTION.length > 0);
     assert.ok(METER_BAZAAR_DESCRIPTION.length <= 500);
@@ -26,6 +26,9 @@ describe("CDP Bazaar discovery metadata", () => {
     assert.equal(METER_BAZAAR_SERVICE_NAME.length <= 32, true);
     assert.equal(METER_BAZAAR_TAGS.length <= 5, true);
     assert.match(METER_BAZAAR_DESCRIPTION, /Can I pay this address\?/);
+    assert.match(METER_BAZAAR_DESCRIPTION, /looks_20 \$0\.20 → X-Agent-Pass/);
+    assert.match(METER_BAZAAR_DESCRIPTION, /look \$0\.10 optional/);
+    assert.doesNotMatch(METER_BAZAAR_DESCRIPTION, /Then \$0\.10 USDC per look/);
     assert.match(METER_BAZAAR_DESCRIPTION, /No inbox/);
     assert.match(METER_BAZAAR_DESCRIPTION, /Agents pay themselves/);
   });

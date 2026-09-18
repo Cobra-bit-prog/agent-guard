@@ -8,7 +8,7 @@ export const METER_BAZAAR_ORIGIN = "https://agent-control.net";
 
 /** CDP Facilitator rejects resource.description over 500 characters. */
 export const METER_BAZAAR_DESCRIPTION =
-  "Can I pay this address? ok · new · warn · sink. First 5 free. Then $0.10 USDC per look. Packs: 20 looks $0.20 · 100-address $0.15 · stamp $0.05. Agents pay themselves. No inbox. Base USDC + Solana USDC.";
+  "Can I pay this address? ok · new · warn · sink. First 5 free. Then looks_20 $0.20 → X-Agent-Pass; look $0.10 optional. Packs: 20/$0.20 · 100-addr $0.15 · stamp $0.05. Agents pay themselves. No inbox. Base + Solana USDC.";
 
 export const METER_BAZAAR_SERVICE_NAME = "Agent Meter";
 export const METER_BAZAAR_MIME = "application/json";
@@ -117,7 +117,7 @@ const PASS_BODY_SCHEMA: JsonSchema = {
     sku: {
       type: "string",
       enum: [...SKU_ENUM],
-      description: "Omit for looks_20 $0.20 pack. sku look is $0.10 one look.",
+      description: "Omit for looks_20 $0.20 pack. look $0.10 is optional one-shot.",
     },
   },
   additionalProperties: false,

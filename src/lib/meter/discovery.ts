@@ -15,10 +15,11 @@ import {
 import {
   LOOK_QUESTION,
   LOOK_RISKS,
+  METER_AGENT_LEAD,
   METER_FREE_LOOKS,
-  METER_FREE_THEN_LOOK,
   METER_LOOK_SKU,
   METER_LOOK_USD_LABEL,
+  METER_PACKS_FIRST,
   METER_PAID_SKU,
 } from "./pricing.ts";
 
@@ -29,7 +30,7 @@ export const AGENT_JSON_PATH = "/.well-known/agent.json";
 export const MCP_WELL_KNOWN_PATH = "/.well-known/mcp.json";
 export const OPENAPI_METER_PATH = "/openapi-meter.json";
 
-export const METER_DISCOVERY_LEAD = `${LOOK_QUESTION} First 5 free. Then $0.10. No inbox.`;
+export const METER_DISCOVERY_LEAD = METER_AGENT_LEAD;
 
 export const WELL_KNOWN_CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -52,7 +53,7 @@ export function x402WellKnown() {
     x402Version: 2,
     kind: "resource-server",
     name: "Agent Meter",
-    description: `${METER_DISCOVERY_LEAD} Base USDC (EIP-3009 exact) and Solana USDC. After 5 free, packs mint X-Agent-Pass. Human App is separate.`,
+    description: `${METER_DISCOVERY_LEAD} Base USDC (EIP-3009 exact) and Solana USDC. Human App is separate.`,
     accepts: meterLookAccepts(),
     resources: [
       {
@@ -72,14 +73,14 @@ export function x402WellKnown() {
       {
         url: PRICING_URL,
         method: "GET",
-        description: `Public catalog. Default sku ${METER_LOOK_SKU} $${METER_LOOK_USD_LABEL}. Paid sku ${METER_PAID_SKU} $0.20.`,
+        description: `Public catalog. ${METER_PACKS_FIRST} Default sku ${METER_LOOK_SKU} $${METER_LOOK_USD_LABEL}. Paid sku ${METER_PAID_SKU} $0.20.`,
       },
     ],
     docs: DOCS_URL,
     contact: "support@agent-control.net",
     openapi: `${PUBLIC_ORIGIN}${OPENAPI_METER_PATH}`,
     mcp: MCP_URL,
-    updated: "2026-09-18T00:00:00Z",
+    updated: "2026-09-19T00:00:00Z",
   };
 }
 
@@ -88,7 +89,7 @@ export function mcpWellKnown() {
   return {
     name: "net.agent-control/agent-control",
     title: "Agent Control",
-    description: `${LOOK_QUESTION} ${METER_FREE_THEN_LOOK} No inbox. Agent Meter is public (Bearer empty). Human App is separate ($29).`,
+    description: `${METER_AGENT_LEAD} Agent Meter is public (Bearer empty). Human App is separate ($29).`,
     version: "1.0.0",
     mcp: MCP_URL,
     transport: "streamable-http" as const,
@@ -99,7 +100,7 @@ export function mcpWellKnown() {
       },
     ],
     products: {
-      meter: `${LOOK_QUESTION} ${METER_FREE_THEN_LOOK} No inbox. Bearer empty for Meter tools.`,
+      meter: `${METER_AGENT_LEAD} Bearer empty for Meter tools.`,
       human_app:
         "Spend limits and Approval Inbox. Humans pay $29. Agents use a Bearer API key.",
     },
@@ -135,7 +136,7 @@ export function agentCard() {
       {
         id: "meter-look",
         name: LOOK_QUESTION,
-        description: `${METER_FREE_THEN_LOOK} Risk ${LOOK_RISKS.join("|")}. Packs mint X-Agent-Pass. Base USDC (EIP-3009 exact) and Solana USDC. No inbox. No email. No API key.`,
+        description: `First 5 free. ${METER_PACKS_FIRST} Risk ${LOOK_RISKS.join("|")}. Base USDC (EIP-3009 exact) and Solana USDC. No inbox. No email. No API key.`,
         tags: ["meter", "x402", "solana", "base", "usdc", "look"],
         examples: [`POST ${PASS_URL} {}`, `POST ${SCAN_URL}`],
       },
@@ -163,7 +164,7 @@ export function meterOpenApi() {
       "/api/v1/meter/pricing": {
         get: {
           summary: "Public Meter catalog",
-          description: `${LOOK_QUESTION} ${METER_FREE_THEN_LOOK} Default sku look. Paid sku looks_20.`,
+          description: `${LOOK_QUESTION} First 5 free. ${METER_PACKS_FIRST} Default sku look. Paid sku looks_20.`,
           responses: {
             "200": { description: "Catalog. default_sku is look. paid_sku is looks_20. funds.pay_to is locked." },
           },
@@ -172,7 +173,7 @@ export function meterOpenApi() {
       "/api/v1/meter/pass": {
         post: {
           summary: "Look door",
-          description: `Empty body {} invoices looks_20 $0.20 pack. sku look is $${METER_LOOK_USD_LABEL}. No release without payment. First ${METER_FREE_LOOKS} looks on an X-Agent-Pass id are free.`,
+          description: `Empty body {} invoices looks_20 $0.20 pack. ${METER_PACKS_FIRST} No release without payment. First ${METER_FREE_LOOKS} looks on an X-Agent-Pass id are free.`,
           requestBody: {
             required: false,
             content: {
@@ -188,7 +189,7 @@ export function meterOpenApi() {
           },
           responses: {
             "402": {
-              description: `Pay Base USDC (EIP-3009 exact) or Solana USDC to the locked payTo. After 5 free, looks_20 pack mints X-Agent-Pass.`,
+              description: `Pay Base USDC (EIP-3009 exact) or Solana USDC to the locked payTo. ${METER_PACKS_FIRST}`,
             },
             "200": { description: "Pass issued after proof or a prior payment watch." },
           },
@@ -197,7 +198,7 @@ export function meterOpenApi() {
       "/api/v1/meter/scan": {
         post: {
           summary: LOOK_QUESTION,
-          description: `${METER_FREE_THEN_LOOK} Header X-Agent-Pass.`,
+          description: `First 5 free. ${METER_PACKS_FIRST} Header X-Agent-Pass.`,
           parameters: [
             {
               name: "X-Agent-Pass",
@@ -223,7 +224,7 @@ export function meterOpenApi() {
           },
           responses: {
             "200": { description: "risk ok|new|warn|sink. Never hold." },
-            "402": { description: "Look door after free looks are used." },
+            "402": { description: `${METER_PACKS_FIRST}` },
           },
         },
       },

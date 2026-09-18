@@ -295,7 +295,7 @@ function invoiceFromBody(body: Record<string, unknown>): MeterPassInvoice {
 
 /**
  * End-to-end: invoice → agent wallet pays → watch until X-Agent-Pass token.
- * Current door after 5 free is looks_20 pack (amounts from GET /api/v1/meter/pricing). sku look is $0.10. Not pass_1h.
+ * After free-5, omit sku to buy looks_20 pack (amounts from GET /api/v1/meter/pricing) → X-Agent-Pass. look $0.10 is optional one-shot. Not pass_1h.
  */
 export async function buyMeterPass(opts: BuyMeterPassOptions): Promise<BuyMeterPassResult> {
   assertPayerIsNotReceiveWallet(opts.keypair.publicKey);
