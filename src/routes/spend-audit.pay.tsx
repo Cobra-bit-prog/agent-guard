@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { SkyShell } from "@/components/marketing/chrome";
 import { SpendAuditPayCard } from "@/components/spend-audit-pay-card";
 import { parseMeterPaySearch, type MeterPaySearch } from "@/lib/meter-pay";
 import { SPEND_AUDIT_HEADLINE } from "@/lib/spend-audit";
@@ -27,10 +26,8 @@ export const Route = createFileRoute("/spend-audit/pay")({
 function SpendAuditPayPage() {
   const search = Route.useSearch();
   return (
-    <SkyShell>
-      <main className="mx-auto max-w-lg px-6 pb-20 pt-8 md:px-10">
-        <SpendAuditPayCard search={search} />
-      </main>
-    </SkyShell>
+    <main className="mx-auto max-w-lg px-6 pb-20 pt-8 md:px-10">
+      <SpendAuditPayCard search={search} />
+    </main>
   );
 }

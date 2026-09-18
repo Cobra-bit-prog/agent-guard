@@ -137,6 +137,28 @@ describe("spend lookback findings", () => {
     assert.equal(spendAuditFileStem(SOL, snapshot.generatedAt).startsWith("wallet-spend-audit-"), true);
   });
 
+  it("does not flag zero-value days as over-cap", () => {
+    const snapshot = analyzeSpend({
+      wallet: SOL,
+      chain: "solana",
+      nowMs: now,
+      transfers: [
+        {
+          hash: "dust",
+          from: SOL,
+          to: "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin",
+          valueUsd: 0,
+          timestamp: "2026-09-18T10:00:00.000Z",
+          status: "success",
+          kind: "SOL",
+        },
+      ],
+    });
+    assert.equal(snapshot.outboundCount, 0);
+    assert.equal(snapshot.outboundUsd, 0);
+    assert.equal(snapshot.findings.some((f) => f.kind === "over_cap"), false);
+  });
+
   it("builds PDF and CSV from the snapshot", () => {
     const snapshot = analyzeSpend({
       wallet: EVM,
@@ -264,7 +286,7 @@ describe("spend audit HTTP", () => {
   });
 
   it("does not retarget pay_to from query strings on the landing route", () => {
-    const landing = readFileSync(join(ROOT, "src/routes/spend-audit.tsx"), "utf8");
+    const landing = readFileSync(join(ROOT, "src/routes/spend-audit.index.tsx"), "utf8");
     const pay = readFileSync(join(ROOT, "src/routes/spend-audit.pay.tsx"), "utf8");
     assert.match(landing, /External audit for your agents/);
     assert.match(landing, /They ask before they pay/);

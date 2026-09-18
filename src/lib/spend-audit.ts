@@ -317,6 +317,7 @@ export function analyzeSpend(input: {
   const outbound = input.transfers
     .filter((tx) => sameAddr(tx.from, wallet))
     .filter((tx) => tx.status === "success")
+    .filter((tx) => tx.valueUsd > 0)
     .filter((tx) => {
       const t = Date.parse(tx.timestamp);
       return Number.isFinite(t) ? t >= cutoff : true;
@@ -331,6 +332,7 @@ export function analyzeSpend(input: {
 
   const findings: SpendAuditFinding[] = [];
   for (const [day, spent] of [...byDay.entries()].sort((a, b) => b[0].localeCompare(a[0]))) {
+    if (spent <= dailyCapUsd) continue;
     const verdict = evaluatePreflightSelf({
       cap_usd: dailyCapUsd,
       value_usd: spent,
