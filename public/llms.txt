@@ -6,6 +6,7 @@
 - URL: https://agent-control.net
 - Docs: https://agent-control.net/docs
 - Connect your agent: https://agent-control.net/connect
+- Stamp seller: https://agent-control.net/stamp
 - Partners: https://agent-control.net/partners
 - Console: https://agent-control.net/login
 - Approval Inbox: https://agent-control.net/inbox
@@ -94,6 +95,14 @@ MCP auto-pay loop (no Solana key; Base EIP-3009 via CDP/AgentKit):
 5. meter_scan / meter_preflight with pass_token set to that token.
 
 Auth for scan/preflight is X-Agent-Pass. Pick any string; first 5 looks on that id are free; then looks_20 pack from GET pricing (look $0.10 is optional one-shot). No email.
+
+## Stamp seller
+Take this ticket or we do not take your USDC. Merchants can require the stamp_tx $0.05 ticket before accepting agent USDC. Can I pay this address? First 5 free. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot. Seller page: https://agent-control.net/stamp Docs: https://agent-control.net/docs#stamp
+1. Tell the agent to buy stamp_tx $0.05 and call meter_stamp (POST /api/v1/meter/stamp).
+2. They send you stamp_id.
+3. GET /api/v1/meter/stamp/:id or MCP meter_verify_stamp. If verified is true and decision is allow, take the USDC. If not, do not take it.
+curl -s https://agent-control.net/api/v1/meter/stamp/<stamp_id>
+Public. No email. No API key.
 
 ## Agent Storefront
 Agents discover price, start a trial, and start checkout here. A human principal signs up and owns billing and Approval Inbox; agents connect under that account. Agents cannot open a root account, cannot decide Approval Inbox, and cannot use a virtual card.

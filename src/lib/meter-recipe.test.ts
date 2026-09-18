@@ -29,6 +29,16 @@ import {
   METER_SEPARATE,
   METER_STEPS,
   METER_TICKET,
+  STAMP_DOCS_HREF,
+  STAMP_PATH,
+  STAMP_SELLER_BODY,
+  STAMP_SELLER_EYEBROW,
+  STAMP_SELLER_HEADLINE,
+  STAMP_SELLER_LEDE,
+  STAMP_SELLER_STEPS,
+  STAMP_SELLER_VERIFY,
+  STAMP_URL,
+  STAMP_VERIFY_CURL,
 } from "./meter-recipe.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -47,6 +57,12 @@ const METER_PROSE = [
   METER_PACKS,
   METER_TICKET,
   METER_MERCHANT_STAMP,
+  STAMP_SELLER_EYEBROW,
+  STAMP_SELLER_HEADLINE,
+  STAMP_SELLER_LEDE,
+  STAMP_SELLER_BODY,
+  STAMP_SELLER_VERIFY,
+  ...STAMP_SELLER_STEPS.map((s) => `${s.t} ${s.d}`),
   METER_CONNECT_BODY,
   METER_DISCOVERY,
   METER_MCP_TOOLS,
@@ -201,6 +217,54 @@ await buyMeterPassBase({ from, signExact });`,
     assert.doesNotMatch(home, /METER_/);
     assert.doesNotMatch(home, /First 5 free/);
   });
+
+  it("ships a stamp seller door on /stamp and /connect without restyling the homepage", () => {
+    assert.equal(STAMP_PATH, "/stamp");
+    assert.equal(STAMP_URL, "https://agent-control.net/stamp");
+    assert.equal(STAMP_DOCS_HREF, "/docs#stamp");
+    assert.equal(STAMP_SELLER_EYEBROW, "Stamp seller");
+    assert.equal(STAMP_SELLER_HEADLINE, "Take this ticket or we do not take your USDC.");
+    assert.equal(
+      STAMP_SELLER_LEDE,
+      "Merchants can require the stamp_tx $0.05 ticket before accepting agent USDC.",
+    );
+    assert.match(STAMP_SELLER_BODY, /Ask for a stamp first/);
+    assert.match(STAMP_SELLER_VERIFY, /meter_verify_stamp/);
+    assert.match(STAMP_SELLER_VERIFY, /If verified is true and decision is allow/);
+    assert.equal(STAMP_VERIFY_CURL, "curl -s https://agent-control.net/api/v1/meter/stamp/<stamp_id>");
+    assert.match(STAMP_SELLER_STEPS[0]?.d ?? "", /Can I pay this address\?/);
+    assert.match(STAMP_SELLER_STEPS[0]?.d ?? "", /looks_20 pack \(\$0\.20\)/);
+    assert.match(STAMP_SELLER_STEPS[0]?.d ?? "", /stamp_tx \$0\.05/);
+    assert.doesNotMatch(STAMP_SELLER_STEPS.map((s) => `${s.t} ${s.d}`).join(" "), /\$0\.25/);
+    assert.doesNotMatch(STAMP_SELLER_STEPS.map((s) => `${s.t} ${s.d}`).join(" "), /\$0\.02/);
+    assert.doesNotMatch(STAMP_SELLER_STEPS.map((s) => `${s.t} ${s.d}`).join(" "), /cheaper/i);
+    assert.doesNotMatch(STAMP_SELLER_STEPS.map((s) => `${s.t} ${s.d}`).join(" "), /\bbroadcast/i);
+
+    const stampPage = read("src/routes/stamp.tsx");
+    const connect = read("src/routes/connect.tsx");
+    const home = read("src/routes/index.tsx");
+    const chrome = read("src/components/marketing/chrome.tsx");
+    const sitemap = read("public/sitemap.xml");
+    assert.match(stampPage, /createFileRoute\("\/stamp"\)/);
+    assert.match(stampPage, /STAMP_SELLER_HEADLINE/);
+    assert.match(stampPage, /STAMP_SELLER_LEDE/);
+    assert.match(stampPage, /STAMP_SELLER_STEPS/);
+    assert.match(stampPage, /STAMP_VERIFY_CURL/);
+    assert.match(stampPage, /meter_verify_stamp/);
+    assert.match(connect, /id=["']stamp["']/);
+    assert.match(connect, /STAMP_SELLER_HEADLINE/);
+    assert.match(connect, /STAMP_PATH/);
+    assert.match(connect, /STAMP_DOCS_HREF/);
+    assert.match(chrome, /href=["']\/stamp["']/);
+    assert.match(sitemap, /https:\/\/agent-control\.net\/stamp/);
+    assert.doesNotMatch(home, /STAMP_/);
+    assert.doesNotMatch(home, /stamp_tx/);
+    assert.doesNotMatch(stampPage, /\$0\.25/);
+    assert.doesNotMatch(stampPage, /\$0\.02/);
+    assert.doesNotMatch(stampPage, /cheaper/i);
+    assert.doesNotMatch(stampPage, /\bbroadcast/i);
+    assert.doesNotMatch(connect, /cheaper/i);
+  });
 });
 
 describe("Agent Meter recipe on public discovery surfaces", () => {
@@ -218,6 +282,16 @@ describe("Agent Meter recipe on public discovery surfaces", () => {
     assert.doesNotMatch(llms, /\$0\.25/);
     assert.match(llms, /Merchants can require the stamp_tx \$0\.05 ticket before accepting agent USDC/);
     assert.match(docs, /Merchants can require the stamp_tx \$0\.05 ticket before accepting agent USDC/);
+    assert.match(llms, /## Stamp seller/);
+    assert.match(llms, /https:\/\/agent-control\.net\/stamp/);
+    assert.match(llms, /docs#stamp/);
+    assert.match(llms, /If verified is true and decision is allow/);
+    assert.match(llms, /curl -s https:\/\/agent-control\.net\/api\/v1\/meter\/stamp\/<stamp_id>/);
+    assert.match(docs, /id=["']stamp["']/);
+    assert.match(docs, /href=["']#stamp["']/);
+    assert.match(docs, /STAMP_SELLER_HEADLINE/);
+    assert.match(docs, /STAMP_VERIFY_CURL/);
+    assert.match(docs, /STAMP_PATH/);
     assert.match(llms, /docs#agent-meter/);
     assert.match(llms, /curl -s https:\/\/agent-control\.net\/api\/v1\/meter\/pricing/);
     assert.match(llms, /llms → pricing → 402 → MCP/);

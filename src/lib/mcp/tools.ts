@@ -134,7 +134,7 @@ export const MCP_TOOLS = [
   {
     name: "meter_verify_stamp",
     title: "Verify a Meter stamp",
-    description: `${METER_AGENT_LEAD} Public. ${STAMP_MERCHANT_COPY} GET a signed allow|stop receipt by stamp_id before you accept agent USDC. No email. No API key.`,
+    description: `${METER_AGENT_LEAD} Public. ${STAMP_MERCHANT_COPY} ${STAMP_TICKET_COPY} GET a signed allow|stop receipt by stamp_id before you accept agent USDC. If verified is true and decision is allow, take the USDC. If not, do not take it. No email. No API key.`,
     annotations: readOnly,
     inputSchema: {
       type: "object",

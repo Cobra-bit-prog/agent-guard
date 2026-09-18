@@ -131,6 +131,9 @@ export function MarketingFooter() {
           <a href="/connect" className="text-muted hover:text-fg">
             Connect
           </a>
+          <a href="/stamp" className="text-muted hover:text-fg">
+            Stamp
+          </a>
           <a href="/docs" className="text-muted hover:text-fg">
             Docs
           </a>
