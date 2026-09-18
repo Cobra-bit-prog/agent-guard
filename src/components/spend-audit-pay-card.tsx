@@ -20,6 +20,8 @@ import {
   SPEND_AUDIT_PRODUCT,
   SPEND_AUDIT_SCANNER,
   SPEND_AUDIT_STARTER_HREF,
+  SPEND_AUDIT_TRIAL_CTA,
+  SPEND_AUDIT_TRIAL_HREF,
   SPEND_AUDIT_UPSELL,
 } from "@/lib/spend-audit";
 import { shortAddress } from "@/lib/utils";
@@ -256,9 +258,14 @@ export function SpendAuditPayCard({ search }: { search: MeterPaySearch }) {
         </div>
         <p className="mt-6 text-body text-muted">{SPEND_AUDIT_UPSELL}</p>
         <p className="mt-2 text-body text-muted">{SPEND_AUDIT_HONESTY}</p>
-        <a href={SPEND_AUDIT_STARTER_HREF} className="mt-3 inline-flex text-body font-semibold text-navy hover:text-coral">
-          {SPEND_AUDIT_PAY29_CTA}
-        </a>
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2">
+          <a href={SPEND_AUDIT_TRIAL_HREF} className="inline-flex text-body font-semibold text-navy hover:text-coral">
+            {SPEND_AUDIT_TRIAL_CTA}
+          </a>
+          <a href={SPEND_AUDIT_STARTER_HREF} className="inline-flex text-body font-semibold text-navy hover:text-coral">
+            {SPEND_AUDIT_PAY29_CTA}
+          </a>
+        </div>
       </div>
     );
   }

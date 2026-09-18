@@ -359,6 +359,18 @@ describe("spend audit HTTP", () => {
     assert.doesNotMatch(card, /Agent Meter/);
     assert.doesNotMatch(card, /cheaper/i);
     assert.doesNotMatch(card, /First 5 free/);
+    const paid = card.slice(card.indexOf("if (paid)"), card.indexOf("if (expired)"));
+    assert.match(paid, /SPEND_AUDIT_UPSELL/);
+    assert.match(paid, /SPEND_AUDIT_HONESTY/);
+    assert.match(paid, /SPEND_AUDIT_TRIAL_HREF/);
+    assert.match(paid, /SPEND_AUDIT_TRIAL_CTA/);
+    assert.match(paid, /SPEND_AUDIT_STARTER_HREF/);
+    assert.match(paid, /SPEND_AUDIT_PAY29_CTA/);
+    assert.match(paid, /text-body text-muted">\{SPEND_AUDIT_UPSELL\}/);
+    assert.match(paid, /text-body text-muted">\{SPEND_AUDIT_HONESTY\}/);
+    assert.match(paid, /text-body font-semibold text-navy/);
+    assert.doesNotMatch(paid, /text-card/);
+    assert.doesNotMatch(paid, /text-\[\d+px\]/);
   });
 });
 
