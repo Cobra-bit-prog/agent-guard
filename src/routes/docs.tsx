@@ -566,7 +566,8 @@ client.onBeforePaymentCreation(
           <p className="mt-3 max-w-[52ch] text-muted">
             Can I pay this address? First 5 free. {METER_PACKS_FIRST} ok | new | warn | sink. Packs:
             looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. Take this ticket or we do
-            not take your USDC. Base USDC (EIP-3009 exact) and Solana USDC. Copy{" "}
+            not take your USDC. Merchants can require the stamp_tx $0.05 ticket before accepting
+            agent USDC. Base USDC (EIP-3009 exact) and Solana USDC. Copy{" "}
             <code className="font-mono text-fg">src/adapters/meter-pay.ts</code>
             {" "}
             — it signs a Solana USDC transfer to pay_to with the 402 reference, then watches until
@@ -612,7 +613,9 @@ client.onBeforePaymentCreation(
             <code className="font-mono text-fg">meter_scan</code>,{" "}
             <code className="font-mono text-fg">meter_preflight</code>,{" "}
             <code className="font-mono text-fg">meter_scan_batch</code>,{" "}
-            <code className="font-mono text-fg">meter_stamp</code>.
+            <code className="font-mono text-fg">meter_stamp</code>,{" "}
+            <code className="font-mono text-fg">meter_verify_stamp</code>
+            . Merchants can require the stamp_tx $0.05 ticket before accepting agent USDC.
           </p>
         </section>
 

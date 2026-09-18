@@ -435,6 +435,7 @@ test("llms.txt is the public AI-crawler brief", () => {
   assert.match(meterBlock, /paid_sku looks_20/);
   assert.doesNotMatch(meterBlock, /\$0\.02/);
   assert.doesNotMatch(meterBlock, /\$0\.25/);
+  assert.match(meterBlock, /Merchants can require the stamp_tx \$0\.05 ticket before accepting agent USDC/);
   assert.match(meterBlock, /POST https:\/\/agent-control\.net\/api\/v1\/meter\/watch/);
   assert.match(meterBlock, /X-Agent-Pass/);
   assert.match(meterBlock, /\/api\/v1\/meter\/scan/);

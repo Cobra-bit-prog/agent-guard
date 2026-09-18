@@ -184,6 +184,7 @@ describe("POST initialize is Streamable HTTP", () => {
     assert.match(instructions, /looks_20 pack \(\$0\.20\)/);
     assert.match(instructions, /look \$0\.10 is optional one-shot/);
     assert.match(instructions, /look \/ looks_20 \/ addresses_100 \/ stamp_tx/);
+    assert.match(instructions, /Merchants can require the stamp_tx \$0\.05 ticket before accepting agent USDC/);
     assert.match(instructions, /meter_watch, then X-Agent-Pass/);
     assert.match(instructions, /We never take keys/);
     assert.match(instructions, /watch_url/);
@@ -252,6 +253,13 @@ describe("initialized notification and session reuse", () => {
     assert.match(preflight, /first 5 looks on that id are free/);
     assert.match(preflight, /value_usd/);
     assert.match(preflight, /cap_usd/);
+    const stamp = MCP_TOOLS.find((tool) => tool.name === "meter_stamp")?.description ?? "";
+    const verify = MCP_TOOLS.find((tool) => tool.name === "meter_verify_stamp")?.description ?? "";
+    assert.match(stamp, /stamp_tx \$0\.05/);
+    assert.match(stamp, /Merchants can require the stamp_tx \$0\.05 ticket before accepting agent USDC/);
+    assert.match(stamp, /meter_verify_stamp/);
+    assert.match(verify, /Merchants can require the stamp_tx \$0\.05 ticket before accepting agent USDC/);
+    assert.match(verify, /before you accept agent USDC/);
     const buy = MCP_TOOLS.find((tool) => tool.name === "meter_buy_pass");
     const watch = MCP_TOOLS.find((tool) => tool.name === "meter_watch");
     assert.match(buy?.description ?? "", /ok:true \/ status payment_required/);

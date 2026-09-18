@@ -4,9 +4,9 @@
  * Customer/discovery prose stays plain English. API names stay in the curl sample.
  */
 
-import { METER_PACKS_FIRST } from "./meter/pricing.ts";
+import { METER_PACKS_FIRST, STAMP_MERCHANT_COPY } from "./meter/pricing.ts";
 
-export { METER_PACKS_FIRST };
+export { METER_PACKS_FIRST, STAMP_MERCHANT_COPY };
 
 export const METER_EYEBROW = "Agent Meter";
 /** Locked Meter headline. The look question lives in LOOK_QUESTION. */
@@ -18,6 +18,7 @@ export const METER_SEPARATE =
 export const METER_RISKS = "ok | new | warn | sink";
 export const METER_PACKS = "Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05.";
 export const METER_TICKET = "Take this ticket or we do not take your USDC.";
+export const METER_MERCHANT_STAMP = STAMP_MERCHANT_COPY;
 export const METER_DOCS_HREF = "/docs#agent-meter";
 export const METER_DOCS_URL = "https://agent-control.net/docs#agent-meter";
 export const METER_LLMS_HREF = "/llms.txt";
@@ -58,7 +59,7 @@ ${METER_PAY_SNIPPET}
 # 4 watch
 curl -s -X POST https://agent-control.net/api/v1/meter/watch -H 'content-type: application/json' -d '{"invoice_id":"inv_…"}'
 # 5 packs looks_20 $0.20 · addresses_100 $0.15 · stamp_tx $0.05 ticket
-# Take this ticket or we do not take your USDC.
+# ${METER_TICKET} ${METER_MERCHANT_STAMP}
 # 6 MCP meter_* at /api/v1/mcp`;
 
 export const METER_SCAN_CURL =
@@ -95,7 +96,7 @@ export const METER_STEPS = [
   {
     n: "5",
     t: "Packs and ticket",
-    d: "Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. Take this ticket or we do not take your USDC. Then MCP meter_* tools.",
+    d: `Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. ${METER_TICKET} ${METER_MERCHANT_STAMP} Then MCP meter_* tools.`,
     code: `${METER_SCAN_CURL}\n${METER_PREFLIGHT_CURL}`,
   },
 ] as const;

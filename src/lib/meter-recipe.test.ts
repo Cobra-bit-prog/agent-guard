@@ -15,6 +15,7 @@ import {
   METER_LEDE,
   METER_LLMS_HREF,
   METER_MCP_TOOLS,
+  METER_MERCHANT_STAMP,
   METER_PACKS,
   METER_PACKS_FIRST,
   METER_PAY_SNIPPET,
@@ -45,6 +46,7 @@ const METER_PROSE = [
   METER_RISKS,
   METER_PACKS,
   METER_TICKET,
+  METER_MERCHANT_STAMP,
   METER_CONNECT_BODY,
   METER_DISCOVERY,
   METER_MCP_TOOLS,
@@ -84,6 +86,10 @@ describe("Agent Meter recipe", () => {
     assert.match(METER_PACKS, /addresses_100 \$0\.15/);
     assert.match(METER_PACKS, /stamp_tx \$0\.05/);
     assert.equal(METER_TICKET, "Take this ticket or we do not take your USDC.");
+    assert.equal(
+      METER_MERCHANT_STAMP,
+      "Merchants can require the stamp_tx $0.05 ticket before accepting agent USDC.",
+    );
     assert.equal(METER_QUESTION, "Can I pay this address?");
     assert.equal(
       METER_CONNECT_BODY,
@@ -107,6 +113,7 @@ describe("Agent Meter recipe", () => {
     assert.match(METER_PROSE, /First 5 free/);
     assert.match(METER_PROSE, /looks_20 pack \(\$0\.20\)/);
     assert.match(METER_PROSE, /optional one-shot/);
+    assert.match(METER_PROSE, /Merchants can require the stamp_tx \$0\.05 ticket before accepting agent USDC/);
     assert.match(METER_PROSE, /No inbox/);
     assert.doesNotMatch(METER_PROSE, /\$0\.25/);
     assert.doesNotMatch(METER_PROSE, /\$0\.02/);
@@ -128,6 +135,7 @@ describe("Agent Meter recipe", () => {
     assert.match(METER_RECIPE, /addresses_100 \$0\.15/);
     assert.match(METER_RECIPE, /stamp_tx \$0\.05/);
     assert.match(METER_RECIPE, /Take this ticket or we do not take your USDC/);
+    assert.match(METER_RECIPE, /Merchants can require the stamp_tx \$0\.05 ticket before accepting agent USDC/);
     assert.match(METER_RECIPE, /# 6 MCP meter_\* at \/api\/v1\/mcp/);
     assert.match(METER_RECIPE, /MCP-native \(no Phantom leave\)/);
     assert.match(METER_RECIPE, /We never take keys/);
@@ -206,6 +214,8 @@ describe("Agent Meter recipe on public discovery surfaces", () => {
     assert.match(llms, /Solana USDC/);
     assert.doesNotMatch(llms, /\$0\.02/);
     assert.doesNotMatch(llms, /\$0\.25/);
+    assert.match(llms, /Merchants can require the stamp_tx \$0\.05 ticket before accepting agent USDC/);
+    assert.match(docs, /Merchants can require the stamp_tx \$0\.05 ticket before accepting agent USDC/);
     assert.match(llms, /docs#agent-meter/);
     assert.match(llms, /curl -s https:\/\/agent-control\.net\/api\/v1\/meter\/pricing/);
     assert.match(llms, /llms → pricing → 402 → MCP/);

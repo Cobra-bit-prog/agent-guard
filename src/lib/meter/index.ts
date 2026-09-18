@@ -28,6 +28,7 @@ export {
   METER_PACKS_FIRST,
   METER_AGENT_LEAD,
   STAMP_TICKET_COPY,
+  STAMP_MERCHANT_COPY,
   resolveMeterSku,
   skuCovers,
   meterSkuOrDefault,
