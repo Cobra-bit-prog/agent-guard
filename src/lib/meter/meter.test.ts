@@ -6,7 +6,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { PAY_EXPIRY_MS, SOLANA_PAYOUT_ADDRESS, USDC_MINT } from "../solana-pay.ts";
 import { EVM_PAYOUT_ADDRESS } from "../evm-pay.ts";
-import { BASE_USDC } from "./accepts.ts";
+import { BASE_CAIP2, BASE_USDC, SOLANA_CAIP2 } from "./accepts.ts";
 import { evaluateTransfer } from "../policy.ts";
 import { SCAN_SINK_FIXTURE } from "./denylist.ts";
 import { handleInternalMeterInvoices, handleMeterRequest } from "./http.ts";
@@ -36,6 +36,7 @@ import {
   METER_PAID_SKU,
   METER_WATCH_URL,
 } from "./pricing.ts";
+import { METER_BAZAAR_DESCRIPTION, METER_BAZAAR_RESOURCE_URLS } from "./bazaar.ts";
 import { assertExactEvmAuthorization } from "./x402-evm.ts";
 
 const ORIGIN = "https://agent-control.net";
@@ -52,7 +53,11 @@ function get(path: string) {
   return new Request(`${ORIGIN}${path}`, { method: "GET" });
 }
 
-function assertMeter402IndexHeaders(res: Response, reference?: string) {
+function assertMeter402IndexHeaders(
+  res: Response,
+  reference?: string,
+  resourceUrl: string = METER_BAZAAR_RESOURCE_URLS.pass,
+) {
   const paymentRequired = res.headers.get("PAYMENT-REQUIRED") ?? res.headers.get("payment-required") ?? "";
   const www = res.headers.get("WWW-Authenticate") ?? res.headers.get("www-authenticate") ?? "";
   const expose = res.headers.get("Access-Control-Expose-Headers") ?? "";
@@ -65,6 +70,10 @@ function assertMeter402IndexHeaders(res: Response, reference?: string) {
   assert.match(expose, /WWW-Authenticate/);
   const decoded = JSON.parse(Buffer.from(paymentRequired, "base64").toString("utf8")) as {
     x402Version: number;
+    error?: string;
+    description?: string;
+    resource?: { url: string; description: string };
+    extensions?: { bazaar?: { info?: { input?: { type?: string; method?: string; bodyType?: string } } } };
     accepts: Array<{
       scheme: string;
       network: string;
@@ -77,25 +86,35 @@ function assertMeter402IndexHeaders(res: Response, reference?: string) {
         version?: string;
         assetTransferMethod?: string;
         caip2?: string;
+        resource?: string;
       };
     }>;
   };
   assert.equal(decoded.x402Version, 2);
+  assert.equal(decoded.error, "Payment required");
+  assert.equal(decoded.description, METER_BAZAAR_DESCRIPTION);
+  assert.ok((decoded.description ?? "").length <= 500);
+  assert.equal(decoded.resource?.url, resourceUrl);
+  assert.equal(decoded.resource?.description, METER_BAZAAR_DESCRIPTION);
+  assert.equal(decoded.extensions?.bazaar?.info?.input?.type, "http");
+  assert.equal(decoded.extensions?.bazaar?.info?.input?.method, "POST");
+  assert.equal(decoded.extensions?.bazaar?.info?.input?.bodyType, "json");
   assert.equal(decoded.accepts.length, 2);
   assert.equal(decoded.accepts[0]?.scheme, "exact");
-  assert.equal(decoded.accepts[0]?.network, "solana");
-  assert.equal(decoded.accepts[0]?.payTo, SOLANA_PAYOUT_ADDRESS);
-  assert.equal(decoded.accepts[0]?.asset, USDC_MINT);
-  if (reference) assert.equal(decoded.accepts[0]?.extra.reference, reference);
-  assert.match(www, new RegExp(`reference="${decoded.accepts[0]?.extra.reference}"`));
+  assert.equal(decoded.accepts[0]?.network, BASE_CAIP2);
+  assert.equal(decoded.accepts[0]?.payTo, EVM_PAYOUT_ADDRESS);
+  assert.equal(decoded.accepts[0]?.asset, BASE_USDC);
+  assert.equal(decoded.accepts[0]?.extra.name, "USD Coin");
+  assert.equal(decoded.accepts[0]?.extra.version, "2");
+  assert.equal(decoded.accepts[0]?.extra.assetTransferMethod, "eip3009");
+  assert.equal(decoded.accepts[0]?.extra.caip2, "eip155:8453");
+  assert.equal(decoded.accepts[0]?.extra.resource, resourceUrl);
   assert.equal(decoded.accepts[1]?.scheme, "exact");
-  assert.equal(decoded.accepts[1]?.network, "base");
-  assert.equal(decoded.accepts[1]?.payTo, EVM_PAYOUT_ADDRESS);
-  assert.equal(decoded.accepts[1]?.asset, BASE_USDC);
-  assert.equal(decoded.accepts[1]?.extra.name, "USD Coin");
-  assert.equal(decoded.accepts[1]?.extra.version, "2");
-  assert.equal(decoded.accepts[1]?.extra.assetTransferMethod, "eip3009");
-  assert.equal(decoded.accepts[1]?.extra.caip2, "eip155:8453");
+  assert.equal(decoded.accepts[1]?.network, SOLANA_CAIP2);
+  assert.equal(decoded.accepts[1]?.payTo, SOLANA_PAYOUT_ADDRESS);
+  assert.equal(decoded.accepts[1]?.asset, USDC_MINT);
+  if (reference) assert.equal(decoded.accepts[1]?.extra.reference, reference);
+  assert.match(www, new RegExp(`reference="${decoded.accepts[1]?.extra.reference}"`));
 }
 
 const EIP3009_FROM = "0x1111111111111111111111111111111111111111";
@@ -245,6 +264,9 @@ describe("meter http", () => {
     assert.match(body.sign, /We never take keys/);
     assert.equal(body.error, "payment_required");
     assert.equal(body.http, 402);
+    assert.equal(body.description, METER_BAZAAR_DESCRIPTION);
+    assert.equal(body.resource.url, METER_BAZAAR_RESOURCE_URLS.pass);
+    assert.equal(body.extensions.bazaar.info.input.type, "http");
   });
 
   it("402index PAYMENT-REQUIRED payTo stays on the locked wallet", () => {
@@ -258,16 +280,21 @@ describe("meter http", () => {
       asset: "usdc",
       sku: "look",
     });
-    assert.equal(payload.accepts[0]?.payTo, SOLANA_PAYOUT_ADDRESS);
-    assert.equal(payload.accepts[0]?.payTo, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
+    assert.equal(payload.accepts[0]?.payTo, EVM_PAYOUT_ADDRESS);
+    assert.equal(payload.accepts[0]?.payTo, "0xc5df91Fd7D9578A63efe9B0ee96Bacc5e7742E98");
     assert.notEqual(payload.accepts[0]?.payTo, "HostileWalletDoNotPay11111111111111111111");
-    assert.equal(payload.accepts[0]?.asset, USDC_MINT);
+    assert.equal(payload.accepts[0]?.asset, BASE_USDC);
+    assert.equal(payload.accepts[0]?.network, BASE_CAIP2);
+    assert.equal(payload.accepts[0]?.extra.assetTransferMethod, "eip3009");
     assert.equal(payload.accepts.length, 2);
-    assert.equal(payload.accepts[1]?.payTo, EVM_PAYOUT_ADDRESS);
-    assert.equal(payload.accepts[1]?.payTo, "0xc5df91Fd7D9578A63efe9B0ee96Bacc5e7742E98");
-    assert.equal(payload.accepts[1]?.asset, BASE_USDC);
-    assert.equal(payload.accepts[1]?.network, "base");
-    assert.equal(payload.accepts[1]?.extra.assetTransferMethod, "eip3009");
+    assert.equal(payload.accepts[1]?.payTo, SOLANA_PAYOUT_ADDRESS);
+    assert.equal(payload.accepts[1]?.payTo, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
+    assert.equal(payload.accepts[1]?.network, SOLANA_CAIP2);
+    assert.equal(payload.resource.url, METER_BAZAAR_RESOURCE_URLS.pass);
+    assert.equal(payload.description, METER_BAZAAR_DESCRIPTION);
+    assert.ok(payload.description.length <= 500);
+    assert.equal(payload.extensions.bazaar.info.input.type, "http");
+    assert.equal(payload.extensions.bazaar.info.input.method, "POST");
   });
 
   it("scans a sink after a looks_20 pack", async () => {
@@ -1529,7 +1556,7 @@ describe("paying agents A–H", () => {
     assert.match(body.next, new RegExp(`"invoice_id":"${body.invoice_id}"`));
     assert.match(body.next, /X-Agent-Pass/);
     assert.match(body.sign, /buyMeterPass/);
-    assertMeter402IndexHeaders(res, body.reference);
+    assertMeter402IndexHeaders(res, body.reference, METER_BAZAAR_RESOURCE_URLS.scan);
   });
 
   it("C pack20: looks_20 covers 20 looks", async () => {
@@ -1555,7 +1582,7 @@ describe("paying agents A–H", () => {
     const doneBody = (await done.json()) as { sku: string; amount_usd: number; reference: string };
     assert.equal(doneBody.sku, "looks_20");
     assert.equal(doneBody.amount_usd, 0.20);
-    assertMeter402IndexHeaders(done, doneBody.reference);
+    assertMeter402IndexHeaders(done, doneBody.reference, METER_BAZAAR_RESOURCE_URLS.scan);
   });
 
   it("D batch100: addresses_100 covers one batch of up to 100", async () => {

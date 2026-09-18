@@ -1,6 +1,13 @@
 import { SOLANA_PAYOUT_ADDRESS, USDC_MINT } from "../solana-pay.ts";
 import { EVM_PAYOUT_ADDRESS } from "../evm-pay.ts";
-import { meterFundsAccepts, meterPaymentAccepts } from "./accepts.ts";
+import { meterFundsAccepts, meterPaymentAccepts, meterPaymentRequiredAccepts } from "./accepts.ts";
+import {
+  assertMeterBazaarDescriptionBound,
+  meterBazaarExtensions,
+  meterBazaarKindFromSource,
+  meterBazaarResource,
+  type MeterBazaarKind,
+} from "./bazaar.ts";
 
 export const METER_LOOK_SKU = "look" as const;
 export const METER_DEFAULT_SKU = METER_LOOK_SKU;
@@ -229,11 +236,14 @@ export function meter402Body(invoice: {
   chain: string;
   asset: string;
   sku?: string;
-}) {
+}, discovery?: Meter402Discovery) {
   const sku = (invoice.sku as MeterSkuId) || METER_DEFAULT_SKU;
   const catalog = METER_SKUS[sku] ?? METER_LOOK;
   const price = invoice.amount_usd || catalog.price_usd;
   const amountBase = invoice.amount_base_units || catalog.amount_base_units;
+  const kind = bazaarKindOf(discovery);
+  const resource = meterBazaarResource(kind);
+  const description = assertMeterBazaarDescriptionBound(resource.description);
   const accepts = meterPaymentAccepts(
     {
       invoice_id: invoice.invoice_id,
@@ -260,6 +270,9 @@ export function meter402Body(invoice: {
     reference: invoice.reference,
     question: LOOK_QUESTION,
     note: catalog.id === "stamp_tx" ? STAMP_TICKET_COPY : METER_FREE_THEN_LOOK,
+    description,
+    resource,
+    extensions: meterBazaarExtensions(kind),
     packs: {
       looks_20: { price_usd: METER_LOOKS_20.price_usd, included_calls: METER_LOOKS_20.included_calls },
       addresses_100: { price_usd: METER_ADDRESSES_100.price_usd, included_calls: METER_ADDRESSES_100.included_calls },
@@ -286,33 +299,55 @@ export type Meter402Invoice = {
   sku?: string;
 };
 
-export function meter402PaymentRequiredPayload(invoice: Meter402Invoice) {
-  const sku = (invoice.sku as MeterSkuId) || METER_DEFAULT_SKU;
-  const catalog = METER_SKUS[sku] ?? METER_LOOK;
+export type Meter402Discovery = {
+  kind?: MeterBazaarKind;
+  source?: string | null;
+};
+
+function bazaarKindOf(discovery?: Meter402Discovery): MeterBazaarKind {
+  if (discovery?.kind) return discovery.kind;
+  return meterBazaarKindFromSource(discovery?.source);
+}
+
+function catalogAcceptInvoice(invoice: Meter402Invoice, catalog: MeterSku) {
   return {
-    x402Version: 2,
-    accepts: meterPaymentAccepts(
-      {
-        invoice_id: invoice.invoice_id,
-        reference: invoice.reference,
-        amount_base_units: invoice.amount_base_units || catalog.amount_base_units,
-        sku: catalog.id,
-        amount_usd: invoice.amount_usd || catalog.price_usd,
-      },
-      catalog,
-    ),
+    invoice_id: invoice.invoice_id,
+    reference: invoice.reference,
+    amount_base_units: invoice.amount_base_units || catalog.amount_base_units,
+    sku: catalog.id,
+    amount_usd: invoice.amount_usd || catalog.price_usd,
   };
 }
 
-export function meter402ChallengeHeaders(invoice: Meter402Invoice): Record<string, string> {
+export function meter402PaymentRequiredPayload(invoice: Meter402Invoice, discovery?: Meter402Discovery) {
+  const sku = (invoice.sku as MeterSkuId) || METER_DEFAULT_SKU;
+  const catalog = METER_SKUS[sku] ?? METER_LOOK;
+  const kind = bazaarKindOf(discovery);
+  const resource = meterBazaarResource(kind);
+  const description = assertMeterBazaarDescriptionBound(resource.description);
+  return {
+    x402Version: 2,
+    error: "Payment required",
+    description,
+    resource: { ...resource, description },
+    accepts: meterPaymentRequiredAccepts(catalogAcceptInvoice(invoice, catalog), catalog, resource.url),
+    extensions: meterBazaarExtensions(kind),
+  };
+}
+
+export function meter402ChallengeHeaders(
+  invoice: Meter402Invoice,
+  discovery?: Meter402Discovery,
+): Record<string, string> {
   const sku = (invoice.sku as MeterSkuId) || METER_DEFAULT_SKU;
   const catalog = METER_SKUS[sku] ?? METER_LOOK;
   const price = invoice.amount_usd || catalog.price_usd;
   const payTo = SOLANA_PAYOUT_ADDRESS;
   return {
-    "PAYMENT-REQUIRED": Buffer.from(JSON.stringify(meter402PaymentRequiredPayload(invoice)), "utf8").toString(
-      "base64",
-    ),
+    "PAYMENT-REQUIRED": Buffer.from(
+      JSON.stringify(meter402PaymentRequiredPayload(invoice, discovery)),
+      "utf8",
+    ).toString("base64"),
     "WWW-Authenticate": `Payment realm="Agent Meter", chain="solana", token="USDC", amount="${price}", address="${payTo}", reference="${invoice.reference}"`,
     "Access-Control-Expose-Headers": "PAYMENT-REQUIRED, WWW-Authenticate",
   };

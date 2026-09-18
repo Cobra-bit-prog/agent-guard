@@ -10,6 +10,7 @@ import {
   parseInvoiceSince,
   type MeterInvoiceSource,
 } from "./origin.ts";
+import { meterBazaarKindFromSource } from "./bazaar.ts";
 import {
   coversForSku,
   defaultSkuForKind,
@@ -318,7 +319,8 @@ async function paymentRequired(
 ): Promise<Response> {
   const minted = await invoiceForBody(store, request, source, body, fallbackSku);
   if (!minted.ok) return minted.response;
-  return json(meter402Body(minted.invoice), 402, meter402ChallengeHeaders(minted.invoice));
+  const discovery = { source, kind: meterBazaarKindFromSource(source) };
+  return json(meter402Body(minted.invoice, discovery), 402, meter402ChallengeHeaders(minted.invoice, discovery));
 }
 
 async function issueOrInvoice(
@@ -394,14 +396,15 @@ async function issueOrInvoice(
         next: "Retry scan with X-Agent-Pass set to this token (MCP: meter_scan pass_token). We never take keys.",
       });
     }
+    const discovery = { source, kind: meterBazaarKindFromSource(source) };
     return json(
       {
-        ...meter402Body(watched.invoice),
+        ...meter402Body(watched.invoice, discovery),
         status: watched.invoice.status,
         signature: watched.invoice.signature,
       },
       402,
-      meter402ChallengeHeaders(watched.invoice),
+      meter402ChallengeHeaders(watched.invoice, discovery),
     );
   }
 

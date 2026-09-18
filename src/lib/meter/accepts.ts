@@ -9,9 +9,11 @@ import { SOLANA_PAYOUT_ADDRESS, USDC_MINT, lockedSolanaUsdcRecipient } from "../
 export const BASE_USDC = EVM_USDC.base.usdc;
 export const BASE_USDC_EIP712_NAME = "USD Coin";
 export const BASE_USDC_EIP712_VERSION = "2";
-/** AgentKit / CDP v1 network id. CAIP-2 is extra.caip2. */
+/** AgentKit / CDP v1 network id. CAIP-2 is extra.caip2. JSON 402 body keeps these. */
 export const BASE_X402_NETWORK = "base";
 export const BASE_CAIP2 = "eip155:8453";
+/** CDP Facilitator / x402 v2 Solana mainnet. PAYMENT-REQUIRED header uses this. */
+export const SOLANA_CAIP2 = "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp";
 export const METER_X402_MAX_TIMEOUT_SEC = 300;
 
 export { EVM_PAYOUT_ADDRESS, lockedEvmUsdcRecipient };
@@ -115,6 +117,32 @@ export function meterBaseExactAccept(invoice?: MeterAcceptInvoice, sku?: MeterAc
 /** Solana first (existing clients), then Base EIP-3009 exact. */
 export function meterPaymentAccepts(invoice?: MeterAcceptInvoice, sku?: MeterAcceptSku): MeterExactAccept[] {
   return [meterSolanaExactAccept(invoice, sku), meterBaseExactAccept(invoice, sku)];
+}
+
+/**
+ * PAYMENT-REQUIRED accepts for CDP Bazaar / x402 v2 clients.
+ * Same locked payTo, asset, and amounts. Base first so CDP validate accepts[0]
+ * is a facilitator-supported network. JSON 402 body stays Solana-first.
+ */
+export function meterPaymentRequiredAccepts(
+  invoice?: MeterAcceptInvoice,
+  sku?: MeterAcceptSku,
+  resourceUrl?: string,
+): MeterExactAccept[] {
+  const [solana, base] = meterPaymentAccepts(invoice, sku);
+  const attach = (row: MeterExactAccept, network: string, extra: Record<string, unknown>): MeterExactAccept => ({
+    ...row,
+    network,
+    extra: {
+      ...row.extra,
+      ...extra,
+      ...(resourceUrl ? { resource: resourceUrl } : {}),
+    },
+  });
+  return [
+    attach(base, BASE_CAIP2, {}),
+    attach(solana, SOLANA_CAIP2, { caip2: SOLANA_CAIP2 }),
+  ];
 }
 
 /** Look-door discovery accepts. Same locked payTo / asset / amount as live 402. */
