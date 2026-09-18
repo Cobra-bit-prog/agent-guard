@@ -49,7 +49,7 @@
       "url": "https://agent-control.net/api/v1/meter/pass",
       "method": "POST",
       "mimeType": "application/json",
-      "description": "Can I pay this address? ok · new · warn · sink. First 5 free. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot. Packs: 20 looks $0.20 · 100-address $0.15 · stamp $0.05. Agents pay themselves. No inbox. Base USDC + Solana USDC.",
+      "description": "Can I pay this address? ok · new · warn · sink. First 5 free. Then looks_20 $0.20 → X-Agent-Pass; look $0.10 optional. Packs: 20/$0.20 · 100-addr $0.15 · stamp $0.05. Agents pay themselves. No inbox. Base + Solana USDC.",
       "extensions": {
         "bazaar": {
           "info": {
@@ -148,7 +148,7 @@
       "url": "https://agent-control.net/api/v1/meter/scan",
       "method": "POST",
       "mimeType": "application/json",
-      "description": "Can I pay this address? ok · new · warn · sink. First 5 free. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot. Packs: 20 looks $0.20 · 100-address $0.15 · stamp $0.05. Agents pay themselves. No inbox. Base USDC + Solana USDC.",
+      "description": "Can I pay this address? ok · new · warn · sink. First 5 free. Then looks_20 $0.20 → X-Agent-Pass; look $0.10 optional. Packs: 20/$0.20 · 100-addr $0.15 · stamp $0.05. Agents pay themselves. No inbox. Base + Solana USDC.",
       "extensions": {
         "bazaar": {
           "info": {
