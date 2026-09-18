@@ -1,4 +1,4 @@
-import { getSql, type Sql } from "./db.ts";
+import { getSql, type Sql } from "@/lib/db";
 import {
   allowSpendAuditDevGrant,
   createSpendAuditStore,

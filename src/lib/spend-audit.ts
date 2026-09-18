@@ -17,6 +17,7 @@ import {
 import { evaluatePreflightSelf, utcDayKey } from "./meter/preflight.ts";
 import { evaluateScan, type MeterChain, type ScanRisk } from "./meter/scan.ts";
 import { validateMeterAddress } from "./meter/address.ts";
+import type { AuditKind, AuditSnapshot } from "./audit-report.ts";
 import {
   PAY_EXPIRY_MS,
   SOLANA_PAYOUT_ADDRESS,
@@ -426,7 +427,7 @@ export function analyzeSpend(input: {
   };
 }
 
-export function snapshotToAuditTrail(snapshot: SpendAuditSnapshot) {
+export function snapshotToAuditTrail(snapshot: SpendAuditSnapshot): AuditSnapshot {
   return {
     generatedAt: snapshot.generatedAt,
     disclaimer: snapshot.disclaimer,
@@ -441,7 +442,7 @@ export function snapshotToAuditTrail(snapshot: SpendAuditSnapshot) {
     },
     rows: snapshot.rows.map((row) => ({
       timestamp: row.timestamp,
-      kind: row.kind === "finding" ? (row.result === "over_cap" ? "alert" : "check") : "send",
+      kind: trailKind(row),
       chain: row.chain,
       to: row.to,
       amountUsd: row.amountUsd,
@@ -449,4 +450,9 @@ export function snapshotToAuditTrail(snapshot: SpendAuditSnapshot) {
       detail: row.detail,
     })),
   };
+}
+
+function trailKind(row: SpendAuditRow): AuditKind {
+  if (row.kind !== "finding") return "send";
+  return row.result === "over_cap" ? "alert" : "check";
 }

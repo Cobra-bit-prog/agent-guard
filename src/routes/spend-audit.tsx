@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { SkyShell } from "@/components/marketing/chrome";
 import { SupportedChains } from "@/components/chain-icons";
@@ -130,9 +130,9 @@ function SpendAuditPage() {
 
         <p className="mt-6 text-meta text-muted">
           Enrolled agents already on the console: generate the check trail at{" "}
-          <Link to="/audit" className="font-medium text-navy hover:text-coral">
+          <a href="/audit" className="font-medium text-navy hover:text-coral">
             /audit
-          </Link>
+          </a>
           . This page is the ${SPEND_AUDIT_PRICE_USD} paste-an-address report. Path {SPEND_AUDIT_PATH}.
         </p>
       </main>

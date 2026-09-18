@@ -212,49 +212,55 @@ describe("spend audit HTTP", () => {
   });
 
   it("dev grant fulfills and returns a downloadable report", async () => {
-    const store = createSpendAuditStore();
-    const res = await handleSpendAuditRequest(
-      post("/api/v1/audit/watch", {
-        address: SOL,
-        chain: "solana",
-        proof: { type: "dev" },
-      }),
-      "/api/v1/audit/watch",
-      store,
-      {
-        readTransfers: async () => [
-          {
-            hash: "sig",
-            from: SOL,
-            to: SCAN_SINK_FIXTURE,
-            valueUsd: 150,
-            timestamp: new Date().toISOString(),
-            status: "success",
-            kind: "USDC",
-          },
-        ],
-      },
-    );
-    assert.equal(res.status, 200);
-    const body = (await res.json()) as {
-      status: string;
-      invoice_id: string;
-      preview: { outboundCount: number; findings: number };
-    };
-    assert.equal(body.status, "paid");
-    assert.equal(body.preview.outboundCount, 1);
-    assert.ok(body.preview.findings >= 1);
+    const prev = process.env.NODE_ENV;
+    process.env.NODE_ENV = "test";
+    try {
+      const store = createSpendAuditStore();
+      const res = await handleSpendAuditRequest(
+        post("/api/v1/audit/watch", {
+          address: SOL,
+          chain: "solana",
+          proof: { type: "dev" },
+        }),
+        "/api/v1/audit/watch",
+        store,
+        {
+          readTransfers: async () => [
+            {
+              hash: "sig",
+              from: SOL,
+              to: SCAN_SINK_FIXTURE,
+              valueUsd: 150,
+              timestamp: new Date().toISOString(),
+              status: "success",
+              kind: "USDC",
+            },
+          ],
+        },
+      );
+      assert.equal(res.status, 200);
+      const body = (await res.json()) as {
+        status: string;
+        invoice_id: string;
+        preview: { outboundCount: number; findings: number };
+      };
+      assert.equal(body.status, "paid");
+      assert.equal(body.preview.outboundCount, 1);
+      assert.ok(body.preview.findings >= 1);
 
-    const pdf = await handleSpendAuditRequest(
-      get(`/api/v1/audit/report/${body.invoice_id}?format=pdf`),
-      `/api/v1/audit/report/${body.invoice_id}`,
-      store,
-    );
-    assert.equal(pdf.status, 200);
-    const file = (await pdf.json()) as { filename: string; mime: string; base64: string };
-    assert.match(file.filename, /wallet-spend-audit-/);
-    assert.equal(file.mime, "application/pdf");
-    assert.ok(file.base64.length > 40);
+      const pdf = await handleSpendAuditRequest(
+        get(`/api/v1/audit/report/${body.invoice_id}?format=pdf`),
+        `/api/v1/audit/report/${body.invoice_id}`,
+        store,
+      );
+      assert.equal(pdf.status, 200);
+      const file = (await pdf.json()) as { filename: string; mime: string; base64: string };
+      assert.match(file.filename, /wallet-spend-audit-/);
+      assert.equal(file.mime, "application/pdf");
+      assert.ok(file.base64.length > 40);
+    } finally {
+      process.env.NODE_ENV = prev;
+    }
   });
 
   it("does not retarget pay_to from query strings on the landing route", () => {
@@ -266,7 +272,9 @@ describe("spend audit HTTP", () => {
     assert.doesNotMatch(landing, /cheaper/i);
     assert.doesNotMatch(landing + pay, /search\.pay_to/);
     assert.doesNotMatch(landing, /First 5 free/);
-    assert.match(landing, /\/billing\/pay\?plan=starter/);
+    assert.match(landing, /SPEND_AUDIT_STARTER_HREF/);
+    const catalog = readFileSync(join(ROOT, "src/lib/spend-audit.ts"), "utf8");
+    assert.match(catalog, /\/billing\/pay\?plan=starter/);
   });
 });
 

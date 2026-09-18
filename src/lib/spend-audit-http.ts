@@ -17,7 +17,6 @@ import {
   spendAuditPricing,
   type SpendAuditInvoice,
 } from "./spend-audit.ts";
-import { readSpendLookback } from "./spend-audit-chain.ts";
 import { allowSpendAuditDevGrant, type SpendAuditStore } from "./spend-audit-store.ts";
 import { bytesToBase64, buildCsv, buildPdf } from "./server/report-files.ts";
 
@@ -72,7 +71,7 @@ async function ensureReport(
   if (invoice.snapshot) return invoice;
   const transfers = deps.readTransfers
     ? await deps.readTransfers(invoice)
-    : await readSpendLookback({
+    : await (await import("./spend-audit-chain.ts")).readSpendLookback({
         chain: invoice.chain,
         address: invoice.address,
         lookbackDays: invoice.lookback_days,
