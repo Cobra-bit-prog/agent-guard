@@ -14,7 +14,7 @@ import { MCP_TOOLS, mcpDiscovery } from "./tools.ts";
 import { meterMcpToolResult, rejectMeterKeyUpload, reshapeMeter402Invoice } from "./meter-result.ts";
 import { handleMeterRequest } from "../meter/http.ts";
 import { createMeterStore } from "../meter/store.ts";
-import { METER_ADAPTER_URL, METER_NEXT_TOOL, meter402Body, meter402Next, meter402PayPage } from "../meter/pricing.ts";
+import { METER_ADAPTER_URL, METER_BASE_ADAPTER_URL, METER_NEXT_TOOL, meter402Body, meter402Next, meter402PayPage } from "../meter/pricing.ts";
 import {
   DEFAULT_PROTOCOL_VERSION,
   MCP_SESSION_HEADER,
@@ -249,6 +249,7 @@ describe("initialized notification and session reuse", () => {
     assert.match(scan, /402 looks_20 pack \$0\.20/);
     assert.match(scan, /look \$0\.10 is optional one-shot/);
     assert.match(scan, /pay_page for Phantom laptop/);
+    assert.match(scan, /no Solana key/);
     assert.match(preflight, /X-Agent-Pass/);
     assert.match(preflight, /first 5 looks on that id are free/);
     assert.match(preflight, /value_usd/);
@@ -273,7 +274,10 @@ describe("initialized notification and session reuse", () => {
     assert.match(buy?.description ?? "", /then meter_watch/);
     assert.match(buy?.description ?? "", /adapter_url/);
     assert.match(buy?.description ?? "", /pay_page/);
-    assert.match(buy?.description ?? "", /fetch adapter_url or sign Base EIP-3009 exact, then meter_watch/);
+    assert.match(buy?.description ?? "", /Prefer Base EIP-3009 exact to base_pay_to/);
+    assert.match(buy?.description ?? "", /base_adapter_url/);
+    assert.match(buy?.description ?? "", /next_steps/);
+    assert.match(buy?.description ?? "", /no Solana key/);
     assert.match(buy?.description ?? "", /base_pay_to/);
     assert.match(buy?.description ?? "", /pay_page for Phantom laptop/);
     assert.doesNotMatch(buy?.description ?? "", /Copy src\/adapters\/meter-pay\.ts/);
@@ -320,12 +324,16 @@ describe("initialized notification and session reuse", () => {
     assert.equal(body.pay_url, invoice.pay_url);
     assert.equal(body.watch_url, "https://agent-control.net/api/v1/meter/watch");
     assert.equal(body.adapter_url, METER_ADAPTER_URL);
+    assert.equal(body.base_adapter_url, METER_BASE_ADAPTER_URL);
+    assert.equal(body.preferred_rail, "base");
     assert.equal(body.pay_page, meter402PayPage("inv_mcp"));
     assert.equal(body.next_tool, METER_NEXT_TOOL);
     assert.equal(body.sign, invoice.sign);
     assert.equal(body.next, invoice.next);
     assert.equal(body.next, meter402Next("inv_mcp"));
+    assert.ok(Array.isArray(body.next_steps));
     assert.match(String(body.sign), /buyMeterPass \/ payMeterPass/);
+    assert.match(String(body.sign), /buyMeterPassBase/);
     assert.match(String(body.next), /meter_watch/);
     assert.match(String(body.next), /"invoice_id":"inv_mcp"/);
     assert.equal("error" in body, false);
@@ -427,10 +435,13 @@ describe("initialized notification and session reuse", () => {
       pay_url: string;
       watch_url: string;
       adapter_url: string;
+      base_adapter_url: string;
+      preferred_rail: string;
       pay_page: string;
       next_tool: string;
       sign: string;
       next: string;
+      next_steps: string[];
     };
     assert.equal(body.ok, true);
     assert.equal(body.status, "payment_required");
@@ -443,9 +454,13 @@ describe("initialized notification and session reuse", () => {
     assert.match(body.pay_url, /solana:49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR/);
     assert.equal(body.watch_url, "https://agent-control.net/api/v1/meter/watch");
     assert.equal(body.adapter_url, METER_ADAPTER_URL);
+    assert.equal(body.base_adapter_url, METER_BASE_ADAPTER_URL);
+    assert.equal(body.preferred_rail, "base");
     assert.equal(body.pay_page, meter402PayPage(body.invoice_id));
     assert.equal(body.next_tool, "meter_watch");
+    assert.match(body.next_steps[0] ?? "", /No Solana key needed/);
     assert.match(body.sign, /buyMeterPass \/ payMeterPass/);
+    assert.match(body.sign, /buyMeterPassBase/);
     assert.match(body.next, /meter_watch/);
     assert.match(body.next, /pay_page/);
     assert.match(body.next, new RegExp(`"invoice_id":"${body.invoice_id}"`));

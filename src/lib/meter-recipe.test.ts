@@ -137,15 +137,17 @@ describe("Agent Meter recipe", () => {
     assert.match(METER_RECIPE, /Take this ticket or we do not take your USDC/);
     assert.match(METER_RECIPE, /Merchants can require the stamp_tx \$0\.05 ticket before accepting agent USDC/);
     assert.match(METER_RECIPE, /# 6 MCP meter_\* at \/api\/v1\/mcp/);
-    assert.match(METER_RECIPE, /MCP-native \(no Phantom leave\)/);
+    assert.match(METER_RECIPE, /MCP-native \(no Solana key\)/);
     assert.match(METER_RECIPE, /We never take keys/);
     assert.match(METER_RECIPE, /GET \/api\/v1\/meter\/pricing \(paid_sku looks_20, free_looks\)/);
-    assert.match(METER_RECIPE, /src\/adapters\/meter-pay\.ts/);
-    assert.match(METER_RECIPE, /buyMeterPass/);
+    assert.match(METER_RECIPE, /src\/adapters\/meter-pay-base\.ts/);
+    assert.match(METER_RECIPE, /buyMeterPassBase/);
+    assert.match(METER_RECIPE, /CDP\/AgentKit/);
+    assert.match(METER_RECIPE, /No Solana key needed/);
     assert.equal(
       METER_PAY_SNIPPET,
-      `import { buyMeterPass } from "./src/adapters/meter-pay.ts";
-await buyMeterPass({ keypair });`,
+      `import { buyMeterPassBase } from "./src/adapters/meter-pay-base.ts";
+await buyMeterPassBase({ from, signExact });`,
     );
     assert.equal(METER_STEPS[2]?.code, METER_PAY_SNIPPET);
     assert.match(METER_STEPS[2]?.d ?? "", /looks_20/);
@@ -225,12 +227,12 @@ describe("Agent Meter recipe on public discovery surfaces", () => {
     assert.match(docs, /METER_PAY_SNIPPET/);
     assert.match(docs, /href=["']#agent-meter["']/);
     assert.match(docs, /No inbox/);
-    assert.match(llms, /buyMeterPass/);
-    assert.match(llms, /src\/adapters\/meter-pay\.ts/);
+    assert.match(llms, /buyMeterPassBase/);
+    assert.match(llms, /src\/adapters\/meter-pay-base\.ts/);
     assert.match(llms, /X-Agent-Pass: <your-id>/);
-    assert.match(llms, /MCP-native \(no Phantom leave\)/);
+    assert.match(llms, /MCP-native \(no Solana key\)/);
     assert.match(llms, /We never take keys/);
-    assert.match(llms, /meter_buy_pass → you sign locally → meter_watch until token/);
+    assert.match(llms, /meter_buy_pass → sign Base EIP-3009 exact → meter_watch with payment until token/);
     assert.doesNotMatch(llms, /locked forever/i);
     assert.doesNotMatch(llms, /sacred/i);
     assert.doesNotMatch(llms, /secret_key|private_key|base58_secret/);

@@ -189,7 +189,7 @@ export function meterOpenApi() {
           },
           responses: {
             "402": {
-              description: `Pay Base USDC (EIP-3009 exact) or Solana USDC to the locked payTo. ${METER_PACKS_FIRST}`,
+              description: `Prefer Base USDC (EIP-3009 exact) to the locked base_pay_to (CDP/AgentKit; no Solana key). Optional Solana USDC to payTo. ${METER_PACKS_FIRST}`,
             },
             "200": { description: "Pass issued after proof or a prior payment watch." },
           },

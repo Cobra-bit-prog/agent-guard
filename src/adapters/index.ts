@@ -57,3 +57,25 @@ export {
   type PayMeterPassOptions,
   type PayMeterPassResult,
 } from "./meter-pay.ts";
+
+export {
+  DEFAULT_EXACT_TTL_SEC,
+  DEFAULT_METER_ORIGIN as DEFAULT_METER_BASE_ORIGIN,
+  DEFAULT_PASS_BASE_UNITS as DEFAULT_METER_BASE_UNITS,
+  LOCKED_BASE_PAY_TO,
+  METER_BASE_CHAIN_ID,
+  METER_BASE_NETWORK,
+  METER_BASE_USDC,
+  assertPayerIsNotBaseReceiveWallet,
+  buildMeterExactAuthorization,
+  buildMeterExactPayment,
+  buyMeterPassBase,
+  lockedMeterBasePayTo,
+  payMeterPassBase,
+  type BuyMeterPassBaseOptions,
+  type BuyMeterPassBaseResult,
+  type MeterExactAuthorization,
+  type PayMeterPassBaseOptions,
+  type PayMeterPassBaseResult,
+  type SignMeterExact,
+} from "./meter-pay-base.ts";

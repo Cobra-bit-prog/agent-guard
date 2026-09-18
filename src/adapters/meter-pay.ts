@@ -1,6 +1,7 @@
 /**
- * Agent Meter auto-pay — agents pay themselves.
+ * Agent Meter auto-pay — Solana rail. Agents pay themselves.
  * Copy this file. Separate from AgentKit / x402 (those call POST /api/v1/check).
+ * No Solana key? Use meter-pay-base.ts (Base EIP-3009 exact / CDP / AgentKit).
  *
  * Flow: POST /meter/pass → 402 → USDC SPL transfer to pay_to WITH the Solana Pay
  * reference as an extra non-signer account → POST /meter/watch until token.

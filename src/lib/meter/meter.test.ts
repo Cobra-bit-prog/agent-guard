@@ -26,10 +26,12 @@ import {
   METER_ANON_IDENTITY,
   meter402Body,
   meter402Next,
+  meter402NextSteps,
   meter402PayPage,
   meter402PaymentRequiredPayload,
   METER_402_SIGN,
   METER_ADAPTER_URL,
+  METER_BASE_ADAPTER_URL,
   METER_LOOK,
   METER_LOOKS_20,
   METER_NEXT_TOOL,
@@ -225,7 +227,7 @@ describe("meter http", () => {
     assert.deepEqual(body.missing, ["wallet", "to", "value_usd", "cap_usd"]);
   });
 
-  it("402 next names adapter_url, pay_page, meter_watch, and this invoice_id", () => {
+  it("402 next names adapter_url, base_adapter_url, next_steps, pay_page, meter_watch, and this invoice_id", () => {
     const body = meter402Body({
       invoice_id: "inv_test",
       pay_to: "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR",
@@ -238,22 +240,32 @@ describe("meter http", () => {
     });
     assert.equal(body.adapter_url, METER_ADAPTER_URL);
     assert.match(body.adapter_url, /raw\.githubusercontent\.com\/Cobra-bit-prog\/agent-guard\/main\/src\/adapters\/meter-pay\.ts/);
+    assert.equal(body.base_adapter_url, METER_BASE_ADAPTER_URL);
+    assert.match(body.base_adapter_url, /src\/adapters\/meter-pay-base\.ts/);
+    assert.equal(body.preferred_rail, "base");
     assert.equal(body.pay_page, meter402PayPage("inv_test"));
     assert.equal(body.pay_page, "https://agent-control.net/meter/pay?invoice_id=inv_test");
     assert.equal(body.next_tool, METER_NEXT_TOOL);
     assert.equal(body.next_tool, "meter_watch");
     assert.equal(body.next, meter402Next("inv_test"));
+    assert.deepEqual(body.next_steps, meter402NextSteps("inv_test"));
+    assert.match(body.next_steps[0] ?? "", /No Solana key needed/);
+    assert.match(body.next_steps[0] ?? "", /base_adapter_url/);
     assert.match(body.next, /adapter_url/);
+    assert.match(body.next, /base_adapter_url/);
     assert.match(body.next, /pay_page/);
     assert.match(body.next, /Phantom/);
     assert.match(body.next, /meter_watch/);
     assert.match(body.next, /"invoice_id":"inv_test"/);
     assert.match(body.next, /meter_scan/);
     assert.match(body.next, /X-Agent-Pass/);
+    assert.match(body.next, /no Solana key/);
     assert.doesNotMatch(body.next, /POST \/api\/v1\/meter\/watch/);
     assert.equal(body.sign, METER_402_SIGN);
     assert.match(body.sign, /buyMeterPass \/ payMeterPass/);
+    assert.match(body.sign, /buyMeterPassBase/);
     assert.match(body.sign, /adapter_url/);
+    assert.match(body.sign, /base_adapter_url/);
     assert.doesNotMatch(body.sign, /Copy src\/adapters\/meter-pay\.ts/);
     assert.equal(body.sku, "look");
     assert.equal(body.amount_usd, METER_LOOK.price_usd);
