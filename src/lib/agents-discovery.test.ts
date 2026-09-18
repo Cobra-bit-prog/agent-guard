@@ -131,6 +131,7 @@ describe("adapters README Meter note", () => {
     assert.match(readme, /docs#agent-meter/);
     assert.match(readme, /Do not (?:reuse|use) these .* for Agent Meter|not these adapters/i);
     assert.match(readme, /buyMeterPass/);
+    assert.match(readme, /buyMeterPassBase/);
     assert.match(readme, /payMeterPass/);
     assert.match(readme, /meter-pay\.ts/);
     assert.doesNotMatch(readme, /poll_url/);

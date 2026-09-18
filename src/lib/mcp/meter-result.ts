@@ -17,7 +17,7 @@ export function rejectMeterKeyUpload(args: Record<string, unknown>): McpToolCall
       ok: false,
       status: 400,
       code: 400,
-      message: "We never take keys. Sign USDC on your agent machine. Copy src/adapters/meter-pay.ts.",
+      message: "We never take keys. Prefer Base EIP-3009 exact (copy src/adapters/meter-pay-base.ts). Optional Solana: src/adapters/meter-pay.ts.",
     };
   }
   return null;
@@ -30,7 +30,7 @@ function asMeterPayload(payload: unknown): Record<string, unknown> {
   return { error: "meter_parse" };
 }
 
-/** HTTP 402 labels stay on the HTTP door. MCP tool text must look like a payable challenge. adapter_url, pay_page, next_tool, next, and sign pass through. */
+/** HTTP 402 labels stay on the HTTP door. MCP tool text must look like a payable challenge. adapter_url, base_adapter_url, preferred_rail, pay_page, next_tool, next, next_steps, and sign pass through. */
 export function reshapeMeter402Invoice(body: Record<string, unknown>): Record<string, unknown> {
   const invoice: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(body)) {

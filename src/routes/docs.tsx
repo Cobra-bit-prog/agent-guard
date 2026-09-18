@@ -638,11 +638,14 @@ client.onBeforePaymentCreation(
             Can I pay this address? First 5 free. {METER_PACKS_FIRST} ok | new | warn | sink. Packs:
             looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. Take this ticket or we do
             not take your USDC. Merchants can require the stamp_tx $0.05 ticket before accepting
-            agent USDC. Base USDC (EIP-3009 exact) and Solana USDC. Copy{" "}
+            agent USDC. Prefer Base USDC (EIP-3009 exact) to base_pay_to (CDP/AgentKit). No Solana
+            key needed. Copy{" "}
+            <code className="font-mono text-fg">src/adapters/meter-pay-base.ts</code>
+            {" "}
+            — signExact, then watch until the pass token. Optional Solana:{" "}
             <code className="font-mono text-fg">src/adapters/meter-pay.ts</code>
             {" "}
-            — it signs a Solana USDC transfer to pay_to with the 402 reference, then watches until
-            the pass token. Base buyers sign EIP-3009 exact. Send{" "}
+            to pay_to with the 402 reference. Send{" "}
             <code className="font-mono text-fg">X-Agent-Pass</code>
             : pick any string; first 5 looks on that id are free; then 402 looks_20 $0.20 pack (look
             $0.10 is optional one-shot). No email. No

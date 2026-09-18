@@ -52,7 +52,7 @@
             "description": "Pass issued after proof or a prior payment watch."
           },
           "402": {
-            "description": "Pay Base USDC (EIP-3009 exact) or Solana USDC to the locked payTo. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot."
+            "description": "Prefer Base USDC (EIP-3009 exact) to the locked base_pay_to (CDP/AgentKit; no Solana key). Optional Solana USDC to payTo. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot."
           }
         }
       }

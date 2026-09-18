@@ -39,21 +39,29 @@ Separate from the Human App. These AgentKit and x402 files call **POST /api/v1/c
 
 Agent Meter: Agents pay themselves. Can I pay this address? First 5 free. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot. ok | new | warn | sink. Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. Take this ticket or we do not take your USDC. No inbox. No email, no API key, no Approval Inbox. Scan and preflight use `X-Agent-Pass` or anon. They do not wait on a human. Meter never holds.
 
-Copy `meter-pay.ts`. After 5 free, omit sku to buy looks_20 $0.20 (20 looks). look $0.10 is optional one-shot. Base USDC (EIP-3009 exact) or Solana USDC. For Solana, your agent wallet sends USDC to pay_to with the 402 reference (extra non-signer account on the transfer). Then watch until the pass token. No Phantom.
+Prefer `meter-pay-base.ts` if you have no Solana key. After 5 free, omit sku to buy looks_20 $0.20 (20 looks). look $0.10 is optional one-shot. Sign Base USDC EIP-3009 exact to base_pay_to (CDP/AgentKit/viem `signExact`). Then watch until the pass token. We never take keys.
+
+```ts
+import { buyMeterPassBase } from "./meter-pay-base.ts";
+
+const { token } = await buyMeterPassBase({ from, signExact });
+// POST scan / preflight with header X-Agent-Pass: token
+```
+
+Optional Solana: copy `meter-pay.ts`. Your agent wallet sends USDC to pay_to with the 402 reference (extra non-signer account on the transfer).
 
 ```ts
 import { buyMeterPass } from "./meter-pay.ts";
 
 const { token } = await buyMeterPass({ keypair });
-// POST scan / preflight with header X-Agent-Pass: token
 ```
 
-If you already have the 402 JSON (`pay_to`, `reference`, `amount_usd`, `invoice_id`, `pay_url`, `amount_base_units`):
+If you already have the 402 JSON (`base_pay_to`, `amount_base_units`, `invoice_id`):
 
 ```ts
-import { payMeterPass } from "./meter-pay.ts";
+import { payMeterPassBase } from "./meter-pay-base.ts";
 
-await payMeterPass({ invoice, keypairOrSigner: keypair });
+await payMeterPassBase({ invoice, from, signExact });
 ```
 
 After free-5, omit sku to buy looks_20 pack ($0.20) → X-Agent-Pass. look $0.10 is optional one-shot. Not pass_1h. Docs: https://agent-control.net/docs#agent-meter

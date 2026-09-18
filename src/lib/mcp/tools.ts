@@ -16,7 +16,7 @@ export const MCP_TOOLS = [
     name: "meter_buy_pass",
     title: "Buy an Agent Meter pass",
     description:
-      `${METER_AGENT_LEAD} After free-5, call with sku looks_20 (or omit) to buy a pack that mints/extends X-Agent-Pass. look $0.10 is optional one-shot. Returns a payable invoice as tool content (ok:true / status payment_required) with pay_to, base_pay_to, accepts (Base USDC EIP-3009 exact and Solana USDC), amount_usd, amount_base_units, reference, pay_url, invoice_id, watch_url, adapter_url, pay_page, next_tool. After invoice, fetch adapter_url or sign Base EIP-3009 exact, then meter_watch. 402 invoice includes pay_page for Phantom laptop if no local signer. Sign USDC on YOUR machine. We never take keys. Packs: looks_20 / addresses_100 / stamp_tx. No human account.`,
+      `${METER_AGENT_LEAD} After free-5, call with sku looks_20 (or omit) to buy a pack that mints/extends X-Agent-Pass. look $0.10 is optional one-shot. Returns a payable invoice as tool content (ok:true / status payment_required) with pay_to, base_pay_to, accepts (Base USDC EIP-3009 exact and Solana USDC), amount_usd, amount_base_units, reference, pay_url, invoice_id, watch_url, adapter_url, base_adapter_url, preferred_rail, pay_page, next_tool, next_steps. Prefer Base EIP-3009 exact to base_pay_to (CDP/AgentKit; no Solana key) then meter_watch with payment. Fetch base_adapter_url (buyMeterPassBase). Optional Solana: fetch adapter_url. 402 invoice includes pay_page for Phantom laptop as a last resort. We never take keys. Packs: looks_20 / addresses_100 / stamp_tx. No human account.`,
     annotations: writes,
     inputSchema: {
       type: "object",
@@ -42,7 +42,7 @@ export const MCP_TOOLS = [
     name: "meter_watch",
     title: "Watch a Meter invoice",
     description:
-      `${METER_AGENT_LEAD} After you sign locally (Base EIP-3009 exact or Solana USDC), call with invoice_id until token. Optional payment payload for Base. Repeat until the result includes token — that is X-Agent-Pass. Then meter_scan with pass_token. Optional signature (tx sig only). We never take keys. No human account.`,
+      `${METER_AGENT_LEAD} After Base EIP-3009 exact (CDP/AgentKit; no Solana key) or optional Solana USDC, call with invoice_id until token. Pass payment for Base (same JSON as PAYMENT-SIGNATURE). Repeat until the result includes token — that is X-Agent-Pass. Then meter_scan with pass_token. Optional signature (tx sig only). We never take keys. No human account.`,
     annotations: writes,
     inputSchema: {
       type: "object",
@@ -64,7 +64,7 @@ export const MCP_TOOLS = [
     name: "meter_scan",
     title: "Scan a destination",
     description:
-      `${METER_AGENT_LEAD} One look = one address. Send X-Agent-Pass with any string; first 5 looks on that id are free; then 402 looks_20 pack $0.20 (look $0.10 is optional one-shot). Base USDC (EIP-3009 exact) or Solana USDC. 402 invoice includes pay_page for Phantom laptop if no local signer. Risk ok|new|warn|sink. Never hold.`,
+      `${METER_AGENT_LEAD} One look = one address. Send X-Agent-Pass with any string; first 5 looks on that id are free; then 402 looks_20 pack $0.20 (look $0.10 is optional one-shot). Prefer Base USDC (EIP-3009 exact) to base_pay_to (CDP/AgentKit; no Solana key). Optional Solana USDC. 402 invoice includes next_steps and pay_page for Phantom laptop as a last resort. Risk ok|new|warn|sink. Never hold.`,
     annotations: readOnly,
     inputSchema: {
       type: "object",

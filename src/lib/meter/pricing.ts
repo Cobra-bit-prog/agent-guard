@@ -224,16 +224,29 @@ export const METER_WATCH_URL = `https://agent-control.net${METER_WATCH_PATH}`;
 /** Public raw adapter. Site paths 404; agents must fetch this URL, not copy from the homepage. */
 export const METER_ADAPTER_URL =
   "https://raw.githubusercontent.com/Cobra-bit-prog/agent-guard/main/src/adapters/meter-pay.ts";
+/** Base EIP-3009 exact buyer. No Solana key. CDP / AgentKit / viem signExact. */
+export const METER_BASE_ADAPTER_URL =
+  "https://raw.githubusercontent.com/Cobra-bit-prog/agent-guard/main/src/adapters/meter-pay-base.ts";
+export const METER_PREFERRED_RAIL = "base" as const;
 export const METER_NEXT_TOOL = "meter_watch" as const;
 export const METER_402_SIGN =
-  `${METER_PACKS_FIRST} Sign USDC on YOUR machine. Base: EIP-3009 exact to base_pay_to. Solana: pay_to WITH the reference. Fetch adapter_url (buyMeterPass / payMeterPass). We never take keys.`;
+  `${METER_PACKS_FIRST} Prefer Base USDC EIP-3009 exact to base_pay_to (CDP/AgentKit; no Solana key). Fetch base_adapter_url (buyMeterPassBase). Solana: pay_to WITH the reference. Fetch adapter_url (buyMeterPass / payMeterPass). We never take keys.`;
 
 export function meter402PayPage(invoiceId: string): string {
   return `https://agent-control.net/meter/pay?invoice_id=${invoiceId}`;
 }
 
+export function meter402NextSteps(invoiceId: string): string[] {
+  return [
+    "Prefer Base USDC EIP-3009 exact to base_pay_to (CDP/AgentKit). No Solana key needed. Fetch base_adapter_url (buyMeterPassBase).",
+    `Call meter_watch {"invoice_id":"${invoiceId}"} with payment (PAYMENT-SIGNATURE) until token.`,
+    "Retry meter_scan with that token as pass_token / X-Agent-Pass.",
+    "Optional Solana: fetch adapter_url (buyMeterPass) or open pay_page on a laptop with Phantom.",
+  ];
+}
+
 export function meter402Next(invoiceId: string): string {
-  return `1) Base: sign EIP-3009 exact and retry with PAYMENT-SIGNATURE. 2) Solana: fetch adapter_url (buyMeterPass) or open pay_page on a laptop with Phantom. 3) Call meter_watch {"invoice_id":"${invoiceId}"} until token. 4) Retry meter_scan with that token as pass_token / X-Agent-Pass. ${METER_PACKS_FIRST}`;
+  return `1) Prefer Base: EIP-3009 exact to base_pay_to (CDP/AgentKit; no Solana key). Fetch base_adapter_url (buyMeterPassBase). Retry with PAYMENT-SIGNATURE. 2) Call meter_watch {"invoice_id":"${invoiceId}"} with payment until token. 3) Retry meter_scan with that token as pass_token / X-Agent-Pass. 4) Optional Solana: fetch adapter_url (buyMeterPass) or open pay_page on a laptop with Phantom. ${METER_PACKS_FIRST}`;
 }
 
 export function meter402Body(invoice: {
@@ -290,10 +303,13 @@ export function meter402Body(invoice: {
     pay_url: `solana:${SOLANA_PAYOUT_ADDRESS}?amount=${price}&spl-token=${USDC_MINT}&reference=${invoice.reference}&label=Agent%20Control&message=Pay%20$${price}%20${catalog.id}`,
     watch_url: METER_WATCH_URL,
     adapter_url: METER_ADAPTER_URL,
+    base_adapter_url: METER_BASE_ADAPTER_URL,
+    preferred_rail: METER_PREFERRED_RAIL,
     pay_page: meter402PayPage(invoice.invoice_id),
     next_tool: METER_NEXT_TOOL,
     sign: METER_402_SIGN,
     next: meter402Next(invoice.invoice_id),
+    next_steps: meter402NextSteps(invoice.invoice_id),
   };
 }
 
