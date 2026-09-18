@@ -248,6 +248,8 @@ await buyMeterPassBase({ from, signExact });`,
     assert.match(stampPage, /createFileRoute\("\/stamp"\)/);
     assert.match(stampPage, /STAMP_SELLER_HEADLINE/);
     assert.match(stampPage, /STAMP_SELLER_LEDE/);
+    assert.match(stampPage, /text-body text-muted">\{STAMP_SELLER_LEDE\}/);
+    assert.doesNotMatch(stampPage, /text-card text-muted">\{STAMP_SELLER_LEDE\}/);
     assert.match(stampPage, /STAMP_SELLER_STEPS/);
     assert.match(stampPage, /STAMP_VERIFY_CURL/);
     assert.match(stampPage, /meter_verify_stamp/);

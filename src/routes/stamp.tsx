@@ -43,7 +43,7 @@ function StampSellerPage() {
           {STAMP_SELLER_EYEBROW}
         </p>
         <h1 className="mt-3 text-display font-semibold">{STAMP_SELLER_HEADLINE}</h1>
-        <p className="mt-4 max-w-[46ch] text-card text-muted">{STAMP_SELLER_LEDE}</p>
+        <p className="mt-4 max-w-[46ch] text-body text-muted">{STAMP_SELLER_LEDE}</p>
         <p className="mt-3 max-w-[52ch] text-body text-muted">{STAMP_SELLER_BODY}</p>
         <p className="mt-3 max-w-[52ch] text-body text-muted">
           {METER_QUESTION} First 5 free. {METER_PACKS}
