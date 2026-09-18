@@ -18,6 +18,7 @@ import { Route as LogosRouteImport } from './routes/logos'
 import { Route as PartnersRouteImport } from './routes/partners'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as SpendAuditRouteImport } from './routes/spend-audit'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as AppAgentsRouteImport } from './routes/_app/agents'
 import { Route as AppAlertsRouteImport } from './routes/_app/alerts'
@@ -31,6 +32,8 @@ import { Route as MeterPayRouteImport } from './routes/meter.pay'
 import { Route as OauthAuthorizeRouteImport } from './routes/oauth/authorize'
 import { Route as OauthRegisterRouteImport } from './routes/oauth/register'
 import { Route as OauthTokenRouteImport } from './routes/oauth/token'
+import { Route as SpendAuditIndexRouteImport } from './routes/spend-audit.index'
+import { Route as SpendAuditPayRouteImport } from './routes/spend-audit.pay'
 import { Route as AppAgentsIndexRouteImport } from './routes/_app/agents.index'
 import { Route as AppAgentsIdRouteImport } from './routes/_app/agents.$id'
 import { Route as AppBillingIndexRouteImport } from './routes/_app/billing.index'
@@ -39,6 +42,7 @@ import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiV1CheckRouteImport } from './routes/api/v1/check'
 import { Route as ApiV1McpRouteImport } from './routes/api/v1/mcp'
 import { Route as ApiV1ApprovalsIdRouteImport } from './routes/api/v1/approvals.$id'
+import { Route as ApiV1AuditSplatRouteImport } from './routes/api/v1/audit.$'
 import { Route as ApiV1BillingCheckoutRouteImport } from './routes/api/v1/billing.checkout'
 import { Route as ApiV1BillingConfigRouteImport } from './routes/api/v1/billing.config'
 import { Route as ApiV1BillingHeliusRouteImport } from './routes/api/v1/billing.helius'
@@ -99,6 +103,11 @@ const PrivacyRoute = PrivacyRouteImport.update({
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SpendAuditRoute = SpendAuditRouteImport.update({
+  id: '/spend-audit',
+  path: '/spend-audit',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
@@ -166,6 +175,16 @@ const OauthTokenRoute = OauthTokenRouteImport.update({
   path: '/oauth/token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SpendAuditIndexRoute = SpendAuditIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SpendAuditRoute,
+} as any)
+const SpendAuditPayRoute = SpendAuditPayRouteImport.update({
+  id: '/pay',
+  path: '/pay',
+  getParentRoute: () => SpendAuditRoute,
+} as any)
 const AppAgentsIndexRoute = AppAgentsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -204,6 +223,11 @@ const ApiV1McpRoute = ApiV1McpRouteImport.update({
 const ApiV1ApprovalsIdRoute = ApiV1ApprovalsIdRouteImport.update({
   id: '/api/v1/approvals/$id',
   path: '/api/v1/approvals/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1AuditSplatRoute = ApiV1AuditSplatRouteImport.update({
+  id: '/api/v1/audit/$',
+  path: '/api/v1/audit/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiV1BillingCheckoutRoute = ApiV1BillingCheckoutRouteImport.update({
@@ -302,6 +326,7 @@ export interface FileRoutesByFullPath {
   '/partners': typeof PartnersRoute
   '/privacy': typeof PrivacyRoute
   '/signup': typeof SignupRoute
+  '/spend-audit': typeof SpendAuditRouteWithChildren
   '/verify-email': typeof VerifyEmailRoute
   '/agents': typeof AppAgentsRouteWithChildren
   '/alerts': typeof AppAlertsRoute
@@ -315,6 +340,8 @@ export interface FileRoutesByFullPath {
   '/oauth/authorize': typeof OauthAuthorizeRoute
   '/oauth/register': typeof OauthRegisterRoute
   '/oauth/token': typeof OauthTokenRoute
+  '/spend-audit/pay': typeof SpendAuditPayRoute
+  '/spend-audit/': typeof SpendAuditIndexRoute
   '/agents/$id': typeof AppAgentsIdRoute
   '/billing/pay': typeof AppBillingPayRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -323,6 +350,7 @@ export interface FileRoutesByFullPath {
   '/agents/': typeof AppAgentsIndexRoute
   '/billing/': typeof AppBillingIndexRoute
   '/api/v1/approvals/$id': typeof ApiV1ApprovalsIdRoute
+  '/api/v1/audit/$': typeof ApiV1AuditSplatRoute
   '/api/v1/billing/checkout': typeof ApiV1BillingCheckoutRoute
   '/api/v1/billing/config': typeof ApiV1BillingConfigRoute
   '/api/v1/billing/helius': typeof ApiV1BillingHeliusRoute
@@ -361,6 +389,8 @@ export interface FileRoutesByTo {
   '/oauth/authorize': typeof OauthAuthorizeRoute
   '/oauth/register': typeof OauthRegisterRoute
   '/oauth/token': typeof OauthTokenRoute
+  '/spend-audit/pay': typeof SpendAuditPayRoute
+  '/spend-audit': typeof SpendAuditIndexRoute
   '/agents/$id': typeof AppAgentsIdRoute
   '/billing/pay': typeof AppBillingPayRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -369,6 +399,7 @@ export interface FileRoutesByTo {
   '/agents': typeof AppAgentsIndexRoute
   '/billing': typeof AppBillingIndexRoute
   '/api/v1/approvals/$id': typeof ApiV1ApprovalsIdRoute
+  '/api/v1/audit/$': typeof ApiV1AuditSplatRoute
   '/api/v1/billing/checkout': typeof ApiV1BillingCheckoutRoute
   '/api/v1/billing/config': typeof ApiV1BillingConfigRoute
   '/api/v1/billing/helius': typeof ApiV1BillingHeliusRoute
@@ -398,6 +429,7 @@ export interface FileRoutesById {
   '/partners': typeof PartnersRoute
   '/privacy': typeof PrivacyRoute
   '/signup': typeof SignupRoute
+  '/spend-audit': typeof SpendAuditRouteWithChildren
   '/verify-email': typeof VerifyEmailRoute
   '/_app/agents': typeof AppAgentsRouteWithChildren
   '/_app/alerts': typeof AppAlertsRoute
@@ -411,6 +443,8 @@ export interface FileRoutesById {
   '/oauth/authorize': typeof OauthAuthorizeRoute
   '/oauth/register': typeof OauthRegisterRoute
   '/oauth/token': typeof OauthTokenRoute
+  '/spend-audit/pay': typeof SpendAuditPayRoute
+  '/spend-audit/': typeof SpendAuditIndexRoute
   '/_app/agents/$id': typeof AppAgentsIdRoute
   '/_app/billing/pay': typeof AppBillingPayRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -419,6 +453,7 @@ export interface FileRoutesById {
   '/_app/agents/': typeof AppAgentsIndexRoute
   '/_app/billing/': typeof AppBillingIndexRoute
   '/api/v1/approvals/$id': typeof ApiV1ApprovalsIdRoute
+  '/api/v1/audit/$': typeof ApiV1AuditSplatRoute
   '/api/v1/billing/checkout': typeof ApiV1BillingCheckoutRoute
   '/api/v1/billing/config': typeof ApiV1BillingConfigRoute
   '/api/v1/billing/helius': typeof ApiV1BillingHeliusRoute
@@ -448,6 +483,7 @@ export interface FileRouteTypes {
     | '/partners'
     | '/privacy'
     | '/signup'
+    | '/spend-audit'
     | '/verify-email'
     | '/agents'
     | '/alerts'
@@ -461,6 +497,8 @@ export interface FileRouteTypes {
     | '/oauth/authorize'
     | '/oauth/register'
     | '/oauth/token'
+    | '/spend-audit/pay'
+    | '/spend-audit/'
     | '/agents/$id'
     | '/billing/pay'
     | '/api/auth/$'
@@ -469,6 +507,7 @@ export interface FileRouteTypes {
     | '/agents/'
     | '/billing/'
     | '/api/v1/approvals/$id'
+    | '/api/v1/audit/$'
     | '/api/v1/billing/checkout'
     | '/api/v1/billing/config'
     | '/api/v1/billing/helius'
@@ -507,6 +546,8 @@ export interface FileRouteTypes {
     | '/oauth/authorize'
     | '/oauth/register'
     | '/oauth/token'
+    | '/spend-audit/pay'
+    | '/spend-audit'
     | '/agents/$id'
     | '/billing/pay'
     | '/api/auth/$'
@@ -515,6 +556,7 @@ export interface FileRouteTypes {
     | '/agents'
     | '/billing'
     | '/api/v1/approvals/$id'
+    | '/api/v1/audit/$'
     | '/api/v1/billing/checkout'
     | '/api/v1/billing/config'
     | '/api/v1/billing/helius'
@@ -543,6 +585,7 @@ export interface FileRouteTypes {
     | '/partners'
     | '/privacy'
     | '/signup'
+    | '/spend-audit'
     | '/verify-email'
     | '/_app/agents'
     | '/_app/alerts'
@@ -556,6 +599,8 @@ export interface FileRouteTypes {
     | '/oauth/authorize'
     | '/oauth/register'
     | '/oauth/token'
+    | '/spend-audit/pay'
+    | '/spend-audit/'
     | '/_app/agents/$id'
     | '/_app/billing/pay'
     | '/api/auth/$'
@@ -564,6 +609,7 @@ export interface FileRouteTypes {
     | '/_app/agents/'
     | '/_app/billing/'
     | '/api/v1/approvals/$id'
+    | '/api/v1/audit/$'
     | '/api/v1/billing/checkout'
     | '/api/v1/billing/config'
     | '/api/v1/billing/helius'
@@ -593,6 +639,7 @@ export interface RootRouteChildren {
   PartnersRoute: typeof PartnersRoute
   PrivacyRoute: typeof PrivacyRoute
   SignupRoute: typeof SignupRoute
+  SpendAuditRoute: typeof SpendAuditRouteWithChildren
   VerifyEmailRoute: typeof VerifyEmailRoute
   MeterPayRoute: typeof MeterPayRoute
   OauthAuthorizeRoute: typeof OauthAuthorizeRoute
@@ -602,6 +649,7 @@ export interface RootRouteChildren {
   ApiV1CheckRoute: typeof ApiV1CheckRoute
   ApiV1McpRoute: typeof ApiV1McpRoute
   ApiV1ApprovalsIdRoute: typeof ApiV1ApprovalsIdRoute
+  ApiV1AuditSplatRoute: typeof ApiV1AuditSplatRoute
   ApiV1BillingCheckoutRoute: typeof ApiV1BillingCheckoutRoute
   ApiV1BillingConfigRoute: typeof ApiV1BillingConfigRoute
   ApiV1BillingHeliusRoute: typeof ApiV1BillingHeliusRoute
@@ -683,6 +731,13 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/spend-audit': {
+      id: '/spend-audit'
+      path: '/spend-audit'
+      fullPath: '/spend-audit'
+      preLoaderRoute: typeof SpendAuditRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/verify-email': {
@@ -776,6 +831,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OauthTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/spend-audit/': {
+      id: '/spend-audit/'
+      path: '/'
+      fullPath: '/spend-audit/'
+      preLoaderRoute: typeof SpendAuditIndexRouteImport
+      parentRoute: typeof SpendAuditRoute
+    }
+    '/spend-audit/pay': {
+      id: '/spend-audit/pay'
+      path: '/pay'
+      fullPath: '/spend-audit/pay'
+      preLoaderRoute: typeof SpendAuditPayRouteImport
+      parentRoute: typeof SpendAuditRoute
+    }
     '/_app/agents/': {
       id: '/_app/agents/'
       path: '/'
@@ -830,6 +899,13 @@ declare module '@tanstack/react-router' {
       path: '/api/v1/approvals/$id'
       fullPath: '/api/v1/approvals/$id'
       preLoaderRoute: typeof ApiV1ApprovalsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/audit/$': {
+      id: '/api/v1/audit/$'
+      path: '/api/v1/audit/$'
+      fullPath: '/api/v1/audit/$'
+      preLoaderRoute: typeof ApiV1AuditSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/v1/billing/checkout': {
@@ -1006,6 +1082,20 @@ const AppRouteChildren: AppRouteChildren = {
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
+interface SpendAuditRouteChildren {
+  SpendAuditPayRoute: typeof SpendAuditPayRoute
+  SpendAuditIndexRoute: typeof SpendAuditIndexRoute
+}
+
+const SpendAuditRouteChildren: SpendAuditRouteChildren = {
+  SpendAuditPayRoute: SpendAuditPayRoute,
+  SpendAuditIndexRoute: SpendAuditIndexRoute,
+}
+
+const SpendAuditRouteWithChildren = SpendAuditRoute._addFileChildren(
+  SpendAuditRouteChildren,
+)
+
 interface ApiV1InternalMeterRouteChildren {
   ApiV1InternalMeterInvoicesRoute: typeof ApiV1InternalMeterInvoicesRoute
 }
@@ -1027,6 +1117,7 @@ const rootRouteChildren: RootRouteChildren = {
   PartnersRoute: PartnersRoute,
   PrivacyRoute: PrivacyRoute,
   SignupRoute: SignupRoute,
+  SpendAuditRoute: SpendAuditRouteWithChildren,
   VerifyEmailRoute: VerifyEmailRoute,
   MeterPayRoute: MeterPayRoute,
   OauthAuthorizeRoute: OauthAuthorizeRoute,
@@ -1036,6 +1127,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiV1CheckRoute: ApiV1CheckRoute,
   ApiV1McpRoute: ApiV1McpRoute,
   ApiV1ApprovalsIdRoute: ApiV1ApprovalsIdRoute,
+  ApiV1AuditSplatRoute: ApiV1AuditSplatRoute,
   ApiV1BillingCheckoutRoute: ApiV1BillingCheckoutRoute,
   ApiV1BillingConfigRoute: ApiV1BillingConfigRoute,
   ApiV1BillingHeliusRoute: ApiV1BillingHeliusRoute,

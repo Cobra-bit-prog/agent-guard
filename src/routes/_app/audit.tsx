@@ -17,6 +17,14 @@ import {
 } from "@/lib/server/audit-reports";
 import { formatUsd, shortAddress, timeAgo } from "@/lib/utils";
 import type { AuditTrailRow } from "@/lib/audit-report";
+import {
+  SPEND_AUDIT_HONESTY,
+  SPEND_AUDIT_PATH,
+  SPEND_AUDIT_PRICE_USD,
+  SPEND_AUDIT_PRODUCT,
+  SPEND_AUDIT_SCANNER,
+  SPEND_AUDIT_UPSELL,
+} from "@/lib/spend-audit";
 
 export const Route = createFileRoute("/_app/audit")({
   component: AuditPage,
@@ -99,8 +107,16 @@ function AuditPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Agent Audit</h1>
         <p className="text-sm text-muted">
           On-demand report of this agent’s Agent Control trail — checks, alerts, operator decisions,
-          and recorded transfers. Not a full chain replay. Generate, then download Excel, PDF, or
-          CSV.
+          and recorded transfers. Kind: check = the agent asked first; send = a recorded transfer;
+          alert = policy ping; decision = your Inbox choice. Not a full chain replay. Generate, then
+          download Excel, PDF, or CSV.
+        </p>
+        <p className="mt-2 text-sm text-muted">
+          Wallet not enrolled?{" "}
+          <a href={SPEND_AUDIT_PATH} className="font-medium text-navy hover:text-coral">
+            {SPEND_AUDIT_PRODUCT} (${SPEND_AUDIT_PRICE_USD} USDC)
+          </a>
+          . {SPEND_AUDIT_UPSELL} {SPEND_AUDIT_HONESTY} {SPEND_AUDIT_SCANNER}
         </p>
       </div>
 

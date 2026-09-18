@@ -91,6 +91,7 @@ describe("audit trail mapping", () => {
   it("states that this is the Agent Control trail, not a chain replay", () => {
     assert.match(AUDIT_DISCLAIMER, /Agent Control audit trail/i);
     assert.match(AUDIT_DISCLAIMER, /not a full on-chain replay/i);
+    assert.match(AUDIT_DISCLAIMER, /check = the agent asked first/i);
   });
 });
 
@@ -129,9 +130,15 @@ describe("on-demand Excel, PDF, and CSV", () => {
   });
 
   it("builds a PDF with the operator table header", () => {
-    const bytes = buildPdf(snapshot);
+    const bytes = buildPdf({
+      ...snapshot,
+      title: "Agent Control audit trail",
+      summary: ["Kind: check = the agent asked first; send = a recorded transfer."],
+    });
     const text = new TextDecoder("latin1").decode(bytes);
     assert.match(text, /^%PDF-1\./);
+    assert.match(text, /Agent Control audit trail/);
+    assert.match(text, /check = the agent asked first/);
     assert.match(text, /Time/);
     assert.match(text, /Result/);
     assert.match(text, /%%EOF/);

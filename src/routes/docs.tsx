@@ -24,6 +24,20 @@ import {
   METER_SEPARATE,
   METER_STEPS,
 } from "@/lib/meter-recipe";
+import {
+  SPEND_AUDIT_HEADLINE,
+  SPEND_AUDIT_HONESTY,
+  SPEND_AUDIT_LEDE,
+  SPEND_AUDIT_PATH,
+  SPEND_AUDIT_PAY29_CTA,
+  SPEND_AUDIT_PRICE_USD,
+  SPEND_AUDIT_PRODUCT,
+  SPEND_AUDIT_SCANNER,
+  SPEND_AUDIT_STARTER_HREF,
+  SPEND_AUDIT_TRIAL_CTA,
+  SPEND_AUDIT_TRIAL_HREF,
+  SPEND_AUDIT_UPSELL,
+} from "@/lib/spend-audit";
 
 const STEPS = [
   {
@@ -186,6 +200,9 @@ function DocsPage() {
           </a>
           <a href="#agent-storefront" className="text-muted hover:text-fg">
             Agent storefront
+          </a>
+          <a href="#wallet-spend-audit" className="text-muted hover:text-fg">
+            Wallet Spend Audit
           </a>
           <a href="#agent-meter" className="text-muted hover:text-fg">
             Agent Meter
@@ -554,6 +571,60 @@ client.onBeforePaymentCreation(
             </a>{" "}
             so every send asks Agent Control first.
           </p>
+        </section>
+
+        <section id="wallet-spend-audit" className="mt-16 scroll-mt-6">
+          <p className="text-meta font-medium uppercase tracking-[0.18em] text-coral">
+            {SPEND_AUDIT_PRODUCT} · ${SPEND_AUDIT_PRICE_USD} USDC
+          </p>
+          <h2 className="mt-3 text-title font-semibold tracking-tight">{SPEND_AUDIT_HEADLINE}</h2>
+          <p className="mt-3 max-w-[52ch] text-muted">{SPEND_AUDIT_LEDE}</p>
+          <p className="mt-3 max-w-[52ch] text-muted">{SPEND_AUDIT_HONESTY}</p>
+          <p className="mt-3 max-w-[52ch] text-muted">{SPEND_AUDIT_SCANNER}</p>
+          <p className="mt-3 max-w-[52ch] text-muted">{SPEND_AUDIT_UPSELL}</p>
+          <ol className="mt-8 space-y-3">
+            <li className="rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]">
+              <p className="font-mono text-meta text-navy">1</p>
+              <h3 className="mt-2 text-card font-medium">Paste a wallet</h3>
+              <p className="mt-1 text-muted">
+                Open{" "}
+                <a href={SPEND_AUDIT_PATH} className="font-medium text-navy hover:text-coral">
+                  /spend-audit
+                </a>
+                . Solana or 0x. You keep the keys.
+              </p>
+            </li>
+            <li className="rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]">
+              <p className="font-mono text-meta text-navy">2</p>
+              <h3 className="mt-2 text-card font-medium">Pay $49 USDC</h3>
+              <p className="mt-1 text-muted">
+                Prefer Base EIP-3009 exact, or Solana Pay with the invoice reference.{" "}
+                {SPEND_AUDIT_HONESTY} GET /api/v1/audit/pricing then POST /api/v1/audit/invoice.
+              </p>
+            </li>
+            <li className="rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]">
+              <p className="font-mono text-meta text-navy">3</p>
+              <h3 className="mt-2 text-card font-medium">Download the report</h3>
+              <p className="mt-1 text-muted">
+                PDF or CSV of outbound transfers in a 30-day lookback: over-cap days vs a
+                hypothetical $100/day cap, unknown destinations, sink-like addresses.
+              </p>
+            </li>
+          </ol>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <a
+              href={SPEND_AUDIT_PATH}
+              className="inline-flex h-11 items-center rounded-full bg-primary px-5 text-body font-semibold text-primary-fg"
+            >
+              Open {SPEND_AUDIT_PRODUCT}
+            </a>
+            <a href={SPEND_AUDIT_TRIAL_HREF} className="inline-flex h-11 items-center rounded-full border border-border px-5 text-body font-semibold">
+              {SPEND_AUDIT_TRIAL_CTA}
+            </a>
+            <a href={SPEND_AUDIT_STARTER_HREF} className="inline-flex h-11 items-center rounded-full border border-border px-5 text-body font-semibold">
+              {SPEND_AUDIT_PAY29_CTA}
+            </a>
+          </div>
         </section>
 
         <section id="agent-meter" className="mt-16 scroll-mt-6">
