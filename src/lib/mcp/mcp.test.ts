@@ -185,10 +185,13 @@ describe("POST initialize is Streamable HTTP", () => {
     assert.match(instructions, /look \$0\.10 is optional one-shot/);
     assert.match(instructions, /look \/ looks_20 \/ addresses_100 \/ stamp_tx/);
     assert.match(instructions, /Merchants can require the stamp_tx \$0\.05 ticket before accepting agent USDC/);
+    assert.match(instructions, /Take this ticket or we do not take your USDC/);
     assert.match(instructions, /meter_watch, then X-Agent-Pass/);
     assert.match(instructions, /We never take keys/);
     assert.match(instructions, /watch_url/);
     assert.match(instructions, /Sign USDC on your agent machine/);
+    assert.match(instructions, /src\/adapters\/meter-pay-base\.ts/);
+    assert.match(instructions, /Prefer Base EIP-3009 exact to base_pay_to/);
     const meterSlice = instructions.slice(instructions.indexOf("Agent Meter:"));
     assert.doesNotMatch(meterSlice, /\bhold\b/i);
     assert.doesNotMatch(meterSlice, /Inbox/);
@@ -260,7 +263,10 @@ describe("initialized notification and session reuse", () => {
     assert.match(stamp, /Merchants can require the stamp_tx \$0\.05 ticket before accepting agent USDC/);
     assert.match(stamp, /meter_verify_stamp/);
     assert.match(verify, /Merchants can require the stamp_tx \$0\.05 ticket before accepting agent USDC/);
+    assert.match(verify, /Take this ticket or we do not take your USDC/);
     assert.match(verify, /before you accept agent USDC/);
+    assert.match(verify, /If verified is true and decision is allow/);
+    assert.match(stamp, /Take this ticket or we do not take your USDC/);
     const buy = MCP_TOOLS.find((tool) => tool.name === "meter_buy_pass");
     const watch = MCP_TOOLS.find((tool) => tool.name === "meter_watch");
     assert.match(buy?.description ?? "", /ok:true \/ status payment_required/);

@@ -19,6 +19,7 @@ import { Route as PartnersRouteImport } from './routes/partners'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as SpendAuditRouteImport } from './routes/spend-audit'
+import { Route as StampRouteImport } from './routes/stamp'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as AppAgentsRouteImport } from './routes/_app/agents'
 import { Route as AppAlertsRouteImport } from './routes/_app/alerts'
@@ -108,6 +109,11 @@ const SignupRoute = SignupRouteImport.update({
 const SpendAuditRoute = SpendAuditRouteImport.update({
   id: '/spend-audit',
   path: '/spend-audit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StampRoute = StampRouteImport.update({
+  id: '/stamp',
+  path: '/stamp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
@@ -327,6 +333,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/signup': typeof SignupRoute
   '/spend-audit': typeof SpendAuditRouteWithChildren
+  '/stamp': typeof StampRoute
   '/verify-email': typeof VerifyEmailRoute
   '/agents': typeof AppAgentsRouteWithChildren
   '/alerts': typeof AppAlertsRoute
@@ -378,6 +385,7 @@ export interface FileRoutesByTo {
   '/partners': typeof PartnersRoute
   '/privacy': typeof PrivacyRoute
   '/signup': typeof SignupRoute
+  '/stamp': typeof StampRoute
   '/verify-email': typeof VerifyEmailRoute
   '/alerts': typeof AppAlertsRoute
   '/audit': typeof AppAuditRoute
@@ -430,6 +438,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/signup': typeof SignupRoute
   '/spend-audit': typeof SpendAuditRouteWithChildren
+  '/stamp': typeof StampRoute
   '/verify-email': typeof VerifyEmailRoute
   '/_app/agents': typeof AppAgentsRouteWithChildren
   '/_app/alerts': typeof AppAlertsRoute
@@ -484,6 +493,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/signup'
     | '/spend-audit'
+    | '/stamp'
     | '/verify-email'
     | '/agents'
     | '/alerts'
@@ -535,6 +545,7 @@ export interface FileRouteTypes {
     | '/partners'
     | '/privacy'
     | '/signup'
+    | '/stamp'
     | '/verify-email'
     | '/alerts'
     | '/audit'
@@ -586,6 +597,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/signup'
     | '/spend-audit'
+    | '/stamp'
     | '/verify-email'
     | '/_app/agents'
     | '/_app/alerts'
@@ -640,6 +652,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   SignupRoute: typeof SignupRoute
   SpendAuditRoute: typeof SpendAuditRouteWithChildren
+  StampRoute: typeof StampRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
   MeterPayRoute: typeof MeterPayRoute
   OauthAuthorizeRoute: typeof OauthAuthorizeRoute
@@ -738,6 +751,13 @@ declare module '@tanstack/react-router' {
       path: '/spend-audit'
       fullPath: '/spend-audit'
       preLoaderRoute: typeof SpendAuditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/stamp': {
+      id: '/stamp'
+      path: '/stamp'
+      fullPath: '/stamp'
+      preLoaderRoute: typeof StampRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/verify-email': {
@@ -1118,6 +1138,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   SignupRoute: SignupRoute,
   SpendAuditRoute: SpendAuditRouteWithChildren,
+  StampRoute: StampRoute,
   VerifyEmailRoute: VerifyEmailRoute,
   MeterPayRoute: MeterPayRoute,
   OauthAuthorizeRoute: OauthAuthorizeRoute,

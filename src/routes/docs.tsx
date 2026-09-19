@@ -23,6 +23,13 @@ import {
   METER_RECIPE,
   METER_SEPARATE,
   METER_STEPS,
+  STAMP_PATH,
+  STAMP_SELLER_BODY,
+  STAMP_SELLER_EYEBROW,
+  STAMP_SELLER_HEADLINE,
+  STAMP_SELLER_LEDE,
+  STAMP_SELLER_STEPS,
+  STAMP_VERIFY_CURL,
 } from "@/lib/meter-recipe";
 import {
   SPEND_AUDIT_HEADLINE,
@@ -206,6 +213,9 @@ function DocsPage() {
           </a>
           <a href="#agent-meter" className="text-muted hover:text-fg">
             Agent Meter
+          </a>
+          <a href="#stamp" className="text-muted hover:text-fg">
+            Stamp seller
           </a>
           <a href="#adapters" className="text-muted hover:text-fg">
             Adapters
@@ -690,6 +700,41 @@ client.onBeforePaymentCreation(
             <code className="font-mono text-fg">meter_stamp</code>,{" "}
             <code className="font-mono text-fg">meter_verify_stamp</code>
             . Merchants can require the stamp_tx $0.05 ticket before accepting agent USDC.
+          </p>
+        </section>
+
+        <section id="stamp" className="mt-16 scroll-mt-6">
+          <p className="text-meta font-medium uppercase tracking-[0.18em] text-coral">
+            {STAMP_SELLER_EYEBROW}
+          </p>
+          <h2 className="mt-3 text-title font-semibold tracking-tight">{STAMP_SELLER_HEADLINE}</h2>
+          <p className="mt-3 max-w-[52ch] text-muted">{STAMP_SELLER_LEDE}</p>
+          <p className="mt-3 max-w-[52ch] text-muted">{STAMP_SELLER_BODY}</p>
+          <p className="mt-3 max-w-[52ch] text-muted">
+            Can I pay this address? First 5 free. {METER_PACKS_FIRST} Ticket: stamp_tx $0.05.
+          </p>
+          <ol className="mt-8 space-y-3">
+            {STAMP_SELLER_STEPS.map((s) => (
+              <li
+                key={s.n}
+                className="rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]"
+              >
+                <p className="font-mono text-meta text-navy">{s.n}</p>
+                <h3 className="mt-2 text-card font-medium">{s.t}</h3>
+                <p className="mt-1 text-muted">{s.d}</p>
+              </li>
+            ))}
+          </ol>
+          <CopyCode code={STAMP_VERIFY_CURL} label="Copy verify" />
+          <p className="mt-6 text-body leading-relaxed text-muted">
+            Seller page:{" "}
+            <a href={STAMP_PATH} className="font-medium text-navy hover:text-coral">
+              /stamp
+            </a>
+            . MCP{" "}
+            <code className="font-mono text-fg">meter_stamp</code> then{" "}
+            <code className="font-mono text-fg">meter_verify_stamp</code>. Public. No email. No API
+            key.
           </p>
         </section>
 

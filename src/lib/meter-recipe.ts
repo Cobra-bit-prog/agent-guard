@@ -23,6 +23,36 @@ export const METER_DOCS_HREF = "/docs#agent-meter";
 export const METER_DOCS_URL = "https://agent-control.net/docs#agent-meter";
 export const METER_LLMS_HREF = "/llms.txt";
 export const METER_LLMS_URL = "https://agent-control.net/llms.txt";
+export const STAMP_PATH = "/stamp";
+export const STAMP_URL = "https://agent-control.net/stamp";
+export const STAMP_DOCS_HREF = "/docs#stamp";
+export const STAMP_DOCS_URL = "https://agent-control.net/docs#stamp";
+export const STAMP_SELLER_EYEBROW = "Stamp seller";
+export const STAMP_SELLER_HEADLINE = METER_TICKET;
+export const STAMP_SELLER_LEDE = METER_MERCHANT_STAMP;
+export const STAMP_SELLER_BODY =
+  "You sell something. An agent wants to pay you in USDC. Ask for a stamp first. If the stamp is missing or says stop, do not take the USDC.";
+export const STAMP_SELLER_VERIFY =
+  "GET /api/v1/meter/stamp/:id or MCP meter_verify_stamp. If verified is true and decision is allow, take the USDC. If not, do not take it.";
+export const STAMP_VERIFY_CURL =
+  "curl -s https://agent-control.net/api/v1/meter/stamp/<stamp_id>";
+export const STAMP_SELLER_STEPS = [
+  {
+    n: "1",
+    t: "Ask for the ticket",
+    d: `Tell the agent: buy stamp_tx $0.05, then call meter_stamp. ${METER_QUESTION} First 5 free. ${METER_PACKS_FIRST}`,
+  },
+  {
+    n: "2",
+    t: "Take the stamp_id",
+    d: "They send you a stamp_id. Public verify. No email. No API key.",
+  },
+  {
+    n: "3",
+    t: "Verify, then take USDC",
+    d: STAMP_SELLER_VERIFY,
+  },
+] as const;
 export const METER_PRICING_PATH = "/api/v1/meter/pricing";
 export const METER_PRICING_URL = "https://agent-control.net/api/v1/meter/pricing";
 export const METER_PRICING_CURL = "curl -s https://agent-control.net/api/v1/meter/pricing";

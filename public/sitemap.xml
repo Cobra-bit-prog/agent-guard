@@ -13,6 +13,10 @@
     <changefreq>weekly</changefreq>
   </url>
   <url>
+    <loc>https://agent-control.net/stamp</loc>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
     <loc>https://agent-control.net/docs</loc>
     <changefreq>weekly</changefreq>
   </url>

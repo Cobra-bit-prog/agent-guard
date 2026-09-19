@@ -25,6 +25,12 @@ import {
   METER_PRICING_CURL,
   METER_PRICING_PATH,
   METER_QUESTION,
+  STAMP_DOCS_HREF,
+  STAMP_PATH,
+  STAMP_SELLER_BODY,
+  STAMP_SELLER_EYEBROW,
+  STAMP_SELLER_HEADLINE,
+  STAMP_SELLER_LEDE,
 } from "@/lib/meter-recipe";
 
 export const Route = createFileRoute("/connect")({
@@ -105,6 +111,32 @@ function ConnectPage() {
             </a>
           </p>
           <CopyCode code={METER_PRICING_CURL} label="Copy" />
+        </section>
+
+        <section
+          id="stamp"
+          className="mt-10 rounded-[20px] border border-border bg-surface p-6 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]"
+        >
+          <p className="text-meta font-medium uppercase tracking-[0.18em] text-coral">
+            {STAMP_SELLER_EYEBROW}
+          </p>
+          <h2 className="mt-3 text-title font-semibold tracking-tight">{STAMP_SELLER_HEADLINE}</h2>
+          <p className="mt-3 max-w-[52ch] text-body text-muted">{STAMP_SELLER_LEDE}</p>
+          <p className="mt-3 max-w-[52ch] text-body text-muted">{STAMP_SELLER_BODY}</p>
+          <p className="mt-3 text-body text-muted">
+            MCP:{" "}
+            <code className="font-mono text-fg">meter_stamp</code>,{" "}
+            <code className="font-mono text-fg">meter_verify_stamp</code>.
+          </p>
+          <p className="mt-3 text-body text-muted">
+            <a href={STAMP_PATH} className="font-medium text-navy hover:text-coral">
+              Seller page
+            </a>
+            {" · "}
+            <a href={STAMP_DOCS_HREF} className="font-medium text-navy hover:text-coral">
+              Docs
+            </a>
+          </p>
         </section>
 
         <h2 className="mt-14 text-title font-semibold tracking-tight">
