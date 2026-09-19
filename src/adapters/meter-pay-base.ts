@@ -3,8 +3,10 @@
  * Copy this file. Sign EIP-3009 exact on YOUR machine (CDP / AgentKit / viem).
  * We never take keys. payTo is locked.
  *
- * Flow: POST /meter/pass → 402 looks_20 $0.20 → sign EIP-3009 exact to
- * base_pay_to → POST /meter/watch with payment until X-Agent-Pass.
+ * From a meter_buy_pass / 402 invoice already in hand:
+ *   const { payment } = await payMeterPassBase({ invoice, from, signExact });
+ *   // then meter_watch { invoice_id, payment } until token
+ * CDP: signExact can be wallet.signTypedData(meterExactTypedData(authorization)).
  * Separate from AgentKit / x402 Human App adapters (those call POST /check).
  */
 
@@ -15,6 +17,19 @@ export const METER_BASE_NETWORK = "base";
 export const DEFAULT_METER_ORIGIN = "https://agent-control.net";
 export const DEFAULT_PASS_BASE_UNITS = "200000";
 export const DEFAULT_EXACT_TTL_SEC = 300;
+export const METER_EXACT_PRIMARY_TYPE = "TransferWithAuthorization" as const;
+export const METER_EXACT_EIP712_NAME = "USD Coin";
+export const METER_EXACT_EIP712_VERSION = "2";
+export const METER_EXACT_TYPES = {
+  TransferWithAuthorization: [
+    { name: "from", type: "address" },
+    { name: "to", type: "address" },
+    { name: "value", type: "uint256" },
+    { name: "validAfter", type: "uint256" },
+    { name: "validBefore", type: "uint256" },
+    { name: "nonce", type: "bytes32" },
+  ],
+} as const;
 
 export type MeterFetchLike = (
   input: string,
@@ -137,6 +152,28 @@ export function assertPayerIsNotBaseReceiveWallet(payer: string): string {
     throw new Error("Do not pay from the receive wallet. Use your agent wallet.");
   }
   return from;
+}
+
+/** EIP-712 typed data for CDP / AgentKit / viem signTypedData. payTo is locked. */
+export function meterExactTypedData(authorization: MeterExactAuthorization) {
+  return {
+    domain: {
+      name: METER_EXACT_EIP712_NAME,
+      version: METER_EXACT_EIP712_VERSION,
+      chainId: METER_BASE_CHAIN_ID,
+      verifyingContract: METER_BASE_USDC,
+    },
+    types: METER_EXACT_TYPES,
+    primaryType: METER_EXACT_PRIMARY_TYPE,
+    message: {
+      from: assertPayerIsNotBaseReceiveWallet(authorization.from),
+      to: lockedMeterBasePayTo(authorization.to),
+      value: authorization.value,
+      validAfter: authorization.validAfter,
+      validBefore: authorization.validBefore,
+      nonce: authorization.nonce,
+    },
+  };
 }
 
 export function buildMeterExactAuthorization(opts: {

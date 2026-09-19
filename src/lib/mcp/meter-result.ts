@@ -30,7 +30,7 @@ function asMeterPayload(payload: unknown): Record<string, unknown> {
   return { error: "meter_parse" };
 }
 
-/** HTTP 402 labels stay on the HTTP door. MCP tool text must look like a payable challenge. adapter_url, base_adapter_url, preferred_rail, pay_page, next_tool, next, next_steps, and sign pass through. */
+/** HTTP 402 labels stay on the HTTP door. MCP tool text must look like a payable challenge. adapter_url, base_adapter_url, preferred_rail, pay_page, next_tool, tool_fields, sign_exact, adapter_snippet, next, next_steps, and sign pass through. */
 export function reshapeMeter402Invoice(body: Record<string, unknown>): Record<string, unknown> {
   const invoice: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(body)) {

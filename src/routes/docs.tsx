@@ -649,7 +649,8 @@ client.onBeforePaymentCreation(
             looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. Take this ticket or we do
             not take your USDC. Merchants can require the stamp_tx $0.05 ticket before accepting
             agent USDC. Prefer Base USDC (EIP-3009 exact) to base_pay_to (CDP/AgentKit). No Solana
-            key needed. Copy{" "}
+            key needed. After meter_buy_pass, the 402 includes sign_exact and
+            adapter_snippet so CDP/AgentKit can finish in-process. Copy{" "}
             <code className="font-mono text-fg">src/adapters/meter-pay-base.ts</code>
             {" "}
             — signExact, then watch until the pass token. Optional Solana:{" "}

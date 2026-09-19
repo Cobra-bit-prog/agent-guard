@@ -39,6 +39,13 @@ export {
   defaultSkuForKind,
 } from "./pricing.ts";
 export {
+  METER_ADAPTER_SNIPPET,
+  METER_402_TOOL_FIELDS,
+  METER_EXACT_PRIMARY_TYPE,
+  meter402SignExact,
+  meterExactEip712Domain,
+} from "./sign-exact.ts";
+export {
   METER_BAZAAR_DESCRIPTION,
   METER_BAZAAR_SERVICE_NAME,
   meterBazaarResource,

@@ -71,6 +71,7 @@ export {
   buildMeterExactPayment,
   buyMeterPassBase,
   lockedMeterBasePayTo,
+  meterExactTypedData,
   payMeterPassBase,
   type BuyMeterPassBaseOptions,
   type BuyMeterPassBaseResult,

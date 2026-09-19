@@ -250,11 +250,14 @@ describe("meter http", () => {
     assert.equal(body.next, meter402Next("inv_test"));
     assert.deepEqual(body.next_steps, meter402NextSteps("inv_test"));
     assert.match(body.next_steps[0] ?? "", /No Solana key needed/);
-    assert.match(body.next_steps[0] ?? "", /base_adapter_url/);
+    assert.match(body.next_steps[0] ?? "", /sign_exact/);
+    assert.match(body.next_steps[0] ?? "", /adapter_snippet/);
+    assert.match(body.next_steps[3] ?? "", /base_adapter_url/);
     assert.match(body.next, /adapter_url/);
     assert.match(body.next, /base_adapter_url/);
     assert.match(body.next, /pay_page/);
-    assert.match(body.next, /Phantom/);
+    assert.match(body.next, /sign_exact/);
+    assert.match(body.next, /adapter_snippet/);
     assert.match(body.next, /meter_watch/);
     assert.match(body.next, /"invoice_id":"inv_test"/);
     assert.match(body.next, /meter_scan/);
@@ -265,8 +268,32 @@ describe("meter http", () => {
     assert.match(body.sign, /buyMeterPass \/ payMeterPass/);
     assert.match(body.sign, /buyMeterPassBase/);
     assert.match(body.sign, /adapter_url/);
-    assert.match(body.sign, /base_adapter_url/);
+    assert.match(body.sign, /sign_exact/);
+    assert.match(body.sign, /adapter_snippet/);
     assert.doesNotMatch(body.sign, /Copy src\/adapters\/meter-pay\.ts/);
+    assert.deepEqual(body.tool_fields, [
+      "preferred_rail",
+      "base_pay_to",
+      "amount_usd",
+      "amount_base_units",
+      "invoice_id",
+      "reference",
+      "sign_exact",
+      "adapter_snippet",
+      "watch_url",
+      "next_tool",
+      "next_steps",
+    ]);
+    assert.equal(body.sign_exact.pay_to, EVM_PAYOUT_ADDRESS);
+    assert.equal(body.sign_exact.pay_to, "0xc5df91Fd7D9578A63efe9B0ee96Bacc5e7742E98");
+    assert.equal(body.sign_exact.chain_id, 8453);
+    assert.equal(body.sign_exact.primaryType, "TransferWithAuthorization");
+    assert.equal(body.sign_exact.authorization.to, EVM_PAYOUT_ADDRESS);
+    assert.equal(body.sign_exact.authorization.value, METER_LOOK.amount_base_units);
+    assert.equal(body.sign_exact.watch.invoice_id, "inv_test");
+    assert.equal(body.sign_exact.next_tool, "meter_watch");
+    assert.match(body.adapter_snippet, /payMeterPassBase/);
+    assert.match(body.adapter_snippet, /meter_watch/);
     assert.equal(body.sku, "look");
     assert.equal(body.amount_usd, METER_LOOK.price_usd);
     assert.equal(body.amount_base_units, METER_LOOK.amount_base_units);

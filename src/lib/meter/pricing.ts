@@ -1,6 +1,7 @@
 import { SOLANA_PAYOUT_ADDRESS, USDC_MINT } from "../solana-pay.ts";
 import { EVM_PAYOUT_ADDRESS } from "../evm-pay.ts";
 import { meterFundsAccepts, meterPaymentAccepts, meterPaymentRequiredAccepts } from "./accepts.ts";
+import { METER_402_TOOL_FIELDS, METER_ADAPTER_SNIPPET, meter402SignExact } from "./sign-exact.ts";
 import {
   assertMeterBazaarDescriptionBound,
   meterBazaarExtensions,
@@ -230,7 +231,7 @@ export const METER_BASE_ADAPTER_URL =
 export const METER_PREFERRED_RAIL = "base" as const;
 export const METER_NEXT_TOOL = "meter_watch" as const;
 export const METER_402_SIGN =
-  `${METER_PACKS_FIRST} Prefer Base USDC EIP-3009 exact to base_pay_to (CDP/AgentKit; no Solana key). Fetch base_adapter_url (buyMeterPassBase). Solana: pay_to WITH the reference. Fetch adapter_url (buyMeterPass / payMeterPass). We never take keys.`;
+  `${METER_PACKS_FIRST} Prefer Base USDC EIP-3009 exact to base_pay_to (CDP/AgentKit; no Solana key). Use sign_exact + adapter_snippet in this invoice — finish in-process (payMeterPassBase / signTypedData). Fetch base_adapter_url (buyMeterPassBase) only if you need the full file. Solana: pay_to WITH the reference. Fetch adapter_url (buyMeterPass / payMeterPass). We never take keys.`;
 
 export function meter402PayPage(invoiceId: string): string {
   return `https://agent-control.net/meter/pay?invoice_id=${invoiceId}`;
@@ -238,15 +239,15 @@ export function meter402PayPage(invoiceId: string): string {
 
 export function meter402NextSteps(invoiceId: string): string[] {
   return [
-    "Prefer Base USDC EIP-3009 exact to base_pay_to (CDP/AgentKit). No Solana key needed. Fetch base_adapter_url (buyMeterPassBase).",
-    `Call meter_watch {"invoice_id":"${invoiceId}"} with payment (PAYMENT-SIGNATURE) until token.`,
+    "On YOUR machine, signExact EIP-3009 TransferWithAuthorization to base_pay_to (CDP/AgentKit/viem). Use sign_exact.domain + types + authorization (fill from, nonce, validBefore). Or run adapter_snippet (payMeterPassBase). No Solana key needed. We never take keys.",
+    `Call meter_watch {"invoice_id":"${invoiceId}","payment":"<PAYMENT-SIGNATURE>"} until token.`,
     "Retry meter_scan with that token as pass_token / X-Agent-Pass.",
-    "Optional Solana: fetch adapter_url (buyMeterPass) or open pay_page on a laptop with Phantom.",
+    "Optional: fetch base_adapter_url (buyMeterPassBase) or adapter_url / pay_page if you are not signing in-process.",
   ];
 }
 
 export function meter402Next(invoiceId: string): string {
-  return `1) Prefer Base: EIP-3009 exact to base_pay_to (CDP/AgentKit; no Solana key). Fetch base_adapter_url (buyMeterPassBase). Retry with PAYMENT-SIGNATURE. 2) Call meter_watch {"invoice_id":"${invoiceId}"} with payment until token. 3) Retry meter_scan with that token as pass_token / X-Agent-Pass. 4) Optional Solana: fetch adapter_url (buyMeterPass) or open pay_page on a laptop with Phantom. ${METER_PACKS_FIRST}`;
+  return `1) On YOUR machine: signExact EIP-3009 to base_pay_to (CDP/AgentKit; no Solana key). Use sign_exact + adapter_snippet (payMeterPassBase). 2) Call meter_watch {"invoice_id":"${invoiceId}","payment":"<PAYMENT-SIGNATURE>"} until token. 3) Retry meter_scan with that token as pass_token / X-Agent-Pass. 4) Optional: fetch base_adapter_url or adapter_url / pay_page. ${METER_PACKS_FIRST}`;
 }
 
 export function meter402Body(invoice: {
@@ -307,6 +308,13 @@ export function meter402Body(invoice: {
     preferred_rail: METER_PREFERRED_RAIL,
     pay_page: meter402PayPage(invoice.invoice_id),
     next_tool: METER_NEXT_TOOL,
+    tool_fields: [...METER_402_TOOL_FIELDS],
+    sign_exact: meter402SignExact({
+      invoice_id: invoice.invoice_id,
+      reference: invoice.reference,
+      amount_base_units: amountBase,
+    }),
+    adapter_snippet: METER_ADAPTER_SNIPPET,
     sign: METER_402_SIGN,
     next: meter402Next(invoice.invoice_id),
     next_steps: meter402NextSteps(invoice.invoice_id),
