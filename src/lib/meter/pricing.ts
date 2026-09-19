@@ -240,14 +240,14 @@ export function meter402PayPage(invoiceId: string): string {
 export function meter402NextSteps(invoiceId: string): string[] {
   return [
     "On YOUR machine, signExact EIP-3009 TransferWithAuthorization to base_pay_to (CDP/AgentKit/viem). Use sign_exact.domain + types + authorization (fill from, nonce, validBefore). Or run adapter_snippet (payMeterPassBase). No Solana key needed. We never take keys.",
-    `Call meter_watch {"invoice_id":"${invoiceId}","payment":"<PAYMENT-SIGNATURE>"} until token.`,
+    `Call meter_watch({ "invoice_id":"${invoiceId}", payment }) until token. payment is the x402 v2 object from payMeterPassBase / adapter_snippet / sign_exact.payment_template after you fill signature — never a bare signature string. Shape: { x402Version:2, payload:{ authorization, signature }, accepted:{ network:"base", extra:{ invoice_id, reference } } }.`,
     "Retry meter_scan with that token as pass_token / X-Agent-Pass.",
     "Optional: fetch base_adapter_url (buyMeterPassBase) or adapter_url / pay_page if you are not signing in-process.",
   ];
 }
 
 export function meter402Next(invoiceId: string): string {
-  return `1) On YOUR machine: signExact EIP-3009 to base_pay_to (CDP/AgentKit; no Solana key). Use sign_exact + adapter_snippet (payMeterPassBase). 2) Call meter_watch {"invoice_id":"${invoiceId}","payment":"<PAYMENT-SIGNATURE>"} until token. 3) Retry meter_scan with that token as pass_token / X-Agent-Pass. 4) Optional: fetch base_adapter_url or adapter_url / pay_page. ${METER_PACKS_FIRST}`;
+  return `1) On YOUR machine: signExact EIP-3009 to base_pay_to (CDP/AgentKit; no Solana key). Use sign_exact + adapter_snippet (payMeterPassBase). 2) Call meter_watch({ "invoice_id":"${invoiceId}", payment }) until token. payment is the x402 v2 object from payMeterPassBase / sign_exact.payment_template after you fill signature — never a bare signature string. Shape: { x402Version:2, payload:{ authorization, signature }, accepted:{ network:"base", extra:{ invoice_id, reference } } }. 3) Retry meter_scan with that token as pass_token / X-Agent-Pass. 4) Optional: fetch base_adapter_url or adapter_url / pay_page. ${METER_PACKS_FIRST}`;
 }
 
 export function meter402Body(invoice: {

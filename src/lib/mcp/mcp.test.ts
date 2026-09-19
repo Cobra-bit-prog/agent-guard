@@ -297,6 +297,15 @@ describe("initialized notification and session reuse", () => {
     assert.match(watch?.description ?? "", /invoice_id/);
     assert.match(watch?.description ?? "", /X-Agent-Pass/);
     assert.match(watch?.description ?? "", /We never take keys/);
+    assert.match(watch?.description ?? "", /payMeterPassBase/);
+    assert.match(watch?.description ?? "", /x402Version/);
+    assert.doesNotMatch(watch?.description ?? "", /same JSON as PAYMENT-SIGNATURE/);
+    const watchPayment = watch?.inputSchema.properties && "payment" in watch.inputSchema.properties
+      ? String((watch.inputSchema.properties as { payment?: { description?: string } }).payment?.description ?? "")
+      : "";
+    assert.match(watchPayment, /payMeterPassBase/);
+    assert.match(watchPayment, /x402Version/);
+    assert.doesNotMatch(watchPayment, /PAYMENT-SIGNATURE/);
     const schemas = JSON.stringify(MCP_TOOLS.map((tool) => tool.inputSchema));
     assert.doesNotMatch(schemas, /secret_key|secretKey|private_key|privateKey|base58_secret/);
     assert.equal(buy?.inputSchema.properties && "secret_key" in (buy.inputSchema.properties as object), false);
