@@ -231,7 +231,7 @@ export const METER_BASE_ADAPTER_URL =
 export const METER_PREFERRED_RAIL = "base" as const;
 export const METER_NEXT_TOOL = "meter_watch" as const;
 export const METER_402_SIGN =
-  `${METER_PACKS_FIRST} Prefer Base USDC EIP-3009 exact to base_pay_to (CDP/AgentKit; no Solana key). Use sign_exact + adapter_snippet in this invoice — finish in-process (payMeterPassBase / signTypedData). Fetch base_adapter_url only if you need the full file. Solana: pay_to WITH the reference. Fetch adapter_url (buyMeterPass / payMeterPass). We never take keys.`;
+  `${METER_PACKS_FIRST} Prefer Base USDC EIP-3009 exact to base_pay_to (CDP/AgentKit; no Solana key). Use sign_exact + adapter_snippet in this invoice — finish in-process (payMeterPassBase / signTypedData). Fetch base_adapter_url (buyMeterPassBase) only if you need the full file. Solana: pay_to WITH the reference. Fetch adapter_url (buyMeterPass / payMeterPass). We never take keys.`;
 
 export function meter402PayPage(invoiceId: string): string {
   return `https://agent-control.net/meter/pay?invoice_id=${invoiceId}`;
