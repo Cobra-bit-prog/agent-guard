@@ -252,6 +252,11 @@ describe("meter http", () => {
     assert.match(body.next_steps[0] ?? "", /No Solana key needed/);
     assert.match(body.next_steps[0] ?? "", /sign_exact/);
     assert.match(body.next_steps[0] ?? "", /adapter_snippet/);
+    assert.match(body.next_steps[1] ?? "", /meter_watch\(\{ "invoice_id":"inv_test", payment \}\)/);
+    assert.match(body.next_steps[1] ?? "", /payMeterPassBase/);
+    assert.match(body.next_steps[1] ?? "", /x402Version/);
+    assert.match(body.next_steps[1] ?? "", /payload/);
+    assert.doesNotMatch(body.next_steps.join(" "), /"payment":"<PAYMENT-SIGNATURE>"/);
     assert.match(body.next_steps[3] ?? "", /base_adapter_url/);
     assert.match(body.next, /adapter_url/);
     assert.match(body.next, /base_adapter_url/);
@@ -260,6 +265,9 @@ describe("meter http", () => {
     assert.match(body.next, /adapter_snippet/);
     assert.match(body.next, /meter_watch/);
     assert.match(body.next, /"invoice_id":"inv_test"/);
+    assert.match(body.next, /payMeterPassBase/);
+    assert.match(body.next, /x402Version/);
+    assert.doesNotMatch(body.next, /"payment":"<PAYMENT-SIGNATURE>"/);
     assert.match(body.next, /meter_scan/);
     assert.match(body.next, /X-Agent-Pass/);
     assert.match(body.next, /no Solana key/);

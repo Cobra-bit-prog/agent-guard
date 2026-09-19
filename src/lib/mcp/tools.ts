@@ -42,7 +42,7 @@ export const MCP_TOOLS = [
     name: "meter_watch",
     title: "Watch a Meter invoice",
     description:
-      `${METER_AGENT_LEAD} After Base EIP-3009 exact (CDP/AgentKit; no Solana key) or optional Solana USDC, call with invoice_id until token. Pass payment for Base (same JSON as PAYMENT-SIGNATURE). Repeat until the result includes token — that is X-Agent-Pass. Then meter_scan with pass_token. Optional signature (tx sig only). We never take keys. No human account.`,
+      `${METER_AGENT_LEAD} After Base EIP-3009 exact (CDP/AgentKit; no Solana key) or optional Solana USDC, call with invoice_id until token. Pass the Base payment object from payMeterPassBase / sign_exact.payment_template after you fill signature ({ x402Version, payload:{ authorization, signature }, accepted }) — not a raw signature string. Repeat until the result includes token — that is X-Agent-Pass. Then meter_scan with pass_token. Optional signature (tx sig only). We never take keys. No human account.`,
     annotations: writes,
     inputSchema: {
       type: "object",
@@ -55,7 +55,7 @@ export const MCP_TOOLS = [
         },
         payment: {
           type: "object",
-          description: "Optional Base EIP-3009 exact payload. Never send a secret key.",
+          description: "Base x402 v2 payment object from payMeterPassBase / sign_exact.payment_template (x402Version + payload.authorization + payload.signature + accepted). Not a raw signature string. Never send a secret key.",
         },
       },
     },

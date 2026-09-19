@@ -104,7 +104,7 @@ export function meter402SignExact(invoice: MeterSignExactInvoice) {
     watch: {
       tool: METER_SIGN_EXACT_NEXT_TOOL,
       invoice_id: invoice.invoice_id,
-      payment: "EIP-3009 exact PAYMENT-SIGNATURE from signExact. Never a secret key.",
+      payment: "x402 v2 payment object from payMeterPassBase / sign_exact.payment_template after you fill signature ({ x402Version, payload:{ authorization, signature }, accepted }). Never a bare signature string or secret key.",
     },
     sign: "On YOUR machine: CDP/AgentKit/viem signTypedData (TransferWithAuthorization) using sign_exact.domain + types + authorization. Fill from, nonce, validBefore. We never take keys.",
   };

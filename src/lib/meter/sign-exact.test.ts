@@ -32,6 +32,9 @@ describe("Meter in-process Base signExact fields", () => {
     assert.equal(sign.payment_template.accepted.extra.invoice_id, "inv_oneshot");
     assert.equal(sign.watch.tool, "meter_watch");
     assert.equal(sign.watch.invoice_id, "inv_oneshot");
+    assert.match(sign.watch.payment, /payMeterPassBase/);
+    assert.match(sign.watch.payment, /x402Version/);
+    assert.doesNotMatch(sign.watch.payment, /PAYMENT-SIGNATURE/);
     assert.equal(sign.next_tool, "meter_watch");
     assert.match(sign.sign, /We never take keys/);
     assert.match(METER_ADAPTER_SNIPPET, /payMeterPassBase/);
