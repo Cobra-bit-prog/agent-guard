@@ -309,6 +309,8 @@ describe("Agent Meter recipe on public discovery surfaces", () => {
     assert.match(llms, /MCP-native \(no Solana key\)/);
     assert.match(llms, /We never take keys/);
     assert.match(llms, /meter_buy_pass → sign Base EIP-3009 exact → meter_watch with payment until token/);
+    assert.match(llms, /sign_exact/);
+    assert.match(llms, /adapter_snippet/);
     assert.doesNotMatch(llms, /locked forever/i);
     assert.doesNotMatch(llms, /sacred/i);
     assert.doesNotMatch(llms, /secret_key|private_key|base58_secret/);

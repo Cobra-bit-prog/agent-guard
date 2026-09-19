@@ -15,6 +15,7 @@ import {
   buildMeterExactPayment,
   buyMeterPassBase,
   lockedMeterBasePayTo,
+  meterExactTypedData,
   payMeterPassBase,
   type MeterFetchLike,
   type MeterPassInvoice,
@@ -54,6 +55,7 @@ describe("Agent Meter Base buyer adapter", () => {
     const index = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "index.ts"), "utf8");
     assert.match(index, /buyMeterPassBase/);
     assert.match(index, /payMeterPassBase/);
+    assert.match(index, /meterExactTypedData/);
     assert.match(index, /meter-pay-base\.ts/);
   });
 
@@ -80,6 +82,12 @@ describe("Agent Meter Base buyer adapter", () => {
     assert.equal(payload.authorization.value, "200000");
     assert.equal(accepted.network, METER_BASE_NETWORK);
     assert.equal(accepted.extra.invoice_id, "inv_base_202f5a77");
+    const typed = meterExactTypedData(auth);
+    assert.equal(typed.primaryType, "TransferWithAuthorization");
+    assert.equal(typed.domain.chainId, 8453);
+    assert.equal(typed.domain.verifyingContract, METER_BASE_USDC);
+    assert.equal(typed.message.to, LOCKED_BASE_PAY_TO);
+    assert.equal(typed.message.value, "200000");
   });
 
   it("refuses paying from the locked receive wallet or a retargeted to", async () => {

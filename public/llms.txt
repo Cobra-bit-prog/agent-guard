@@ -76,7 +76,7 @@ curl -s -X POST https://agent-control.net/api/v1/meter/watch -H 'content-type: a
 # 6 MCP meter_* at /api/v1/mcp
 
 - GET /api/v1/meter/pricing — public. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot. paid_sku looks_20 ($0.20 pack). free_looks=5. Read skus[] for live amounts. pass describes the default look. Catalog: look, looks_20, addresses_100, stamp_tx, pass_1h catalog-only. funds.accepts lists Base USDC (EIP-3009 exact) and Solana USDC.
-- POST /api/v1/meter/pass — no payment proof → invoice (HTTP 402 on HTTP; MCP meter_buy_pass returns the same JSON as a tool result): pay_to, base_pay_to, accepts, amount_usd, amount_base_units, reference, pay_url, invoice_id, watch_url, next_steps. Empty body {} uses looks_20 pack. Optional {"sku":"look"} for one $0.10 look (optional one-shot). Unknown sku → 400 unknown_sku. Prefer Base USDC EIP-3009 exact to base_pay_to (CDP/AgentKit; no Solana key). Solana: pay_to WITH the reference. We never take keys. Dev grant `{ "proof": { "type": "dev" } }` only when METER_DEV_GRANT=1 or NODE_ENV=test.
+- POST /api/v1/meter/pass — no payment proof → invoice (HTTP 402 on HTTP; MCP meter_buy_pass returns the same JSON as a tool result): pay_to, base_pay_to, accepts, amount_usd, amount_base_units, reference, pay_url, invoice_id, watch_url, tool_fields, sign_exact, adapter_snippet, next_steps. Empty body {} uses looks_20 pack. Optional {"sku":"look"} for one $0.10 look (optional one-shot). Unknown sku → 400 unknown_sku. Prefer Base USDC EIP-3009 exact to base_pay_to (CDP/AgentKit; no Solana key). Use sign_exact + adapter_snippet to finish in-process. Solana: pay_to WITH the reference. We never take keys. Dev grant `{ "proof": { "type": "dev" } }` only when METER_DEV_GRANT=1 or NODE_ENV=test.
 - POST /api/v1/meter/watch — after you pay, send invoice_id (and Base payment) until token. That token is X-Agent-Pass. MCP: meter_watch. Optional signature = on-chain tx sig only (not a private key).
 - Agent wallet pay (no Solana key): copy src/adapters/meter-pay-base.ts onto YOUR machine. `import { buyMeterPassBase } from "./src/adapters/meter-pay-base.ts"; await buyMeterPassBase({ from, signExact });` CDP/AgentKit/viem signs EIP-3009 exact to base_pay_to, then watches until the token. We never take keys. Omit sku to buy looks_20 pack. look $0.10 is optional one-shot. Optional Solana: copy src/adapters/meter-pay.ts and `await buyMeterPass({ keypair })` — USDC to pay_to WITH the reference.
 - Laptop Phantom (Chrome extension, no QR): https://agent-control.net/meter/pay?invoice_id=inv_… — human laptop only. Last resort if you have no Base signer.
@@ -89,8 +89,8 @@ curl -s -X POST https://agent-control.net/api/v1/meter/watch -H 'content-type: a
 
 MCP auto-pay loop (no Solana key; Base EIP-3009 via CDP/AgentKit):
 1. meter_scan with any X-Agent-Pass / pass_token string — first 5 looks on that id are free.
-2. After free looks, meter_buy_pass (sku looks_20, or omit). Read base_pay_to, accepts, amount_usd, amount_base_units, invoice_id, watch_url, next_steps from the tool result.
-3. Prefer Base USDC EIP-3009 exact to base_pay_to (CDP/AgentKit; copy src/adapters/meter-pay-base.ts). No Solana key needed. We never take keys.
+2. After free looks, meter_buy_pass (sku looks_20, or omit). Read preferred_rail, base_pay_to, amount_base_units, invoice_id, sign_exact, adapter_snippet, watch_url, next_steps from the tool result.
+3. On YOUR machine, CDP/AgentKit signExact using sign_exact (or adapter_snippet payMeterPassBase). No Solana key needed. We never take keys.
 4. meter_watch { invoice_id, payment } until the result includes token. That token is X-Agent-Pass.
 5. meter_scan / meter_preflight with pass_token set to that token.
 

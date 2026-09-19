@@ -56,12 +56,17 @@ import { buyMeterPass } from "./meter-pay.ts";
 const { token } = await buyMeterPass({ keypair });
 ```
 
-If you already have the 402 JSON (`base_pay_to`, `amount_base_units`, `invoice_id`):
+If you already have the 402 JSON (`base_pay_to`, `amount_base_units`, `invoice_id`, `sign_exact`):
 
 ```ts
-import { payMeterPassBase } from "./meter-pay-base.ts";
+import { payMeterPassBase, meterExactTypedData } from "./meter-pay-base.ts";
 
-await payMeterPassBase({ invoice, from, signExact });
+const signExact = async (authorization) => {
+  const signature = await wallet.signTypedData(meterExactTypedData(authorization));
+  return { authorization, signature };
+};
+const { payment } = await payMeterPassBase({ invoice, from, signExact });
+// meter_watch { invoice_id, payment } until token
 ```
 
 After free-5, omit sku to buy looks_20 pack ($0.20) → X-Agent-Pass. look $0.10 is optional one-shot. Not pass_1h. Docs: https://agent-control.net/docs#agent-meter
