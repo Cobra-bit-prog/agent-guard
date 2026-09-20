@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Agent Meter — Sign look $0.10 (Base USDC)</title>
+<style>
+  :root { font-family: ui-sans-serif, system-ui, sans-serif; color: #0f172a; background: #f8fafc; }
+  body { max-width: 560px; margin: 40px auto; padding: 0 16px; }
+  h1 { font-size: 1.25rem; margin: 0 0 8px; }
+  .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; }
+  .muted { color: #64748b; font-size: 0.9rem; line-height: 1.45; }
+  .row { display: flex; justify-content: space-between; gap: 12px; font-size: 0.85rem; padding: 6px 0; border-bottom: 1px solid #f1f5f9; }
+  .row span:last-child { font-family: ui-monospace, monospace; text-align: right; word-break: break-all; }
+  button { width: 100%; margin-top: 16px; padding: 14px 16px; border: 0; border-radius: 10px; background: #4f46e5; color: #fff; font-weight: 600; font-size: 1rem; cursor: pointer; }
+  button:disabled { opacity: 0.5; }
+  button.secondary { background: #0f172a; margin-top: 8px; }
+  #status { margin-top: 12px; font-size: 0.9rem; white-space: pre-wrap; }
+  #sigBox { display: none; margin-top: 16px; }
+  textarea { width: 100%; min-height: 96px; font-family: ui-monospace, monospace; font-size: 0.75rem; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; box-sizing: border-box; }
+  .warn { background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; padding: 10px 12px; border-radius: 8px; font-size: 0.85rem; margin: 12px 0; }
+  .ok { color: #15803d; } .err { color: #b91c1c; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Sign Meter look — $0.10 USDC on Base</h1>
+    <p class="muted">One click. Mac Chrome + Phantom. Gasless authorization (not a normal transfer).</p>
+    <div class="warn">Expires: <b>2026-09-20 12:26:13 +0700</b> (Bangkok). After signing, copy the signature and send it to CoS.</div>
+    <div class="row"><span>Payer</span><span>0x06ec844D008E8A31af2f54b7c9212fDC9B0758B7</span></div>
+    <div class="row"><span>Amount</span><span>0.10 USDC (100000)</span></div>
+    <div class="row"><span>Pay to</span><span>0xc5df91Fd7D9578A63efe9B0ee96Bacc5e7742E98</span></div>
+    <div class="row"><span>Network</span><span>Base (8453)</span></div>
+    <div class="row"><span>Invoice</span><span>inv_bda1d7fd89a8d69f</span></div>
+    <button id="btn" type="button">Connect Phantom &amp; Sign</button>
+    <div id="status" class="muted"></div>
+    <div id="sigBox">
+      <p class="muted ok">Signature — copy and paste back to CoS:</p>
+      <textarea id="sig" readonly></textarea>
+      <button class="secondary" id="copy" type="button">Copy signature</button>
+    </div>
+  </div>
+<script>
+const EXPECTED = "0x06ec844D008E8A31af2f54b7c9212fDC9B0758B7".toLowerCase();
+const TYPED = {"types": {"EIP712Domain": [{"name": "name", "type": "string"}, {"name": "version", "type": "string"}, {"name": "chainId", "type": "uint256"}, {"name": "verifyingContract", "type": "address"}], "TransferWithAuthorization": [{"name": "from", "type": "address"}, {"name": "to", "type": "address"}, {"name": "value", "type": "uint256"}, {"name": "validAfter", "type": "uint256"}, {"name": "validBefore", "type": "uint256"}, {"name": "nonce", "type": "bytes32"}]}, "primaryType": "TransferWithAuthorization", "domain": {"name": "USD Coin", "version": "2", "chainId": 8453, "verifyingContract": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"}, "message": {"from": "0x06ec844D008E8A31af2f54b7c9212fDC9B0758B7", "to": "0xc5df91Fd7D9578A63efe9B0ee96Bacc5e7742E98", "value": "100000", "validAfter": "0", "validBefore": "1789881973", "nonce": "0x8f2b6676ac294f90d04f4fad62437afd12d86614d2bb7a719ed31835cbb61ac1"}};
+const statusEl = document.getElementById('status');
+const btn = document.getElementById('btn');
+function setStatus(msg, cls) { statusEl.className = cls || 'muted'; statusEl.textContent = msg; }
+btn.addEventListener('click', async () => {
+  btn.disabled = true;
+  try {
+    const eth = window.phantom?.ethereum || window.ethereum;
+    if (!eth) throw new Error('Phantom not found. Open in Chrome with Phantom extension.');
+    setStatus('Switching to Base…');
+    try {
+      await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
+    } catch (e) {
+      if (e && (e.code === 4902 || e.code === -32603)) {
+        await eth.request({ method: 'wallet_addEthereumChain', params: [{
+          chainId: '0x2105', chainName: 'Base',
+          nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+          rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org']
+        }] });
+      } else throw e;
+    }
+    const accounts = await eth.request({ method: 'eth_requestAccounts' });
+    const from = accounts[0];
+    if (from.toLowerCase() !== EXPECTED) {
+      setStatus('Wrong account: ' + from + '\nSwitch Phantom to ' + EXPECTED, 'err');
+      btn.disabled = false; return;
+    }
+    setStatus('Approve Sign typed data in Phantom…');
+    const signature = await eth.request({
+      method: 'eth_signTypedData_v4',
+      params: [from, JSON.stringify(TYPED)]
+    });
+    document.getElementById('sig').value = signature;
+    document.getElementById('sigBox').style.display = 'block';
+    setStatus('Signed. Copy the signature below and paste it to CoS.', 'ok');
+  } catch (e) {
+    setStatus((e && (e.message || e.data?.message)) || String(e), 'err');
+  } finally { btn.disabled = false; }
+});
+document.getElementById('copy').addEventListener('click', async () => {
+  const t = document.getElementById('sig').value;
+  try { await navigator.clipboard.writeText(t); setStatus('Copied.', 'ok'); }
+  catch { document.getElementById('sig').select(); setStatus('Select + copy manually.', 'muted'); }
+});
+</script>
+</body>
+</html>
