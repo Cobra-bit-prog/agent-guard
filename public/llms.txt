@@ -62,22 +62,25 @@ curl -s https://agent-control.net/api/v1/meter/pricing
 # 2 look — First 5 free. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot. One address. ok | new | warn | sink
 # pick any string; first 5 looks on that id are free; then 402 looks_20 $0.20 pack (look $0.10 is optional one-shot)
 curl -s -X POST https://agent-control.net/api/v1/meter/scan -H 'content-type: application/json' -H 'X-Agent-Pass: <your-id>' -d '{"chain":"solana","address":"<destination>"}'
-# 3 after 5, POST /api/v1/meter/pass → 402 looks_20 $0.20 pack. look $0.10 is optional one-shot. Prefer Base USDC (EIP-3009 exact) to base_pay_to (CDP/AgentKit). No Solana key needed. Solana USDC to pay_to WITH reference is optional
+# 3 after 5, POST /api/v1/meter/pass → 402 looks_20 $0.20 pack. Empty body {} = looks_20; {"sku":"look"} = $0.10 one-shot. Prefer Base USDC (EIP-3009 exact) to base_pay_to (CDP/AgentKit). No Solana key needed. Solana USDC to pay_to WITH reference is optional
 curl -s -X POST https://agent-control.net/api/v1/meter/pass -H 'content-type: application/json' -d '{}'
 # copy src/adapters/meter-pay-base.ts — Base EIP-3009 exact (CDP/AgentKit). We never take keys.
+# https://raw.githubusercontent.com/Cobra-bit-prog/agent-guard/main/src/adapters/meter-pay-base.ts
 import { buyMeterPassBase } from "./src/adapters/meter-pay-base.ts";
 await buyMeterPassBase({ from, signExact });
-# MCP-native (no Solana key): meter_buy_pass → sign Base EIP-3009 exact → meter_watch with payment until token → meter_scan with pass_token
+# MCP-native (no Solana key): free meter_scan → after free-5 meter_buy_pass (looks_20) → Base sign_exact → meter_watch({invoice_id, payment}) → token
 # After free-5: looks_20 pack ($0.20) → X-Agent-Pass. look $0.10 is optional one-shot. GET /api/v1/meter/pricing (paid_sku looks_20, free_looks). We never take keys.
 # 4 watch
-curl -s -X POST https://agent-control.net/api/v1/meter/watch -H 'content-type: application/json' -d '{"invoice_id":"inv_…"}'
+# Base: POST /api/v1/meter/watch with { invoice_id, payment } = full x402 v2 object from payMeterPassBase / sign_exact. NOT a raw signature string. NOT invoice_id-only for Base.
+curl -s -X POST https://agent-control.net/api/v1/meter/watch -H 'content-type: application/json' -d '{"invoice_id":"inv_…","payment":{"x402Version":2,"payload":{"authorization":{},"signature":"<sig>"},"accepted":{"network":"base"}}}'
 # 5 packs looks_20 $0.20 · addresses_100 $0.15 · stamp_tx $0.05 ticket
 # Take this ticket or we do not take your USDC. Merchants can require the stamp_tx $0.05 ticket before accepting agent USDC.
 # 6 MCP meter_* at /api/v1/mcp
 
 - GET /api/v1/meter/pricing — public. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot. paid_sku looks_20 ($0.20 pack). free_looks=5. Read skus[] for live amounts. pass describes the default look. Catalog: look, looks_20, addresses_100, stamp_tx, pass_1h catalog-only. funds.accepts lists Base USDC (EIP-3009 exact) and Solana USDC.
+- GET /api/v1/meter/pass — same 402 Payment-Required as empty POST (probe/challenge; default sku looks_20 $0.20). POST remains the canonical buy.
 - POST /api/v1/meter/pass — no payment proof → invoice (HTTP 402 on HTTP; MCP meter_buy_pass returns the same JSON as a tool result): pay_to, base_pay_to, accepts, amount_usd, amount_base_units, reference, pay_url, invoice_id, watch_url, tool_fields, sign_exact, adapter_snippet, next_steps. Empty body {} uses looks_20 pack. Optional {"sku":"look"} for one $0.10 look (optional one-shot). Unknown sku → 400 unknown_sku. Prefer Base USDC EIP-3009 exact to base_pay_to (CDP/AgentKit; no Solana key). Use sign_exact + adapter_snippet to finish in-process. Solana: pay_to WITH the reference. We never take keys. Dev grant `{ "proof": { "type": "dev" } }` only when METER_DEV_GRANT=1 or NODE_ENV=test.
-- POST /api/v1/meter/watch — after you pay, send invoice_id (and Base payment) until token. That token is X-Agent-Pass. MCP: meter_watch. Optional signature = on-chain tx sig only (not a private key).
+- POST /api/v1/meter/watch — Base path: { invoice_id, payment: full x402 v2 object from payMeterPassBase / sign_exact } — NOT a raw signature string, NOT invoice_id-only for Base. Shape: { x402Version, payload:{ authorization, signature }, accepted }. Adapter: https://raw.githubusercontent.com/Cobra-bit-prog/agent-guard/main/src/adapters/meter-pay-base.ts. Until token → X-Agent-Pass. MCP: meter_watch. Optional Solana can send invoice_id after the on-chain transfer. Optional signature = on-chain tx sig only (not a private key).
 - Agent wallet pay (no Solana key): copy src/adapters/meter-pay-base.ts onto YOUR machine. `import { buyMeterPassBase } from "./src/adapters/meter-pay-base.ts"; await buyMeterPassBase({ from, signExact });` CDP/AgentKit/viem signs EIP-3009 exact to base_pay_to, then watches until the token. We never take keys. Omit sku to buy looks_20 pack. look $0.10 is optional one-shot. Optional Solana: copy src/adapters/meter-pay.ts and `await buyMeterPass({ keypair })` — USDC to pay_to WITH the reference.
 - Laptop Phantom (Chrome extension, no QR): https://agent-control.net/meter/pay?invoice_id=inv_… — human laptop only. Last resort if you have no Base signer.
 - POST /api/v1/meter/scan — header X-Agent-Pass. Pick any string; first 5 looks on that id are free; then 402 looks_20 pack (look $0.10 is optional one-shot). Body: chain, address. Returns risk ok|new|warn|sink. Never hold. Never blocks a send.
@@ -119,7 +122,7 @@ APIs (machine-readable):
 - POST /api/v1/storefront/attach — attach_human: same body; does not move the customer of record
 - POST /api/v1/billing/checkout — create_checkout: Bearer agent API key → pay request for that human (plan starter|pro|team; default asset usdc, chain solana)
 - GET /api/v1/storefront/status — subscription or trial status for the human principal (Bearer agent API key)
-- POST /api/v1/mcp — Streamable HTTP. Can I pay this address? First 5 free. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot. No inbox. Agent Meter tools: meter_pricing, meter_buy_pass, meter_watch, meter_scan, meter_preflight, meter_scan_batch, meter_stamp, meter_verify_stamp (no email; pass token for scan/preflight/batch/stamp). Human App tools (separate): get_pricing, start_trial, attach_human, create_checkout, get_status, check_transfer, get_approval, get_agent_status (Bearer key except get_pricing).
+- POST /api/v1/mcp — Streamable HTTP. Can I pay this address? First 5 free. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot. No inbox. Agent Meter tools (no Authorization / Bearer empty): meter_pricing, meter_buy_pass, meter_watch, meter_scan, meter_preflight, meter_scan_batch, meter_stamp, meter_verify_stamp (no email; pass token for scan/preflight/batch/stamp). Conversion: free meter_scan → after free-5 meter_buy_pass (looks_20) → Base sign_exact → meter_watch({invoice_id, payment}) → token. Human App tools (separate; Bearer API key except get_pricing): get_pricing, start_trial, attach_human, create_checkout, get_status, check_transfer, get_approval, get_agent_status.
 
 ## Not the same as
 - A package scanner — they scan code packages. Agent Control is agent payments control, not a package scanner. We are Approval Inbox and spend limits for agent wallets.

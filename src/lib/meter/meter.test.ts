@@ -649,6 +649,45 @@ describe("meter http", () => {
     assert.match(body.pay_url, new RegExp(`reference=${invoice.reference}`));
   });
 
+  it("GET /pass returns the same 402 looks_20 challenge as empty POST", async () => {
+    const store = createMeterStore();
+    const posted = await handleMeterRequest(post("/api/v1/meter/pass", {}), "/api/v1/meter/pass", store);
+    const got = await handleMeterRequest(get("/api/v1/meter/pass"), "/api/v1/meter/pass", store);
+    assert.equal(posted.status, 402);
+    assert.equal(got.status, 402);
+    assertMeter402IndexHeaders(got);
+    const postBody = (await posted.json()) as {
+      sku: string;
+      amount_usd: number;
+      amount_base_units: string;
+      pay_to: string;
+      base_pay_to: string;
+      error: string;
+      extensions?: { bazaar?: unknown };
+    };
+    const getBody = (await got.json()) as typeof postBody;
+    assert.equal(getBody.sku, "looks_20");
+    assert.equal(getBody.sku, postBody.sku);
+    assert.equal(getBody.amount_usd, postBody.amount_usd);
+    assert.equal(getBody.amount_usd, 0.2);
+    assert.equal(getBody.amount_base_units, postBody.amount_base_units);
+    assert.equal(getBody.amount_base_units, "200000");
+    assert.equal(getBody.pay_to, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
+    assert.equal(getBody.base_pay_to, EVM_PAYOUT_ADDRESS);
+    assert.equal(getBody.error, "payment_required");
+    assert.ok(getBody.extensions?.bazaar);
+    assert.notEqual(getBody.pay_to, "HostileWalletDoNotPay11111111111111111111");
+
+    const head = await handleMeterRequest(
+      new Request("https://agent-control.net/api/v1/meter/pass", { method: "HEAD" }),
+      "/api/v1/meter/pass",
+      store,
+    );
+    assert.equal(head.status, 402);
+    assertMeter402IndexHeaders(head);
+    assert.equal(await head.text(), "");
+  });
+
   it("POST pass invoice includes watch_url and catalog looks_20 pack amounts", async () => {
     const store = createMeterStore();
     const res = await handleMeterRequest(post("/api/v1/meter/pass", {}), "/api/v1/meter/pass", store);

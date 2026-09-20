@@ -171,10 +171,10 @@ export async function handleMeterRequest(
   const path = pathname.replace(/\/+$/, "");
   const suffix = path.replace(/^\/api\/v1\/meter\/?/, "");
 
-  // Health / uptime: GET pricing (no invoice). Do not POST /pass from probes —
-  // that mints unpaid 402s. If a probe must POST, send {"source":"smoke"} or X-Meter-Smoke: 1.
-  // Directory/crawler/monitor UAs (nohumans.directory-probe, exact `node`,
-  // agent-tools.cloud-crawler, x402-list-monitor) are auto-tagged smoke.
+  // Health / uptime: GET pricing (no invoice). GET/HEAD /pass is the directory
+  // probe/challenge — same 402 as empty POST looks_20. POST /pass stays the
+  // canonical buy. Directory/crawler/monitor UAs (nohumans.directory-probe,
+  // exact `node`, agent-tools.cloud-crawler, x402-list-monitor) are auto-tagged smoke.
   if (request.method === "GET" && (suffix === "pricing" || suffix === "")) {
     return json(meterPricing());
   }
@@ -204,6 +204,16 @@ export async function handleMeterRequest(
 
   if (request.method === "GET" && suffix.startsWith("stamp/")) {
     return getStamp(resolved, suffix.slice("stamp/".length));
+  }
+
+  // GET/HEAD /pass: same 402 Payment-Required as empty POST (default sku looks_20).
+  // Probe/challenge only. POST remains the canonical buy.
+  if ((request.method === "GET" || request.method === "HEAD") && suffix === "pass") {
+    const challenge = await issueOrInvoice(request, {}, resolved, deps, "pass");
+    if (request.method === "HEAD") {
+      return new Response(null, { status: challenge.status, headers: challenge.headers });
+    }
+    return challenge;
   }
 
   let body: Record<string, unknown> = {};

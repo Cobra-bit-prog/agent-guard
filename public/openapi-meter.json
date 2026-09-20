@@ -23,9 +23,18 @@
       }
     },
     "/api/v1/meter/pass": {
+      "get": {
+        "summary": "Pass probe / challenge",
+        "description": "Same 402 Payment-Required as empty POST (default sku looks_20 $0.20). Probe/challenge only. POST remains the canonical buy. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot.",
+        "responses": {
+          "402": {
+            "description": "PAYMENT-REQUIRED header + looks_20 invoice body + extensions.bazaar."
+          }
+        }
+      },
       "post": {
         "summary": "Look door",
-        "description": "Empty body {} invoices looks_20 $0.20 pack. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot. No release without payment. First 5 looks on an X-Agent-Pass id are free.",
+        "description": "Empty body {} invoices looks_20 $0.20 pack. Optional {\"sku\":\"look\"} is $0.10 one-shot. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot. No release without payment. First 5 looks on an X-Agent-Pass id are free.",
         "requestBody": {
           "required": false,
           "content": {

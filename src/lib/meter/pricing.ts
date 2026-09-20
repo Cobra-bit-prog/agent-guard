@@ -204,7 +204,7 @@ export function meterPricing() {
     funds: meterFundsAccepts(),
     endpoints: {
       pricing: "GET /api/v1/meter/pricing",
-      pass: "POST /api/v1/meter/pass",
+      pass: "GET or POST /api/v1/meter/pass",
       watch: "POST /api/v1/meter/watch",
       scan: "POST /api/v1/meter/scan",
       preflight: "POST /api/v1/meter/preflight",

@@ -11,7 +11,7 @@
     {
       "url": "https://agent-control.net/api/v1/mcp",
       "type": "streamable-http",
-      "description": "Can I pay this address? First 5 free. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot. No inbox. Streamable HTTP. Agent Meter tools (no email; pass token for scan and preflight): meter_pricing, meter_buy_pass, meter_watch, meter_scan, meter_preflight. Base USDC (EIP-3009 exact) and Solana USDC. Human App tools (separate; Bearer agent API key except get_pricing): get_pricing, start_trial, attach_human, create_checkout, get_status, check_transfer, get_approval, get_agent_status. Meter pricing: https://agent-control.net/api/v1/meter/pricing x402: https://agent-control.net/.well-known/x402 Recipe: https://agent-control.net/docs#agent-meter Brief: https://agent-control.net/llms.txt"
+      "description": "Can I pay this address? First 5 free. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot. No inbox. Streamable HTTP. Agent Meter tools (no Authorization / Bearer empty; no email; pass token for scan and preflight): meter_pricing, meter_buy_pass, meter_watch, meter_scan, meter_preflight. Conversion: free meter_scan → after free-5 meter_buy_pass (looks_20) → Base sign_exact → meter_watch({invoice_id, payment}) → token. Base USDC (EIP-3009 exact) and Solana USDC. Human App tools (separate; Bearer agent API key except get_pricing): get_pricing, start_trial, attach_human, create_checkout, get_status, check_transfer, get_approval, get_agent_status. Meter pricing: https://agent-control.net/api/v1/meter/pricing x402: https://agent-control.net/.well-known/x402 Recipe: https://agent-control.net/docs#agent-meter Brief: https://agent-control.net/llms.txt"
     }
   ]
 }

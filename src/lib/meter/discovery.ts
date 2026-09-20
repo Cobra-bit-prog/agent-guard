@@ -73,14 +73,14 @@ export function x402WellKnown() {
       {
         url: PRICING_URL,
         method: "GET",
-        description: `Public catalog. ${METER_PACKS_FIRST} Default sku ${METER_LOOK_SKU} $${METER_LOOK_USD_LABEL}. Paid sku ${METER_PAID_SKU} $0.20.`,
+        description: `Public catalog. ${METER_PACKS_FIRST} Empty POST /meter/pass = ${METER_PAID_SKU} $0.20. Optional {"sku":"${METER_LOOK_SKU}"} = $${METER_LOOK_USD_LABEL} one-shot.`,
       },
     ],
     docs: DOCS_URL,
     contact: "support@agent-control.net",
     openapi: `${PUBLIC_ORIGIN}${OPENAPI_METER_PATH}`,
     mcp: MCP_URL,
-    updated: "2026-09-19T00:00:00Z",
+    updated: "2026-09-20T00:00:00Z",
   };
 }
 
@@ -89,7 +89,7 @@ export function mcpWellKnown() {
   return {
     name: "net.agent-control/agent-control",
     title: "Agent Control",
-    description: `${METER_AGENT_LEAD} Agent Meter is public (Bearer empty). Human App is separate ($29).`,
+    description: `${METER_AGENT_LEAD} Agent Meter is public (no Authorization / Bearer empty). Human App is separate ($29).`,
     version: "1.0.0",
     mcp: MCP_URL,
     transport: "streamable-http" as const,
@@ -100,7 +100,7 @@ export function mcpWellKnown() {
       },
     ],
     products: {
-      meter: `${METER_AGENT_LEAD} Bearer empty for Meter tools.`,
+      meter: `${METER_AGENT_LEAD} Meter meter_* tools: no Authorization / Bearer empty.`,
       human_app:
         "Spend limits and Approval Inbox. Humans pay $29. Agents use a Bearer API key.",
     },
@@ -171,9 +171,18 @@ export function meterOpenApi() {
         },
       },
       "/api/v1/meter/pass": {
+        get: {
+          summary: "Pass probe / challenge",
+          description: `Same 402 Payment-Required as empty POST (default sku looks_20 $0.20). Probe/challenge only. POST remains the canonical buy. ${METER_PACKS_FIRST}`,
+          responses: {
+            "402": {
+              description: "PAYMENT-REQUIRED header + looks_20 invoice body + extensions.bazaar.",
+            },
+          },
+        },
         post: {
           summary: "Look door",
-          description: `Empty body {} invoices looks_20 $0.20 pack. ${METER_PACKS_FIRST} No release without payment. First ${METER_FREE_LOOKS} looks on an X-Agent-Pass id are free.`,
+          description: `Empty body {} invoices looks_20 $0.20 pack. Optional {"sku":"look"} is $0.10 one-shot. ${METER_PACKS_FIRST} No release without payment. First ${METER_FREE_LOOKS} looks on an X-Agent-Pass id are free.`,
           requestBody: {
             required: false,
             content: {

@@ -22,6 +22,10 @@ const LOOK_QUESTION = "Can I pay this address?";
 const LOOK_SKU = "look";
 const LOOK_USD = 0.1;
 const LOOK_AMOUNT = "100000";
+/** Empty POST /meter/pass door. Well-known primary accept must match this amount. */
+const LOOKS_20_SKU = "looks_20";
+const LOOKS_20_USD = 0.2;
+const LOOKS_20_AMOUNT = "200000";
 
 export type MeterExactAccept = {
   scheme: "exact";
@@ -145,19 +149,36 @@ export function meterPaymentRequiredAccepts(
   ];
 }
 
-/** Look-door discovery accepts. Same locked payTo / asset / amount as live 402. */
+/**
+ * Discovery accepts for GET /.well-known/x402.
+ * Primary = empty POST door (looks_20 $0.20 / 200000). look $0.10 is optional (sku=look).
+ * Same locked payTo / asset as live 402. Resource method stays POST.
+ */
 export function meterLookAccepts(): MeterExactAccept[] {
+  const paid: MeterAcceptInvoice = {
+    amount_base_units: LOOKS_20_AMOUNT,
+    sku: LOOKS_20_SKU,
+    amount_usd: LOOKS_20_USD,
+  };
+  const paidSku: MeterAcceptSku = {
+    id: LOOKS_20_SKU,
+    price_usd: LOOKS_20_USD,
+    amount_base_units: LOOKS_20_AMOUNT,
+  };
   const look: MeterAcceptInvoice = {
     amount_base_units: LOOK_AMOUNT,
     sku: LOOK_SKU,
     amount_usd: LOOK_USD,
   };
-  const sku: MeterAcceptSku = { id: LOOK_SKU, price_usd: LOOK_USD, amount_base_units: LOOK_AMOUNT };
-  const [solana, base] = meterPaymentAccepts(look, sku);
+  const lookSku: MeterAcceptSku = { id: LOOK_SKU, price_usd: LOOK_USD, amount_base_units: LOOK_AMOUNT };
   const resource = "https://agent-control.net/api/v1/meter/pass";
+  const attach = (row: MeterExactAccept): MeterExactAccept => ({
+    ...row,
+    extra: { ...row.extra, resource },
+  });
   return [
-    { ...solana, extra: { ...solana.extra, resource } },
-    { ...base, extra: { ...base.extra, resource } },
+    ...meterPaymentAccepts(paid, paidSku).map(attach),
+    ...meterPaymentAccepts(look, lookSku).map(attach),
   ];
 }
 

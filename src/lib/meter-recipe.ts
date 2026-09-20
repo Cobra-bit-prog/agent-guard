@@ -80,14 +80,16 @@ curl -s https://agent-control.net/api/v1/meter/pricing
 # 2 look — First 5 free. ${METER_PACKS_FIRST} One address. ok | new | warn | sink
 # ${METER_FREE_LOOK_NOTE}
 ${METER_FREE_LOOK_CURL}
-# 3 after 5, POST /api/v1/meter/pass → 402 looks_20 $0.20 pack. look $0.10 is optional one-shot. Prefer Base USDC (EIP-3009 exact) to base_pay_to (CDP/AgentKit). No Solana key needed. Solana USDC to pay_to WITH reference is optional
+# 3 after 5, POST /api/v1/meter/pass → 402 looks_20 $0.20 pack. Empty body {} = looks_20; {"sku":"look"} = $0.10 one-shot. Prefer Base USDC (EIP-3009 exact) to base_pay_to (CDP/AgentKit). No Solana key needed. Solana USDC to pay_to WITH reference is optional
 curl -s -X POST https://agent-control.net/api/v1/meter/pass -H 'content-type: application/json' -d '{}'
 # copy src/adapters/meter-pay-base.ts — Base EIP-3009 exact (CDP/AgentKit). We never take keys.
+# https://raw.githubusercontent.com/Cobra-bit-prog/agent-guard/main/src/adapters/meter-pay-base.ts
 ${METER_PAY_SNIPPET}
-# MCP-native (no Solana key): meter_buy_pass → sign Base EIP-3009 exact → meter_watch with payment until token → meter_scan with pass_token
+# MCP-native (no Solana key): free meter_scan → after free-5 meter_buy_pass (looks_20) → Base sign_exact → meter_watch({invoice_id, payment}) → token
 # After free-5: looks_20 pack ($0.20) → X-Agent-Pass. look $0.10 is optional one-shot. GET /api/v1/meter/pricing (paid_sku looks_20, free_looks). We never take keys.
 # 4 watch
-curl -s -X POST https://agent-control.net/api/v1/meter/watch -H 'content-type: application/json' -d '{"invoice_id":"inv_…"}'
+# Base: POST /api/v1/meter/watch with { invoice_id, payment } = full x402 v2 object from payMeterPassBase / sign_exact. NOT a raw signature string. NOT invoice_id-only for Base.
+curl -s -X POST https://agent-control.net/api/v1/meter/watch -H 'content-type: application/json' -d '{"invoice_id":"inv_…","payment":{"x402Version":2,"payload":{"authorization":{},"signature":"<sig>"},"accepted":{"network":"base"}}}'
 # 5 packs looks_20 $0.20 · addresses_100 $0.15 · stamp_tx $0.05 ticket
 # ${METER_TICKET} ${METER_MERCHANT_STAMP}
 # 6 MCP meter_* at /api/v1/mcp`;
@@ -120,8 +122,8 @@ export const METER_STEPS = [
   {
     n: "4",
     t: "Watch",
-    d: "Send the invoice_id until the pass token comes back. That token is X-Agent-Pass. We never take keys.",
-    code: `curl -s -X POST https://agent-control.net/api/v1/meter/watch -H 'content-type: application/json' -d '{"invoice_id":"inv_…"}'`,
+    d: "Base: POST /api/v1/meter/watch with invoice_id plus the full x402 v2 payment object from payMeterPassBase / sign_exact — not a raw signature string, not invoice_id-only. Until token → X-Agent-Pass. Adapter: https://raw.githubusercontent.com/Cobra-bit-prog/agent-guard/main/src/adapters/meter-pay-base.ts",
+    code: `curl -s -X POST https://agent-control.net/api/v1/meter/watch -H 'content-type: application/json' -d '{"invoice_id":"inv_…","payment":{"x402Version":2,"payload":{"authorization":{},"signature":"<sig>"},"accepted":{"network":"base"}}}'`,
   },
   {
     n: "5",

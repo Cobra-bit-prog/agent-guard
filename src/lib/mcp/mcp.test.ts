@@ -194,6 +194,9 @@ describe("POST initialize is Streamable HTTP", () => {
     assert.match(instructions, /Sign USDC on your agent machine/);
     assert.match(instructions, /src\/adapters\/meter-pay-base\.ts/);
     assert.match(instructions, /Prefer Base EIP-3009 exact to base_pay_to/);
+    assert.match(instructions, /no Authorization \/ Bearer empty/);
+    assert.match(instructions, /free meter_scan → after free-5 meter_buy_pass \(looks_20\) → Base sign_exact → meter_watch\(\{invoice_id, payment\}\) → token/);
+    assert.match(instructions, /Human App check\/checkout: Bearer API key/);
     const meterSlice = instructions.slice(instructions.indexOf("Agent Meter:"));
     assert.doesNotMatch(meterSlice, /\bhold\b/i);
     assert.doesNotMatch(meterSlice, /Inbox/);
@@ -577,6 +580,7 @@ describe("GET discovery and DELETE", () => {
     assert.equal(discovery.name, "Agent Control");
     assert.equal(discovery.protocol, "mcp");
     assert.ok(Array.isArray(discovery.tools));
+    assert.match(discovery.auth, /no Authorization \/ Bearer empty/);
     assert.match(discovery.auth, /Bearer agent API key/);
     assert.match(discovery.auth, /Claude Connector OAuth/);
     assert.deepEqual(discovery.storefront, [
@@ -628,6 +632,8 @@ describe("GET discovery and DELETE", () => {
     assert.equal(spec.name, "net.agent-control/agent-control");
     assert.equal(spec.remotes[0]?.type, "streamable-http");
     assert.equal(spec.remotes[0]?.url, "https://agent-control.net/api/v1/mcp");
+    assert.match(raw, /no Authorization \/ Bearer empty/);
+    assert.match(raw, /Human App check\/checkout: Bearer API key/);
     assert.doesNotMatch(raw, /\bbroadcast/i);
   });
 });
