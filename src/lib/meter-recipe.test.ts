@@ -176,8 +176,14 @@ await buyMeterPassBase({ from, signExact });`,
     assert.match(METER_RECIPE, /^# 4 watch$/m);
     assert.match(
       METER_RECIPE,
-      /curl -s -X POST https:\/\/agent-control\.net\/api\/v1\/meter\/watch -H 'content-type: application\/json' -d '\{"invoice_id":"inv_…"\}'/,
+      /curl -s -X POST https:\/\/agent-control\.net\/api\/v1\/meter\/watch -H 'content-type: application\/json' -d '\{"invoice_id":"inv_…","payment":\{"x402Version":2,"payload":\{"authorization":\{\},"signature":"<sig>"\},"accepted":\{"network":"base"\}\}\}'/,
     );
+    assert.match(METER_RECIPE, /Empty body \{\} = looks_20/);
+    assert.match(METER_RECIPE, /\{\\"sku\\":\\"look\\"\} = \$0\.10 one-shot|\{"sku":"look"\} = \$0\.10 one-shot/);
+    assert.match(METER_RECIPE, /NOT invoice_id-only for Base/);
+    assert.match(METER_RECIPE, /raw\.githubusercontent\.com\/Cobra-bit-prog\/agent-guard\/main\/src\/adapters\/meter-pay-base\.ts/);
+    assert.match(METER_STEPS[3]?.d ?? "", /full x402 v2 payment object/);
+    assert.match(METER_STEPS[3]?.d ?? "", /not invoice_id-only/);
     assert.match(METER_RECIPE, /X-Agent-Pass: <your-id>/);
     assert.match(METER_RECIPE, /pick any string; first 5 looks on that id are free; then 402 looks_20 \$0\.20 pack \(look \$0\.10 is optional one-shot\)/);
     assert.equal(
@@ -308,7 +314,9 @@ describe("Agent Meter recipe on public discovery surfaces", () => {
     assert.match(llms, /X-Agent-Pass: <your-id>/);
     assert.match(llms, /MCP-native \(no Solana key\)/);
     assert.match(llms, /We never take keys/);
-    assert.match(llms, /meter_buy_pass → sign Base EIP-3009 exact → meter_watch with payment until token/);
+    assert.match(llms, /free meter_scan → after free-5 meter_buy_pass \(looks_20\) → Base sign_exact → meter_watch\(\{invoice_id, payment\}\) → token/);
+    assert.match(llms, /NOT invoice_id-only for Base/);
+    assert.match(llms, /full x402 v2 object from payMeterPassBase/);
     assert.match(llms, /sign_exact/);
     assert.match(llms, /adapter_snippet/);
     assert.doesNotMatch(llms, /locked forever/i);

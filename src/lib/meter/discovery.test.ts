@@ -37,26 +37,33 @@ function get(path: string, method = "GET") {
 describe("Agent Meter well-known discovery", () => {
   it("locks the look door accepts on the payout wallet", () => {
     const accepts = meterLookAccepts();
-    assert.equal(accepts.length, 2);
+    assert.equal(accepts.length, 4);
     assert.equal(accepts[0]?.scheme, "exact");
     assert.equal(accepts[0]?.network, "solana");
-    assert.equal(accepts[0]?.maxAmountRequired, "100000");
-    assert.equal(accepts[0]?.amount, "100000");
+    assert.equal(accepts[0]?.maxAmountRequired, "200000");
+    assert.equal(accepts[0]?.amount, "200000");
     assert.equal(accepts[0]?.payTo, SOLANA_PAYOUT_ADDRESS);
     assert.equal(accepts[0]?.payTo, PAY_TO);
     assert.equal(accepts[0]?.asset, USDC_MINT);
-    assert.equal(accepts[0]?.extra.sku, "look");
-    assert.equal(accepts[0]?.extra.price_usd, 0.10);
+    assert.equal(accepts[0]?.extra.sku, "looks_20");
+    assert.equal(accepts[0]?.extra.price_usd, 0.2);
     assert.match(String(accepts[0]?.extra.question ?? ""), /Can I pay this address\?/);
     assert.equal(accepts[1]?.scheme, "exact");
     assert.equal(accepts[1]?.network, "base");
     assert.equal(accepts[1]?.payTo, EVM_PAYOUT_ADDRESS);
     assert.equal(accepts[1]?.payTo, "0xc5df91Fd7D9578A63efe9B0ee96Bacc5e7742E98");
     assert.equal(accepts[1]?.asset, BASE_USDC);
+    assert.equal(accepts[1]?.amount, "200000");
+    assert.equal(accepts[1]?.extra.sku, "looks_20");
     assert.equal(accepts[1]?.extra.name, "USD Coin");
     assert.equal(accepts[1]?.extra.version, "2");
     assert.equal(accepts[1]?.extra.assetTransferMethod, "eip3009");
     assert.equal(accepts[1]?.extra.caip2, "eip155:8453");
+    assert.equal(accepts[2]?.extra.sku, "look");
+    assert.equal(accepts[2]?.amount, "100000");
+    assert.equal(accepts[3]?.extra.sku, "look");
+    assert.equal(accepts[3]?.amount, "100000");
+    assert.equal(accepts[3]?.network, "base");
   });
 
   it("describes Agent Meter look $0.10 Solana USDC for crawlers", () => {
@@ -77,8 +84,11 @@ describe("Agent Meter well-known discovery", () => {
     assert.match(body.description, /Base USDC \(EIP-3009 exact\)/);
     assert.match(body.description, /Solana USDC/);
     assert.equal(body.accepts[0]?.payTo, PAY_TO);
+    assert.equal(body.accepts[0]?.amount, "200000");
+    assert.equal(body.accepts[0]?.extra.sku, "looks_20");
     assert.equal(body.accepts[1]?.payTo, EVM_PAYOUT_ADDRESS);
-    assert.equal(body.accepts.length, 2);
+    assert.equal(body.accepts[1]?.amount, "200000");
+    assert.equal(body.accepts.length, 4);
     assert.equal(body.resources[0]?.url, `${PUBLIC_ORIGIN}/api/v1/meter/pass`);
     assert.equal(body.resources[0]?.method, "POST");
     assert.equal(body.resources[0]?.description, METER_BAZAAR_DESCRIPTION);
@@ -127,6 +137,8 @@ describe("Agent Meter well-known discovery", () => {
     assert.match(mcpBody.description, /No inbox/);
     assert.match(mcpBody.description, /Human App is separate \(\$29\)/);
     assert.match(mcpBody.products.meter, /Bearer empty/);
+    assert.match(mcpBody.products.meter, /no Authorization/);
+    assert.match(mcpBody.description, /no Authorization/);
     assert.match(mcpBody.products.human_app, /Humans pay \$29/);
     assert.doesNotMatch(JSON.stringify(mcpBody), /pass_1h/);
 
@@ -156,6 +168,9 @@ describe("Agent Meter well-known discovery", () => {
     assert.deepEqual(mcpFile, mcpWellKnown());
     assert.deepEqual(openapiFile, meterOpenApi());
     assert.equal(x402File.accepts[0]?.payTo, PAY_TO);
+    assert.equal(x402File.accepts[0]?.amount, "200000");
+    assert.equal(x402File.accepts[0]?.extra.sku, "looks_20");
+    assert.equal(x402WellKnown().accepts[0]?.amount, "200000");
     assert.match(openapiFile.info.description, /No inbox/);
     assert.equal(OPENAPI_METER_PATH, "/openapi-meter.json");
     assert.equal(MCP_WELL_KNOWN_PATH, "/.well-known/mcp.json");

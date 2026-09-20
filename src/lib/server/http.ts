@@ -2,7 +2,7 @@ export const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "Authorization, Content-Type, X-Api-Key, X-Helius-Secret, X-Agent-Pass",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, HEAD, POST, OPTIONS",
   "Access-Control-Expose-Headers": "PAYMENT-REQUIRED, WWW-Authenticate",
 };
 

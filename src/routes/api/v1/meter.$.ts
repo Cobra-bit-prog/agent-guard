@@ -6,6 +6,7 @@ export const Route = createFileRoute("/api/v1/meter/$")({
   server: {
     handlers: {
       OPTIONS: () => new Response(null, { status: 204, headers: CORS }),
+      HEAD: ({ request }) => handleMeterRequest(request, new URL(request.url).pathname),
       GET: ({ request }) => handleMeterRequest(request, new URL(request.url).pathname),
       POST: ({ request }) => handleMeterRequest(request, new URL(request.url).pathname),
     },

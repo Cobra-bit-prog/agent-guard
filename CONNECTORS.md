@@ -4,6 +4,7 @@ Can I pay this address? First 5 free. After free-5, buy looks_20 pack ($0.20) �
 Human App (separate): External audit for your agents. Point Cursor or Grok at the live MCP so the agent asks before a send. You keep the keys.
 
 **URL:** `https://agent-control.net/api/v1/mcp`  
+**Auth (Meter):** no Authorization / Bearer empty. Conversion: free `meter_scan` → after free-5 `meter_buy_pass` (looks_20) → Base `sign_exact` → `meter_watch({invoice_id, payment})` → token.  
 **Auth (Human App):** `Authorization: Bearer ${AGENT_CONTROL_API_KEY}`  
 **Env var:** `AGENT_CONTROL_API_KEY` — agent API key from the Agent Control console. Meter tools do not need it.
 

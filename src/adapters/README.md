@@ -71,4 +71,4 @@ const { payment } = await payMeterPassBase({ invoice, from, signExact });
 
 After free-5, omit sku to buy looks_20 pack ($0.20) → X-Agent-Pass. look $0.10 is optional one-shot. Not pass_1h. Docs: https://agent-control.net/docs#agent-meter
 
-Health / uptime probes should **GET /api/v1/meter/pricing** (or another no-op). Do not POST /api/v1/meter/pass from smoke checks — that mints unpaid invoices and pollutes pending_stale. If a probe must POST /pass, send `{"source":"smoke"}` or header `X-Meter-Smoke: 1`. Paying agents should send a richer User-Agent than undici's default `node` (that exact string is treated as a directory probe).
+Directory payment-ready monitors should **GET /api/v1/meter/pass** (same 402 as empty POST looks_20). Health / uptime probes that must not mint invoices should **GET /api/v1/meter/pricing**. Do not POST /api/v1/meter/pass from smoke checks — that mints unpaid invoices and pollutes pending_stale. If a probe must POST /pass, send `{"source":"smoke"}` or header `X-Meter-Smoke: 1`. Paying agents should send a richer User-Agent than undici's default `node` (that exact string is treated as a directory probe).

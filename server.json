@@ -16,7 +16,7 @@
       "headers": [
         {
           "name": "Authorization",
-          "description": "Bearer agent API key. Required for spend checks, checkout, and status. get_pricing is public.",
+          "description": "Meter meter_* tools: no Authorization / Bearer empty. Human App check/checkout: Bearer API key.",
           "isRequired": false,
           "isSecret": true
         }

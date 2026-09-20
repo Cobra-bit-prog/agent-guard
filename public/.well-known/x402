@@ -7,6 +7,45 @@
     {
       "scheme": "exact",
       "network": "solana",
+      "maxAmountRequired": "200000",
+      "amount": "200000",
+      "payTo": "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR",
+      "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "maxTimeoutSeconds": 300,
+      "extra": {
+        "sku": "looks_20",
+        "price_usd": 0.2,
+        "symbol": "USDC",
+        "decimals": 6,
+        "question": "Can I pay this address?",
+        "match": "solana-pay-reference",
+        "resource": "https://agent-control.net/api/v1/meter/pass"
+      }
+    },
+    {
+      "scheme": "exact",
+      "network": "base",
+      "maxAmountRequired": "200000",
+      "amount": "200000",
+      "payTo": "0xc5df91Fd7D9578A63efe9B0ee96Bacc5e7742E98",
+      "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "maxTimeoutSeconds": 300,
+      "extra": {
+        "sku": "looks_20",
+        "price_usd": 0.2,
+        "symbol": "USDC",
+        "decimals": 6,
+        "name": "USD Coin",
+        "version": "2",
+        "assetTransferMethod": "eip3009",
+        "caip2": "eip155:8453",
+        "question": "Can I pay this address?",
+        "resource": "https://agent-control.net/api/v1/meter/pass"
+      }
+    },
+    {
+      "scheme": "exact",
+      "network": "solana",
       "maxAmountRequired": "100000",
       "amount": "100000",
       "payTo": "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR",
@@ -256,12 +295,12 @@
     {
       "url": "https://agent-control.net/api/v1/meter/pricing",
       "method": "GET",
-      "description": "Public catalog. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot. Default sku look $0.10. Paid sku looks_20 $0.20."
+      "description": "Public catalog. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot. Empty POST /meter/pass = looks_20 $0.20. Optional {\"sku\":\"look\"} = $0.10 one-shot."
     }
   ],
   "docs": "https://agent-control.net/docs#agent-meter",
   "contact": "support@agent-control.net",
   "openapi": "https://agent-control.net/openapi-meter.json",
   "mcp": "https://agent-control.net/api/v1/mcp",
-  "updated": "2026-09-19T00:00:00Z"
+  "updated": "2026-09-20T00:00:00Z"
 }

@@ -653,7 +653,7 @@ client.onBeforePaymentCreation(
             adapter_snippet so CDP/AgentKit can finish in-process. Copy{" "}
             <code className="font-mono text-fg">src/adapters/meter-pay-base.ts</code>
             {" "}
-            — signExact, then watch until the pass token. Optional Solana:{" "}
+            — signExact, then meter_watch with { invoice_id, payment } (full x402 v2 object, not a raw signature). Optional Solana:{" "}
             <code className="font-mono text-fg">src/adapters/meter-pay.ts</code>
             {" "}
             to pay_to with the 402 reference. Send{" "}

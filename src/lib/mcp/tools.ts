@@ -8,7 +8,7 @@ export const MCP_TOOLS = [
     name: "meter_pricing",
     title: "Agent Meter pricing",
     description:
-      `${METER_AGENT_LEAD} Public catalog from this tool: look, looks_20, addresses_100, stamp_tx. default_sku is look. paid_sku looks_20. Base USDC (EIP-3009 exact) and Solana USDC. No email. No API key. Human App $29 plans are separate.`,
+      `${METER_AGENT_LEAD} No Authorization / Bearer empty. Public catalog from this tool: look, looks_20, addresses_100, stamp_tx. default_sku is look. paid_sku looks_20. Base USDC (EIP-3009 exact) and Solana USDC. No email. No API key. Human App $29 plans are separate.`,
     annotations: readOnly,
     inputSchema: { type: "object", properties: {} },
   },
@@ -259,7 +259,7 @@ export function mcpDiscovery() {
     description: `${METER_AGENT_LEAD} Agent Meter is public. Human App is separate.`,
     protocol: "mcp",
     tools: MCP_TOOLS,
-    auth: "Agent Meter is public (X-Agent-Pass after 5 free looks). Human App: Bearer agent API key or Claude Connector OAuth (required for check, approval, checkout, and status; get_pricing is public)",
+    auth: "Meter meter_* tools: no Authorization / Bearer empty. Human App: Bearer agent API key or Claude Connector OAuth (required for check, approval, checkout, and status; get_pricing is public)",
     storefront: MCP_STOREFRONT_TOOLS,
     meter: [
       "meter_pricing",

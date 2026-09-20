@@ -7,7 +7,7 @@ description: Connect your agent to Agent Control. Use when adding the MCP connec
 
 External audit for your agents. You keep the keys.
 
-The remote MCP is Streamable HTTP at `https://agent-control.net/api/v1/mcp`. Auth header: `Authorization: Bearer ${AGENT_CONTROL_API_KEY}`. `get_pricing` is public. Spend checks, checkout, and status need the key.
+The remote MCP is Streamable HTTP at `https://agent-control.net/api/v1/mcp`. Meter `meter_*` tools: no Authorization / Bearer empty. Human App check/checkout: `Authorization: Bearer ${AGENT_CONTROL_API_KEY}`. `get_pricing` is public. Spend checks, checkout, and status need the key.
 
 Before every send, call `check_transfer`. If the decision is hold, poll `get_approval` until allow or block. If `must_abort` is true, do not send.
 

@@ -18,7 +18,7 @@
       "AGENT_CONTROL_API_KEY": {
         "type": "string",
         "title": "Agent Control API key",
-        "description": "Bearer agent API key from the Agent Control console. Required for spend checks, checkout, and status. get_pricing is public."
+        "description": "Meter meter_* tools: no Authorization / Bearer empty. Human App check/checkout: Bearer API key from the console."
       }
     },
     "required": ["AGENT_CONTROL_API_KEY"]
