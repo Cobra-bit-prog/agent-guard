@@ -2,13 +2,14 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   displayMeterAmount,
+  meterLaptopPayCreateBody,
   parseMeterPaySearch,
   resolveMeterPayIntent,
   type MeterInvoicePayload,
   type MeterPayIntent,
   type MeterPaySearch,
 } from "@/lib/meter-pay";
-import { METER_LOOK_USD_LABEL } from "@/lib/meter/pricing";
+import { METER_LOOK_SKU, METER_LOOK_USD_LABEL, METER_LOOKS_20_USD_LABEL } from "@/lib/meter/pricing";
 import { SOLANA_PAYOUT_ADDRESS, RECEIVE_WALLET_SWITCH_ERROR, isReceiveWalletPayer } from "@/lib/solana-pay";
 import { shortAddress } from "@/lib/utils";
 
@@ -51,6 +52,32 @@ function replaceInvoiceId(invoiceId: string) {
   url.searchParams.set("invoice_id", invoiceId);
   url.searchParams.delete("id");
   window.history.replaceState({}, "", url);
+}
+
+function CreateInvoiceActions({
+  creating,
+  onCreatePack,
+  onCreateLook,
+}: {
+  creating: boolean;
+  onCreatePack: () => void;
+  onCreateLook: () => void;
+}) {
+  return (
+    <>
+      <Button className="mt-5 h-11 w-full rounded-full" onClick={onCreatePack} disabled={creating}>
+        {creating ? "Starting…" : `Get a $${METER_LOOKS_20_USD_LABEL} pack`}
+      </Button>
+      <button
+        type="button"
+        disabled={creating}
+        onClick={onCreateLook}
+        className="mt-3 w-full text-center text-body font-semibold text-navy disabled:opacity-50"
+      >
+        {`Or one look for $${METER_LOOK_USD_LABEL}`}
+      </button>
+    </>
+  );
 }
 
 export function MeterPayCard({ search }: { search: MeterPaySearch }) {
@@ -161,7 +188,7 @@ export function MeterPayCard({ search }: { search: MeterPaySearch }) {
     setTimeout(() => setCopied(null), 1600);
   }
 
-  async function onCreateInvoice() {
+  async function onCreateInvoice(sku?: typeof METER_LOOK_SKU) {
     setCreating(true);
     setPayError(null);
     setLoadError(null);
@@ -169,7 +196,7 @@ export function MeterPayCard({ search }: { search: MeterPaySearch }) {
       const res = await fetch("/api/v1/meter/pass", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: "{}",
+        body: JSON.stringify(meterLaptopPayCreateBody(sku)),
       });
       const data = await readJson(res);
       const id = data.invoice_id;
@@ -215,7 +242,7 @@ export function MeterPayCard({ search }: { search: MeterPaySearch }) {
     }
   }
 
-  const amountLabel = intent ? displayMeterAmount(intent) : METER_LOOK_USD_LABEL;
+  const amountLabel = intent ? displayMeterAmount(intent) : METER_LOOKS_20_USD_LABEL;
 
   if (paid) {
     return (
@@ -248,11 +275,13 @@ export function MeterPayCard({ search }: { search: MeterPaySearch }) {
       <div className="rounded-[20px] border border-border bg-surface p-6 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]">
         <h1 className="text-title font-semibold tracking-tight">Invoice expired</h1>
         <p className="mt-2 text-muted">
-          {`Start a new $${METER_LOOK_USD_LABEL} look invoice, then pay with Phantom.`}
+          {`Start a new $${METER_LOOKS_20_USD_LABEL} pack, then pay with Phantom.`}
         </p>
-        <Button className="mt-5 h-11 w-full rounded-full" onClick={() => void onCreateInvoice()} disabled={creating}>
-          {creating ? "Starting…" : `Get a $${METER_LOOK_USD_LABEL} invoice`}
-        </Button>
+        <CreateInvoiceActions
+          creating={creating}
+          onCreatePack={() => void onCreateInvoice()}
+          onCreateLook={() => void onCreateInvoice(METER_LOOK_SKU)}
+        />
       </div>
     );
   }
@@ -265,16 +294,17 @@ export function MeterPayCard({ search }: { search: MeterPaySearch }) {
     return (
       <div className="rounded-[20px] border border-border bg-surface p-6 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]">
         <p className="text-meta font-semibold uppercase tracking-[0.16em] text-navy">Meter pass</p>
-        <h1 className="mt-2 text-title font-semibold tracking-tight">Pay {METER_LOOK_USD_LABEL} USDC</h1>
+        <h1 className="mt-2 text-title font-semibold tracking-tight">Pay {METER_LOOKS_20_USD_LABEL} USDC</h1>
         <p className="mt-2 text-muted">
-          Open this page with an invoice, or start one here. Phantom in Chrome can pay without scanning a
-          QR.
+          {`Can I pay this address? First 5 looks are free. Then a $${METER_LOOKS_20_USD_LABEL} pack. Phantom in Chrome can pay without scanning a QR.`}
         </p>
         {loadError ? <p className="mt-3 text-body text-danger">{loadError}</p> : null}
         {payError ? <p className="mt-3 text-body text-danger">{payError}</p> : null}
-        <Button className="mt-5 h-11 w-full rounded-full" onClick={() => void onCreateInvoice()} disabled={creating}>
-          {creating ? "Starting…" : `Get a $${METER_LOOK_USD_LABEL} invoice`}
-        </Button>
+        <CreateInvoiceActions
+          creating={creating}
+          onCreatePack={() => void onCreateInvoice()}
+          onCreateLook={() => void onCreateInvoice(METER_LOOK_SKU)}
+        />
         <p className="mt-4 text-meta text-muted">
           URL shape: https://agent-control.net/meter/pay?invoice_id= plus your invoice id.
         </p>
