@@ -1,4 +1,4 @@
-import { METER_LOOK_USD } from "./meter/pricing.ts";
+import { METER_LOOK_SKU, METER_LOOK_USD } from "./meter/pricing.ts";
 import {
   buildSolanaPayUrl,
   formatUsdcExact,
@@ -83,6 +83,13 @@ export function meterLaptopPayHref(invoiceId: string): string {
   const id = invoiceId.trim();
   if (!id) return METER_LAPTOP_PAY_PATH;
   return `${METER_LAPTOP_PAY_PATH}?invoice_id=${encodeURIComponent(id)}`;
+}
+
+/** Empty body = looks_20 pack. look only when the laptop payer picks the optional one-shot. */
+export type MeterLaptopPayCreateBody = { sku?: typeof METER_LOOK_SKU };
+
+export function meterLaptopPayCreateBody(sku?: typeof METER_LOOK_SKU): MeterLaptopPayCreateBody {
+  return sku === METER_LOOK_SKU ? { sku: METER_LOOK_SKU } : {};
 }
 
 function intentFromParts(opts: {

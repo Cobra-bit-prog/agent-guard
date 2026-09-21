@@ -20,6 +20,8 @@ export const METER_PASS_SKU = "pass_1h" as const;
 export const METER_FREE_LOOKS = 5;
 export const METER_LOOK_USD = 0.1;
 export const METER_LOOK_USD_LABEL = "0.10";
+export const METER_LOOKS_20_USD = 0.2;
+export const METER_LOOKS_20_USD_LABEL = "0.20";
 export const METER_ANON_IDENTITY = "anon" as const;
 
 export const LOOK_QUESTION = "Can I pay this address?";
@@ -63,7 +65,7 @@ export const METER_LOOK: MeterSku = {
 
 export const METER_LOOKS_20: MeterSku = {
   id: "looks_20",
-  price_usd: 0.2,
+  price_usd: METER_LOOKS_20_USD,
   duration_sec: 86400,
   included_calls: 20,
   covers: ["scan", "preflight"],

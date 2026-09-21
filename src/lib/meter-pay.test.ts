@@ -6,10 +6,17 @@ import { fileURLToPath } from "node:url";
 import {
   METER_LAPTOP_PAY_PATH,
   METER_LAPTOP_PAY_URL,
+  meterLaptopPayCreateBody,
   meterLaptopPayHref,
   parseMeterPaySearch,
   resolveMeterPayIntent,
 } from "./meter-pay.ts";
+import {
+  METER_LOOK_SKU,
+  METER_LOOK_USD_LABEL,
+  METER_LOOKS_20_USD_LABEL,
+  METER_PAID_SKU,
+} from "./meter/pricing.ts";
 import {
   SOLANA_PAYOUT_ADDRESS,
   USDC_MINT,
@@ -96,18 +103,71 @@ describe("meter laptop pay", () => {
     assert.equal(intent.intent.recipient, SOLANA_PAYOUT_ADDRESS);
   });
 
+  it("default laptop create body is empty looks_20; look is opt-in", () => {
+    assert.deepEqual(meterLaptopPayCreateBody(), {});
+    assert.deepEqual(meterLaptopPayCreateBody(METER_LOOK_SKU), { sku: METER_LOOK_SKU });
+    assert.equal(METER_PAID_SKU, "looks_20");
+    assert.equal(METER_LOOKS_20_USD_LABEL, "0.20");
+    assert.equal(METER_LOOK_USD_LABEL, "0.10");
+  });
+
+  it("honors a look invoice amount and does not rewrite it to looks_20", () => {
+    const intent = resolveMeterPayIntent({
+      search: parseMeterPaySearch({ invoice_id: "inv_look", amount: "0.20" }),
+      invoice: {
+        invoice_id: "inv_look",
+        amount_usd: 0.1,
+        amount_base_units: "100000",
+        reference: REF,
+      },
+    });
+    assert.equal(intent.ok, true);
+    if (!intent.ok) return;
+    assert.equal(intent.intent.invoiceId, "inv_look");
+    assert.equal(intent.intent.amountUsdc, 0.1);
+    assert.equal(intent.intent.amountBaseUnits, "100000");
+  });
+
+  it("honors a looks_20 invoice amount", () => {
+    const intent = resolveMeterPayIntent({
+      search: parseMeterPaySearch({ invoice_id: "inv_pack" }),
+      invoice: {
+        invoice_id: "inv_pack",
+        amount_usd: 0.2,
+        amount_base_units: "200000",
+        reference: REF,
+      },
+    });
+    assert.equal(intent.ok, true);
+    if (!intent.ok) return;
+    assert.equal(intent.intent.amountUsdc, 0.2);
+    assert.equal(intent.intent.amountBaseUnits, "200000");
+  });
+
   it("ships a public /meter/pay route that does not import pay-extension at the top", () => {
     const route = readFileSync(join(ROOT, "src/routes/meter.pay.tsx"), "utf8");
     const card = readFileSync(join(ROOT, "src/components/meter-pay-card.tsx"), "utf8");
     assert.match(route, /createFileRoute\("\/meter\/pay"\)/);
     assert.match(route, /SkyShell/);
     assert.match(route, /MeterPayCard/);
+    assert.match(route, /Pay \$\{METER_LOOKS_20_USD_LABEL\} USDC/);
+    assert.match(route, /One look is \$\$\{METER_LOOK_USD_LABEL\}/);
+    assert.doesNotMatch(route, /Pay 0\.10 USDC/);
     assert.doesNotMatch(route, /from\s+["'][^"']*pay-extension["']/);
     assert.match(card, /payUsdcWithPhantomExtension/);
     assert.match(card, /import\("@\/lib\/pay-extension"\)/);
     assert.match(card, /\/api\/v1\/meter\/watch/);
     assert.match(card, /\/api\/v1\/meter\/invoice\//);
+    assert.match(card, /meterLaptopPayCreateBody/);
+    assert.match(card, /Get a \$\$\{METER_LOOKS_20_USD_LABEL\} pack/);
+    assert.match(card, /Or one look for \$\$\{METER_LOOK_USD_LABEL\}/);
+    assert.match(card, /onCreateLook=\{\(\) => void onCreateInvoice\(METER_LOOK_SKU\)\}/);
+    assert.match(card, /onCreatePack=\{\(\) => void onCreateInvoice\(\)\}/);
+    assert.doesNotMatch(card, /Get a \$\$\{METER_LOOK_USD_LABEL\} invoice/);
     assert.doesNotMatch(card, /from\s+["'][^"']*pay-extension["']/);
+    assert.doesNotMatch(card, /pass_1h/);
+    assert.doesNotMatch(card, /inbox/i);
+    assert.doesNotMatch(card, /hold/i);
   });
 
   it("Phantom send refuses the locked receive wallet", () => {
