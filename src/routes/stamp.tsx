@@ -12,7 +12,10 @@ import {
   STAMP_SELLER_EYEBROW,
   STAMP_SELLER_HEADLINE,
   STAMP_SELLER_LEDE,
+  STAMP_RECIPE,
   STAMP_SELLER_STEPS,
+  STAMP_TXT_CURL,
+  STAMP_TXT_PATH,
   STAMP_VERIFY_CURL,
 } from "@/lib/meter-recipe";
 
@@ -62,6 +65,15 @@ function StampSellerPage() {
             </li>
           ))}
         </ol>
+
+        <p className="mt-8 text-body text-muted">
+          One-file recipe.{" "}
+          <a href={STAMP_TXT_PATH} className="font-medium text-navy hover:text-coral">
+            stamp.txt
+          </a>
+        </p>
+        <CopyCode code={STAMP_TXT_CURL} label="Copy curl" />
+        <CopyCode code={STAMP_RECIPE} label="Copy recipe" />
 
         <p className="mt-8 text-body text-muted">
           MCP:{" "}

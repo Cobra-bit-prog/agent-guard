@@ -13,5 +13,6 @@
 # x402 look door: https://agent-control.net/.well-known/x402
 # MCP discovery: https://agent-control.net/.well-known/mcp.json
 # Meter recipe (curl, X-Agent-Pass): https://agent-control.net/docs#agent-meter
+# Stamp seller recipe (curl): https://agent-control.net/stamp.txt
 
 MCP: https://agent-control.net/api/v1/mcp

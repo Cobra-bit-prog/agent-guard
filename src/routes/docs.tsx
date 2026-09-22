@@ -24,11 +24,14 @@ import {
   METER_SEPARATE,
   METER_STEPS,
   STAMP_PATH,
+  STAMP_RECIPE,
   STAMP_SELLER_BODY,
   STAMP_SELLER_EYEBROW,
   STAMP_SELLER_HEADLINE,
   STAMP_SELLER_LEDE,
   STAMP_SELLER_STEPS,
+  STAMP_TXT_CURL,
+  STAMP_TXT_PATH,
   STAMP_VERIFY_CURL,
 } from "@/lib/meter-recipe";
 import {
@@ -730,6 +733,14 @@ client.onBeforePaymentCreation(
             ))}
           </ol>
           <CopyCode code={STAMP_VERIFY_CURL} label="Copy verify" />
+          <p className="mt-6 text-body leading-relaxed text-muted">
+            One-file recipe:{" "}
+            <a href={STAMP_TXT_PATH} className="font-medium text-navy hover:text-coral">
+              stamp.txt
+            </a>
+          </p>
+          <CopyCode code={STAMP_TXT_CURL} label="Copy curl" />
+          <CopyCode code={STAMP_RECIPE} label="Copy recipe" />
           <p className="mt-6 text-body leading-relaxed text-muted">
             Seller page:{" "}
             <a href={STAMP_PATH} className="font-medium text-navy hover:text-coral">
