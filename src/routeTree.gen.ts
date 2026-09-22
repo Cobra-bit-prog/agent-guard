@@ -50,6 +50,7 @@ import { Route as ApiV1BillingHeliusRouteImport } from './routes/api/v1/billing.
 import { Route as ApiV1BillingHeliusSetupRouteImport } from './routes/api/v1/billing.helius-setup'
 import { Route as ApiV1BillingInvoiceRouteImport } from './routes/api/v1/billing.invoice'
 import { Route as ApiV1BillingWatchRouteImport } from './routes/api/v1/billing.watch'
+import { Route as ApiV1GateDemoRouteImport } from './routes/api/v1/gate.demo'
 import { Route as ApiV1InternalAccountsRouteImport } from './routes/api/v1/internal/accounts'
 import { Route as ApiV1InternalMeterRouteImport } from './routes/api/v1/internal/meter'
 import { Route as ApiV1InternalStatsRouteImport } from './routes/api/v1/internal/stats'
@@ -266,6 +267,11 @@ const ApiV1BillingWatchRoute = ApiV1BillingWatchRouteImport.update({
   path: '/api/v1/billing/watch',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1GateDemoRoute = ApiV1GateDemoRouteImport.update({
+  id: '/api/v1/gate/demo',
+  path: '/api/v1/gate/demo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1InternalAccountsRoute = ApiV1InternalAccountsRouteImport.update({
   id: '/api/v1/internal/accounts',
   path: '/api/v1/internal/accounts',
@@ -364,6 +370,7 @@ export interface FileRoutesByFullPath {
   '/api/v1/billing/helius-setup': typeof ApiV1BillingHeliusSetupRoute
   '/api/v1/billing/invoice': typeof ApiV1BillingInvoiceRoute
   '/api/v1/billing/watch': typeof ApiV1BillingWatchRoute
+  '/api/v1/gate/demo': typeof ApiV1GateDemoRoute
   '/api/v1/internal/accounts': typeof ApiV1InternalAccountsRoute
   '/api/v1/internal/meter': typeof ApiV1InternalMeterRouteWithChildren
   '/api/v1/internal/stats': typeof ApiV1InternalStatsRoute
@@ -414,6 +421,7 @@ export interface FileRoutesByTo {
   '/api/v1/billing/helius-setup': typeof ApiV1BillingHeliusSetupRoute
   '/api/v1/billing/invoice': typeof ApiV1BillingInvoiceRoute
   '/api/v1/billing/watch': typeof ApiV1BillingWatchRoute
+  '/api/v1/gate/demo': typeof ApiV1GateDemoRoute
   '/api/v1/internal/accounts': typeof ApiV1InternalAccountsRoute
   '/api/v1/internal/meter': typeof ApiV1InternalMeterRouteWithChildren
   '/api/v1/internal/stats': typeof ApiV1InternalStatsRoute
@@ -469,6 +477,7 @@ export interface FileRoutesById {
   '/api/v1/billing/helius-setup': typeof ApiV1BillingHeliusSetupRoute
   '/api/v1/billing/invoice': typeof ApiV1BillingInvoiceRoute
   '/api/v1/billing/watch': typeof ApiV1BillingWatchRoute
+  '/api/v1/gate/demo': typeof ApiV1GateDemoRoute
   '/api/v1/internal/accounts': typeof ApiV1InternalAccountsRoute
   '/api/v1/internal/meter': typeof ApiV1InternalMeterRouteWithChildren
   '/api/v1/internal/stats': typeof ApiV1InternalStatsRoute
@@ -524,6 +533,7 @@ export interface FileRouteTypes {
     | '/api/v1/billing/helius-setup'
     | '/api/v1/billing/invoice'
     | '/api/v1/billing/watch'
+    | '/api/v1/gate/demo'
     | '/api/v1/internal/accounts'
     | '/api/v1/internal/meter'
     | '/api/v1/internal/stats'
@@ -574,6 +584,7 @@ export interface FileRouteTypes {
     | '/api/v1/billing/helius-setup'
     | '/api/v1/billing/invoice'
     | '/api/v1/billing/watch'
+    | '/api/v1/gate/demo'
     | '/api/v1/internal/accounts'
     | '/api/v1/internal/meter'
     | '/api/v1/internal/stats'
@@ -628,6 +639,7 @@ export interface FileRouteTypes {
     | '/api/v1/billing/helius-setup'
     | '/api/v1/billing/invoice'
     | '/api/v1/billing/watch'
+    | '/api/v1/gate/demo'
     | '/api/v1/internal/accounts'
     | '/api/v1/internal/meter'
     | '/api/v1/internal/stats'
@@ -669,6 +681,7 @@ export interface RootRouteChildren {
   ApiV1BillingHeliusSetupRoute: typeof ApiV1BillingHeliusSetupRoute
   ApiV1BillingInvoiceRoute: typeof ApiV1BillingInvoiceRoute
   ApiV1BillingWatchRoute: typeof ApiV1BillingWatchRoute
+  ApiV1GateDemoRoute: typeof ApiV1GateDemoRoute
   ApiV1InternalAccountsRoute: typeof ApiV1InternalAccountsRoute
   ApiV1InternalMeterRoute: typeof ApiV1InternalMeterRouteWithChildren
   ApiV1InternalStatsRoute: typeof ApiV1InternalStatsRoute
@@ -970,6 +983,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1BillingWatchRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/gate/demo': {
+      id: '/api/v1/gate/demo'
+      path: '/api/v1/gate/demo'
+      fullPath: '/api/v1/gate/demo'
+      preLoaderRoute: typeof ApiV1GateDemoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/internal/accounts': {
       id: '/api/v1/internal/accounts'
       path: '/api/v1/internal/accounts'
@@ -1155,6 +1175,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiV1BillingHeliusSetupRoute: ApiV1BillingHeliusSetupRoute,
   ApiV1BillingInvoiceRoute: ApiV1BillingInvoiceRoute,
   ApiV1BillingWatchRoute: ApiV1BillingWatchRoute,
+  ApiV1GateDemoRoute: ApiV1GateDemoRoute,
   ApiV1InternalAccountsRoute: ApiV1InternalAccountsRoute,
   ApiV1InternalMeterRoute: ApiV1InternalMeterRouteWithChildren,
   ApiV1InternalStatsRoute: ApiV1InternalStatsRoute,

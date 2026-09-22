@@ -22,3 +22,9 @@ curl -s -X POST https://agent-control.net/api/v1/meter/stamp -H 'content-type: a
 curl -s https://agent-control.net/api/v1/meter/stamp/<stamp_id>
 # 3 merchant only accepts USDC if verified is true and decision is allow. If not, do not take the USDC.
 # Take this ticket or we do not take your USDC.
+# 4 dogfood gate. Live on this site. GET or POST /api/v1/gate/demo. Header X-Stamp-Id. No valid allow stamp → 402 stamp_tx $0.05. verified true and decision allow → 200.
+curl -s -D - https://agent-control.net/api/v1/gate/demo
+# blocked. Buy stamp_tx, mint allow, pass the stamp id:
+curl -s -D - https://agent-control.net/api/v1/gate/demo -H 'X-Stamp-Id: <stamp_id>'
+# Merchant copy: src/adapters/stamp-gate.ts
+# https://raw.githubusercontent.com/Cobra-bit-prog/agent-guard/main/src/adapters/stamp-gate.ts
