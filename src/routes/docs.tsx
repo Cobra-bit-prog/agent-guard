@@ -648,7 +648,7 @@ client.onBeforePaymentCreation(
           <p className="mt-3 max-w-[52ch] text-muted">{METER_LEDE}</p>
           <p className="mt-3 max-w-[52ch] text-muted">{METER_SEPARATE}</p>
           <p className="mt-3 max-w-[52ch] text-muted">
-            Can I pay this address? First 5 free. {METER_PACKS_FIRST} ok | new | warn | sink. Packs:
+            Can I pay this address? {METER_PACKS_FIRST} ok | new | warn | sink. Packs:
             looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. Take this ticket or we do
             not take your USDC. Merchants can require the stamp_tx $0.05 ticket before accepting
             agent USDC. Prefer Base USDC (EIP-3009 exact) to base_pay_to (CDP/AgentKit). No Solana
@@ -664,8 +664,8 @@ client.onBeforePaymentCreation(
             {" "}
             to pay_to with the 402 reference. Send{" "}
             <code className="font-mono text-fg">X-Agent-Pass</code>
-            : pick any string; first 5 looks on that id are free; then 402 looks_20 $0.20 pack (look
-            $0.10 is optional one-shot). No email. No
+            . No free looks. 402 looks_20 $0.20 pack (look $0.10 is optional one-shot) before
+            the first scan. No email. No
             Phantom. On a laptop with Phantom, you can still open{" "}
             <a href="/meter/pay" className="font-medium text-navy hover:text-coral">
               /meter/pay?invoice_id=
@@ -718,7 +718,7 @@ client.onBeforePaymentCreation(
           <p className="mt-3 max-w-[52ch] text-muted">{STAMP_SELLER_LEDE}</p>
           <p className="mt-3 max-w-[52ch] text-muted">{STAMP_SELLER_BODY}</p>
           <p className="mt-3 max-w-[52ch] text-muted">
-            Can I pay this address? First 5 free. {METER_PACKS_FIRST} Ticket: stamp_tx $0.05.
+            Can I pay this address? {METER_PACKS_FIRST}
           </p>
           <ol className="mt-8 space-y-3">
             {STAMP_SELLER_STEPS.map((s) => (

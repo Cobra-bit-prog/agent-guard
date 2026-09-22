@@ -1,7 +1,7 @@
 {
   "name": "net.agent-control/agent-control",
   "title": "Agent Control",
-  "description": "Can I pay this address? First 5 free. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot. No inbox. Agent Meter is public (no Authorization / Bearer empty). Human App is separate ($29).",
+  "description": "Can I pay this address? Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05. No inbox. Agent Meter is public (no Authorization / Bearer empty). Human App is separate ($29).",
   "version": "1.0.0",
   "mcp": "https://agent-control.net/api/v1/mcp",
   "transport": "streamable-http",
@@ -12,7 +12,7 @@
     }
   ],
   "products": {
-    "meter": "Can I pay this address? First 5 free. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot. No inbox. Meter meter_* tools: no Authorization / Bearer empty.",
+    "meter": "Can I pay this address? Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05. No inbox. Meter meter_* tools: no Authorization / Bearer empty.",
     "human_app": "Spend limits and Approval Inbox. Humans pay $29. Agents use a Bearer API key."
   }
 }

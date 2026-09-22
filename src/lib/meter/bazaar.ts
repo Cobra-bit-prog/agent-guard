@@ -8,7 +8,7 @@ export const METER_BAZAAR_ORIGIN = "https://agent-control.net";
 
 /** CDP Facilitator rejects resource.description over 500 characters. */
 export const METER_BAZAAR_DESCRIPTION =
-  "Can I pay this address? ok · new · warn · sink. First 5 free. Then looks_20 $0.20 → X-Agent-Pass; look $0.10 optional. Packs: 20/$0.20 · 100-addr $0.15 · stamp $0.05. Agents pay themselves. No inbox. Base + Solana USDC.";
+  "Can I pay this address? ok · new · warn · sink. Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05. Packs: 20/$0.20 · 100-addr $0.15. Agents pay themselves. No inbox. Base + Solana USDC.";
 
 export const METER_BAZAAR_SERVICE_NAME = "Agent Meter";
 export const METER_BAZAAR_MIME = "application/json";

@@ -3,7 +3,7 @@
   "info": {
     "title": "Agent Meter",
     "version": "1.0.0",
-    "description": "Can I pay this address? First 5 free. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot. No inbox. Base USDC (EIP-3009 exact) to 0xc5df91Fd7D9578A63efe9B0ee96Bacc5e7742E98. Solana USDC to 49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR. Human App is separate."
+    "description": "Can I pay this address? Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05. No inbox. Base USDC (EIP-3009 exact) to 0xc5df91Fd7D9578A63efe9B0ee96Bacc5e7742E98. Solana USDC to 49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR. Human App is separate."
   },
   "servers": [
     {
@@ -14,7 +14,7 @@
     "/api/v1/meter/pricing": {
       "get": {
         "summary": "Public Meter catalog",
-        "description": "Can I pay this address? First 5 free. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot. Default sku look. Paid sku looks_20.",
+        "description": "Can I pay this address? Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05. Default sku look. Paid sku looks_20.",
         "responses": {
           "200": {
             "description": "Catalog. default_sku is look. paid_sku is looks_20. funds.pay_to is locked."
@@ -25,7 +25,7 @@
     "/api/v1/meter/pass": {
       "get": {
         "summary": "Pass probe / challenge",
-        "description": "Same 402 Payment-Required as empty POST (default sku looks_20 $0.20). Probe/challenge only. POST remains the canonical buy. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot.",
+        "description": "Same 402 Payment-Required as empty POST (default sku looks_20 $0.20). Probe/challenge only. POST remains the canonical buy. Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05.",
         "responses": {
           "402": {
             "description": "PAYMENT-REQUIRED header + looks_20 invoice body + extensions.bazaar."
@@ -34,7 +34,7 @@
       },
       "post": {
         "summary": "Look door",
-        "description": "Empty body {} invoices looks_20 $0.20 pack. Optional {\"sku\":\"look\"} is $0.10 one-shot. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot. No release without payment. First 5 looks on an X-Agent-Pass id are free.",
+        "description": "Empty body {} invoices looks_20 $0.20 pack. Optional {\"sku\":\"look\"} is $0.10 one-shot. Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05. No release without payment. free_looks is 0. A scan without a paid pass returns 402.",
         "requestBody": {
           "required": false,
           "content": {
@@ -61,7 +61,7 @@
             "description": "Pass issued after proof or a prior payment watch."
           },
           "402": {
-            "description": "Prefer Base USDC (EIP-3009 exact) to the locked base_pay_to (CDP/AgentKit; no Solana key). Optional Solana USDC to payTo. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot."
+            "description": "Prefer Base USDC (EIP-3009 exact) to the locked base_pay_to (CDP/AgentKit; no Solana key). Optional Solana USDC to payTo. Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05."
           }
         }
       }
@@ -69,7 +69,7 @@
     "/api/v1/meter/scan": {
       "post": {
         "summary": "Can I pay this address?",
-        "description": "First 5 free. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot. Header X-Agent-Pass.",
+        "description": "Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05. Header X-Agent-Pass. No free looks.",
         "parameters": [
           {
             "name": "X-Agent-Pass",
@@ -112,7 +112,7 @@
             "description": "risk ok|new|warn|sink. Never hold."
           },
           "402": {
-            "description": "After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot."
+            "description": "Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05."
           }
         }
       }

@@ -105,7 +105,8 @@ describe("Agent Meter recipe", () => {
   it("locks Can I pay this address / free5 / $0.10 / packs / ticket", () => {
     assert.equal(METER_EYEBROW, "Agent Meter");
     assert.equal(METER_HEADLINE, "Agents pay themselves");
-    assert.equal(METER_LEDE, `First 5 free. ${METER_PACKS_FIRST}`);
+    assert.equal(METER_LEDE, METER_PACKS_FIRST);
+    assert.equal(METER_LEDE, "Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05.");
     assert.match(METER_STEPS[1]?.d ?? "", /Can I pay this address\?/);
     assert.equal(METER_RISKS, "ok | new | warn | sink");
     assert.match(METER_PACKS, /looks_20 \$0\.20/);
@@ -119,7 +120,7 @@ describe("Agent Meter recipe", () => {
     assert.equal(METER_QUESTION, "Can I pay this address?");
     assert.equal(
       METER_CONNECT_BODY,
-      `First 5 free. ${METER_PACKS_FIRST} Agents pay themselves. No inbox. No email. No API key.`,
+      `${METER_PACKS_FIRST} Agents pay themselves. No inbox. No email. No API key.`,
     );
     assert.equal(
       METER_DISCOVERY,
@@ -136,7 +137,10 @@ describe("Agent Meter recipe", () => {
     assert.match(METER_SEPARATE, /no API key/);
     assert.match(METER_SEPARATE, /no Approval Inbox/);
     assert.match(METER_PROSE, /\$0\.10/);
-    assert.match(METER_PROSE, /First 5 free/);
+    assert.match(METER_PROSE, /Buy looks_20 pack \(\$0\.20\) or look \$0\.10/);
+    assert.match(METER_PROSE, /Stamp ticket \$0\.05/);
+    assert.doesNotMatch(METER_PROSE, /First 5 free/);
+    assert.doesNotMatch(METER_PROSE, /free-5/);
     assert.match(METER_PROSE, /looks_20 pack \(\$0\.20\)/);
     assert.match(METER_PROSE, /optional one-shot/);
     assert.match(METER_PROSE, /Merchants can require the stamp_tx \$0\.05 ticket before accepting agent USDC/);
@@ -153,7 +157,10 @@ describe("Agent Meter recipe", () => {
       METER_RECIPE,
       /^# 1 discover\n# https:\/\/agent-control\.net\/llms\.txt\ncurl -s https:\/\/agent-control\.net\/api\/v1\/meter\/pricing$/m,
     );
-    assert.match(METER_RECIPE, /First 5 free/);
+    assert.match(METER_RECIPE, /Buy looks_20 pack \(\$0\.20\) or look \$0\.10/);
+    assert.match(METER_RECIPE, /Stamp ticket \$0\.05/);
+    assert.doesNotMatch(METER_RECIPE, /First 5 free/);
+    assert.doesNotMatch(METER_RECIPE, /free-5/);
     assert.match(METER_RECIPE, /looks_20 pack \(\$0\.20\)/);
     assert.match(METER_RECIPE, /402 looks_20 \$0\.20 pack/);
     assert.match(METER_RECIPE, /look \$0\.10 is optional one-shot/);
@@ -165,7 +172,7 @@ describe("Agent Meter recipe", () => {
     assert.match(METER_RECIPE, /# 6 MCP meter_\* at \/api\/v1\/mcp/);
     assert.match(METER_RECIPE, /MCP-native \(no Solana key\)/);
     assert.match(METER_RECIPE, /We never take keys/);
-    assert.match(METER_RECIPE, /GET \/api\/v1\/meter\/pricing \(paid_sku looks_20, free_looks\)/);
+    assert.match(METER_RECIPE, /GET \/api\/v1\/meter\/pricing \(paid_sku looks_20, free_looks=0\)/);
     assert.match(METER_RECIPE, /src\/adapters\/meter-pay-base\.ts/);
     assert.match(METER_RECIPE, /buyMeterPassBase/);
     assert.match(METER_RECIPE, /CDP\/AgentKit/);
@@ -195,10 +202,10 @@ await buyMeterPassBase({ from, signExact });`,
     assert.match(METER_STEPS[3]?.d ?? "", /full x402 v2 payment object/);
     assert.match(METER_STEPS[3]?.d ?? "", /not invoice_id-only/);
     assert.match(METER_RECIPE, /X-Agent-Pass: <your-id>/);
-    assert.match(METER_RECIPE, /pick any string; first 5 looks on that id are free; then 402 looks_20 \$0\.20 pack \(look \$0\.10 is optional one-shot\)/);
+    assert.match(METER_RECIPE, /No free looks\. 402 looks_20 \$0\.20 pack \(look \$0\.10 is optional one-shot\) before the first scan/);
     assert.equal(
       METER_FREE_LOOK_NOTE,
-      "pick any string; first 5 looks on that id are free; then 402 looks_20 $0.20 pack (look $0.10 is optional one-shot)",
+      "No free looks. 402 looks_20 $0.20 pack (look $0.10 is optional one-shot) before the first scan.",
     );
     assert.match(METER_FREE_LOOK_CURL, /\/api\/v1\/meter\/scan/);
     assert.match(METER_FREE_LOOK_CURL, /X-Agent-Pass: <your-id>/);
@@ -299,7 +306,12 @@ describe("Agent Meter recipe on public discovery surfaces", () => {
     const docs = read("src/routes/docs.tsx");
     assert.match(llms, /## Agent Meter \(no human on the site\)/);
     assert.match(llms, /Can I pay this address\?/);
-    assert.match(llms, /First 5 free/);
+    assert.match(llms, /Buy looks_20 pack \(\$0\.20\) or look \$0\.10/);
+    assert.match(llms, /Stamp ticket \$0\.05/);
+    assert.match(llms, /free_looks=0/);
+    assert.doesNotMatch(llms, /First 5 free/);
+    assert.doesNotMatch(llms, /free-5/);
+    assert.doesNotMatch(llms, /first 5 looks/);
     assert.match(llms, /looks_20 pack \(\$0\.20\)/);
     assert.match(llms, /look \$0\.10 is optional one-shot/);
     assert.match(llms, /Base USDC \(EIP-3009 exact\)/);
@@ -338,7 +350,7 @@ describe("Agent Meter recipe on public discovery surfaces", () => {
     assert.match(llms, /X-Agent-Pass: <your-id>/);
     assert.match(llms, /MCP-native \(no Solana key\)/);
     assert.match(llms, /We never take keys/);
-    assert.match(llms, /free meter_scan → after free-5 meter_buy_pass \(looks_20\) → Base sign_exact → meter_watch\(\{invoice_id, payment\}\) → token/);
+    assert.match(llms, /meter_buy_pass \(looks_20\) → Base sign_exact → meter_watch\(\{invoice_id, payment\}\) → token → meter_scan/);
     assert.match(llms, /NOT invoice_id-only for Base/);
     assert.match(llms, /full x402 v2 object from payMeterPassBase/);
     assert.match(llms, /sign_exact/);
@@ -371,8 +383,10 @@ describe("Agent Meter recipe on public discovery surfaces", () => {
       /# 3 merchant only accepts USDC if verified is true and decision is allow/,
     );
     assert.match(STAMP_RECIPE, /Take this ticket or we do not take your USDC/);
-    assert.match(STAMP_RECIPE, /First 5 free/);
-    assert.match(STAMP_RECIPE, /look \$0\.10 is optional one-shot/);
+    assert.match(STAMP_RECIPE, /Buy looks_20 pack \(\$0\.20\) or look \$0\.10/);
+    assert.match(STAMP_RECIPE, /Stamp ticket \$0\.05/);
+    assert.doesNotMatch(STAMP_RECIPE, /First 5 free/);
+    assert.doesNotMatch(STAMP_RECIPE, /free-5/);
     assert.match(STAMP_RECIPE, /looks_20 \$0\.20/);
     assert.match(STAMP_RECIPE, /addresses_100 \$0\.15/);
     assert.match(STAMP_RECIPE, /stamp_tx \$0\.05/);

@@ -4,7 +4,7 @@
 # Merchants can require the stamp_tx $0.05 ticket before accepting agent USDC.
 # Seller page: https://agent-control.net/stamp
 # Separate from the Human App. Agents pay themselves. No inbox. No email. No API key. No Approval Inbox.
-# Can I pay this address? First 5 free. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot.
+# Can I pay this address? Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05.
 # Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05.
 # Base USDC (EIP-3009 exact) and Solana USDC. pass_1h catalog-only.
 # 1 agent buys stamp_tx $0.05 via Meter 402

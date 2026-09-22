@@ -136,7 +136,7 @@ export function agentCard() {
       {
         id: "meter-look",
         name: LOOK_QUESTION,
-        description: `First 5 free. ${METER_PACKS_FIRST} Risk ${LOOK_RISKS.join("|")}. Base USDC (EIP-3009 exact) and Solana USDC. No inbox. No email. No API key.`,
+        description: `${METER_PACKS_FIRST} Risk ${LOOK_RISKS.join("|")}. Base USDC (EIP-3009 exact) and Solana USDC. No inbox. No email. No API key.`,
         tags: ["meter", "x402", "solana", "base", "usdc", "look"],
         examples: [`POST ${PASS_URL} {}`, `POST ${SCAN_URL}`],
       },
@@ -164,7 +164,7 @@ export function meterOpenApi() {
       "/api/v1/meter/pricing": {
         get: {
           summary: "Public Meter catalog",
-          description: `${LOOK_QUESTION} First 5 free. ${METER_PACKS_FIRST} Default sku look. Paid sku looks_20.`,
+          description: `${LOOK_QUESTION} ${METER_PACKS_FIRST} Default sku look. Paid sku looks_20.`,
           responses: {
             "200": { description: "Catalog. default_sku is look. paid_sku is looks_20. funds.pay_to is locked." },
           },
@@ -182,7 +182,7 @@ export function meterOpenApi() {
         },
         post: {
           summary: "Look door",
-          description: `Empty body {} invoices looks_20 $0.20 pack. Optional {"sku":"look"} is $0.10 one-shot. ${METER_PACKS_FIRST} No release without payment. First ${METER_FREE_LOOKS} looks on an X-Agent-Pass id are free.`,
+          description: `Empty body {} invoices looks_20 $0.20 pack. Optional {"sku":"look"} is $0.10 one-shot. ${METER_PACKS_FIRST} No release without payment. free_looks is ${METER_FREE_LOOKS}. A scan without a paid pass returns 402.`,
           requestBody: {
             required: false,
             content: {
@@ -207,7 +207,7 @@ export function meterOpenApi() {
       "/api/v1/meter/scan": {
         post: {
           summary: LOOK_QUESTION,
-          description: `First 5 free. ${METER_PACKS_FIRST} Header X-Agent-Pass.`,
+          description: `${METER_PACKS_FIRST} Header X-Agent-Pass. No free looks.`,
           parameters: [
             {
               name: "X-Agent-Pass",

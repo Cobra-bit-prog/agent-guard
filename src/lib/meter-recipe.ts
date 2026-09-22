@@ -11,7 +11,7 @@ export { METER_PACKS_FIRST, STAMP_MERCHANT_COPY };
 export const METER_EYEBROW = "Agent Meter";
 /** Locked Meter headline. The look question lives in LOOK_QUESTION. */
 export const METER_HEADLINE = "Agents pay themselves";
-export const METER_LEDE = `First 5 free. ${METER_PACKS_FIRST}`;
+export const METER_LEDE = METER_PACKS_FIRST;
 export const METER_QUESTION = "Can I pay this address?";
 export const METER_SEPARATE =
   "Separate from the Human App. Then scan and preflight. No inbox. No email, no API key, no Approval Inbox.";
@@ -57,7 +57,7 @@ export const STAMP_SELLER_STEPS = [
   {
     n: "1",
     t: "Ask for the ticket",
-    d: `Tell the agent: buy stamp_tx $0.05, then call meter_stamp. ${METER_QUESTION} First 5 free. ${METER_PACKS_FIRST}`,
+    d: `Tell the agent: buy stamp_tx $0.05, then call meter_stamp. ${METER_QUESTION} ${METER_PACKS_FIRST}`,
   },
   {
     n: "2",
@@ -81,16 +81,16 @@ export const METER_PRICING_CURL = "curl -s https://agent-control.net/api/v1/mete
 export const METER_DISCOVERY =
   "llms.txt → GET /api/v1/meter/pricing → 402 → MCP meter_* tools.";
 export const METER_CONNECT_BODY =
-  `First 5 free. ${METER_PACKS_FIRST} Agents pay themselves. No inbox. No email. No API key.`;
+  `${METER_PACKS_FIRST} Agents pay themselves. No inbox. No email. No API key.`;
 export const METER_MCP_TOOLS = "meter_pricing, meter_scan, meter_buy_pass, meter_watch";
 
 /** Copy-paste Base buyer — no Solana key. Same file as src/adapters/meter-pay-base.ts. */
 export const METER_PAY_SNIPPET = `import { buyMeterPassBase } from "./src/adapters/meter-pay-base.ts";
 await buyMeterPassBase({ from, signExact });`;
 
-/** Free-look header. Pick any string; first 5 looks on that id are free. */
+/** Paid look. No free allowance on an X-Agent-Pass id. */
 export const METER_FREE_LOOK_NOTE =
-  "pick any string; first 5 looks on that id are free; then 402 looks_20 $0.20 pack (look $0.10 is optional one-shot)";
+  "No free looks. 402 looks_20 $0.20 pack (look $0.10 is optional one-shot) before the first scan.";
 
 export const METER_FREE_LOOK_CURL =
   "curl -s -X POST https://agent-control.net/api/v1/meter/scan -H 'content-type: application/json' -H 'X-Agent-Pass: <your-id>' -d '{\"chain\":\"solana\",\"address\":\"<destination>\"}'";
@@ -99,16 +99,16 @@ export const METER_FREE_LOOK_CURL =
 export const METER_RECIPE = `# 1 discover
 # https://agent-control.net/llms.txt
 curl -s https://agent-control.net/api/v1/meter/pricing
-# 2 look — First 5 free. ${METER_PACKS_FIRST} One address. ok | new | warn | sink
+# 2 look — ${METER_PACKS_FIRST} One address. ok | new | warn | sink
 # ${METER_FREE_LOOK_NOTE}
 ${METER_FREE_LOOK_CURL}
-# 3 after 5, POST /api/v1/meter/pass → 402 looks_20 $0.20 pack. Empty body {} = looks_20; {"sku":"look"} = $0.10 one-shot. Prefer Base USDC (EIP-3009 exact) to base_pay_to (CDP/AgentKit). No Solana key needed. Solana USDC to pay_to WITH reference is optional
+# 3 POST /api/v1/meter/pass → 402 looks_20 $0.20 pack. Empty body {} = looks_20; {"sku":"look"} = $0.10 one-shot. Prefer Base USDC (EIP-3009 exact) to base_pay_to (CDP/AgentKit). No Solana key needed. Solana USDC to pay_to WITH reference is optional
 curl -s -X POST https://agent-control.net/api/v1/meter/pass -H 'content-type: application/json' -d '{}'
 # copy src/adapters/meter-pay-base.ts — Base EIP-3009 exact (CDP/AgentKit). We never take keys.
 # https://raw.githubusercontent.com/Cobra-bit-prog/agent-guard/main/src/adapters/meter-pay-base.ts
 ${METER_PAY_SNIPPET}
-# MCP-native (no Solana key): free meter_scan → after free-5 meter_buy_pass (looks_20) → Base sign_exact → meter_watch({invoice_id, payment}) → token
-# After free-5: looks_20 pack ($0.20) → X-Agent-Pass. look $0.10 is optional one-shot. GET /api/v1/meter/pricing (paid_sku looks_20, free_looks). We never take keys.
+# MCP-native (no Solana key): meter_buy_pass (looks_20) → Base sign_exact → meter_watch({invoice_id, payment}) → token → meter_scan
+# Buy looks_20 pack ($0.20) → X-Agent-Pass. look $0.10 is optional one-shot. GET /api/v1/meter/pricing (paid_sku looks_20, free_looks=0). We never take keys.
 # 4 watch
 # Base: POST /api/v1/meter/watch with { invoice_id, payment } = full x402 v2 object from payMeterPassBase / sign_exact. NOT a raw signature string. NOT invoice_id-only for Base.
 curl -s -X POST https://agent-control.net/api/v1/meter/watch -H 'content-type: application/json' -d '{"invoice_id":"inv_…","payment":{"x402Version":2,"payload":{"authorization":{},"signature":"<sig>"},"accepted":{"network":"base"}}}'
@@ -123,7 +123,7 @@ export const STAMP_RECIPE = `# Stamp seller
 # ${METER_MERCHANT_STAMP}
 # Seller page: ${STAMP_URL}
 # Separate from the Human App. Agents pay themselves. No inbox. No email. No API key. No Approval Inbox.
-# ${METER_QUESTION} First 5 free. ${METER_PACKS_FIRST}
+# ${METER_QUESTION} ${METER_PACKS_FIRST}
 # ${METER_PACKS}
 # Base USDC (EIP-3009 exact) and Solana USDC. pass_1h catalog-only.
 # 1 agent buys stamp_tx $0.05 via Meter 402
@@ -163,13 +163,13 @@ export const METER_STEPS = [
   {
     n: "2",
     t: "Look",
-    d: `Can I pay this address? First 5 free. ${METER_PACKS_FIRST} ok | new | warn | sink. Never hold. Pick any string; first 5 looks on that id are free; then 402 looks_20 $0.20 pack.`,
+    d: `Can I pay this address? ${METER_PACKS_FIRST} ok | new | warn | sink. Never hold. No free looks. 402 looks_20 $0.20 pack before the first scan.`,
     code: METER_FREE_LOOK_CURL,
   },
   {
     n: "3",
     t: "Pay a pack",
-    d: `After 5 free, looks_20 $0.20 pack (20 looks). look $0.10 is optional one-shot. Prefer Base USDC (EIP-3009 exact) to base_pay_to (CDP/AgentKit). No Solana key needed. Copy src/adapters/meter-pay-base.ts. Optional Solana: pay_to with the reference via meter-pay.ts. We never take keys. No Phantom. Not pass_1h.`,
+    d: `looks_20 $0.20 pack (20 looks). look $0.10 is optional one-shot. Prefer Base USDC (EIP-3009 exact) to base_pay_to (CDP/AgentKit). No Solana key needed. Copy src/adapters/meter-pay-base.ts. Optional Solana: pay_to with the reference via meter-pay.ts. We never take keys. No Phantom. Not pass_1h.`,
     code: METER_PAY_SNIPPET,
   },
   {
