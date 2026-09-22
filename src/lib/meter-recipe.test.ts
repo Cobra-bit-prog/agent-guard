@@ -29,7 +29,12 @@ import {
   METER_SEPARATE,
   METER_STEPS,
   METER_TICKET,
+  GATE_DEMO_ALLOW_CURL,
+  GATE_DEMO_BLOCKED_CURL,
+  GATE_DEMO_PATH,
+  GATE_DEMO_URL,
   STAMP_BUY_CURL,
+  STAMP_ID_HEADER,
   STAMP_DOCS_HREF,
   STAMP_PATH,
   STAMP_RECIPE,
@@ -266,6 +271,10 @@ await buyMeterPassBase({ from, signExact });`,
     assert.match(stampPage, /STAMP_RECIPE/);
     assert.match(stampPage, /STAMP_TXT_PATH/);
     assert.match(stampPage, /STAMP_TXT_CURL/);
+    assert.match(stampPage, /GATE_DEMO_URL/);
+    assert.match(stampPage, /GATE_DEMO_BLOCKED_CURL/);
+    assert.match(stampPage, /GATE_DEMO_ALLOW_CURL/);
+    assert.match(stampPage, /STAMP_ID_HEADER/);
     assert.match(stampPage, /meter_verify_stamp/);
     assert.match(connect, /id=["']stamp["']/);
     assert.match(connect, /STAMP_SELLER_HEADLINE/);
@@ -306,6 +315,8 @@ describe("Agent Meter recipe on public discovery surfaces", () => {
     assert.match(llms, /curl -s https:\/\/agent-control\.net\/api\/v1\/meter\/stamp\/<stamp_id>/);
     assert.match(llms, /https:\/\/agent-control\.net\/stamp\.txt/);
     assert.match(llms, /curl -s https:\/\/agent-control\.net\/stamp\.txt/);
+    assert.match(llms, /\/api\/v1\/gate\/demo/);
+    assert.match(llms, /X-Stamp-Id/);
     assert.match(docs, /id=["']stamp["']/);
     assert.match(docs, /href=["']#stamp["']/);
     assert.match(docs, /STAMP_SELLER_HEADLINE/);
@@ -370,6 +381,14 @@ describe("Agent Meter recipe on public discovery surfaces", () => {
     assert.match(STAMP_RECIPE, /pass_1h catalog-only/);
     assert.match(STAMP_RECIPE, /Separate from the Human App/);
     assert.match(STAMP_RECIPE, /sku: "stamp_tx"/);
+    assert.equal(GATE_DEMO_PATH, "/api/v1/gate/demo");
+    assert.equal(GATE_DEMO_URL, "https://agent-control.net/api/v1/gate/demo");
+    assert.equal(STAMP_ID_HEADER, "X-Stamp-Id");
+    assert.equal(GATE_DEMO_BLOCKED_CURL, "curl -s -D - https://agent-control.net/api/v1/gate/demo");
+    assert.match(GATE_DEMO_ALLOW_CURL, /X-Stamp-Id: <stamp_id>/);
+    assert.match(STAMP_RECIPE, /GET or POST \/api\/v1\/gate\/demo/);
+    assert.match(STAMP_RECIPE, /src\/adapters\/stamp-gate\.ts/);
+    assert.match(STAMP_SELLER_STEPS[3]?.d ?? "", /\/api\/v1\/gate\/demo/);
     assert.doesNotMatch(STAMP_RECIPE, /\$0\.02/);
     assert.doesNotMatch(STAMP_RECIPE, /\$0\.25/);
     assert.doesNotMatch(STAMP_RECIPE, /cheaper/i);

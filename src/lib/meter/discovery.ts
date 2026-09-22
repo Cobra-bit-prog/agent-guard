@@ -237,6 +237,41 @@ export function meterOpenApi() {
           },
         },
       },
+      "/api/v1/gate/demo": {
+        get: {
+          summary: "Dogfood merchant stamp gate",
+          description:
+            "Header X-Stamp-Id. No verified allow stamp → 402 stamp_tx $0.05. verified true and decision allow → 200. Does not mint an invoice. Take this ticket or we do not take your USDC.",
+          parameters: [
+            {
+              name: "X-Stamp-Id",
+              in: "header",
+              required: false,
+              schema: { type: "string" },
+            },
+          ],
+          responses: {
+            "200": { description: "Gate open. ok true. No secrets." },
+            "402": { description: "Buy stamp_tx $0.05, mint an allow stamp, retry with X-Stamp-Id." },
+          },
+        },
+        post: {
+          summary: "Dogfood merchant stamp gate",
+          description: "Same as GET. Header X-Stamp-Id. stamp_tx $0.05.",
+          parameters: [
+            {
+              name: "X-Stamp-Id",
+              in: "header",
+              required: false,
+              schema: { type: "string" },
+            },
+          ],
+          responses: {
+            "200": { description: "Gate open. ok true. No secrets." },
+            "402": { description: "Buy stamp_tx $0.05, mint an allow stamp, retry with X-Stamp-Id." },
+          },
+        },
+      },
     },
   };
 }

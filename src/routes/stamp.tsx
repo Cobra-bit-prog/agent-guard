@@ -3,11 +3,16 @@ import { CopyCode } from "@/components/copy-code";
 import { SkyShell } from "@/components/marketing/chrome";
 import { SupportedChains } from "@/components/chain-icons";
 import {
+  GATE_DEMO_ALLOW_CURL,
+  GATE_DEMO_BLOCKED_CURL,
+  GATE_DEMO_PATH,
+  GATE_DEMO_URL,
   METER_DOCS_HREF,
   METER_LLMS_HREF,
   METER_PACKS,
   METER_QUESTION,
   STAMP_DOCS_HREF,
+  STAMP_ID_HEADER,
   STAMP_SELLER_BODY,
   STAMP_SELLER_EYEBROW,
   STAMP_SELLER_HEADLINE,
@@ -65,6 +70,17 @@ function StampSellerPage() {
             </li>
           ))}
         </ol>
+
+        <p className="mt-8 text-body text-muted">
+          Live gate.{" "}
+          <a href={GATE_DEMO_PATH} className="font-medium text-navy hover:text-coral">
+            {GATE_DEMO_URL}
+          </a>
+          . Header <code className="font-mono text-fg">{STAMP_ID_HEADER}</code>. No allow stamp
+          returns 402. Allow returns 200.
+        </p>
+        <CopyCode code={GATE_DEMO_BLOCKED_CURL} label="Copy blocked" />
+        <CopyCode code={GATE_DEMO_ALLOW_CURL} label="Copy allow" />
 
         <p className="mt-8 text-body text-muted">
           One-file recipe.{" "}

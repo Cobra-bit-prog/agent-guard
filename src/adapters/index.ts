@@ -27,6 +27,25 @@ export {
 } from "./agentkit.ts";
 
 export {
+  STAMP_ID_HEADER,
+  STAMP_MERCHANT,
+  STAMP_TICKET,
+  STAMP_TX_PRICE_USD,
+  STAMP_TX_SKU,
+  merchantStampRequiredBody,
+  readMerchantStampId,
+  requireMerchantStamp,
+  stampViewAllows,
+  verifyMerchantStamp,
+  type MerchantStampAllow,
+  type MerchantStampDeny,
+  type MerchantStampRequired,
+  type StampFetch,
+  type StampGateReason,
+  type StampView,
+} from "./stamp-gate.ts";
+
+export {
   checkBeforePay,
   createX402BeforePaymentHook,
   valueUsdFromX402Requirements,

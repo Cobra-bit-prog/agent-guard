@@ -213,6 +213,7 @@ export function meterPricing() {
       scan_batch: "POST /api/v1/meter/scan-batch",
       stamp: "POST /api/v1/meter/stamp",
       stamp_get: "GET /api/v1/meter/stamp/:id",
+      gate_demo: "GET or POST /api/v1/gate/demo",
       report: "GET /api/v1/meter/report",
     },
     header: "X-Agent-Pass",

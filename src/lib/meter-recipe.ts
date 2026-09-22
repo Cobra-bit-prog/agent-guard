@@ -36,6 +36,13 @@ export const STAMP_SELLER_VERIFY =
   "GET /api/v1/meter/stamp/:id or MCP meter_verify_stamp. If verified is true and decision is allow, take the USDC. If not, do not take it.";
 export const STAMP_VERIFY_CURL =
   "curl -s https://agent-control.net/api/v1/meter/stamp/<stamp_id>";
+/** Live dogfood gate. Header X-Stamp-Id. No allow stamp → 402 stamp_tx $0.05. */
+export const STAMP_ID_HEADER = "X-Stamp-Id";
+export const GATE_DEMO_PATH = "/api/v1/gate/demo";
+export const GATE_DEMO_URL = "https://agent-control.net/api/v1/gate/demo";
+export const GATE_DEMO_BLOCKED_CURL = "curl -s -D - https://agent-control.net/api/v1/gate/demo";
+export const GATE_DEMO_ALLOW_CURL =
+  "curl -s -D - https://agent-control.net/api/v1/gate/demo -H 'X-Stamp-Id: <stamp_id>'";
 /** Static sibling of /llms.txt. Agents curl this; the /stamp page stays HTML. */
 export const STAMP_TXT_PATH = "/stamp.txt";
 export const STAMP_TXT_URL = "https://agent-control.net/stamp.txt";
@@ -61,6 +68,11 @@ export const STAMP_SELLER_STEPS = [
     n: "3",
     t: "Verify, then take USDC",
     d: STAMP_SELLER_VERIFY,
+  },
+  {
+    n: "4",
+    t: "Or hit the live gate",
+    d: `GET ${GATE_DEMO_URL}. Header ${STAMP_ID_HEADER}. No allow stamp → 402 stamp_tx $0.05. Allow → 200.`,
   },
 ] as const;
 export const METER_PRICING_PATH = "/api/v1/meter/pricing";
@@ -127,7 +139,13 @@ ${STAMP_MINT_CURL}
 # 2 merchant verifies free at ${STAMP_URL} or GET /api/v1/meter/stamp/:id or MCP meter_verify_stamp. Public. No email. No API key.
 ${STAMP_VERIFY_CURL}
 # 3 merchant only accepts USDC if verified is true and decision is allow. If not, do not take the USDC.
-# ${METER_TICKET}`;
+# ${METER_TICKET}
+# 4 dogfood gate. Live on this site. GET or POST ${GATE_DEMO_PATH}. Header ${STAMP_ID_HEADER}. No valid allow stamp → 402 stamp_tx $0.05. verified true and decision allow → 200.
+${GATE_DEMO_BLOCKED_CURL}
+# blocked. Buy stamp_tx, mint allow, pass the stamp id:
+${GATE_DEMO_ALLOW_CURL}
+# Merchant copy: src/adapters/stamp-gate.ts
+# https://raw.githubusercontent.com/Cobra-bit-prog/agent-guard/main/src/adapters/stamp-gate.ts`;
 
 export const METER_SCAN_CURL =
   'curl -s -X POST https://agent-control.net/api/v1/meter/scan -H \'content-type: application/json\' -H \'X-Agent-Pass: <pass>\' -d \'{"chain":"solana","address":"<destination>"}\'';
