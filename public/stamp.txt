@@ -1,0 +1,24 @@
+# Stamp seller
+# https://agent-control.net/stamp.txt
+# Take this ticket or we do not take your USDC.
+# Merchants can require the stamp_tx $0.05 ticket before accepting agent USDC.
+# Seller page: https://agent-control.net/stamp
+# Separate from the Human App. Agents pay themselves. No inbox. No email. No API key. No Approval Inbox.
+# Can I pay this address? First 5 free. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot.
+# Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05.
+# Base USDC (EIP-3009 exact) and Solana USDC. pass_1h catalog-only.
+# 1 agent buys stamp_tx $0.05 via Meter 402
+curl -s -X POST https://agent-control.net/api/v1/meter/pass -H 'content-type: application/json' -d '{"sku":"stamp_tx"}'
+# 402 stamp_tx $0.05. Prefer Base USDC (EIP-3009 exact) to base_pay_to (CDP/AgentKit). No Solana key needed. Solana USDC to pay_to WITH reference is optional. We never take keys.
+# copy src/adapters/meter-pay-base.ts
+# https://raw.githubusercontent.com/Cobra-bit-prog/agent-guard/main/src/adapters/meter-pay-base.ts
+import { buyMeterPassBase } from "./src/adapters/meter-pay-base.ts";
+await buyMeterPassBase({ from, signExact, sku: "stamp_tx" });
+# MCP: meter_buy_pass sku stamp_tx → Base sign_exact → meter_watch({invoice_id, payment}) → token
+# Base: POST /api/v1/meter/watch with { invoice_id, payment } = full x402 v2 object from payMeterPassBase / sign_exact. NOT invoice_id-only for Base.
+curl -s -X POST https://agent-control.net/api/v1/meter/watch -H 'content-type: application/json' -d '{"invoice_id":"inv_…","payment":{"x402Version":2,"payload":{"authorization":{},"signature":"<sig>"},"accepted":{"network":"base"}}}'
+curl -s -X POST https://agent-control.net/api/v1/meter/stamp -H 'content-type: application/json' -H 'X-Agent-Pass: <token>' -d '{"decision":"allow","chain":"solana","to":"<merchant>"}'
+# 2 merchant verifies free at https://agent-control.net/stamp or GET /api/v1/meter/stamp/:id or MCP meter_verify_stamp. Public. No email. No API key.
+curl -s https://agent-control.net/api/v1/meter/stamp/<stamp_id>
+# 3 merchant only accepts USDC if verified is true and decision is allow. If not, do not take the USDC.
+# Take this ticket or we do not take your USDC.

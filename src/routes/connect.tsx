@@ -27,6 +27,7 @@ import {
   METER_QUESTION,
   STAMP_DOCS_HREF,
   STAMP_PATH,
+  STAMP_TXT_PATH,
   STAMP_SELLER_BODY,
   STAMP_SELLER_EYEBROW,
   STAMP_SELLER_HEADLINE,
@@ -131,6 +132,10 @@ function ConnectPage() {
           <p className="mt-3 text-body text-muted">
             <a href={STAMP_PATH} className="font-medium text-navy hover:text-coral">
               Seller page
+            </a>
+            {" · "}
+            <a href={STAMP_TXT_PATH} className="font-medium text-navy hover:text-coral">
+              stamp.txt
             </a>
             {" · "}
             <a href={STAMP_DOCS_HREF} className="font-medium text-navy hover:text-coral">

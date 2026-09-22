@@ -7,6 +7,7 @@
 - Docs: https://agent-control.net/docs
 - Connect your agent: https://agent-control.net/connect
 - Stamp seller: https://agent-control.net/stamp
+- Stamp seller recipe: https://agent-control.net/stamp.txt
 - Partners: https://agent-control.net/partners
 - Console: https://agent-control.net/login
 - Approval Inbox: https://agent-control.net/inbox
@@ -105,6 +106,8 @@ Take this ticket or we do not take your USDC. Merchants can require the stamp_tx
 2. They send you stamp_id.
 3. GET /api/v1/meter/stamp/:id or MCP meter_verify_stamp. If verified is true and decision is allow, take the USDC. If not, do not take it.
 curl -s https://agent-control.net/api/v1/meter/stamp/<stamp_id>
+One-file recipe (curl): https://agent-control.net/stamp.txt
+curl -s https://agent-control.net/stamp.txt
 Public. No email. No API key.
 
 ## Agent Storefront

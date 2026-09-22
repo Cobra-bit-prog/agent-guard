@@ -29,14 +29,19 @@ import {
   METER_SEPARATE,
   METER_STEPS,
   METER_TICKET,
+  STAMP_BUY_CURL,
   STAMP_DOCS_HREF,
   STAMP_PATH,
+  STAMP_RECIPE,
   STAMP_SELLER_BODY,
   STAMP_SELLER_EYEBROW,
   STAMP_SELLER_HEADLINE,
   STAMP_SELLER_LEDE,
   STAMP_SELLER_STEPS,
   STAMP_SELLER_VERIFY,
+  STAMP_TXT_CURL,
+  STAMP_TXT_PATH,
+  STAMP_TXT_URL,
   STAMP_URL,
   STAMP_VERIFY_CURL,
 } from "./meter-recipe.ts";
@@ -258,11 +263,15 @@ await buyMeterPassBase({ from, signExact });`,
     assert.doesNotMatch(stampPage, /text-card text-muted">\{STAMP_SELLER_LEDE\}/);
     assert.match(stampPage, /STAMP_SELLER_STEPS/);
     assert.match(stampPage, /STAMP_VERIFY_CURL/);
+    assert.match(stampPage, /STAMP_RECIPE/);
+    assert.match(stampPage, /STAMP_TXT_PATH/);
+    assert.match(stampPage, /STAMP_TXT_CURL/);
     assert.match(stampPage, /meter_verify_stamp/);
     assert.match(connect, /id=["']stamp["']/);
     assert.match(connect, /STAMP_SELLER_HEADLINE/);
     assert.match(connect, /STAMP_PATH/);
     assert.match(connect, /STAMP_DOCS_HREF/);
+    assert.match(connect, /STAMP_TXT_PATH/);
     assert.match(chrome, /href=["']\/stamp["']/);
     assert.match(sitemap, /https:\/\/agent-control\.net\/stamp/);
     assert.doesNotMatch(home, /STAMP_/);
@@ -295,10 +304,14 @@ describe("Agent Meter recipe on public discovery surfaces", () => {
     assert.match(llms, /docs#stamp/);
     assert.match(llms, /If verified is true and decision is allow/);
     assert.match(llms, /curl -s https:\/\/agent-control\.net\/api\/v1\/meter\/stamp\/<stamp_id>/);
+    assert.match(llms, /https:\/\/agent-control\.net\/stamp\.txt/);
+    assert.match(llms, /curl -s https:\/\/agent-control\.net\/stamp\.txt/);
     assert.match(docs, /id=["']stamp["']/);
     assert.match(docs, /href=["']#stamp["']/);
     assert.match(docs, /STAMP_SELLER_HEADLINE/);
     assert.match(docs, /STAMP_VERIFY_CURL/);
+    assert.match(docs, /STAMP_RECIPE/);
+    assert.match(docs, /STAMP_TXT_PATH/);
     assert.match(docs, /STAMP_PATH/);
     assert.match(llms, /docs#agent-meter/);
     assert.match(llms, /curl -s https:\/\/agent-control\.net\/api\/v1\/meter\/pricing/);
@@ -331,5 +344,53 @@ describe("Agent Meter recipe on public discovery surfaces", () => {
     for (const line of METER_RECIPE.split("\n")) {
       assert.match(llms, new RegExp(line.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
     }
+  });
+
+  it("ships a curlable stamp.txt merchant recipe next to llms.txt", () => {
+    assert.equal(STAMP_TXT_PATH, "/stamp.txt");
+    assert.equal(STAMP_TXT_URL, "https://agent-control.net/stamp.txt");
+    assert.equal(STAMP_TXT_CURL, "curl -s https://agent-control.net/stamp.txt");
+    assert.match(STAMP_BUY_CURL, /"sku":"stamp_tx"/);
+    assert.match(STAMP_RECIPE, /# 1 agent buys stamp_tx \$0\.05 via Meter 402/);
+    assert.match(STAMP_RECIPE, /# 2 merchant verifies free at https:\/\/agent-control\.net\/stamp/);
+    assert.match(STAMP_RECIPE, /GET \/api\/v1\/meter\/stamp\/:id/);
+    assert.match(STAMP_RECIPE, /meter_verify_stamp/);
+    assert.match(
+      STAMP_RECIPE,
+      /# 3 merchant only accepts USDC if verified is true and decision is allow/,
+    );
+    assert.match(STAMP_RECIPE, /Take this ticket or we do not take your USDC/);
+    assert.match(STAMP_RECIPE, /First 5 free/);
+    assert.match(STAMP_RECIPE, /look \$0\.10 is optional one-shot/);
+    assert.match(STAMP_RECIPE, /looks_20 \$0\.20/);
+    assert.match(STAMP_RECIPE, /addresses_100 \$0\.15/);
+    assert.match(STAMP_RECIPE, /stamp_tx \$0\.05/);
+    assert.match(STAMP_RECIPE, /Base USDC \(EIP-3009 exact\)/);
+    assert.match(STAMP_RECIPE, /Solana USDC/);
+    assert.match(STAMP_RECIPE, /pass_1h catalog-only/);
+    assert.match(STAMP_RECIPE, /Separate from the Human App/);
+    assert.match(STAMP_RECIPE, /sku: "stamp_tx"/);
+    assert.doesNotMatch(STAMP_RECIPE, /\$0\.02/);
+    assert.doesNotMatch(STAMP_RECIPE, /\$0\.25/);
+    assert.doesNotMatch(STAMP_RECIPE, /cheaper/i);
+    assert.doesNotMatch(STAMP_RECIPE, /\bHelius\b/);
+    assert.doesNotMatch(STAMP_RECIPE, /\bbroadcast/i);
+
+    const stampTxt = read("public/stamp.txt");
+    assert.equal(stampTxt.trimEnd(), STAMP_RECIPE.trimEnd());
+    assert.match(stampTxt, /curl -s -X POST https:\/\/agent-control\.net\/api\/v1\/meter\/pass/);
+    assert.match(stampTxt, /curl -s https:\/\/agent-control\.net\/api\/v1\/meter\/stamp\/<stamp_id>/);
+
+    const robots = read("public/robots.txt");
+    const sitemap = read("public/sitemap.xml");
+    const vercel = read("vercel.json");
+    const agents = read("public/agents.txt");
+    const agentsJson = read("public/agents.json");
+    assert.match(robots, /Allow: \/stamp\.txt/);
+    assert.match(sitemap, /<loc>https:\/\/agent-control\.net\/stamp\.txt<\/loc>/);
+    assert.match(vercel, /"source": "\/stamp\.txt"/);
+    assert.match(vercel, /text\/plain; charset=utf-8/);
+    assert.match(agents, /https:\/\/agent-control\.net\/stamp\.txt/);
+    assert.match(agentsJson, /https:\/\/agent-control\.net\/stamp\.txt/);
   });
 });

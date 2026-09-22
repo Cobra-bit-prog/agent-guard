@@ -36,6 +36,16 @@ export const STAMP_SELLER_VERIFY =
   "GET /api/v1/meter/stamp/:id or MCP meter_verify_stamp. If verified is true and decision is allow, take the USDC. If not, do not take it.";
 export const STAMP_VERIFY_CURL =
   "curl -s https://agent-control.net/api/v1/meter/stamp/<stamp_id>";
+/** Static sibling of /llms.txt. Agents curl this; the /stamp page stays HTML. */
+export const STAMP_TXT_PATH = "/stamp.txt";
+export const STAMP_TXT_URL = "https://agent-control.net/stamp.txt";
+export const STAMP_TXT_CURL = "curl -s https://agent-control.net/stamp.txt";
+export const STAMP_BUY_CURL =
+  "curl -s -X POST https://agent-control.net/api/v1/meter/pass -H 'content-type: application/json' -d '{\"sku\":\"stamp_tx\"}'";
+export const STAMP_BUY_SNIPPET = `import { buyMeterPassBase } from "./src/adapters/meter-pay-base.ts";
+await buyMeterPassBase({ from, signExact, sku: "stamp_tx" });`;
+export const STAMP_MINT_CURL =
+  "curl -s -X POST https://agent-control.net/api/v1/meter/stamp -H 'content-type: application/json' -H 'X-Agent-Pass: <token>' -d '{\"decision\":\"allow\",\"chain\":\"solana\",\"to\":\"<merchant>\"}'";
 export const STAMP_SELLER_STEPS = [
   {
     n: "1",
@@ -93,6 +103,31 @@ curl -s -X POST https://agent-control.net/api/v1/meter/watch -H 'content-type: a
 # 5 packs looks_20 $0.20 · addresses_100 $0.15 · stamp_tx $0.05 ticket
 # ${METER_TICKET} ${METER_MERCHANT_STAMP}
 # 6 MCP meter_* at /api/v1/mcp`;
+
+/** One-file merchant gate. Same bytes as public/stamp.txt. */
+export const STAMP_RECIPE = `# Stamp seller
+# ${STAMP_TXT_URL}
+# ${METER_TICKET}
+# ${METER_MERCHANT_STAMP}
+# Seller page: ${STAMP_URL}
+# Separate from the Human App. Agents pay themselves. No inbox. No email. No API key. No Approval Inbox.
+# ${METER_QUESTION} First 5 free. ${METER_PACKS_FIRST}
+# ${METER_PACKS}
+# Base USDC (EIP-3009 exact) and Solana USDC. pass_1h catalog-only.
+# 1 agent buys stamp_tx $0.05 via Meter 402
+${STAMP_BUY_CURL}
+# 402 stamp_tx $0.05. Prefer Base USDC (EIP-3009 exact) to base_pay_to (CDP/AgentKit). No Solana key needed. Solana USDC to pay_to WITH reference is optional. We never take keys.
+# copy src/adapters/meter-pay-base.ts
+# https://raw.githubusercontent.com/Cobra-bit-prog/agent-guard/main/src/adapters/meter-pay-base.ts
+${STAMP_BUY_SNIPPET}
+# MCP: meter_buy_pass sku stamp_tx → Base sign_exact → meter_watch({invoice_id, payment}) → token
+# Base: POST /api/v1/meter/watch with { invoice_id, payment } = full x402 v2 object from payMeterPassBase / sign_exact. NOT invoice_id-only for Base.
+curl -s -X POST https://agent-control.net/api/v1/meter/watch -H 'content-type: application/json' -d '{"invoice_id":"inv_…","payment":{"x402Version":2,"payload":{"authorization":{},"signature":"<sig>"},"accepted":{"network":"base"}}}'
+${STAMP_MINT_CURL}
+# 2 merchant verifies free at ${STAMP_URL} or GET /api/v1/meter/stamp/:id or MCP meter_verify_stamp. Public. No email. No API key.
+${STAMP_VERIFY_CURL}
+# 3 merchant only accepts USDC if verified is true and decision is allow. If not, do not take the USDC.
+# ${METER_TICKET}`;
 
 export const METER_SCAN_CURL =
   'curl -s -X POST https://agent-control.net/api/v1/meter/scan -H \'content-type: application/json\' -H \'X-Agent-Pass: <pass>\' -d \'{"chain":"solana","address":"<destination>"}\'';
