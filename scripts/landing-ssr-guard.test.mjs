@@ -246,6 +246,7 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
   const beforeMeter = docs.split('id="agent-meter"')[0] ?? docs;
   const meterDocs = docs.split('id="agent-meter"')[1]?.split('id="compare"')[0] ?? "";
   const meterRecipe = readFileSync(join(ROOT, "src/lib/meter-recipe.ts"), "utf8");
+  const meterPricing = readFileSync(join(ROOT, "src/lib/meter/pricing.ts"), "utf8");
   assert.doesNotMatch(beforeMeter, /curl /);
   assert.doesNotMatch(beforeDetails, /must_abort/);
   assert.match(docs, /id=["']agent-meter["']/);
@@ -255,11 +256,14 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
   assert.match(docs, /METER_LEDE/);
   assert.match(docs, /METER_SEPARATE/);
   assert.match(meterRecipe, /Agents pay themselves/);
-  assert.match(meterRecipe, /Buy looks_20 pack \(\$0\.20\) or look \$0\.10/);
-  assert.match(meterRecipe, /Stamp ticket \$0\.05/);
+  assert.match(meterPricing, /Buy looks_20 pack \(\$0\.20\) or look \$0\.10\. Stamp ticket \$0\.05\./);
+  assert.match(meterRecipe, /METER_PACKS_FIRST/);
+  assert.match(meterRecipe, /export const METER_LEDE = METER_PACKS_FIRST/);
   assert.doesNotMatch(meterRecipe, /First 5 free/);
   assert.doesNotMatch(meterRecipe, /free-5/);
-  assert.match(meterRecipe, /looks_20 pack \(\$0\.20\)/);
+  assert.doesNotMatch(meterPricing, /First 5 free/);
+  assert.doesNotMatch(meterPricing, /free-5/);
+  assert.match(meterPricing, /METER_FREE_LOOKS = 0/);
   assert.match(meterRecipe, /look \$0\.10 is optional one-shot/);
   assert.match(meterRecipe, /Separate from the Human App/);
   assert.match(meterDocs, /X-Agent-Pass/);
