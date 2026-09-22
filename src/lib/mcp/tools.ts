@@ -16,14 +16,14 @@ export const MCP_TOOLS = [
     name: "meter_buy_pass",
     title: "Buy an Agent Meter pass",
     description:
-      `${METER_AGENT_LEAD} After free-5, call with sku looks_20 (or omit) to buy a pack that mints/extends X-Agent-Pass. look $0.10 is optional one-shot. Returns a payable invoice as tool content (ok:true / status payment_required) with pay_to, base_pay_to, accepts (Base USDC EIP-3009 exact and Solana USDC), amount_usd, amount_base_units, reference, pay_url, invoice_id, watch_url, adapter_url, base_adapter_url, preferred_rail, pay_page, next_tool, tool_fields, sign_exact, adapter_snippet, next_steps. Prefer Base EIP-3009 exact to base_pay_to (CDP/AgentKit; no Solana key) then meter_watch with payment. Use sign_exact + adapter_snippet to finish in-process (payMeterPassBase / signTypedData). Fetch base_adapter_url only if you need the full file. Optional Solana: fetch adapter_url. 402 invoice includes pay_page for Phantom laptop as a last resort. We never take keys. Packs: looks_20 / addresses_100 / stamp_tx. No human account.`,
+      `${METER_AGENT_LEAD} Call with sku looks_20 (or omit) to buy a pack that mints/extends X-Agent-Pass. look $0.10 is optional one-shot. Returns a payable invoice as tool content (ok:true / status payment_required) with pay_to, base_pay_to, accepts (Base USDC EIP-3009 exact and Solana USDC), amount_usd, amount_base_units, reference, pay_url, invoice_id, watch_url, adapter_url, base_adapter_url, preferred_rail, pay_page, next_tool, tool_fields, sign_exact, adapter_snippet, next_steps. Prefer Base EIP-3009 exact to base_pay_to (CDP/AgentKit; no Solana key) then meter_watch with payment. Use sign_exact + adapter_snippet to finish in-process (payMeterPassBase / signTypedData). Fetch base_adapter_url only if you need the full file. Optional Solana: fetch adapter_url. 402 invoice includes pay_page for Phantom laptop as a last resort. We never take keys. Packs: looks_20 / addresses_100 / stamp_tx. No human account.`,
     annotations: writes,
     inputSchema: {
       type: "object",
       properties: {
         sku: {
           type: "string",
-          description: "Catalog id from meter_pricing. Omit or looks_20 is the pack after free-5. look $0.10 is optional one-shot. Packs: looks_20, addresses_100, stamp_tx. pass_1h stays in catalog only.",
+          description: "Catalog id from meter_pricing. Omit or looks_20 is the paid pack. look $0.10 is optional one-shot. Packs: looks_20, addresses_100, stamp_tx. pass_1h stays in catalog only.",
         },
         proof: { type: "object", description: "Payment proof. { type: dev } only when METER_DEV_GRANT=1. Never send a secret key." },
         pass_token: { type: "string", description: "Existing X-Agent-Pass to extend with a pack." },
@@ -64,7 +64,7 @@ export const MCP_TOOLS = [
     name: "meter_scan",
     title: "Scan a destination",
     description:
-      `${METER_AGENT_LEAD} One look = one address. Send X-Agent-Pass with any string; first 5 looks on that id are free; then 402 looks_20 pack $0.20 (look $0.10 is optional one-shot). Prefer Base USDC (EIP-3009 exact) to base_pay_to (CDP/AgentKit; no Solana key). Optional Solana USDC. 402 invoice includes next_steps and pay_page for Phantom laptop as a last resort. Risk ok|new|warn|sink. Never hold.`,
+      `${METER_AGENT_LEAD} One look = one address. No free looks. Without a paid X-Agent-Pass, 402 looks_20 pack $0.20 (look $0.10 is optional one-shot). Prefer Base USDC (EIP-3009 exact) to base_pay_to (CDP/AgentKit; no Solana key). Optional Solana USDC. 402 invoice includes next_steps and pay_page for Phantom laptop as a last resort. Risk ok|new|warn|sink. Never hold.`,
     annotations: readOnly,
     inputSchema: {
       type: "object",
@@ -80,7 +80,7 @@ export const MCP_TOOLS = [
     name: "meter_preflight",
     title: "Preflight against a self cap",
     description:
-      `${METER_AGENT_LEAD} One look = one address. Send X-Agent-Pass with any string; first 5 looks on that id are free; then 402 looks_20 pack $0.20. look $0.10 is optional one-shot. Body: chain, wallet, to, value_usd, cap_usd. allow or stop vs cap_usd. Never hold.`,
+      `${METER_AGENT_LEAD} One look = one address. No free looks. Without a paid X-Agent-Pass, 402 looks_20 pack $0.20. look $0.10 is optional one-shot. Body: chain, wallet, to, value_usd, cap_usd. allow or stop vs cap_usd. Never hold.`,
     annotations: writes,
     inputSchema: {
       type: "object",

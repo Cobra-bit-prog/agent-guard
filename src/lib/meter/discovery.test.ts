@@ -73,12 +73,14 @@ describe("Agent Meter well-known discovery", () => {
     assert.equal(body.name, "Agent Meter");
     assert.equal(
       METER_DISCOVERY_LEAD,
-      "Can I pay this address? First 5 free. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot. No inbox.",
+      "Can I pay this address? Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05. No inbox.",
     );
     assert.match(body.description, /Can I pay this address\?/);
-    assert.match(body.description, /First 5 free/);
+    assert.match(body.description, /Buy looks_20 pack \(\$0\.20\) or look \$0\.10/);
+    assert.match(body.description, /Stamp ticket \$0\.05/);
+    assert.doesNotMatch(body.description, /First 5 free/);
+    assert.doesNotMatch(body.description, /free-5/);
     assert.match(body.description, /looks_20 pack \(\$0\.20\)/);
-    assert.match(body.description, /look \$0\.10 is optional one-shot/);
     assert.match(body.description, /No inbox/);
     assert.match(body.description, /Human App is separate/);
     assert.match(body.description, /Base USDC \(EIP-3009 exact\)/);
@@ -131,9 +133,11 @@ describe("Agent Meter well-known discovery", () => {
     assert.equal(mcpBody.remotes[0]?.type, "streamable-http");
     assert.equal(mcpBody.remotes[0]?.url, `${PUBLIC_ORIGIN}/api/v1/mcp`);
     assert.match(mcpBody.description, /Can I pay this address\?/);
-    assert.match(mcpBody.description, /First 5 free/);
+    assert.match(mcpBody.description, /Buy looks_20 pack \(\$0\.20\) or look \$0\.10/);
+    assert.match(mcpBody.description, /Stamp ticket \$0\.05/);
+    assert.doesNotMatch(mcpBody.description, /First 5 free/);
+    assert.doesNotMatch(JSON.stringify(mcpBody), /free-5/);
     assert.match(mcpBody.description, /looks_20 pack \(\$0\.20\)/);
-    assert.match(mcpBody.description, /look \$0\.10 is optional one-shot/);
     assert.match(mcpBody.description, /No inbox/);
     assert.match(mcpBody.description, /Human App is separate \(\$29\)/);
     assert.match(mcpBody.products.meter, /Bearer empty/);
@@ -192,10 +196,12 @@ describe("Meter-first registry-facing blurbs", () => {
       const look = blob.search(/Can I pay this address\?/);
       const bearer = blob.search(/Bearer agent API key|Agents use a Bearer API key/);
       assert.ok(look >= 0, "missing look question");
-      assert.match(blob, /First 5 free/);
+      assert.match(blob, /Buy looks_20 pack \(\$0\.20\) or look \$0\.10/);
+      assert.match(blob, /Stamp ticket \$0\.05/);
+      assert.doesNotMatch(blob, /First 5 free/);
+      assert.doesNotMatch(blob, /free-5/);
       assert.match(blob, /\$0\.10/);
       assert.match(blob, /looks_20 pack \(\$0\.20\)/);
-      assert.match(blob, /optional one-shot/);
       assert.match(blob, /No inbox/i);
       if (bearer >= 0) {
         assert.ok(look < bearer, "Meter look must lead Bearer");

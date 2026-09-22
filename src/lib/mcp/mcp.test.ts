@@ -180,9 +180,11 @@ describe("POST initialize is Streamable HTTP", () => {
     for (const name of mcpDiscovery().meter) {
       assert.match(instructions, new RegExp(`\\b${name}\\b`));
     }
-    assert.match(instructions, /First 5 free/);
+    assert.match(instructions, /Buy looks_20 pack \(\$0\.20\) or look \$0\.10/);
+    assert.match(instructions, /Stamp ticket \$0\.05/);
+    assert.doesNotMatch(instructions, /First 5 free/);
+    assert.doesNotMatch(instructions, /free-5/);
     assert.match(instructions, /looks_20 pack \(\$0\.20\)/);
-    assert.match(instructions, /look \$0\.10 is optional one-shot/);
     assert.match(instructions, /look \/ looks_20 \/ addresses_100 \/ stamp_tx/);
     assert.match(instructions, /Merchants can require the stamp_tx \$0\.05 ticket before accepting agent USDC/);
     assert.match(instructions, /Take this ticket or we do not take your USDC/);
@@ -195,7 +197,7 @@ describe("POST initialize is Streamable HTTP", () => {
     assert.match(instructions, /src\/adapters\/meter-pay-base\.ts/);
     assert.match(instructions, /Prefer Base EIP-3009 exact to base_pay_to/);
     assert.match(instructions, /no Authorization \/ Bearer empty/);
-    assert.match(instructions, /free meter_scan → after free-5 meter_buy_pass \(looks_20\) → Base sign_exact → meter_watch\(\{invoice_id, payment\}\) → token/);
+    assert.match(instructions, /meter_buy_pass \(looks_20\) → Base sign_exact → meter_watch\(\{invoice_id, payment\}\) → token → meter_scan/);
     assert.match(instructions, /Human App check\/checkout: Bearer API key/);
     const meterSlice = instructions.slice(instructions.indexOf("Agent Meter:"));
     assert.doesNotMatch(meterSlice, /\bhold\b/i);
@@ -253,13 +255,15 @@ describe("initialized notification and session reuse", () => {
     const scan = MCP_TOOLS.find((tool) => tool.name === "meter_scan")?.description ?? "";
     const preflight = MCP_TOOLS.find((tool) => tool.name === "meter_preflight")?.description ?? "";
     assert.match(scan, /X-Agent-Pass/);
-    assert.match(scan, /first 5 looks on that id are free/);
+    assert.match(scan, /No free looks/);
+    assert.doesNotMatch(scan, /first 5 looks/);
     assert.match(scan, /402 looks_20 pack \$0\.20/);
     assert.match(scan, /look \$0\.10 is optional one-shot/);
     assert.match(scan, /pay_page for Phantom laptop/);
     assert.match(scan, /no Solana key/);
     assert.match(preflight, /X-Agent-Pass/);
-    assert.match(preflight, /first 5 looks on that id are free/);
+    assert.match(preflight, /No free looks/);
+    assert.doesNotMatch(preflight, /first 5 looks/);
     assert.match(preflight, /value_usd/);
     assert.match(preflight, /cap_usd/);
     const stamp = MCP_TOOLS.find((tool) => tool.name === "meter_stamp")?.description ?? "";

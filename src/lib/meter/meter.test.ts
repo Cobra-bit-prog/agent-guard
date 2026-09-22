@@ -405,22 +405,15 @@ describe("meter http", () => {
     assert.equal(body.chain, "solana");
     assert.equal(body.reason, "not_base58");
 
-    for (let i = 1; i <= 5; i += 1) {
-      const free = await handleMeterRequest(
-        post("/api/v1/meter/scan", { chain: "solana", address: SCAN_SINK_FIXTURE }),
-        "/api/v1/meter/scan",
-        store,
-      );
-      assert.equal(free.status, 200, `free look ${i} after rejection`);
-      const freeBody = (await free.json()) as { free_looks_remaining: number };
-      assert.equal(freeBody.free_looks_remaining, 5 - i);
-    }
-    const sixth = await handleMeterRequest(
+    const paid = await handleMeterRequest(
       post("/api/v1/meter/scan", { chain: "solana", address: SCAN_SINK_FIXTURE }),
       "/api/v1/meter/scan",
       store,
     );
-    assert.equal(sixth.status, 402);
+    assert.equal(paid.status, 402);
+    const paidBody = (await paid.json()) as { sku: string; error: string };
+    assert.equal(paidBody.error, "payment_required");
+    assert.equal(paidBody.sku, "looks_20");
   });
 
   it("rejects a malformed ethereum destination with 400 invalid_address and no look consumed", async () => {
@@ -435,14 +428,12 @@ describe("meter http", () => {
     assert.equal(body.error, "invalid_address");
     assert.equal(body.reason, "wrong_length");
 
-    for (let i = 1; i <= 5; i += 1) {
-      const free = await handleMeterRequest(
-        post("/api/v1/meter/scan", { chain: "ethereum", address: "0x1111111111111111111111111111111111111111" }),
-        "/api/v1/meter/scan",
-        store,
-      );
-      assert.equal(free.status, 200, `free look ${i} after rejection`);
-    }
+    const paid = await handleMeterRequest(
+      post("/api/v1/meter/scan", { chain: "ethereum", address: "0x1111111111111111111111111111111111111111" }),
+      "/api/v1/meter/scan",
+      store,
+    );
+    assert.equal(paid.status, 402, "invalid address does not grant a free look");
   });
 
   it("rejects a mixed-case EVM destination with a broken EIP-55 checksum", async () => {
@@ -615,8 +606,9 @@ describe("meter http", () => {
       funds: { pay_to: string; base_pay_to: string; accepts: { chain: string; pay_to: string }[] };
     };
     assert.equal(body.product, "Agent Meter");
-    assert.match(body.note, /After free-5, buy looks_20 pack \(\$0\.20\) → X-Agent-Pass/);
-    assert.match(body.note, /look \$0\.10 is optional one-shot/);
+    assert.match(body.note, /Buy looks_20 pack \(\$0\.20\) or look \$0\.10/);
+    assert.match(body.note, /Stamp ticket \$0\.05/);
+    assert.doesNotMatch(body.note, /First 5 free|free-5/);
     assert.equal(body.pass.price_usd, 0.10);
     assert.equal(body.default_sku, "look");
     assert.equal(body.paid_sku, METER_PAID_SKU);
@@ -729,8 +721,9 @@ describe("meter http", () => {
     assert.equal(body.next_tool, "meter_watch");
     assert.equal(body.error, "payment_required");
     assert.equal(body.http, 402);
-    assert.match(body.note, /After free-5, buy looks_20 pack \(\$0\.20\) → X-Agent-Pass/);
-    assert.match(body.note, /look \$0\.10 is optional one-shot/);
+    assert.match(body.note, /Buy looks_20 pack \(\$0\.20\) or look \$0\.10/);
+    assert.match(body.note, /Stamp ticket \$0\.05/);
+    assert.doesNotMatch(body.note, /First 5 free|free-5/);
     assert.match(body.pay_url, new RegExp(`reference=${body.reference}`));
     assert.match(body.sign, /We never take keys/);
     assert.match(body.sign, /buyMeterPass/);
@@ -804,13 +797,15 @@ describe("extra meter skus", () => {
       skus: { id: string; price_usd: number }[];
       funds: { pay_to: string; base_pay_to: string; accepts: { chain: string }[] };
       free_looks: number;
+      note?: string;
     };
     assert.equal(body.default_sku, "look");
     assert.equal(body.paid_sku, "looks_20");
     assert.equal(body.look.price_usd, 0.1);
     assert.equal(body.pass.id, "look");
     assert.equal(body.pass.price_usd, 0.1);
-    assert.equal(body.free_looks, 5);
+    assert.equal(body.free_looks, 0);
+    assert.doesNotMatch(body.note ?? "", /First 5 free|free-5/);
     assert.deepEqual(
       body.skus.map((row) => row.id),
       ["look", "looks_20", "addresses_100", "stamp_tx", "pass_1h"],
@@ -1089,14 +1084,6 @@ describe("invoice origin", { concurrency: false }, () => {
   it("tags scan, preflight, scan-batch, stamp 402s and watch creates", async () => {
     await withStatsSecret(async () => {
       const store = createMeterStore();
-      for (let i = 0; i < 5; i += 1) {
-        const free = await handleMeterRequest(
-          post("/api/v1/meter/scan", { chain: "solana", address: SCAN_SINK_FIXTURE }),
-          "/api/v1/meter/scan",
-          store,
-        );
-        assert.equal(free.status, 200);
-      }
       const scan = await handleMeterRequest(
         post("/api/v1/meter/scan", { chain: "solana", address: SCAN_SINK_FIXTURE }),
         "/api/v1/meter/scan",
@@ -1602,23 +1589,21 @@ describe("paying agents A–H", () => {
     );
   }
 
-  it("A free5: first 5 looks succeed without a pack", async () => {
+  it("A no free looks: first scan without a pass is 402", async () => {
     const store = createMeterStore();
-    for (let i = 1; i <= 5; i += 1) {
-      const res = await scanOnce(store);
-      assert.equal(res.status, 200, `look ${i}`);
-      const body = (await res.json()) as { risk: string; free_looks_remaining: number; question: string };
-      assert.equal(body.risk, "sink");
-      assert.equal(body.question, "Can I pay this address?");
-      assert.equal(body.free_looks_remaining, 5 - i);
-    }
+    const res = await scanOnce(store);
+    assert.equal(res.status, 402);
+    const body = (await res.json()) as { error: string; sku: string; amount_usd: number };
+    assert.equal(body.error, "payment_required");
+    assert.equal(body.sku, "looks_20");
+    assert.equal(body.amount_usd, 0.2);
+    const pricing = await handleMeterRequest(get("/api/v1/meter/pricing"), "/api/v1/meter/pricing", store);
+    const priced = (await pricing.json()) as { free_looks: number };
+    assert.equal(priced.free_looks, 0);
   });
 
-  it("B 402 looks_20 pack pay_to locked wallet after free5", async () => {
+  it("B 402 looks_20 pack pay_to locked wallet with no free allowance", async () => {
     const store = createMeterStore();
-    for (let i = 0; i < 5; i += 1) {
-      assert.equal((await scanOnce(store)).status, 200);
-    }
     const res = await scanOnce(store);
     assert.equal(res.status, 402);
     const body = (await res.json()) as {
@@ -1757,23 +1742,36 @@ describe("paying agents A–H", () => {
   });
 
   it("G scan and preflight never hold", async () => {
+    process.env.NODE_ENV = "test";
     const store = createMeterStore();
-    const scan = await scanOnce(store);
+    const issued = await handleMeterRequest(
+      post("/api/v1/meter/pass", { sku: "looks_20", proof: { type: "dev" } }),
+      "/api/v1/meter/pass",
+      store,
+    );
+    const pass = (await issued.json()) as { token: string };
+    const scan = await scanOnce(store, { "X-Agent-Pass": pass.token });
     const scanBody = (await scan.json()) as { risk: string };
+    assert.equal(scan.status, 200);
     assert.ok(["ok", "new", "warn", "sink"].includes(scanBody.risk));
     assert.notEqual(scanBody.risk, "hold");
     const pre = await handleMeterRequest(
-      post("/api/v1/meter/preflight", {
-        chain: "solana",
-        wallet: "AgentG",
-        to: "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR",
-        value_usd: 5,
-        cap_usd: 20,
-      }),
+      post(
+        "/api/v1/meter/preflight",
+        {
+          chain: "solana",
+          wallet: "AgentG",
+          to: "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR",
+          value_usd: 5,
+          cap_usd: 20,
+        },
+        { "X-Agent-Pass": pass.token },
+      ),
       "/api/v1/meter/preflight",
       store,
     );
     const preBody = (await pre.json()) as { decision: string };
+    assert.equal(pre.status, 200);
     assert.ok(preBody.decision === "allow" || preBody.decision === "stop");
     assert.notEqual(preBody.decision, "hold");
     assert.equal(store.pendingApprovalsCreated, 0);

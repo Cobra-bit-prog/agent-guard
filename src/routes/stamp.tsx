@@ -9,7 +9,7 @@ import {
   GATE_DEMO_URL,
   METER_DOCS_HREF,
   METER_LLMS_HREF,
-  METER_PACKS,
+  METER_PACKS_FIRST,
   METER_QUESTION,
   STAMP_DOCS_HREF,
   STAMP_ID_HEADER,
@@ -54,7 +54,7 @@ function StampSellerPage() {
         <p className="mt-4 max-w-[46ch] text-body text-muted">{STAMP_SELLER_LEDE}</p>
         <p className="mt-3 max-w-[52ch] text-body text-muted">{STAMP_SELLER_BODY}</p>
         <p className="mt-3 max-w-[52ch] text-body text-muted">
-          {METER_QUESTION} First 5 free. {METER_PACKS}
+          {METER_QUESTION} {METER_PACKS_FIRST}
         </p>
         <SupportedChains className="mt-5" />
 

@@ -296,7 +296,7 @@ export function MeterPayCard({ search }: { search: MeterPaySearch }) {
         <p className="text-meta font-semibold uppercase tracking-[0.16em] text-navy">Meter pass</p>
         <h1 className="mt-2 text-title font-semibold tracking-tight">Pay {METER_LOOKS_20_USD_LABEL} USDC</h1>
         <p className="mt-2 text-muted">
-          {`Can I pay this address? First 5 looks are free. Then a $${METER_LOOKS_20_USD_LABEL} pack. Phantom in Chrome can pay without scanning a QR.`}
+          {`Can I pay this address? Buy a $${METER_LOOKS_20_USD_LABEL} pack or one $${METER_LOOK_USD_LABEL} look. Phantom in Chrome can pay without scanning a QR.`}
         </p>
         {loadError ? <p className="mt-3 text-body text-danger">{loadError}</p> : null}
         {payError ? <p className="mt-3 text-body text-danger">{payError}</p> : null}

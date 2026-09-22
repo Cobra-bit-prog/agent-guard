@@ -1,10 +1,10 @@
 # Connect your agent
 
-Can I pay this address? First 5 free. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot. No inbox. Agent Meter is public — no API key. Discovery: `GET /.well-known/mcp.json` (Streamable HTTP) and `GET /.well-known/x402`. Base USDC (EIP-3009 exact) and Solana USDC.
+Can I pay this address? Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05. look $0.10 is optional one-shot. No inbox. Agent Meter is public — no API key. Discovery: `GET /.well-known/mcp.json` (Streamable HTTP) and `GET /.well-known/x402`. Base USDC (EIP-3009 exact) and Solana USDC.
 Human App (separate): External audit for your agents. Point Cursor or Grok at the live MCP so the agent asks before a send. You keep the keys.
 
 **URL:** `https://agent-control.net/api/v1/mcp`  
-**Auth (Meter):** no Authorization / Bearer empty. Conversion: free `meter_scan` → after free-5 `meter_buy_pass` (looks_20) → Base `sign_exact` → `meter_watch({invoice_id, payment})` → token.  
+**Auth (Meter):** no Authorization / Bearer empty. Conversion: `meter_buy_pass` (looks_20) → Base `sign_exact` → `meter_watch({invoice_id, payment})` → token → `meter_scan`.  
 **Auth (Human App):** `Authorization: Bearer ${AGENT_CONTROL_API_KEY}`  
 **Env var:** `AGENT_CONTROL_API_KEY` — agent API key from the Agent Control console. Meter tools do not need it.
 

@@ -496,6 +496,7 @@ export function createSqlMeterStore(db: Sql): MeterStore {
       return mapPass(rows[0]);
     },
     async consumeFreeLook(identity) {
+      if (METER_FREE_LOOKS <= 0) return "exhausted";
       const key = identity.trim() || METER_ANON_IDENTITY;
       const rows = await db.query<{ used: unknown }>(
         `insert into meter_free_looks (identity_key, used)

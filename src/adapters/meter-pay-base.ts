@@ -289,7 +289,7 @@ function invoiceFromBody(body: Record<string, unknown>): MeterPassInvoice {
 
 /**
  * End-to-end Base path: invoice → EIP-3009 exact → watch until X-Agent-Pass.
- * After free-5, omit sku to buy looks_20 pack → X-Agent-Pass.
+ * Omit sku to buy looks_20 pack → X-Agent-Pass. look $0.10 is optional one-shot.
  * No Solana key. We never take keys.
  */
 export async function buyMeterPassBase(opts: BuyMeterPassBaseOptions): Promise<BuyMeterPassBaseResult> {

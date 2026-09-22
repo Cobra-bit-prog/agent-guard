@@ -2,7 +2,7 @@
   "name": "agent-control",
   "displayName": "Agent Control",
   "version": "1.0.0",
-  "description": "Can I pay this address? First 5 free. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot. No inbox. Agent Meter is public. Base USDC (EIP-3009 exact) and Solana USDC. Human App (separate): External audit for your agents. Connect your agent so it asks before every send. Hold vs block. You keep the keys.",
+  "description": "Can I pay this address? Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05. look $0.10 is optional one-shot. No inbox. Agent Meter is public. Base USDC (EIP-3009 exact) and Solana USDC. Human App (separate): External audit for your agents. Connect your agent so it asks before every send. Hold vs block. You keep the keys.",
   "author": {
     "name": "Agent Control",
     "email": "support@agent-control.net"

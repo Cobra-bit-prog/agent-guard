@@ -37,9 +37,9 @@ Human path: get an API key → they ask before they pay → 1-day trial → Pay 
 
 Separate from the Human App. These AgentKit and x402 files call **POST /api/v1/check** with an API key. Do not reuse them for Agent Meter.
 
-Agent Meter: Agents pay themselves. Can I pay this address? First 5 free. After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot. ok | new | warn | sink. Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. Take this ticket or we do not take your USDC. No inbox. No email, no API key, no Approval Inbox. Scan and preflight use `X-Agent-Pass` or anon. They do not wait on a human. Meter never holds.
+Agent Meter: Agents pay themselves. Can I pay this address? Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05. look $0.10 is optional one-shot. ok | new | warn | sink. Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. Take this ticket or we do not take your USDC. No inbox. No email, no API key, no Approval Inbox. Scan and preflight use a paid `X-Agent-Pass`. They do not wait on a human. Meter never holds.
 
-Prefer `meter-pay-base.ts` if you have no Solana key. After 5 free, omit sku to buy looks_20 $0.20 (20 looks). look $0.10 is optional one-shot. Sign Base USDC EIP-3009 exact to base_pay_to (CDP/AgentKit/viem `signExact`). Then watch until the pass token. We never take keys.
+Prefer `meter-pay-base.ts` if you have no Solana key. Omit sku to buy looks_20 $0.20 (20 looks). look $0.10 is optional one-shot. Sign Base USDC EIP-3009 exact to base_pay_to (CDP/AgentKit/viem `signExact`). Then watch until the pass token. We never take keys.
 
 ```ts
 import { buyMeterPassBase } from "./meter-pay-base.ts";
@@ -69,7 +69,7 @@ const { payment } = await payMeterPassBase({ invoice, from, signExact });
 // meter_watch { invoice_id, payment } until token
 ```
 
-After free-5, omit sku to buy looks_20 pack ($0.20) → X-Agent-Pass. look $0.10 is optional one-shot. Not pass_1h. Docs: https://agent-control.net/docs#agent-meter
+Omit sku to buy looks_20 pack ($0.20) → X-Agent-Pass. look $0.10 is optional one-shot. Not pass_1h. Docs: https://agent-control.net/docs#agent-meter
 
 Directory payment-ready monitors should **GET /api/v1/meter/pass** (same 402 as empty POST looks_20). Health / uptime probes that must not mint invoices should **GET /api/v1/meter/pricing**. Do not POST /api/v1/meter/pass from smoke checks — that mints unpaid invoices and pollutes pending_stale. If a probe must POST /pass, send `{"source":"smoke"}` or header `X-Meter-Smoke: 1`. Paying agents should send a richer User-Agent than undici's default `node` (that exact string is treated as a directory probe).
 

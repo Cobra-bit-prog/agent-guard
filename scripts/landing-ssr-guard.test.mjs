@@ -255,7 +255,10 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
   assert.match(docs, /METER_LEDE/);
   assert.match(docs, /METER_SEPARATE/);
   assert.match(meterRecipe, /Agents pay themselves/);
-  assert.match(meterRecipe, /First 5 free/);
+  assert.match(meterRecipe, /Buy looks_20 pack \(\$0\.20\) or look \$0\.10/);
+  assert.match(meterRecipe, /Stamp ticket \$0\.05/);
+  assert.doesNotMatch(meterRecipe, /First 5 free/);
+  assert.doesNotMatch(meterRecipe, /free-5/);
   assert.match(meterRecipe, /looks_20 pack \(\$0\.20\)/);
   assert.match(meterRecipe, /look \$0\.10 is optional one-shot/);
   assert.match(meterRecipe, /Separate from the Human App/);
@@ -421,7 +424,11 @@ test("llms.txt is the public AI-crawler brief", () => {
   const meterBlock = llms.match(/## Agent Meter \(no human on the site\)\n([\s\S]*?)\n## /)?.[1] ?? "";
   assert.match(meterBlock, /Agents pay themselves/);
   assert.match(meterBlock, /\$0\.10/);
-  assert.match(meterBlock, /First 5 free/);
+  assert.match(meterBlock, /Buy looks_20 pack \(\$0\.20\) or look \$0\.10/);
+  assert.match(meterBlock, /Stamp ticket \$0\.05/);
+  assert.match(meterBlock, /free_looks=0/);
+  assert.doesNotMatch(meterBlock, /First 5 free/);
+  assert.doesNotMatch(meterBlock, /free-5/);
   assert.match(meterBlock, /looks_20 pack \(\$0\.20\)/);
   assert.match(meterBlock, /look \$0\.10 is optional one-shot/);
   assert.match(meterBlock, /scan and preflight/i);

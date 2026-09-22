@@ -64,7 +64,10 @@ describe("agents.txt Layer 4 discovery", () => {
     assert.match(blob, /two products/i);
     assert.match(blob, /Agents pay themselves|agents pay themselves/);
     assert.match(blob, /Can I pay this address\?/);
-    assert.match(blob, /First 5 free/);
+    assert.match(blob, /Buy looks_20 pack \(\$0\.20\) or look \$0\.10/);
+    assert.match(blob, /Stamp ticket \$0\.05/);
+    assert.doesNotMatch(blob, /First 5 free/);
+    assert.doesNotMatch(blob, /free-5/);
     assert.match(blob, /looks_20 pack \(\$0\.20\)/);
     assert.match(blob, /look \$0\.10 is optional one-shot/);
     assert.match(blob, /looks_20/);
@@ -122,7 +125,10 @@ describe("adapters README Meter note", () => {
     assert.match(readme, /## Agent Meter/);
     assert.match(readme, /Agents pay themselves/);
     assert.match(readme, /Can I pay this address\?/);
-    assert.match(readme, /First 5 free/);
+    assert.match(readme, /Buy looks_20 pack \(\$0\.20\) or look \$0\.10/);
+    assert.match(readme, /Stamp ticket \$0\.05/);
+    assert.doesNotMatch(readme, /First 5 free/);
+    assert.doesNotMatch(readme, /free-5/);
     assert.match(readme, /looks_20 pack \(\$0\.20\)/);
     assert.match(readme, /look \$0\.10 is optional one-shot/);
     assert.match(readme, /looks_20/);

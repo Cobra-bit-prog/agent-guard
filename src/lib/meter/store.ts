@@ -482,6 +482,7 @@ export function createMeterStore(): MeterStore {
       return next;
     },
     consumeFreeLook(identity) {
+      if (METER_FREE_LOOKS <= 0) return "exhausted";
       const key = identity.trim() || METER_ANON_IDENTITY;
       const used = freeLooks.get(key) ?? 0;
       if (used >= METER_FREE_LOOKS) return "exhausted";

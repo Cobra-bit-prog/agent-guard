@@ -12,12 +12,12 @@ import {
 
 export const METER_LOOK_SKU = "look" as const;
 export const METER_DEFAULT_SKU = METER_LOOK_SKU;
-/** Credit-first paid door after 5 free looks. Packs mint/extend X-Agent-Pass. */
+/** Primary paid door. Packs mint/extend X-Agent-Pass. No free looks. */
 export const METER_PAID_SKU = "looks_20" as const;
 /** @deprecated Default door is `look`. pass_1h stays in catalog only. */
 export const METER_PASS_SKU = "pass_1h" as const;
 
-export const METER_FREE_LOOKS = 5;
+export const METER_FREE_LOOKS = 0;
 export const METER_LOOK_USD = 0.1;
 export const METER_LOOK_USD_LABEL = "0.10";
 export const METER_LOOKS_20_USD = 0.2;
@@ -26,12 +26,14 @@ export const METER_ANON_IDENTITY = "anon" as const;
 
 export const LOOK_QUESTION = "Can I pay this address?";
 export const LOOK_RISKS = ["ok", "new", "warn", "sink"] as const;
-export const METER_FREE_THEN_LOOK = "First 5 free. Then $0.10 USDC.";
-/** Packs-first paid path after the 5 free looks. look $0.10 is optional one-shot. */
-export const METER_PACKS_FIRST =
-  "After free-5, buy looks_20 pack ($0.20) → X-Agent-Pass; look $0.10 is optional one-shot.";
-/** Agent-facing discovery lead. Packs first after free-5. */
-export const METER_AGENT_LEAD = `${LOOK_QUESTION} First 5 free. ${METER_PACKS_FIRST} No inbox.`;
+/** Paid-first door. looks_20 is the pack; look is the one-shot. No free looks. */
+export const METER_PAID_DOOR =
+  "Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05.";
+export const METER_FREE_THEN_LOOK = METER_PAID_DOOR;
+/** Primary paid path. look $0.10 remains an optional one-shot. */
+export const METER_PACKS_FIRST = METER_PAID_DOOR;
+/** Agent-facing discovery lead. Paid pack first. */
+export const METER_AGENT_LEAD = `${LOOK_QUESTION} ${METER_PAID_DOOR} No inbox.`;
 export const STAMP_TICKET_COPY = "Take this ticket or we do not take your USDC.";
 /** Seller-facing. Merchants may require stamp_tx before they accept agent USDC. */
 export const STAMP_MERCHANT_COPY =
@@ -155,7 +157,7 @@ export function meterPricing() {
     product: "Agent Meter",
     question: LOOK_QUESTION,
     risks: [...LOOK_RISKS],
-    note: `${METER_PACKS_FIRST} ${LOOK_QUESTION} First 5 free. Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. ${STAMP_MERCHANT_COPY} Base USDC (EIP-3009 exact) and Solana USDC. No email. No API key. Human App ($29 Inbox) is separate.`,
+    note: `${METER_PACKS_FIRST} ${LOOK_QUESTION} Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. ${STAMP_MERCHANT_COPY} Base USDC (EIP-3009 exact) and Solana USDC. No email. No API key. Human App ($29 Inbox) is separate.`,
     default_sku: METER_DEFAULT_SKU,
     paid_sku: METER_PAID_SKU,
     free_looks: METER_FREE_LOOKS,
