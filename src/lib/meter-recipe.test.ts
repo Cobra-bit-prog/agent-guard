@@ -113,10 +113,7 @@ describe("Agent Meter recipe", () => {
     assert.match(METER_PACKS, /addresses_100 \$0\.15/);
     assert.match(METER_PACKS, /stamp_tx \$0\.05/);
     assert.equal(METER_TICKET, "Take this ticket or we do not take your USDC.");
-    assert.equal(
-      METER_MERCHANT_STAMP,
-      "Merchants can require the stamp_tx $0.05 ticket before accepting agent USDC.",
-    );
+    assert.equal(METER_MERCHANT_STAMP, METER_TICKET);
     assert.equal(METER_QUESTION, "Can I pay this address?");
     assert.equal(
       METER_CONNECT_BODY,
@@ -143,7 +140,8 @@ describe("Agent Meter recipe", () => {
     assert.doesNotMatch(METER_PROSE, /free-5/);
     assert.match(METER_PROSE, /looks_20 pack \(\$0\.20\)/);
     assert.match(METER_PROSE, /optional one-shot/);
-    assert.match(METER_PROSE, /Merchants can require the stamp_tx \$0\.05 ticket before accepting agent USDC/);
+    assert.match(METER_PROSE, /Take this ticket or we do not take your USDC/);
+    assert.doesNotMatch(METER_PROSE, /Merchants can require/);
     assert.match(METER_PROSE, /No inbox/);
     assert.doesNotMatch(METER_PROSE, /\$0\.25/);
     assert.doesNotMatch(METER_PROSE, /\$0\.02/);
@@ -168,7 +166,7 @@ describe("Agent Meter recipe", () => {
     assert.match(METER_RECIPE, /addresses_100 \$0\.15/);
     assert.match(METER_RECIPE, /stamp_tx \$0\.05/);
     assert.match(METER_RECIPE, /Take this ticket or we do not take your USDC/);
-    assert.match(METER_RECIPE, /Merchants can require the stamp_tx \$0\.05 ticket before accepting agent USDC/);
+    assert.doesNotMatch(METER_RECIPE, /Merchants can require/);
     assert.match(METER_RECIPE, /# 6 MCP meter_\* at \/api\/v1\/mcp/);
     assert.match(METER_RECIPE, /MCP-native \(no Solana key\)/);
     assert.match(METER_RECIPE, /We never take keys/);
@@ -247,10 +245,8 @@ await buyMeterPassBase({ from, signExact });`,
     assert.equal(STAMP_DOCS_HREF, "/docs#stamp");
     assert.equal(STAMP_SELLER_EYEBROW, "Stamp seller");
     assert.equal(STAMP_SELLER_HEADLINE, "Take this ticket or we do not take your USDC.");
-    assert.equal(
-      STAMP_SELLER_LEDE,
-      "Merchants can require the stamp_tx $0.05 ticket before accepting agent USDC.",
-    );
+    assert.equal(STAMP_SELLER_LEDE, STAMP_SELLER_HEADLINE);
+    assert.equal(STAMP_SELLER_LEDE, "Take this ticket or we do not take your USDC.");
     assert.match(STAMP_SELLER_BODY, /Ask for a stamp first/);
     assert.match(STAMP_SELLER_VERIFY, /meter_verify_stamp/);
     assert.match(STAMP_SELLER_VERIFY, /If verified is true and decision is allow/);
@@ -271,8 +267,9 @@ await buyMeterPassBase({ from, signExact });`,
     assert.match(stampPage, /createFileRoute\("\/stamp"\)/);
     assert.match(stampPage, /STAMP_SELLER_HEADLINE/);
     assert.match(stampPage, /STAMP_SELLER_LEDE/);
-    assert.match(stampPage, /text-body text-muted">\{STAMP_SELLER_LEDE\}/);
-    assert.doesNotMatch(stampPage, /text-card text-muted">\{STAMP_SELLER_LEDE\}/);
+    assert.match(stampPage, /text-body text-muted">\{STAMP_SELLER_BODY\}/);
+    assert.doesNotMatch(stampPage, /text-card text-muted">\{STAMP_SELLER/);
+    assert.doesNotMatch(stampPage, /Merchants can require/);
     assert.match(stampPage, /STAMP_SELLER_STEPS/);
     assert.match(stampPage, /STAMP_VERIFY_CURL/);
     assert.match(stampPage, /STAMP_RECIPE/);
@@ -318,8 +315,10 @@ describe("Agent Meter recipe on public discovery surfaces", () => {
     assert.match(llms, /Solana USDC/);
     assert.doesNotMatch(llms, /\$0\.02/);
     assert.doesNotMatch(llms, /\$0\.25/);
-    assert.match(llms, /Merchants can require the stamp_tx \$0\.05 ticket before accepting agent USDC/);
-    assert.match(docs, /Merchants can require the stamp_tx \$0\.05 ticket before accepting agent USDC/);
+    assert.match(llms, /Take this ticket or we do not take your USDC/);
+    assert.doesNotMatch(llms, /Merchants can require/);
+    assert.match(docs, /Take this ticket or we do not take your USDC/);
+    assert.doesNotMatch(docs, /Merchants can require/);
     assert.match(llms, /## Stamp seller/);
     assert.match(llms, /https:\/\/agent-control\.net\/stamp/);
     assert.match(llms, /docs#stamp/);
@@ -411,6 +410,8 @@ describe("Agent Meter recipe on public discovery surfaces", () => {
 
     const stampTxt = read("public/stamp.txt");
     assert.equal(stampTxt.trimEnd(), STAMP_RECIPE.trimEnd());
+    assert.match(stampTxt, /Take this ticket or we do not take your USDC/);
+    assert.doesNotMatch(stampTxt, /Merchants can require/);
     assert.match(stampTxt, /curl -s -X POST https:\/\/agent-control\.net\/api\/v1\/meter\/pass/);
     assert.match(stampTxt, /curl -s https:\/\/agent-control\.net\/api\/v1\/meter\/stamp\/<stamp_id>/);
 

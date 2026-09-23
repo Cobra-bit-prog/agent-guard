@@ -31,13 +31,13 @@ export const Route = createFileRoute("/stamp")({
       { title: `${STAMP_SELLER_HEADLINE} — Agent Control` },
       {
         name: "description",
-        content: `${STAMP_SELLER_LEDE} ${STAMP_SELLER_HEADLINE}`,
+        content: `${STAMP_SELLER_LEDE} ${STAMP_SELLER_BODY}`,
       },
       { name: "theme-color", content: "#eef3f8" },
       { property: "og:title", content: `${STAMP_SELLER_HEADLINE} — Agent Control` },
       {
         property: "og:description",
-        content: STAMP_SELLER_LEDE,
+        content: `${STAMP_SELLER_LEDE} ${STAMP_SELLER_BODY}`,
       },
     ],
   }),
@@ -51,8 +51,7 @@ function StampSellerPage() {
           {STAMP_SELLER_EYEBROW}
         </p>
         <h1 className="mt-3 text-display font-semibold">{STAMP_SELLER_HEADLINE}</h1>
-        <p className="mt-4 max-w-[46ch] text-body text-muted">{STAMP_SELLER_LEDE}</p>
-        <p className="mt-3 max-w-[52ch] text-body text-muted">{STAMP_SELLER_BODY}</p>
+        <p className="mt-4 max-w-[52ch] text-body text-muted">{STAMP_SELLER_BODY}</p>
         <p className="mt-3 max-w-[52ch] text-body text-muted">
           {METER_QUESTION} {METER_PACKS_FIRST}
         </p>

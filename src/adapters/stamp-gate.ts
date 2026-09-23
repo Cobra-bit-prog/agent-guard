@@ -2,7 +2,6 @@
  * Merchant stamp gate. Copy this file.
  * https://agent-control.net/stamp.txt
  * Take this ticket or we do not take your USDC.
- * Merchants can require the stamp_tx $0.05 ticket before accepting agent USDC.
  *
  * Header X-Stamp-Id. Verify GET /api/v1/meter/stamp/:id.
  * Allow only if verified is true and decision is allow.
@@ -17,8 +16,7 @@ export const DEFAULT_METER_ORIGIN = "https://agent-control.net";
 export const STAMP_TX_SKU = "stamp_tx" as const;
 export const STAMP_TX_PRICE_USD = 0.05;
 export const STAMP_TICKET = "Take this ticket or we do not take your USDC.";
-export const STAMP_MERCHANT =
-  "Merchants can require the stamp_tx $0.05 ticket before accepting agent USDC.";
+export const STAMP_MERCHANT = STAMP_TICKET;
 
 export type StampFetch = (
   input: string,

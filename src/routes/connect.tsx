@@ -31,7 +31,6 @@ import {
   STAMP_SELLER_BODY,
   STAMP_SELLER_EYEBROW,
   STAMP_SELLER_HEADLINE,
-  STAMP_SELLER_LEDE,
 } from "@/lib/meter-recipe";
 
 export const Route = createFileRoute("/connect")({
@@ -122,7 +121,6 @@ function ConnectPage() {
             {STAMP_SELLER_EYEBROW}
           </p>
           <h2 className="mt-3 text-title font-semibold tracking-tight">{STAMP_SELLER_HEADLINE}</h2>
-          <p className="mt-3 max-w-[52ch] text-body text-muted">{STAMP_SELLER_LEDE}</p>
           <p className="mt-3 max-w-[52ch] text-body text-muted">{STAMP_SELLER_BODY}</p>
           <p className="mt-3 text-body text-muted">
             MCP:{" "}
