@@ -75,7 +75,7 @@ Directory payment-ready monitors should **GET /api/v1/meter/pass** (same 402 as 
 
 ## Stamp gate
 
-Copy `stamp-gate.ts`. Take this ticket or we do not take your USDC. Merchants can require the stamp_tx $0.05 ticket before accepting agent USDC.
+Copy `stamp-gate.ts`. Take this ticket or we do not take your USDC.
 
 Header `X-Stamp-Id`. The helper GETs `/api/v1/meter/stamp/:id`. Allow only if `verified` is true and `decision` is allow. Otherwise 402 with the buy recipe. No email. No API key. We never take keys.
 

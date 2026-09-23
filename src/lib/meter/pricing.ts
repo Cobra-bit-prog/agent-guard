@@ -35,9 +35,8 @@ export const METER_PACKS_FIRST = METER_PAID_DOOR;
 /** Agent-facing discovery lead. Paid pack first. */
 export const METER_AGENT_LEAD = `${LOOK_QUESTION} ${METER_PAID_DOOR} No inbox.`;
 export const STAMP_TICKET_COPY = "Take this ticket or we do not take your USDC.";
-/** Seller-facing. Merchants may require stamp_tx before they accept agent USDC. */
-export const STAMP_MERCHANT_COPY =
-  "Merchants can require the stamp_tx $0.05 ticket before accepting agent USDC.";
+/** Seller-facing lock. Same line as the ticket. */
+export const STAMP_MERCHANT_COPY = STAMP_TICKET_COPY;
 
 export type MeterSkuId = "look" | "looks_20" | "addresses_100" | "stamp_tx" | "pass_1h";
 
@@ -297,7 +296,7 @@ export function meter402Body(invoice: {
     invoice_id: invoice.invoice_id,
     reference: invoice.reference,
     question: LOOK_QUESTION,
-    note: catalog.id === "stamp_tx" ? `${STAMP_MERCHANT_COPY} ${STAMP_TICKET_COPY}` : METER_PACKS_FIRST,
+    note: catalog.id === "stamp_tx" ? STAMP_TICKET_COPY : METER_PACKS_FIRST,
     description,
     resource,
     extensions: meterBazaarExtensions(kind),

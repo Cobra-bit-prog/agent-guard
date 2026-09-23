@@ -113,14 +113,13 @@ ${METER_PAY_SNIPPET}
 # Base: POST /api/v1/meter/watch with { invoice_id, payment } = full x402 v2 object from payMeterPassBase / sign_exact. NOT a raw signature string. NOT invoice_id-only for Base.
 curl -s -X POST https://agent-control.net/api/v1/meter/watch -H 'content-type: application/json' -d '{"invoice_id":"inv_…","payment":{"x402Version":2,"payload":{"authorization":{},"signature":"<sig>"},"accepted":{"network":"base"}}}'
 # 5 packs looks_20 $0.20 · addresses_100 $0.15 · stamp_tx $0.05 ticket
-# ${METER_TICKET} ${METER_MERCHANT_STAMP}
+# ${METER_TICKET}
 # 6 MCP meter_* at /api/v1/mcp`;
 
 /** One-file merchant gate. Same bytes as public/stamp.txt. */
 export const STAMP_RECIPE = `# Stamp seller
 # ${STAMP_TXT_URL}
 # ${METER_TICKET}
-# ${METER_MERCHANT_STAMP}
 # Seller page: ${STAMP_URL}
 # Separate from the Human App. Agents pay themselves. No inbox. No email. No API key. No Approval Inbox.
 # ${METER_QUESTION} ${METER_PACKS_FIRST}
@@ -181,7 +180,7 @@ export const METER_STEPS = [
   {
     n: "5",
     t: "Packs and ticket",
-    d: `Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. ${METER_TICKET} ${METER_MERCHANT_STAMP} Then MCP meter_* tools.`,
+    d: `Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. ${METER_TICKET} Then MCP meter_* tools.`,
     code: `${METER_SCAN_CURL}\n${METER_PREFLIGHT_CURL}`,
   },
 ] as const;

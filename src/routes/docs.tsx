@@ -28,7 +28,6 @@ import {
   STAMP_SELLER_BODY,
   STAMP_SELLER_EYEBROW,
   STAMP_SELLER_HEADLINE,
-  STAMP_SELLER_LEDE,
   STAMP_SELLER_STEPS,
   STAMP_TXT_CURL,
   STAMP_TXT_PATH,
@@ -650,8 +649,7 @@ client.onBeforePaymentCreation(
           <p className="mt-3 max-w-[52ch] text-muted">
             Can I pay this address? {METER_PACKS_FIRST} ok | new | warn | sink. Packs:
             looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. Take this ticket or we do
-            not take your USDC. Merchants can require the stamp_tx $0.05 ticket before accepting
-            agent USDC. Prefer Base USDC (EIP-3009 exact) to base_pay_to (CDP/AgentKit). No Solana
+            not take your USDC. Prefer Base USDC (EIP-3009 exact) to base_pay_to (CDP/AgentKit). No Solana
             key needed. After meter_buy_pass, the 402 includes sign_exact and
             adapter_snippet so CDP/AgentKit can finish in-process. Copy{" "}
             <code className="font-mono text-fg">src/adapters/meter-pay-base.ts</code>
@@ -706,7 +704,7 @@ client.onBeforePaymentCreation(
             <code className="font-mono text-fg">meter_scan_batch</code>,{" "}
             <code className="font-mono text-fg">meter_stamp</code>,{" "}
             <code className="font-mono text-fg">meter_verify_stamp</code>
-            . Merchants can require the stamp_tx $0.05 ticket before accepting agent USDC.
+            . Take this ticket or we do not take your USDC.
           </p>
         </section>
 
@@ -715,7 +713,6 @@ client.onBeforePaymentCreation(
             {STAMP_SELLER_EYEBROW}
           </p>
           <h2 className="mt-3 text-title font-semibold tracking-tight">{STAMP_SELLER_HEADLINE}</h2>
-          <p className="mt-3 max-w-[52ch] text-muted">{STAMP_SELLER_LEDE}</p>
           <p className="mt-3 max-w-[52ch] text-muted">{STAMP_SELLER_BODY}</p>
           <p className="mt-3 max-w-[52ch] text-muted">
             Can I pay this address? {METER_PACKS_FIRST}

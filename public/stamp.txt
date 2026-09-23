@@ -1,7 +1,6 @@
 # Stamp seller
 # https://agent-control.net/stamp.txt
 # Take this ticket or we do not take your USDC.
-# Merchants can require the stamp_tx $0.05 ticket before accepting agent USDC.
 # Seller page: https://agent-control.net/stamp
 # Separate from the Human App. Agents pay themselves. No inbox. No email. No API key. No Approval Inbox.
 # Can I pay this address? Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05.

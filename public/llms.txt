@@ -53,7 +53,7 @@ Check API (machine-readable):
 1-day full console trial, no card, no KYC. Then Starter $29 / Pro $49 / Team $149. Humans pay at /billing/pay — $29 USDC on Solana, QR + Pay. No in-page Phantom. Agents use POST /api/v1/billing/checkout.
 
 ## Agent Meter (no human on the site)
-Separate from the Human App. Agents pay themselves. Can I pay this address? Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05. look $0.10 is optional one-shot. Then scan and preflight. ok | new | warn | sink. Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. Take this ticket or we do not take your USDC. Merchants can require the stamp_tx $0.05 ticket before accepting agent USDC. Base USDC (EIP-3009 exact) and Solana USDC. No inbox. No email, no trial, no API key, no Approval Inbox. Discovery: GET /.well-known/mcp.json then GET /.well-known/x402 then llms → pricing → 402 → MCP. OpenAPI: https://agent-control.net/openapi-meter.json Agent card: https://agent-control.net/.well-known/agent-card.json Docs: https://agent-control.net/docs#agent-meter
+Separate from the Human App. Agents pay themselves. Can I pay this address? Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05. look $0.10 is optional one-shot. Then scan and preflight. ok | new | warn | sink. Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. Take this ticket or we do not take your USDC. Base USDC (EIP-3009 exact) and Solana USDC. No inbox. No email, no trial, no API key, no Approval Inbox. Discovery: GET /.well-known/mcp.json then GET /.well-known/x402 then llms → pricing → 402 → MCP. OpenAPI: https://agent-control.net/openapi-meter.json Agent card: https://agent-control.net/.well-known/agent-card.json Docs: https://agent-control.net/docs#agent-meter
 
 One-file recipe (no SDK):
 
@@ -75,7 +75,7 @@ await buyMeterPassBase({ from, signExact });
 # Base: POST /api/v1/meter/watch with { invoice_id, payment } = full x402 v2 object from payMeterPassBase / sign_exact. NOT a raw signature string. NOT invoice_id-only for Base.
 curl -s -X POST https://agent-control.net/api/v1/meter/watch -H 'content-type: application/json' -d '{"invoice_id":"inv_…","payment":{"x402Version":2,"payload":{"authorization":{},"signature":"<sig>"},"accepted":{"network":"base"}}}'
 # 5 packs looks_20 $0.20 · addresses_100 $0.15 · stamp_tx $0.05 ticket
-# Take this ticket or we do not take your USDC. Merchants can require the stamp_tx $0.05 ticket before accepting agent USDC.
+# Take this ticket or we do not take your USDC.
 # 6 MCP meter_* at /api/v1/mcp
 
 - GET /api/v1/meter/pricing — public. Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05. look $0.10 is optional one-shot. paid_sku looks_20 ($0.20 pack). free_looks=0. Read skus[] for live amounts. pass describes the default look. Catalog: look, looks_20, addresses_100, stamp_tx, pass_1h catalog-only. funds.accepts lists Base USDC (EIP-3009 exact) and Solana USDC.
@@ -87,7 +87,7 @@ curl -s -X POST https://agent-control.net/api/v1/meter/watch -H 'content-type: a
 - POST /api/v1/meter/scan — header X-Agent-Pass. No free looks. Without a paid pass, 402 looks_20 pack (look $0.10 is optional one-shot). Body: chain, address. Returns risk ok|new|warn|sink. Never hold. Never blocks a send.
 - POST /api/v1/meter/preflight — header X-Agent-Pass. No free looks. Without a paid pass, 402 looks_20 pack. Body: chain, wallet, to, value_usd, cap_usd. Returns allow or stop. Never hold. No Inbox.
 - POST /api/v1/meter/scan-batch — header X-Agent-Pass. Body: chain, addresses[] (max 100). Sku addresses_100 covers scan_batch (see pricing).
-- POST /api/v1/meter/stamp — header X-Agent-Pass. stamp_tx $0.05 ticket. Merchants can require the stamp_tx $0.05 ticket before accepting agent USDC. Take this ticket or we do not take your USDC. GET /api/v1/meter/stamp/:id or meter_verify_stamp to verify before you accept.
+- POST /api/v1/meter/stamp — header X-Agent-Pass. stamp_tx $0.05 ticket. Take this ticket or we do not take your USDC. GET /api/v1/meter/stamp/:id or meter_verify_stamp to verify before you accept.
 - GET or POST /api/v1/gate/demo — dogfood merchant gate. Header X-Stamp-Id. No verified allow stamp → 402 stamp_tx $0.05. Allow → 200. Does not mint an invoice.
 - GET /api/v1/meter/pass/:id — remaining calls + expiry.
 - MCP public tools: meter_pricing, meter_buy_pass, meter_watch, meter_scan, meter_preflight, meter_scan_batch, meter_stamp, meter_verify_stamp.
@@ -102,7 +102,7 @@ MCP auto-pay loop (no Solana key; Base EIP-3009 via CDP/AgentKit):
 Auth for scan/preflight is a paid X-Agent-Pass. No free looks. looks_20 pack from GET pricing (look $0.10 is optional one-shot). No email.
 
 ## Stamp seller
-Take this ticket or we do not take your USDC. Merchants can require the stamp_tx $0.05 ticket before accepting agent USDC. Can I pay this address? Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05. look $0.10 is optional one-shot. Seller page: https://agent-control.net/stamp Docs: https://agent-control.net/docs#stamp
+Take this ticket or we do not take your USDC. Can I pay this address? Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05. look $0.10 is optional one-shot. Seller page: https://agent-control.net/stamp Docs: https://agent-control.net/docs#stamp
 1. Tell the agent to buy stamp_tx $0.05 and call meter_stamp (POST /api/v1/meter/stamp).
 2. They send you stamp_id.
 3. GET /api/v1/meter/stamp/:id or MCP meter_verify_stamp. If verified is true and decision is allow, take the USDC. If not, do not take it.

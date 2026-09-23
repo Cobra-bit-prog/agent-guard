@@ -1,4 +1,4 @@
-import { METER_AGENT_LEAD, STAMP_MERCHANT_COPY, STAMP_TICKET_COPY } from "../meter/pricing.ts";
+import { METER_AGENT_LEAD, STAMP_TICKET_COPY } from "../meter/pricing.ts";
 
 const readOnly = { readOnlyHint: true, destructiveHint: false } as const;
 const writes = { readOnlyHint: false, destructiveHint: false } as const;
@@ -116,7 +116,7 @@ export const MCP_TOOLS = [
     name: "meter_stamp",
     title: "Stamp an allow or stop receipt",
     description:
-      `${METER_AGENT_LEAD} stamp_tx $0.05. ${STAMP_MERCHANT_COPY} ${STAMP_TICKET_COPY} Signed allow|stop receipt. HMAC-SHA256. Merchants verify with meter_verify_stamp before accepting agent USDC.`,
+      `${METER_AGENT_LEAD} stamp_tx $0.05. ${STAMP_TICKET_COPY} Signed allow|stop receipt. HMAC-SHA256. Merchants verify with meter_verify_stamp before accepting agent USDC.`,
     annotations: writes,
     inputSchema: {
       type: "object",
@@ -134,7 +134,7 @@ export const MCP_TOOLS = [
   {
     name: "meter_verify_stamp",
     title: "Verify a Meter stamp",
-    description: `${METER_AGENT_LEAD} Public. ${STAMP_MERCHANT_COPY} ${STAMP_TICKET_COPY} GET a signed allow|stop receipt by stamp_id before you accept agent USDC. If verified is true and decision is allow, take the USDC. If not, do not take it. No email. No API key.`,
+    description: `${METER_AGENT_LEAD} Public. ${STAMP_TICKET_COPY} GET a signed allow|stop receipt by stamp_id before you accept agent USDC. If verified is true and decision is allow, take the USDC. If not, do not take it. No email. No API key.`,
     annotations: readOnly,
     inputSchema: {
       type: "object",

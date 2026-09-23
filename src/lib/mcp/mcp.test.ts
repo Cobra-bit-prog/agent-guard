@@ -186,7 +186,7 @@ describe("POST initialize is Streamable HTTP", () => {
     assert.doesNotMatch(instructions, /free-5/);
     assert.match(instructions, /looks_20 pack \(\$0\.20\)/);
     assert.match(instructions, /look \/ looks_20 \/ addresses_100 \/ stamp_tx/);
-    assert.match(instructions, /Merchants can require the stamp_tx \$0\.05 ticket before accepting agent USDC/);
+    assert.doesNotMatch(instructions, /Merchants can require/);
     assert.match(instructions, /Take this ticket or we do not take your USDC/);
     assert.match(instructions, /meter_watch, then X-Agent-Pass/);
     assert.match(instructions, /We never take keys/);
@@ -269,9 +269,9 @@ describe("initialized notification and session reuse", () => {
     const stamp = MCP_TOOLS.find((tool) => tool.name === "meter_stamp")?.description ?? "";
     const verify = MCP_TOOLS.find((tool) => tool.name === "meter_verify_stamp")?.description ?? "";
     assert.match(stamp, /stamp_tx \$0\.05/);
-    assert.match(stamp, /Merchants can require the stamp_tx \$0\.05 ticket before accepting agent USDC/);
+    assert.doesNotMatch(stamp, /Merchants can require/);
     assert.match(stamp, /meter_verify_stamp/);
-    assert.match(verify, /Merchants can require the stamp_tx \$0\.05 ticket before accepting agent USDC/);
+    assert.doesNotMatch(verify, /Merchants can require/);
     assert.match(verify, /Take this ticket or we do not take your USDC/);
     assert.match(verify, /before you accept agent USDC/);
     assert.match(verify, /If verified is true and decision is allow/);
