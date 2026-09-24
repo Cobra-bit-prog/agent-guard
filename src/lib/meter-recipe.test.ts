@@ -401,6 +401,14 @@ describe("Agent Meter recipe on public discovery surfaces", () => {
     assert.match(GATE_DEMO_ALLOW_CURL, /X-Stamp-Id: <stamp_id>/);
     assert.match(STAMP_RECIPE, /GET or POST \/api\/v1\/gate\/demo/);
     assert.match(STAMP_RECIPE, /src\/adapters\/stamp-gate\.ts/);
+    assert.match(STAMP_RECIPE, /requireMerchantStamp\(req, \{ seller: "your-slug" \}\)/);
+    assert.match(
+      STAMP_RECIPE,
+      /Ask for a stamp first\. If the stamp is missing or says stop, do not take the USDC\./,
+    );
+    assert.match(STAMP_RECIPE, /Next\.js App Router route handler/);
+    assert.match(STAMP_RECIPE, /Express middleware/);
+    assert.match(STAMP_RECIPE, /Hono/);
     assert.match(STAMP_SELLER_STEPS[3]?.d ?? "", /\/api\/v1\/gate\/demo/);
     assert.doesNotMatch(STAMP_RECIPE, /\$0\.02/);
     assert.doesNotMatch(STAMP_RECIPE, /\$0\.25/);

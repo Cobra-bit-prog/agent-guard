@@ -144,7 +144,28 @@ ${GATE_DEMO_BLOCKED_CURL}
 # blocked. Buy stamp_tx, mint allow, pass the stamp id:
 ${GATE_DEMO_ALLOW_CURL}
 # Merchant copy: src/adapters/stamp-gate.ts
-# https://raw.githubusercontent.com/Cobra-bit-prog/agent-guard/main/src/adapters/stamp-gate.ts`;
+# https://raw.githubusercontent.com/Cobra-bit-prog/agent-guard/main/src/adapters/stamp-gate.ts
+# 5 drop-in. Header ${STAMP_ID_HEADER}. ${METER_TICKET}
+# ${STAMP_SELLER_BODY}
+# Next.js App Router route handler
+import { requireMerchantStamp } from "./stamp-gate.ts";
+export async function POST(req: Request) {
+  const gate = await requireMerchantStamp(req, { seller: "your-slug" });
+  if (!gate.ok) return Response.json(gate.body, { status: gate.status });
+}
+# Express middleware
+app.use(async (req, res, next) => {
+  const gate = await requireMerchantStamp(req, { seller: "your-slug" });
+  if (!gate.ok) return res.status(gate.status).json(gate.body);
+  return next();
+});
+# Hono
+app.use(async (c, next) => {
+  const req = c.req.raw;
+  const gate = await requireMerchantStamp(req, { seller: "your-slug" });
+  if (!gate.ok) return c.json(gate.body, gate.status);
+  await next();
+});`;
 
 export const METER_SCAN_CURL =
   'curl -s -X POST https://agent-control.net/api/v1/meter/scan -H \'content-type: application/json\' -H \'X-Agent-Pass: <pass>\' -d \'{"chain":"solana","address":"<destination>"}\'';

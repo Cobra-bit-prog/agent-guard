@@ -21,6 +21,7 @@ import {
   type MeterSku,
 } from "./pricing.ts";
 import { utcDayKey } from "./preflight.ts";
+import { summarizeStampFetches } from "./stamp-fetch.ts";
 import type { StampDecision } from "./stamp.ts";
 
 export type MeterPass = {
@@ -113,8 +114,38 @@ export type MeterReport = {
   usdc_pending_stale: number;
   usdc_pending_smoke: number;
   calls: number;
+  /** Allow fetches that are not smoke and not the dogfood gate. */
+  tickets_fetched_by_seller: number;
+  stamp_fetches_total: number;
+  gate_demo_hits: number;
+  fetch_unique_sellers: number;
+  stamp_fetches_smoke: number;
   recent_payments: MeterPaymentRow[];
   generated_at: string;
+};
+
+export type StampFetchSource = "verify" | "gate_demo" | "mcp_verify";
+
+export type StampFetchResult = "allow" | "stop" | "missing" | "unknown" | "invalid" | "expired";
+
+export type StampFetchRow = {
+  id: string;
+  stamp_id: string | null;
+  source: StampFetchSource;
+  result: StampFetchResult;
+  seller: string | null;
+  origin_hash: string | null;
+  is_smoke: boolean;
+  created_at: string;
+};
+
+export type RecordStampFetchInput = {
+  stamp_id: string | null;
+  source: StampFetchSource;
+  result: StampFetchResult;
+  seller: string | null;
+  origin_hash: string | null;
+  is_smoke: boolean;
 };
 
 export type MeterInvoiceListOpts = {
@@ -169,6 +200,8 @@ export type MeterStore = {
   addAllowSpend(wallet: string, valueUsd: number, nowMs?: number): Awaitable<void>;
   saveStamp(row: MeterStamp): Awaitable<MeterStamp>;
   getStamp(id: string): Awaitable<MeterStamp | null>;
+  recordStampFetch(row: RecordStampFetchInput): Awaitable<void>;
+  listStampFetches(): Awaitable<StampFetchRow[]>;
   report(): Awaitable<MeterReport>;
   pendingApprovalsCreated: number;
 };
@@ -276,6 +309,7 @@ export function createMeterStore(): MeterStore {
   const spend = new Map<string, number>();
   const payments: MeterPaymentRow[] = [];
   const stamps = new Map<string, MeterStamp>();
+  const stampFetches: StampFetchRow[] = [];
   const freeLooks = new Map<string, number>();
 
   function spendKey(wallet: string, nowMs: number) {
@@ -509,6 +543,16 @@ export function createMeterStore(): MeterStore {
     getStamp(stampId) {
       return stamps.get(stampId) ?? null;
     },
+    recordStampFetch(row) {
+      stampFetches.push({
+        ...row,
+        id: newMeterId("sfetch"),
+        created_at: new Date().toISOString(),
+      });
+    },
+    listStampFetches() {
+      return stampFetches.map((row) => ({ ...row }));
+    },
     spentTodayUsd(wallet, nowMs = Date.now()) {
       return spend.get(spendKey(wallet, nowMs)) ?? 0;
     },
@@ -565,6 +609,7 @@ export function createMeterStore(): MeterStore {
         usdc_pending_stale: usdSum(pendingStale),
         usdc_pending_smoke: usdSum(pendingSmoke),
         calls: logs.length,
+        ...summarizeStampFetches(stampFetches),
         recent_payments: payments.slice(-50).reverse(),
         generated_at: new Date().toISOString(),
       };

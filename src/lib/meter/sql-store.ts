@@ -24,6 +24,10 @@ import {
   type MeterReport,
   type MeterStamp,
   type MeterStore,
+  type RecordStampFetchInput,
+  type StampFetchResult,
+  type StampFetchRow,
+  type StampFetchSource,
 } from "./store.ts";
 
 type InvoiceRow = {
@@ -77,6 +81,27 @@ type StampRow = {
   hmac: string;
   created_at: unknown;
 };
+
+type StampFetchSqlRow = {
+  id: string;
+  stamp_id: string | null;
+  source: string;
+  result: string;
+  seller: string | null;
+  origin_hash: string | null;
+  is_smoke: unknown;
+  created_at: unknown;
+};
+
+const STAMP_FETCH_SOURCES = new Set<StampFetchSource>(["verify", "gate_demo", "mcp_verify"]);
+const STAMP_FETCH_RESULTS = new Set<StampFetchResult>([
+  "allow",
+  "stop",
+  "missing",
+  "unknown",
+  "invalid",
+  "expired",
+]);
 
 function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
@@ -138,6 +163,29 @@ function mapPass(row: PassRow): MeterPass {
     invoice_id: row.invoice_id,
     signature: row.signature,
     paid_amount_usd: row.paid_amount_usd == null ? null : num(row.paid_amount_usd),
+  };
+}
+
+function asBool(value: unknown): boolean {
+  return value === true || value === "t" || value === "true" || value === 1;
+}
+
+function mapStampFetch(row: StampFetchSqlRow): StampFetchRow {
+  const source = STAMP_FETCH_SOURCES.has(row.source as StampFetchSource)
+    ? (row.source as StampFetchSource)
+    : "verify";
+  const result = STAMP_FETCH_RESULTS.has(row.result as StampFetchResult)
+    ? (row.result as StampFetchResult)
+    : "unknown";
+  return {
+    id: row.id,
+    stamp_id: row.stamp_id,
+    source,
+    result,
+    seller: row.seller,
+    origin_hash: row.origin_hash,
+    is_smoke: asBool(row.is_smoke),
+    created_at: iso(row.created_at),
   };
 }
 
@@ -233,6 +281,24 @@ export async function ensureMeterSchema(sql?: Sql): Promise<void> {
     )
   `);
   await db.query(`create index if not exists meter_stamps_pass_idx on meter_stamps (pass_id, created_at desc)`);
+  await db.query(`
+    create table if not exists meter_stamp_fetches (
+      id text primary key,
+      stamp_id text,
+      source text not null,
+      result text not null,
+      seller text,
+      origin_hash text,
+      is_smoke boolean not null default false,
+      created_at timestamptz not null default now()
+    )
+  `);
+  await db.query(
+    `create index if not exists meter_stamp_fetches_created_idx on meter_stamp_fetches (created_at desc)`,
+  );
+  await db.query(
+    `create index if not exists meter_stamp_fetches_seller_idx on meter_stamp_fetches (seller, created_at desc)`,
+  );
   await db.query(`
     create table if not exists meter_free_looks (
       identity_key text primary key,
@@ -558,6 +624,25 @@ export function createSqlMeterStore(db: Sql): MeterStore {
       const rows = await db.query<StampRow>(`select * from meter_stamps where id = $1 limit 1`, [key]);
       return rows[0] ? mapStamp(rows[0]) : null;
     },
+    async recordStampFetch(row: RecordStampFetchInput) {
+      await db`
+        insert into meter_stamp_fetches (
+          id, stamp_id, source, result, seller, origin_hash, is_smoke, created_at
+        ) values (
+          ${newMeterId("sfetch")}, ${row.stamp_id}, ${row.source}, ${row.result},
+          ${row.seller}, ${row.origin_hash}, ${row.is_smoke}, ${new Date().toISOString()}
+        )
+      `;
+    },
+    async listStampFetches() {
+      const rows = await db.query<StampFetchSqlRow>(
+        `select id, stamp_id, source, result, seller, origin_hash, is_smoke, created_at
+         from meter_stamp_fetches
+         order by created_at asc, id asc
+         limit 1000`,
+      );
+      return rows.map(mapStampFetch);
+    },
     async report() {
       return collectMeterSqlReport(db);
     },
@@ -585,6 +670,11 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
     usdc_pending_stale: 0,
     usdc_pending_smoke: 0,
     calls: 0,
+    tickets_fetched_by_seller: 0,
+    stamp_fetches_total: 0,
+    gate_demo_hits: 0,
+    fetch_unique_sellers: 0,
+    stamp_fetches_smoke: 0,
     recent_payments: [],
     generated_at: new Date().toISOString(),
   };
@@ -685,6 +775,41 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
       payer_address: row.payer_address,
       paid_at: row.paid_at ? iso(row.paid_at) : "",
     }));
+    const fetchCounts = {
+      tickets_fetched_by_seller: 0,
+      stamp_fetches_total: 0,
+      gate_demo_hits: 0,
+      fetch_unique_sellers: 0,
+      stamp_fetches_smoke: 0,
+    };
+    try {
+      const fetched = await db.query<{
+        tickets_fetched_by_seller: unknown;
+        stamp_fetches_total: unknown;
+        gate_demo_hits: unknown;
+        fetch_unique_sellers: unknown;
+        stamp_fetches_smoke: unknown;
+      }>(
+        `select
+           count(*) filter (
+             where result = 'allow' and is_smoke = false and source <> 'gate_demo'
+           )::int as tickets_fetched_by_seller,
+           count(*) filter (where is_smoke = false)::int as stamp_fetches_total,
+           count(*) filter (where is_smoke = false and source = 'gate_demo')::int as gate_demo_hits,
+           count(distinct seller) filter (
+             where is_smoke = false and seller is not null
+           )::int as fetch_unique_sellers,
+           count(*) filter (where is_smoke = true)::int as stamp_fetches_smoke
+         from meter_stamp_fetches`,
+      );
+      fetchCounts.tickets_fetched_by_seller = num(fetched[0]?.tickets_fetched_by_seller);
+      fetchCounts.stamp_fetches_total = num(fetched[0]?.stamp_fetches_total);
+      fetchCounts.gate_demo_hits = num(fetched[0]?.gate_demo_hits);
+      fetchCounts.fetch_unique_sellers = num(fetched[0]?.fetch_unique_sellers);
+      fetchCounts.stamp_fetches_smoke = num(fetched[0]?.stamp_fetches_smoke);
+    } catch (err) {
+      console.error("[meter] stamp fetch report failed", err);
+    }
     return {
       product: "Agent Meter",
       funds: { pay_to: SOLANA_PAYOUT_ADDRESS, chain: "solana", asset: "usdc" },
@@ -702,6 +827,7 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
       usdc_pending_stale: Number(usdcPendingStale.toFixed(6)),
       usdc_pending_smoke: Number(usdcPendingSmoke.toFixed(6)),
       calls: num(calls[0]?.n),
+      ...fetchCounts,
       recent_payments: recentPayments,
       generated_at: new Date().toISOString(),
     };

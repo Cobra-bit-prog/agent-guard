@@ -35,7 +35,9 @@ import {
   watchMeterInvoice,
   type MeterChainFinder,
 } from "./settle.ts";
+import { stampViewAllows } from "../../adapters/stamp-gate.ts";
 import { publicStampView, signStamp, type StampDecision, type StampPayload } from "./stamp.ts";
+import { noteStampFetch } from "./stamp-fetch.ts";
 import {
   allowDevGrant,
   meterIdentityKey,
@@ -44,6 +46,7 @@ import {
   type MeterInvoice,
   type MeterPass,
   type MeterStore,
+  type StampFetchSource,
 } from "./store.ts";
 import {
   invoiceIdFromPayment,
@@ -60,6 +63,8 @@ export type MeterHttpDeps = {
   findPayment?: MeterChainFinder;
   source?: MeterInvoiceSource;
   settleExactEvm?: ExactEvmSettler;
+  /** MCP verify sets mcp_verify. Public GET /stamp/:id stays verify. */
+  stampFetchSource?: Exclude<StampFetchSource, "gate_demo">;
 };
 
 export function readPassToken(request: Request, body?: Record<string, unknown>) {
@@ -203,7 +208,7 @@ export async function handleMeterRequest(
   }
 
   if (request.method === "GET" && suffix.startsWith("stamp/")) {
-    return getStamp(resolved, suffix.slice("stamp/".length));
+    return getStamp(resolved, request, suffix.slice("stamp/".length), deps.stampFetchSource ?? "verify");
   }
 
   // GET/HEAD /pass: same 402 Payment-Required as empty POST (default sku looks_20).
@@ -765,26 +770,37 @@ async function runStamp(request: Request, body: Record<string, unknown>, store: 
   });
 }
 
-async function getStamp(store: MeterStore, rawId: string): Promise<Response> {
+async function getStamp(
+  store: MeterStore,
+  request: Request,
+  rawId: string,
+  source: Exclude<StampFetchSource, "gate_demo">,
+): Promise<Response> {
   const id = rawId.trim();
-  if (!id) return json({ error: "unknown_stamp" }, 404);
+  if (!id) {
+    await noteStampFetch(store, request, { stamp_id: null, source, result: "missing" });
+    return json({ error: "unknown_stamp" }, 404);
+  }
   const row = await store.getStamp(id);
-  if (!row) return json({ error: "unknown_stamp" }, 404);
-  return json(
-    publicStampView(
-      {
-        stamp_id: row.id,
-        decision: row.decision,
-        chain: row.chain,
-        wallet: row.wallet,
-        address: row.address,
-        value_usd: row.value_usd,
-        pass_id: row.pass_id,
-        created_at: row.created_at,
-      },
-      row.hmac,
-    ),
+  if (!row) {
+    await noteStampFetch(store, request, { stamp_id: id, source, result: "unknown" });
+    return json({ error: "unknown_stamp" }, 404);
+  }
+  const view = publicStampView(
+    {
+      stamp_id: row.id,
+      decision: row.decision,
+      chain: row.chain,
+      wallet: row.wallet,
+      address: row.address,
+      value_usd: row.value_usd,
+      pass_id: row.pass_id,
+      created_at: row.created_at,
+    },
+    row.hmac,
   );
+  await noteStampFetch(store, request, { stamp_id: row.id, source, result: stampViewAllows(view) });
+  return json(view);
 }
 
 export function meterPassRemaining(pass: { sku?: string; included_calls: number; used_calls: number; expires_at: string }) {
