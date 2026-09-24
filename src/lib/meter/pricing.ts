@@ -38,7 +38,18 @@ export const STAMP_TICKET_COPY = "Take this ticket or we do not take your USDC."
 /** Seller-facing lock. Same line as the ticket. */
 export const STAMP_MERCHANT_COPY = STAMP_TICKET_COPY;
 
-export type MeterSkuId = "look" | "looks_20" | "addresses_100" | "stamp_tx" | "pass_1h";
+export type MeterSkuId =
+  | "look"
+  | "looks_20"
+  | "addresses_100"
+  | "stamp_tx"
+  | "pass_1h"
+  | "bound_pass"
+  | "job_1"
+  | "compare"
+  | "ping"
+  | "receipts_50"
+  | "allow_list";
 
 export type MeterSku = {
   id: MeterSkuId;
@@ -113,12 +124,90 @@ export const METER_PASS_1H: MeterSku = {
   job: "Optional session pack. Scan + preflight + batch + stamp.",
 };
 
+export const METER_BOUND_PASS: MeterSku = {
+  id: "bound_pass",
+  price_usd: 0.5,
+  duration_sec: 86400,
+  included_calls: 40,
+  covers: ["scan", "preflight"],
+  asset: "usdc",
+  chain: "solana",
+  amount_base_units: "500000",
+  job: "Bound pass. $2 per send. $20 a day. The token sets the limit.",
+};
+
+export const METER_JOB_1: MeterSku = {
+  id: "job_1",
+  price_usd: 1,
+  duration_sec: 86400,
+  included_calls: 40,
+  covers: ["scan", "preflight", "stamp", "compare", "ping", "receipts", "allow_list"],
+  asset: "usdc",
+  chain: "solana",
+  amount_base_units: "1000000",
+  job: "This job may spend $1. Over = stop.",
+};
+
+export const METER_COMPARE: MeterSku = {
+  id: "compare",
+  price_usd: 0.15,
+  duration_sec: 600,
+  included_calls: 1,
+  covers: ["compare"],
+  asset: "usdc",
+  chain: "solana",
+  amount_base_units: "150000",
+  job: "Which address is safer to pay?",
+};
+
+export const METER_PING: MeterSku = {
+  id: "ping",
+  price_usd: 0.05,
+  duration_sec: 600,
+  included_calls: 1,
+  covers: ["ping"],
+  asset: "usdc",
+  chain: "solana",
+  amount_base_units: "50000",
+  job: "Is this pay path live right now?",
+};
+
+export const METER_RECEIPTS_50: MeterSku = {
+  id: "receipts_50",
+  price_usd: 0.5,
+  duration_sec: 86400,
+  included_calls: 50,
+  covers: ["receipts"],
+  asset: "usdc",
+  chain: "solana",
+  amount_base_units: "500000",
+  job: "50 machine receipts of your looks.",
+};
+
+export const METER_ALLOW_LIST: MeterSku = {
+  id: "allow_list",
+  price_usd: 0.2,
+  duration_sec: 86400,
+  included_calls: 1,
+  covers: ["allow_list"],
+  asset: "usdc",
+  chain: "solana",
+  amount_base_units: "200000",
+  job: "Today's known-ok hosts.",
+};
+
 export const METER_SKUS: Record<MeterSkuId, MeterSku> = {
   look: METER_LOOK,
   looks_20: METER_LOOKS_20,
   addresses_100: METER_ADDRESSES_100,
   stamp_tx: METER_STAMP_TX,
   pass_1h: METER_PASS_1H,
+  bound_pass: METER_BOUND_PASS,
+  job_1: METER_JOB_1,
+  compare: METER_COMPARE,
+  ping: METER_PING,
+  receipts_50: METER_RECEIPTS_50,
+  allow_list: METER_ALLOW_LIST,
 };
 
 export const METER_SKU_IDS = Object.keys(METER_SKUS) as MeterSkuId[];
@@ -126,6 +215,12 @@ export const METER_SKU_IDS = Object.keys(METER_SKUS) as MeterSkuId[];
 export function defaultSkuForKind(kind: string): MeterSku {
   if (kind === "stamp") return METER_STAMP_TX;
   if (kind === "scan_batch") return METER_ADDRESSES_100;
+  if (kind === "compare") return METER_COMPARE;
+  if (kind === "ping") return METER_PING;
+  if (kind === "receipts") return METER_RECEIPTS_50;
+  if (kind === "allow_list") return METER_ALLOW_LIST;
+  if (kind === "bound") return METER_BOUND_PASS;
+  if (kind === "job") return METER_JOB_1;
   return METER_LOOKS_20;
 }
 
@@ -214,6 +309,10 @@ export function meterPricing() {
       scan_batch: "POST /api/v1/meter/scan-batch",
       stamp: "POST /api/v1/meter/stamp",
       stamp_get: "GET /api/v1/meter/stamp/:id",
+      compare: "POST /api/v1/meter/compare",
+      ping: "POST /api/v1/meter/ping",
+      receipts: "POST /api/v1/meter/receipts",
+      allow_list: "GET or POST /api/v1/meter/allow-list",
       gate_demo: "GET or POST /api/v1/gate/demo",
       report: "GET /api/v1/meter/report",
     },

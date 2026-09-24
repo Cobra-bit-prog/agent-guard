@@ -810,7 +810,7 @@ describe("extra meter skus", () => {
     assert.doesNotMatch(body.note ?? "", /First 5 free|free-5/);
     assert.deepEqual(
       body.skus.map((row) => row.id),
-      ["look", "looks_20", "addresses_100", "stamp_tx", "pass_1h"],
+      ["look", "looks_20", "addresses_100", "stamp_tx", "pass_1h", "bound_pass", "job_1", "compare", "ping", "receipts_50", "allow_list"],
     );
     assert.equal(body.skus.find((row) => row.id === "look")?.price_usd, 0.1);
     assert.equal(body.skus.find((row) => row.id === "looks_20")?.price_usd, 0.2);

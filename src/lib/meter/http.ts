@@ -31,6 +31,15 @@ import { invalidAddressResponse, validateMeterAddress } from "./address.ts";
 import { evaluateScan, type MeterChain } from "./scan.ts";
 import { evaluatePreflightSelf, missingPreflightFields, PREFLIGHT_REQUIRED } from "./preflight.ts";
 import {
+  boundPreflight,
+  compareAddresses,
+  DEFAULT_ALLOW_HOSTS,
+  evaluatePing,
+  hostOnAllowList,
+  noteSeen,
+  seenCount,
+} from "./sips.ts";
+import {
   applyMeterHeliusPayments,
   meterFundsDestination,
   watchMeterInvoice,
@@ -269,6 +278,22 @@ export async function handleMeterRequest(
 
   if (request.method === "POST" && suffix === "stamp") {
     return runStamp(request, body, resolved, deps);
+  }
+
+  if (request.method === "POST" && suffix === "compare") {
+    return runCompare(request, body, resolved, deps);
+  }
+
+  if (request.method === "POST" && suffix === "ping") {
+    return runPing(request, body, resolved, deps);
+  }
+
+  if ((request.method === "GET" || request.method === "POST") && (suffix === "allow-list" || suffix === "allow_list")) {
+    return runAllowList(request, body, resolved, deps);
+  }
+
+  if (request.method === "POST" && suffix === "receipts") {
+    return runReceipts(request, body, resolved, deps);
   }
 
   return json({ error: "unknown_meter_route", usage: meterPricing().endpoints }, 404);
@@ -582,6 +607,7 @@ async function runScan(request: Request, body: Record<string, unknown>, store: M
   if (consumed === "exhausted") {
     return paymentRequired(store, request, source, body, METER_PAID_SKU);
   }
+  const seen = noteSeen(chain, address);
   await store.logCall({
     pass_id: consumed.after?.id ?? `free:${gate.identity}`,
     kind: "scan",
@@ -593,6 +619,7 @@ async function runScan(request: Request, body: Record<string, unknown>, store: M
   });
   return json({
     ...scanned,
+    seen,
     question: LOOK_QUESTION,
     ...lookAccessFields({ pass: consumed.after, freeRemaining: consumed.freeRemaining }),
   });
@@ -639,7 +666,10 @@ async function runPreflight(request: Request, body: Record<string, unknown>, sto
   const declaredSpend = Number(body.spent_usd ?? body.spentUsd);
   const logged = await store.spentTodayUsd(wallet);
   const spent_today_usd = Number.isFinite(declaredSpend) ? Math.max(declaredSpend, logged) : logged;
-  const verdict = evaluatePreflightSelf({ cap_usd, value_usd, spent_today_usd });
+  const bound = gate.pass?.sku === "bound_pass" || gate.pass?.sku === "job_1";
+  const verdict = bound
+    ? boundPreflight({ value_usd, spent_today_usd })
+    : evaluatePreflightSelf({ cap_usd, value_usd, spent_today_usd });
 
   const consumed = await consumeLookGrant(store, gate);
   if (consumed === "exhausted") {
@@ -828,6 +858,102 @@ async function getStamp(
   );
   await noteStampFetch(store, request, { stamp_id: row.id, source, result: stampViewAllows(view) });
   return json(view);
+}
+
+async function runCompare(request: Request, body: Record<string, unknown>, store: MeterStore, deps: MeterHttpDeps = {}) {
+  const applied = await applySettledPass(request, body, store, deps);
+  if (applied.error) return applied.error;
+  body = applied.body;
+  const source = invoiceSourceForMeterPath("scan");
+  const chain = chainOf(body.chain);
+  const a = String(body.a ?? body.address_a ?? "").trim();
+  const b = String(body.b ?? body.address_b ?? "").trim();
+  if (!chain || !a || !b) return json({ error: "Provide chain, a, and b." }, 400);
+  const gate = await requireLookOrPack(request, body, store, source, "compare");
+  if (gate.response) return gate.response;
+  const consumed = await consumeLookGrant(store, gate);
+  if (consumed === "exhausted") {
+    return paymentRequired(store, request, source, body, defaultSkuForKind("compare").id);
+  }
+  const compared = compareAddresses({ a, b, chain });
+  return json({
+    ...compared,
+    seen_a: seenCount(chain, a),
+    seen_b: seenCount(chain, b),
+    ...lookAccessFields({ pass: consumed.after, freeRemaining: consumed.freeRemaining }),
+  });
+}
+
+async function runPing(request: Request, body: Record<string, unknown>, store: MeterStore, deps: MeterHttpDeps = {}) {
+  const applied = await applySettledPass(request, body, store, deps);
+  if (applied.error) return applied.error;
+  body = applied.body;
+  const source = invoiceSourceForMeterPath("scan");
+  const url = String(body.url ?? "").trim();
+  if (!url) return json({ error: "Provide url." }, 400);
+  const gate = await requireLookOrPack(request, body, store, source, "ping");
+  if (gate.response) return gate.response;
+  const consumed = await consumeLookGrant(store, gate);
+  if (consumed === "exhausted") {
+    return paymentRequired(store, request, source, body, defaultSkuForKind("ping").id);
+  }
+  let status: number | null = null;
+  let ok = false;
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 2500);
+    const res = await fetch(url, { method: "GET", redirect: "manual", signal: ctrl.signal });
+    clearTimeout(timer);
+    status = res.status;
+    ok = res.ok || res.status === 402;
+  } catch {
+    status = null;
+    ok = false;
+  }
+  return json({
+    ...evaluatePing({ url, status, ok }),
+    ...lookAccessFields({ pass: consumed.after, freeRemaining: consumed.freeRemaining }),
+  });
+}
+
+async function runAllowList(request: Request, body: Record<string, unknown>, store: MeterStore, deps: MeterHttpDeps = {}) {
+  const applied = await applySettledPass(request, body, store, deps);
+  if (applied.error) return applied.error;
+  body = applied.body;
+  const source = invoiceSourceForMeterPath("scan");
+  const gate = await requireLookOrPack(request, body, store, source, "allow_list");
+  if (gate.response) return gate.response;
+  const consumed = await consumeLookGrant(store, gate);
+  if (consumed === "exhausted") {
+    return paymentRequired(store, request, source, body, defaultSkuForKind("allow_list").id);
+  }
+  const host = String(body.host ?? body.url ?? "").trim();
+  return json({
+    hosts: [...DEFAULT_ALLOW_HOSTS],
+    host: host || null,
+    ok: host ? hostOnAllowList(host) : null,
+    ...lookAccessFields({ pass: consumed.after, freeRemaining: consumed.freeRemaining }),
+  });
+}
+
+async function runReceipts(request: Request, body: Record<string, unknown>, store: MeterStore, deps: MeterHttpDeps = {}) {
+  const applied = await applySettledPass(request, body, store, deps);
+  if (applied.error) return applied.error;
+  body = applied.body;
+  const source = invoiceSourceForMeterPath("scan");
+  const gate = await requireLookOrPack(request, body, store, source, "receipts");
+  if (gate.response) return gate.response;
+  const consumed = await consumeLookGrant(store, gate);
+  if (consumed === "exhausted") {
+    return paymentRequired(store, request, source, body, defaultSkuForKind("receipts").id);
+  }
+  const report = await store.report();
+  return json({
+    rows: report.recent_payments.slice(0, 50),
+    usdc_received: report.usdc_received,
+    calls: report.calls,
+    ...lookAccessFields({ pass: consumed.after, freeRemaining: consumed.freeRemaining }),
+  });
 }
 
 export function meterPassRemaining(pass: { sku?: string; included_calls: number; used_calls: number; expires_at: string }) {
