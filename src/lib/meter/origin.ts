@@ -101,6 +101,31 @@ export const METER_SMOKE_OR_PROBE_SQL = `(
 )`;
 
 /**
+ * Directory / census / verifier UAs that minted unpaid looks_20 rows and never paid
+ * (2026-09-23 sample: CarbonMonitor, x402 reliability/census/observer, enclave402,
+ * 402explorer, forum-labs, the402, BazaarDiscovery, x402stats, autobus, csoai).
+ * Named products only. node-fetch, undici, AgentKit, and Cursor stay agents.
+ * Exact `node` stays in the smoke SQL above, not here.
+ */
+export const METER_PROBE_SQL = `(
+  coalesce(user_agent, '') ILIKE '%carbonmonitor%'
+  OR coalesce(user_agent, '') ILIKE '%402explorer%'
+  OR coalesce(user_agent, '') ILIKE '%forum-labs%'
+  OR coalesce(user_agent, '') ILIKE '%the402%'
+  OR coalesce(user_agent, '') ILIKE '%enclave402%'
+  OR coalesce(user_agent, '') ILIKE '%bazaardiscovery%'
+  OR coalesce(user_agent, '') ILIKE '%x402stats%'
+  OR coalesce(user_agent, '') ILIKE '%autobus-catalogue%'
+  OR coalesce(user_agent, '') ILIKE '%csoai-x402%'
+  OR coalesce(user_agent, '') ILIKE '%bazaar-conformance%'
+  OR coalesce(user_agent, '') ~* 'bazaar[-_/ ]?indexer'
+  OR coalesce(user_agent, '') ~* 'x402[-_][a-z0-9._-]{0,48}(probe|verifier|census|observer|health)'
+)`;
+
+const PROBE_USER_AGENT =
+  /carbonmonitor|402explorer|forum-labs|the402|enclave402|bazaardiscovery|x402stats|autobus-catalogue|csoai-x402|bazaar-conformance|bazaar[-_/ ]?indexer|x402[-_][a-z0-9._-]{0,48}(?:probe|verifier|census|observer|health)/i;
+
+/**
  * Conservative bot UAs: curl, python-requests, httpx, CoS/meter health probes,
  * directory/liveness probes (nohumans.directory-probe and "liveness check,
  * no payment" style), plus named crawlers/monitors (agent-tools.cloud-crawler,
@@ -132,6 +157,34 @@ export function isMeterSmokeInvoice(
   userAgent?: string | null,
 ): boolean {
   return isMeterSmokeSource(source) || isSmokeUserAgent(userAgent);
+}
+
+export type MeterCallerClass = "smoke" | "probe" | "agent";
+
+/** Named x402 directory monitors. Smoke UAs (including exact `node`) are not probes. */
+export function isProbeUserAgent(value: string | null | undefined): boolean {
+  const ua = (value ?? "").trim();
+  if (!ua || isSmokeUserAgent(ua)) return false;
+  return PROBE_USER_AGENT.test(ua);
+}
+
+/**
+ * One classifier for invoice reports and stamp fetches.
+ * Smoke wins over probe. A real agent SDK UA is `agent`.
+ */
+export function classifyMeterCaller(
+  ua: string | null | undefined,
+  source?: string | null,
+): MeterCallerClass {
+  if (isMeterSmokeSource(source) || isSmokeUserAgent(ua)) return "smoke";
+  if (isProbeUserAgent(ua)) return "probe";
+  return "agent";
+}
+
+/** Already-minted directory/census rows. Smoke-classified rows stay in the smoke bucket. */
+export function isMeterProbeInvoice(source: unknown, userAgent?: string | null): boolean {
+  if (isMeterSmokeInvoice(source, userAgent)) return false;
+  return isProbeUserAgent(userAgent);
 }
 
 export function resolveMeterInvoiceSource(

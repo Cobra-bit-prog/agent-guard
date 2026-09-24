@@ -2,6 +2,7 @@ import { json } from "../server/http.ts";
 import { authorizeInternalStats } from "../server/stats.server.ts";
 import { buildSolanaPayUrl } from "../solana-pay.ts";
 import {
+  classifyMeterCaller,
   extractMeterInvoiceOrigin,
   internalInvoiceListView,
   invoiceSourceForMeterPath,
@@ -35,15 +36,19 @@ import {
   watchMeterInvoice,
   type MeterChainFinder,
 } from "./settle.ts";
+import { stampViewAllows } from "../../adapters/stamp-gate.ts";
 import { publicStampView, signStamp, type StampDecision, type StampPayload } from "./stamp.ts";
+import { noteStampFetch } from "./stamp-fetch.ts";
 import {
   allowDevGrant,
+  invoiceDraft,
   meterIdentityKey,
   newMeterId,
   publicPassView,
   type MeterInvoice,
   type MeterPass,
   type MeterStore,
+  type StampFetchSource,
 } from "./store.ts";
 import {
   invoiceIdFromPayment,
@@ -60,6 +65,8 @@ export type MeterHttpDeps = {
   findPayment?: MeterChainFinder;
   source?: MeterInvoiceSource;
   settleExactEvm?: ExactEvmSettler;
+  /** MCP verify sets mcp_verify. Public GET /stamp/:id stays verify. */
+  stampFetchSource?: Exclude<StampFetchSource, "gate_demo">;
 };
 
 export function readPassToken(request: Request, body?: Record<string, unknown>) {
@@ -99,6 +106,16 @@ function unknownSkuResponse(sku: string): Response {
   return json({ error: "unknown_sku", sku }, 400);
 }
 
+/**
+ * Census GET/HEAD /pass and named directory UAs return a 402 without a row.
+ * MCP buy-pass and other non-probe POSTs still insert.
+ */
+function skipInvoiceInsert(request: Request, source: MeterInvoiceSource): boolean {
+  if (source === "mcp_buy_pass") return false;
+  if (request.method === "GET" || request.method === "HEAD") return true;
+  return classifyMeterCaller(request.headers.get("user-agent")) === "probe";
+}
+
 async function invoiceForBody(
   store: MeterStore,
   request: Request,
@@ -108,12 +125,13 @@ async function invoiceForBody(
 ): Promise<{ ok: true; invoice: Awaited<ReturnType<MeterStore["createInvoice"]>> } | { ok: false; response: Response }> {
   const sku = skuFromBody(body, fallbackSku);
   if ("error" in sku) return { ok: false, response: unknownSkuResponse(sku.sku) };
+  const origin = extractMeterInvoiceOrigin(request, source, body);
+  if (skipInvoiceInsert(request, source)) {
+    return { ok: true, invoice: invoiceDraft({ sku: sku.id, origin }) };
+  }
   return {
     ok: true,
-    invoice: await store.createInvoice({
-      sku: sku.id,
-      origin: extractMeterInvoiceOrigin(request, source, body),
-    }),
+    invoice: await store.createInvoice({ sku: sku.id, origin }),
   };
 }
 
@@ -172,9 +190,12 @@ export async function handleMeterRequest(
   const suffix = path.replace(/^\/api\/v1\/meter\/?/, "");
 
   // Health / uptime: GET pricing (no invoice). GET/HEAD /pass is the directory
-  // probe/challenge — same 402 as empty POST looks_20. POST /pass stays the
-  // canonical buy. Directory/crawler/monitor UAs (nohumans.directory-probe,
-  // exact `node`, agent-tools.cloud-crawler, x402-list-monitor) are auto-tagged smoke.
+  // challenge — same 402 looks_20 body, and it does not insert a row.
+  // POST /pass stays the canonical buy. Directory/crawler/monitor UAs
+  // (nohumans.directory-probe, exact `node`, agent-tools.cloud-crawler,
+  // x402-list-monitor) are auto-tagged smoke. Named census UAs
+  // (CarbonMonitor, x402-*-probe, 402explorer, BazaarDiscovery, …) are probes:
+  // same 402, no insert.
   if (request.method === "GET" && (suffix === "pricing" || suffix === "")) {
     return json(meterPricing());
   }
@@ -203,7 +224,7 @@ export async function handleMeterRequest(
   }
 
   if (request.method === "GET" && suffix.startsWith("stamp/")) {
-    return getStamp(resolved, suffix.slice("stamp/".length));
+    return getStamp(resolved, request, suffix.slice("stamp/".length), deps.stampFetchSource ?? "verify");
   }
 
   // GET/HEAD /pass: same 402 Payment-Required as empty POST (default sku looks_20).
@@ -383,8 +404,19 @@ async function issueOrInvoice(
     typeof proof.signature === "string";
 
   if (wantsWatch) {
-    const invoice = invoiceKey ? await store.getInvoice(invoiceKey) : null;
+    let invoice: MeterInvoice | null = null;
+    if (invoiceKey) {
+      try {
+        invoice = await store.getInvoice(invoiceKey);
+      } catch (err) {
+        console.error("[meter] watch lookup failed", err);
+        return json({ error: "unknown_invoice", status: "expired", invoice_id: invoiceKey }, 404);
+      }
+    }
     if (!invoice) {
+      if (invoiceKey) {
+        return json({ error: "unknown_invoice", status: "expired", invoice_id: invoiceKey }, 404);
+      }
       return paymentRequired(store, request, source, body);
     }
     const finder: MeterChainFinder =
@@ -765,26 +797,37 @@ async function runStamp(request: Request, body: Record<string, unknown>, store: 
   });
 }
 
-async function getStamp(store: MeterStore, rawId: string): Promise<Response> {
+async function getStamp(
+  store: MeterStore,
+  request: Request,
+  rawId: string,
+  source: Exclude<StampFetchSource, "gate_demo">,
+): Promise<Response> {
   const id = rawId.trim();
-  if (!id) return json({ error: "unknown_stamp" }, 404);
+  if (!id) {
+    await noteStampFetch(store, request, { stamp_id: null, source, result: "missing" });
+    return json({ error: "unknown_stamp" }, 404);
+  }
   const row = await store.getStamp(id);
-  if (!row) return json({ error: "unknown_stamp" }, 404);
-  return json(
-    publicStampView(
-      {
-        stamp_id: row.id,
-        decision: row.decision,
-        chain: row.chain,
-        wallet: row.wallet,
-        address: row.address,
-        value_usd: row.value_usd,
-        pass_id: row.pass_id,
-        created_at: row.created_at,
-      },
-      row.hmac,
-    ),
+  if (!row) {
+    await noteStampFetch(store, request, { stamp_id: id, source, result: "unknown" });
+    return json({ error: "unknown_stamp" }, 404);
+  }
+  const view = publicStampView(
+    {
+      stamp_id: row.id,
+      decision: row.decision,
+      chain: row.chain,
+      wallet: row.wallet,
+      address: row.address,
+      value_usd: row.value_usd,
+      pass_id: row.pass_id,
+      created_at: row.created_at,
+    },
+    row.hmac,
   );
+  await noteStampFetch(store, request, { stamp_id: row.id, source, result: stampViewAllows(view) });
+  return json(view);
 }
 
 export function meterPassRemaining(pass: { sku?: string; included_calls: number; used_calls: number; expires_at: string }) {

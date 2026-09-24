@@ -38,11 +38,18 @@ export type MerchantStampAllow = {
   decision: "allow";
 };
 
+export type MerchantStampOptions = {
+  seller?: string;
+  origin?: string;
+  fetch?: StampFetch;
+  nowMs?: number;
+};
+
 export type MerchantStampRequired = {
   error: "payment_required";
   http: 402;
   ok: false;
-  gate: "demo";
+  gate: string;
   reason: StampGateReason;
   sku: typeof STAMP_TX_SKU;
   price_usd: typeof STAMP_TX_PRICE_USD;
@@ -65,13 +72,36 @@ export type MerchantStampDeny = {
   body: MerchantStampRequired;
 };
 
-export function merchantStampRequiredBody(reason: StampGateReason): MerchantStampRequired {
+/** Fetch Headers, or Express/Node IncomingMessage headers (lowercase keys). */
+export type MerchantStampHeaders = Headers | Record<string, string | string[] | undefined>;
+
+export type MerchantStampRequest = {
+  headers: MerchantStampHeaders;
+};
+
+/** Same shape as ?partner=: lowercase [a-z0-9][a-z0-9-]{0,31}. Drop-in file, no app imports. */
+function sellerSlug(value: string | undefined): string | null {
+  if (typeof value !== "string") return null;
+  const slug = value.trim().toLowerCase();
+  if (!/^[a-z0-9][a-z0-9-]{0,31}$/.test(slug)) return null;
+  return slug;
+}
+
+function stampGateLabel(seller?: string): string {
+  const trimmed = seller?.trim() ?? "";
+  return trimmed || "merchant";
+}
+
+export function merchantStampRequiredBody(
+  reason: StampGateReason,
+  seller?: string,
+): MerchantStampRequired {
   const origin = DEFAULT_METER_ORIGIN;
   return {
     error: "payment_required",
     http: 402,
     ok: false,
-    gate: "demo",
+    gate: stampGateLabel(seller),
     reason,
     sku: STAMP_TX_SKU,
     price_usd: STAMP_TX_PRICE_USD,
@@ -89,8 +119,14 @@ export function merchantStampRequiredBody(reason: StampGateReason): MerchantStam
   };
 }
 
-export function readMerchantStampId(request: Request): string {
-  return (request.headers.get(STAMP_ID_HEADER) ?? "").trim();
+export function readMerchantStampId(request: MerchantStampRequest): string {
+  const headers = request.headers;
+  if (typeof (headers as Headers).get === "function") {
+    return ((headers as Headers).get(STAMP_ID_HEADER) ?? "").trim();
+  }
+  const raw = (headers as Record<string, string | string[] | undefined>)["x-stamp-id"];
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return (value ?? "").trim();
 }
 
 function stampExpired(expires: unknown, nowMs: number): boolean {
@@ -113,15 +149,16 @@ export function stampViewAllows(
 
 export async function verifyMerchantStamp(
   stampId: string,
-  opts: { origin?: string; fetch?: StampFetch; nowMs?: number } = {},
+  opts: MerchantStampOptions = {},
 ): Promise<{ state: "allow"; stamp_id: string } | { state: Exclude<StampGateReason, "missing"> }> {
   const origin = (opts.origin ?? DEFAULT_METER_ORIGIN).replace(/\/$/, "");
   const fetchImpl = opts.fetch ?? fetch;
+  const init: { method: string; headers?: Record<string, string> } = { method: "GET" };
+  const seller = sellerSlug(opts.seller);
+  if (seller) init.headers = { "X-Seller": seller };
   let res: Response;
   try {
-    res = await fetchImpl(`${origin}/api/v1/meter/stamp/${encodeURIComponent(stampId)}`, {
-      method: "GET",
-    });
+    res = await fetchImpl(`${origin}/api/v1/meter/stamp/${encodeURIComponent(stampId)}`, init);
   } catch {
     return { state: "unknown" };
   }
@@ -143,14 +180,15 @@ export async function verifyMerchantStamp(
 }
 
 export async function requireMerchantStamp(
-  request: Request,
-  opts: { origin?: string; fetch?: StampFetch; nowMs?: number } = {},
+  request: MerchantStampRequest,
+  opts: MerchantStampOptions = {},
 ): Promise<MerchantStampAllow | MerchantStampDeny> {
   const stampId = readMerchantStampId(request);
-  if (!stampId) return { ok: false, status: 402, body: merchantStampRequiredBody("missing") };
+  if (!stampId)
+    return { ok: false, status: 402, body: merchantStampRequiredBody("missing", opts.seller) };
   const verdict = await verifyMerchantStamp(stampId, opts);
   if (verdict.state === "allow") {
     return { ok: true, stamp_id: verdict.stamp_id, decision: "allow" };
   }
-  return { ok: false, status: 402, body: merchantStampRequiredBody(verdict.state) };
+  return { ok: false, status: 402, body: merchantStampRequiredBody(verdict.state, opts.seller) };
 }

@@ -71,9 +71,13 @@ export { handleMeterRequest, handleInternalMeterInvoices, readPassToken } from "
 export {
   extractMeterInvoiceOrigin,
   hashMeterClientIp,
+  classifyMeterCaller,
+  isMeterProbeInvoice,
   isMeterSmokeInvoice,
   isMeterSmokeSource,
+  isProbeUserAgent,
   isSmokeUserAgent,
+  METER_PROBE_SQL,
   METER_INVOICE_SOURCES,
   type MeterInvoiceSource,
 } from "./origin.ts";

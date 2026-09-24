@@ -4,6 +4,7 @@ import { PAY_EXPIRY_MS, SOLANA_PAYOUT_ADDRESS } from "../solana-pay.ts";
 import {
   applyInvoiceOrigin,
   blankInvoiceOrigin,
+  isMeterProbeInvoice,
   isMeterSmokeInvoice,
   isMeterSmokeSource,
   METER_INVOICE_LIST_LIMIT,
@@ -21,6 +22,7 @@ import {
   type MeterSku,
 } from "./pricing.ts";
 import { utcDayKey } from "./preflight.ts";
+import { summarizeStampFetches } from "./stamp-fetch.ts";
 import type { StampDecision } from "./stamp.ts";
 
 export type MeterPass = {
@@ -105,6 +107,10 @@ export type MeterReport = {
   invoices_pending_fresh: number;
   invoices_pending_stale: number;
   invoices_pending_smoke: number;
+  /** Unpaid directory/census probes. Kept out of fresh and stale. */
+  invoices_pending_probe: number;
+  /** All probe-classified invoices, any status. */
+  invoices_probe: number;
   passes_issued: number;
   agents_paid: number;
   usdc_received: number;
@@ -112,9 +118,42 @@ export type MeterReport = {
   usdc_pending_fresh: number;
   usdc_pending_stale: number;
   usdc_pending_smoke: number;
+  usdc_pending_probe: number;
   calls: number;
+  /** Allow fetches that are not smoke, not probe, and not the dogfood gate. */
+  tickets_fetched_by_seller: number;
+  stamp_fetches_total: number;
+  gate_demo_hits: number;
+  fetch_unique_sellers: number;
+  stamp_fetches_smoke: number;
   recent_payments: MeterPaymentRow[];
   generated_at: string;
+};
+
+export type StampFetchSource = "verify" | "gate_demo" | "mcp_verify";
+
+export type StampFetchResult = "allow" | "stop" | "missing" | "unknown" | "invalid" | "expired";
+
+export type StampFetchRow = {
+  id: string;
+  stamp_id: string | null;
+  source: StampFetchSource;
+  result: StampFetchResult;
+  seller: string | null;
+  origin_hash: string | null;
+  is_smoke: boolean;
+  is_probe: boolean;
+  created_at: string;
+};
+
+export type RecordStampFetchInput = {
+  stamp_id: string | null;
+  source: StampFetchSource;
+  result: StampFetchResult;
+  seller: string | null;
+  origin_hash: string | null;
+  is_smoke: boolean;
+  is_probe: boolean;
 };
 
 export type MeterInvoiceListOpts = {
@@ -169,6 +208,8 @@ export type MeterStore = {
   addAllowSpend(wallet: string, valueUsd: number, nowMs?: number): Awaitable<void>;
   saveStamp(row: MeterStamp): Awaitable<MeterStamp>;
   getStamp(id: string): Awaitable<MeterStamp | null>;
+  recordStampFetch(row: RecordStampFetchInput): Awaitable<void>;
+  listStampFetches(): Awaitable<StampFetchRow[]>;
   report(): Awaitable<MeterReport>;
   pendingApprovalsCreated: number;
 };
@@ -276,6 +317,7 @@ export function createMeterStore(): MeterStore {
   const spend = new Map<string, number>();
   const payments: MeterPaymentRow[] = [];
   const stamps = new Map<string, MeterStamp>();
+  const stampFetches: StampFetchRow[] = [];
   const freeLooks = new Map<string, number>();
 
   function spendKey(wallet: string, nowMs: number) {
@@ -509,6 +551,16 @@ export function createMeterStore(): MeterStore {
     getStamp(stampId) {
       return stamps.get(stampId) ?? null;
     },
+    recordStampFetch(row) {
+      stampFetches.push({
+        ...row,
+        id: newMeterId("sfetch"),
+        created_at: new Date().toISOString(),
+      });
+    },
+    listStampFetches() {
+      return stampFetches.map((row) => ({ ...row }));
+    },
     spentTodayUsd(wallet, nowMs = Date.now()) {
       return spend.get(spendKey(wallet, nowMs)) ?? 0;
     },
@@ -520,14 +572,15 @@ export function createMeterStore(): MeterStore {
       const nowMs = Date.now();
       const all = [...invoices.values()].map((row) => expireInvoice(row, nowMs));
       const paidRows = all.filter((row) => row.status === "paid");
+      const liveUnpaid = (row: MeterInvoice) =>
+        !isMeterSmokeInvoice(row.source, row.user_agent) &&
+        !isMeterProbeInvoice(row.source, row.user_agent);
       const pendingRows = all.filter(
-        (row) =>
-          (row.status === "pending" || row.status === "underpaid") &&
-          !isMeterSmokeInvoice(row.source, row.user_agent),
+        (row) => (row.status === "pending" || row.status === "underpaid") && liveUnpaid(row),
       );
       const pendingFresh = pendingRows.filter((row) => Date.parse(row.expires_at) > nowMs);
       const pendingStale = all.filter((row) => {
-        if (isMeterSmokeInvoice(row.source, row.user_agent)) return false;
+        if (!liveUnpaid(row)) return false;
         if (row.status === "expired") return true;
         if (row.status === "pending" || row.status === "underpaid") {
           return Date.parse(row.expires_at) <= nowMs;
@@ -538,6 +591,10 @@ export function createMeterStore(): MeterStore {
         if (!isMeterSmokeInvoice(row.source, row.user_agent)) return false;
         return row.status === "expired" || row.status === "pending" || row.status === "underpaid";
       });
+      const probeRows = all.filter((row) => isMeterProbeInvoice(row.source, row.user_agent));
+      const pendingProbe = probeRows.filter(
+        (row) => row.status === "expired" || row.status === "pending" || row.status === "underpaid",
+      );
       const payers = new Set(
         paidRows
           .map((row) => (row.payer_address || row.signature || row.invoice_id).toLowerCase())
@@ -557,6 +614,8 @@ export function createMeterStore(): MeterStore {
         invoices_pending_fresh: pendingFresh.length,
         invoices_pending_stale: pendingStale.length,
         invoices_pending_smoke: pendingSmoke.length,
+        invoices_pending_probe: pendingProbe.length,
+        invoices_probe: probeRows.length,
         passes_issued: passes.size,
         agents_paid: payers.size,
         usdc_received: Number(usdcReceived.toFixed(6)),
@@ -564,7 +623,9 @@ export function createMeterStore(): MeterStore {
         usdc_pending_fresh: usdSum(pendingFresh),
         usdc_pending_stale: usdSum(pendingStale),
         usdc_pending_smoke: usdSum(pendingSmoke),
+        usdc_pending_probe: usdSum(pendingProbe),
         calls: logs.length,
+        ...summarizeStampFetches(stampFetches),
         recent_payments: payments.slice(-50).reverse(),
         generated_at: new Date().toISOString(),
       };

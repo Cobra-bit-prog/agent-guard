@@ -87,3 +87,39 @@ import { requireMerchantStamp } from "./stamp-gate.ts";
 const gate = await requireMerchantStamp(request);
 if (!gate.ok) return Response.json(gate.body, { status: gate.status });
 ```
+
+Ask for a stamp first. If the stamp is missing or says stop, do not take the USDC.
+
+Next.js App Router route handler:
+
+```ts
+import { requireMerchantStamp } from "./stamp-gate.ts";
+
+export async function POST(req: Request) {
+  const gate = await requireMerchantStamp(req, { seller: "your-slug" });
+  if (!gate.ok) return Response.json(gate.body, { status: gate.status });
+  // stamp is allow: take the USDC and serve the request
+  return Response.json({ ok: true, stamp_id: gate.stamp_id });
+}
+```
+
+Express middleware:
+
+```ts
+app.use(async (req, res, next) => {
+  const gate = await requireMerchantStamp(req, { seller: "your-slug" });
+  if (!gate.ok) return res.status(gate.status).json(gate.body);
+  return next();
+});
+```
+
+Hono:
+
+```ts
+app.use(async (c, next) => {
+  const req = c.req.raw;
+  const gate = await requireMerchantStamp(req, { seller: "your-slug" });
+  if (!gate.ok) return c.json(gate.body, gate.status);
+  await next();
+});
+```

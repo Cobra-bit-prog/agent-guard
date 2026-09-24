@@ -5,6 +5,7 @@ import {
   blankInvoiceOrigin,
   isMeterInvoiceSource,
   METER_INVOICE_LIST_LIMIT,
+  METER_PROBE_SQL,
   METER_SMOKE_OR_PROBE_SQL,
 } from "./origin.ts";
 import { utcDayKey } from "./preflight.ts";
@@ -24,6 +25,10 @@ import {
   type MeterReport,
   type MeterStamp,
   type MeterStore,
+  type RecordStampFetchInput,
+  type StampFetchResult,
+  type StampFetchRow,
+  type StampFetchSource,
 } from "./store.ts";
 
 type InvoiceRow = {
@@ -77,6 +82,28 @@ type StampRow = {
   hmac: string;
   created_at: unknown;
 };
+
+type StampFetchSqlRow = {
+  id: string;
+  stamp_id: string | null;
+  source: string;
+  result: string;
+  seller: string | null;
+  origin_hash: string | null;
+  is_smoke: unknown;
+  is_probe: unknown;
+  created_at: unknown;
+};
+
+const STAMP_FETCH_SOURCES = new Set<StampFetchSource>(["verify", "gate_demo", "mcp_verify"]);
+const STAMP_FETCH_RESULTS = new Set<StampFetchResult>([
+  "allow",
+  "stop",
+  "missing",
+  "unknown",
+  "invalid",
+  "expired",
+]);
 
 function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
@@ -138,6 +165,30 @@ function mapPass(row: PassRow): MeterPass {
     invoice_id: row.invoice_id,
     signature: row.signature,
     paid_amount_usd: row.paid_amount_usd == null ? null : num(row.paid_amount_usd),
+  };
+}
+
+function asBool(value: unknown): boolean {
+  return value === true || value === "t" || value === "true" || value === 1;
+}
+
+function mapStampFetch(row: StampFetchSqlRow): StampFetchRow {
+  const source = STAMP_FETCH_SOURCES.has(row.source as StampFetchSource)
+    ? (row.source as StampFetchSource)
+    : "verify";
+  const result = STAMP_FETCH_RESULTS.has(row.result as StampFetchResult)
+    ? (row.result as StampFetchResult)
+    : "unknown";
+  return {
+    id: row.id,
+    stamp_id: row.stamp_id,
+    source,
+    result,
+    seller: row.seller,
+    origin_hash: row.origin_hash,
+    is_smoke: asBool(row.is_smoke),
+    is_probe: asBool(row.is_probe),
+    created_at: iso(row.created_at),
   };
 }
 
@@ -233,6 +284,28 @@ export async function ensureMeterSchema(sql?: Sql): Promise<void> {
     )
   `);
   await db.query(`create index if not exists meter_stamps_pass_idx on meter_stamps (pass_id, created_at desc)`);
+  await db.query(`
+    create table if not exists meter_stamp_fetches (
+      id text primary key,
+      stamp_id text,
+      source text not null,
+      result text not null,
+      seller text,
+      origin_hash text,
+      is_smoke boolean not null default false,
+      is_probe boolean not null default false,
+      created_at timestamptz not null default now()
+    )
+  `);
+  await db.query(
+    `alter table meter_stamp_fetches add column if not exists is_probe boolean not null default false`,
+  );
+  await db.query(
+    `create index if not exists meter_stamp_fetches_created_idx on meter_stamp_fetches (created_at desc)`,
+  );
+  await db.query(
+    `create index if not exists meter_stamp_fetches_seller_idx on meter_stamp_fetches (seller, created_at desc)`,
+  );
   await db.query(`
     create table if not exists meter_free_looks (
       identity_key text primary key,
@@ -558,6 +631,25 @@ export function createSqlMeterStore(db: Sql): MeterStore {
       const rows = await db.query<StampRow>(`select * from meter_stamps where id = $1 limit 1`, [key]);
       return rows[0] ? mapStamp(rows[0]) : null;
     },
+    async recordStampFetch(row: RecordStampFetchInput) {
+      await db`
+        insert into meter_stamp_fetches (
+          id, stamp_id, source, result, seller, origin_hash, is_smoke, is_probe, created_at
+        ) values (
+          ${newMeterId("sfetch")}, ${row.stamp_id}, ${row.source}, ${row.result},
+          ${row.seller}, ${row.origin_hash}, ${row.is_smoke}, ${row.is_probe}, ${new Date().toISOString()}
+        )
+      `;
+    },
+    async listStampFetches() {
+      const rows = await db.query<StampFetchSqlRow>(
+        `select id, stamp_id, source, result, seller, origin_hash, is_smoke, is_probe, created_at
+         from meter_stamp_fetches
+         order by created_at asc, id asc
+         limit 1000`,
+      );
+      return rows.map(mapStampFetch);
+    },
     async report() {
       return collectMeterSqlReport(db);
     },
@@ -577,6 +669,8 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
     invoices_pending_fresh: 0,
     invoices_pending_stale: 0,
     invoices_pending_smoke: 0,
+    invoices_pending_probe: 0,
+    invoices_probe: 0,
     passes_issued: 0,
     agents_paid: 0,
     usdc_received: 0,
@@ -584,7 +678,13 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
     usdc_pending_fresh: 0,
     usdc_pending_stale: 0,
     usdc_pending_smoke: 0,
+    usdc_pending_probe: 0,
     calls: 0,
+    tickets_fetched_by_seller: 0,
+    stamp_fetches_total: 0,
+    gate_demo_hits: 0,
+    fetch_unique_sellers: 0,
+    stamp_fetches_smoke: 0,
     recent_payments: [],
     generated_at: new Date().toISOString(),
   };
@@ -596,26 +696,33 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
       invoices_pending_fresh: unknown;
       invoices_pending_stale: unknown;
       invoices_pending_smoke: unknown;
+      invoices_pending_probe: unknown;
+      invoices_probe: unknown;
       usdc_received: unknown;
       usdc_pending: unknown;
       usdc_pending_fresh: unknown;
       usdc_pending_stale: unknown;
       usdc_pending_smoke: unknown;
+      usdc_pending_probe: unknown;
       agents_paid: unknown;
     }>(
       `select
          count(*)::int as invoices_created,
          count(*) filter (where status = 'paid')::int as invoices_paid,
          count(*) filter (
-           where status in ('pending', 'underpaid') and not ${METER_SMOKE_OR_PROBE_SQL}
+           where status in ('pending', 'underpaid')
+             and not ${METER_SMOKE_OR_PROBE_SQL}
+             and not ${METER_PROBE_SQL}
          )::int as invoices_pending,
          count(*) filter (
            where status in ('pending', 'underpaid')
              and expires_at > now()
              and not ${METER_SMOKE_OR_PROBE_SQL}
+             and not ${METER_PROBE_SQL}
          )::int as invoices_pending_fresh,
          count(*) filter (
            where not ${METER_SMOKE_OR_PROBE_SQL}
+             and not ${METER_PROBE_SQL}
              and (
                status = 'expired'
                or (status in ('pending', 'underpaid') and expires_at <= now())
@@ -628,17 +735,32 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
                or status in ('pending', 'underpaid')
              )
          )::int as invoices_pending_smoke,
+         count(*) filter (
+           where ${METER_PROBE_SQL}
+             and not ${METER_SMOKE_OR_PROBE_SQL}
+             and (
+               status = 'expired'
+               or status in ('pending', 'underpaid')
+             )
+         )::int as invoices_pending_probe,
+         count(*) filter (
+           where ${METER_PROBE_SQL} and not ${METER_SMOKE_OR_PROBE_SQL}
+         )::int as invoices_probe,
          coalesce(sum(paid_amount_usd) filter (where status = 'paid'), 0) as usdc_received,
          coalesce(sum(amount_usd) filter (
-           where status in ('pending', 'underpaid') and not ${METER_SMOKE_OR_PROBE_SQL}
+           where status in ('pending', 'underpaid')
+             and not ${METER_SMOKE_OR_PROBE_SQL}
+             and not ${METER_PROBE_SQL}
          ), 0) as usdc_pending,
          coalesce(sum(amount_usd) filter (
            where status in ('pending', 'underpaid')
              and expires_at > now()
              and not ${METER_SMOKE_OR_PROBE_SQL}
+             and not ${METER_PROBE_SQL}
          ), 0) as usdc_pending_fresh,
          coalesce(sum(amount_usd) filter (
            where not ${METER_SMOKE_OR_PROBE_SQL}
+             and not ${METER_PROBE_SQL}
              and (
                status = 'expired'
                or (status in ('pending', 'underpaid') and expires_at <= now())
@@ -651,6 +773,14 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
                or status in ('pending', 'underpaid')
              )
          ), 0) as usdc_pending_smoke,
+         coalesce(sum(amount_usd) filter (
+           where ${METER_PROBE_SQL}
+             and not ${METER_SMOKE_OR_PROBE_SQL}
+             and (
+               status = 'expired'
+               or status in ('pending', 'underpaid')
+             )
+         ), 0) as usdc_pending_probe,
          count(distinct lower(coalesce(nullif(payer_address, ''), nullif(signature, ''), id)))
            filter (where status = 'paid')::int as agents_paid
        from meter_invoices`,
@@ -672,11 +802,14 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
     const invoicesPendingFresh = num(totals[0]?.invoices_pending_fresh);
     const invoicesPendingStale = num(totals[0]?.invoices_pending_stale);
     const invoicesPendingSmoke = num(totals[0]?.invoices_pending_smoke);
+    const invoicesPendingProbe = num(totals[0]?.invoices_pending_probe);
+    const invoicesProbe = num(totals[0]?.invoices_probe);
     const usdcReceived = num(totals[0]?.usdc_received);
     const usdcPending = num(totals[0]?.usdc_pending);
     const usdcPendingFresh = num(totals[0]?.usdc_pending_fresh);
     const usdcPendingStale = num(totals[0]?.usdc_pending_stale);
     const usdcPendingSmoke = num(totals[0]?.usdc_pending_smoke);
+    const usdcPendingProbe = num(totals[0]?.usdc_pending_probe);
     const recentPayments: MeterPaymentRow[] = recent.map((row) => ({
       invoice_id: row.id,
       pass_id: row.pass_id,
@@ -685,6 +818,43 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
       payer_address: row.payer_address,
       paid_at: row.paid_at ? iso(row.paid_at) : "",
     }));
+    const fetchCounts = {
+      tickets_fetched_by_seller: 0,
+      stamp_fetches_total: 0,
+      gate_demo_hits: 0,
+      fetch_unique_sellers: 0,
+      stamp_fetches_smoke: 0,
+    };
+    try {
+      const fetched = await db.query<{
+        tickets_fetched_by_seller: unknown;
+        stamp_fetches_total: unknown;
+        gate_demo_hits: unknown;
+        fetch_unique_sellers: unknown;
+        stamp_fetches_smoke: unknown;
+      }>(
+        `select
+           count(*) filter (
+             where result = 'allow' and is_smoke = false and is_probe = false and source <> 'gate_demo'
+           )::int as tickets_fetched_by_seller,
+           count(*) filter (where is_smoke = false and is_probe = false)::int as stamp_fetches_total,
+           count(*) filter (
+             where is_smoke = false and is_probe = false and source = 'gate_demo'
+           )::int as gate_demo_hits,
+           count(distinct seller) filter (
+             where is_smoke = false and is_probe = false and seller is not null
+           )::int as fetch_unique_sellers,
+           count(*) filter (where is_smoke = true)::int as stamp_fetches_smoke
+         from meter_stamp_fetches`,
+      );
+      fetchCounts.tickets_fetched_by_seller = num(fetched[0]?.tickets_fetched_by_seller);
+      fetchCounts.stamp_fetches_total = num(fetched[0]?.stamp_fetches_total);
+      fetchCounts.gate_demo_hits = num(fetched[0]?.gate_demo_hits);
+      fetchCounts.fetch_unique_sellers = num(fetched[0]?.fetch_unique_sellers);
+      fetchCounts.stamp_fetches_smoke = num(fetched[0]?.stamp_fetches_smoke);
+    } catch (err) {
+      console.error("[meter] stamp fetch report failed", err);
+    }
     return {
       product: "Agent Meter",
       funds: { pay_to: SOLANA_PAYOUT_ADDRESS, chain: "solana", asset: "usdc" },
@@ -694,6 +864,8 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
       invoices_pending_fresh: invoicesPendingFresh,
       invoices_pending_stale: invoicesPendingStale,
       invoices_pending_smoke: invoicesPendingSmoke,
+      invoices_pending_probe: invoicesPendingProbe,
+      invoices_probe: invoicesProbe,
       passes_issued: num(passes[0]?.n),
       agents_paid: num(totals[0]?.agents_paid),
       usdc_received: Number(usdcReceived.toFixed(6)),
@@ -701,7 +873,9 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
       usdc_pending_fresh: Number(usdcPendingFresh.toFixed(6)),
       usdc_pending_stale: Number(usdcPendingStale.toFixed(6)),
       usdc_pending_smoke: Number(usdcPendingSmoke.toFixed(6)),
+      usdc_pending_probe: Number(usdcPendingProbe.toFixed(6)),
       calls: num(calls[0]?.n),
+      ...fetchCounts,
       recent_payments: recentPayments,
       generated_at: new Date().toISOString(),
     };

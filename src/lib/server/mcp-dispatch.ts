@@ -6,7 +6,14 @@ import { handleMeterRequest } from "@/lib/meter/http";
 import { meterInvoiceSourceForMcpTool } from "@/lib/meter/origin.ts";
 import type { MeterStore } from "@/lib/meter/store.ts";
 
-const ATTRIBUTION_HEADERS = ["user-agent", "cf-connecting-ip", "x-forwarded-for"] as const;
+const ATTRIBUTION_HEADERS = [
+  "user-agent",
+  "cf-connecting-ip",
+  "x-forwarded-for",
+  "origin",
+  "x-seller",
+  "x-meter-smoke",
+] as const;
 
 async function meterTool(
   path: string,
@@ -15,6 +22,7 @@ async function meterTool(
   originRequest?: Request,
   store?: MeterStore,
   source?: ReturnType<typeof meterInvoiceSourceForMcpTool>,
+  stampFetchSource?: "mcp_verify",
 ): Promise<McpToolCallResult> {
   const rejected = rejectMeterKeyUpload(args);
   if (rejected) return rejected;
@@ -36,7 +44,10 @@ async function meterTool(
     headers,
     body: method === "POST" ? JSON.stringify(args) : undefined,
   });
-  const res = await handleMeterRequest(request, path, store, source ? { source } : {});
+  const res = await handleMeterRequest(request, path, store, {
+    ...(source ? { source } : {}),
+    ...(stampFetchSource ? { stampFetchSource } : {}),
+  });
   const payload = await res.json().catch(() => ({ error: "meter_parse" }));
   return meterMcpToolResult(res.status, payload);
 }
@@ -64,7 +75,7 @@ export async function dispatchMcpTool(
   if (name === "meter_stamp") return meterTool("/api/v1/meter/stamp", "POST", args, originRequest, store, undefined);
   if (name === "meter_verify_stamp") {
     const id = String(args.stamp_id ?? args.id ?? "");
-    return meterTool(`/api/v1/meter/stamp/${id}`, "GET", args, originRequest, store);
+    return meterTool(`/api/v1/meter/stamp/${id}`, "GET", args, originRequest, store, undefined, "mcp_verify");
   }
 
   const storefront = await dispatchStorefrontTool(name, args, apiKey);

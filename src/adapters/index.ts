@@ -39,6 +39,7 @@ export {
   verifyMerchantStamp,
   type MerchantStampAllow,
   type MerchantStampDeny,
+  type MerchantStampOptions,
   type MerchantStampRequired,
   type StampFetch,
   type StampGateReason,

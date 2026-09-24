@@ -6,6 +6,7 @@ import {
   type StampGateReason,
 } from "../../adapters/stamp-gate.ts";
 import { json } from "../server/http.ts";
+import { noteStampFetch } from "./stamp-fetch.ts";
 import { publicStampView } from "./stamp.ts";
 import type { MeterStore } from "./store.ts";
 
@@ -25,10 +26,24 @@ const GATE_OPEN = {
  */
 export async function handleStampGate(request: Request, store: MeterStore): Promise<Response> {
   const stampId = readMerchantStampId(request);
-  if (!stampId) return blocked("missing");
+  if (!stampId) {
+    await noteStampFetch(store, request, {
+      stamp_id: null,
+      source: "gate_demo",
+      result: "missing",
+    });
+    return blocked("missing");
+  }
 
   const row = await store.getStamp(stampId);
-  if (!row) return blocked("unknown");
+  if (!row) {
+    await noteStampFetch(store, request, {
+      stamp_id: stampId,
+      source: "gate_demo",
+      result: "unknown",
+    });
+    return blocked("unknown");
+  }
 
   const view = publicStampView(
     {
@@ -44,6 +59,7 @@ export async function handleStampGate(request: Request, store: MeterStore): Prom
     row.hmac,
   );
   const state = stampViewAllows(view);
+  await noteStampFetch(store, request, { stamp_id: row.id, source: "gate_demo", result: state });
   if (state !== "allow") return blocked(state);
 
   return json({
@@ -52,13 +68,16 @@ export async function handleStampGate(request: Request, store: MeterStore): Prom
   });
 }
 
-export async function handleStampGateRequest(request: Request, store?: MeterStore): Promise<Response> {
+export async function handleStampGateRequest(
+  request: Request,
+  store?: MeterStore,
+): Promise<Response> {
   const resolved = store ?? (await defaultStore());
   return handleStampGate(request, resolved);
 }
 
 function blocked(reason: StampGateReason): Response {
-  return json(merchantStampRequiredBody(reason), 402, {
+  return json(merchantStampRequiredBody(reason, "demo"), 402, {
     "WWW-Authenticate": `Payment realm="Agent Meter", sku="stamp_tx", amount="0.05", header="${STAMP_ID_HEADER}"`,
   });
 }

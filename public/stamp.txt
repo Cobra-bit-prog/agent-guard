@@ -27,3 +27,26 @@ curl -s -D - https://agent-control.net/api/v1/gate/demo
 curl -s -D - https://agent-control.net/api/v1/gate/demo -H 'X-Stamp-Id: <stamp_id>'
 # Merchant copy: src/adapters/stamp-gate.ts
 # https://raw.githubusercontent.com/Cobra-bit-prog/agent-guard/main/src/adapters/stamp-gate.ts
+# 5 drop-in. Header X-Stamp-Id. Take this ticket or we do not take your USDC.
+# You sell something. An agent wants to pay you in USDC. Ask for a stamp first. If the stamp is missing or says stop, do not take the USDC.
+# Next.js App Router route handler
+import { requireMerchantStamp } from "./stamp-gate.ts";
+export async function POST(req: Request) {
+  const gate = await requireMerchantStamp(req, { seller: "your-slug" });
+  if (!gate.ok) return Response.json(gate.body, { status: gate.status });
+  // stamp is allow: take the USDC and serve the request
+  return Response.json({ ok: true, stamp_id: gate.stamp_id });
+}
+# Express middleware
+app.use(async (req, res, next) => {
+  const gate = await requireMerchantStamp(req, { seller: "your-slug" });
+  if (!gate.ok) return res.status(gate.status).json(gate.body);
+  return next();
+});
+# Hono
+app.use(async (c, next) => {
+  const req = c.req.raw;
+  const gate = await requireMerchantStamp(req, { seller: "your-slug" });
+  if (!gate.ok) return c.json(gate.body, gate.status);
+  await next();
+});
