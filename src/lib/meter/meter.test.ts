@@ -41,7 +41,7 @@ import {
   METER_WATCH_URL,
 } from "./pricing.ts";
 import { METER_BAZAAR_DESCRIPTION, METER_BAZAAR_RESOURCE_URLS } from "./bazaar.ts";
-import { assertExactEvmAuthorization } from "./x402-evm.ts";
+import { assertExactEvmAuthorization, settleExactEvmPayment } from "./x402-evm.ts";
 
 const ORIGIN = "https://agent-control.net";
 
@@ -244,6 +244,8 @@ describe("meter http", () => {
     assert.match(body.adapter_url, /raw\.githubusercontent\.com\/Cobra-bit-prog\/agent-guard\/main\/src\/adapters\/meter-pay\.ts/);
     assert.equal(body.base_adapter_url, METER_BASE_ADAPTER_URL);
     assert.match(body.base_adapter_url, /src\/adapters\/meter-pay-base\.ts/);
+    assert.equal(body.sku, "look");
+    assert.equal(body.paid_sku, "look");
     assert.equal(body.preferred_rail, "base");
     assert.equal(body.pay_page, meter402PayPage("inv_test"));
     assert.equal(body.pay_page, "https://agent-control.net/meter/pay?invoice_id=inv_test");
@@ -846,8 +848,9 @@ describe("extra meter skus", () => {
       store,
     );
     assert.equal(res.status, 402);
-    const body = (await res.json()) as { sku: string; amount_usd: number; amount_base_units: string };
+    const body = (await res.json()) as { sku: string; paid_sku: string; amount_usd: number; amount_base_units: string };
     assert.equal(body.sku, "look");
+    assert.equal(body.paid_sku, "look");
     assert.equal(body.amount_usd, 0.10);
     assert.equal(body.amount_base_units, "100000");
     assertMeter402IndexHeaders(res);
@@ -865,6 +868,22 @@ describe("extra meter skus", () => {
     assert.equal(body.sku, "looks_20");
     assert.equal(body.amount_usd, 0.2);
     assert.equal(body.price_usd, 0.2);
+    assert.equal((body as { paid_sku?: string }).paid_sku, "looks_20");
+  });
+
+  it("POST pass sku=addresses_100 quotes that sku, not looks_20", async () => {
+    const store = createMeterStore();
+    const res = await handleMeterRequest(
+      post("/api/v1/meter/pass", { sku: "addresses_100" }),
+      "/api/v1/meter/pass",
+      store,
+    );
+    assert.equal(res.status, 402);
+    const body = (await res.json()) as { sku: string; paid_sku: string; amount_usd: number; amount_base_units: string };
+    assert.equal(body.sku, "addresses_100");
+    assert.equal(body.paid_sku, "addresses_100");
+    assert.equal(body.amount_usd, 0.15);
+    assert.equal(body.amount_base_units, "150000");
   });
 
   it("fulfillInvoice mints the invoice sku, not always look", async () => {
@@ -1866,9 +1885,27 @@ describe("paying agents A–H", () => {
       store,
     );
     assert.equal(quote.status, 402);
-    const quoteBody = (await quote.json()) as { sku: string; amount_usd: number; reference: string; note: string };
+    const quoteBody = (await quote.json()) as {
+      sku: string;
+      paid_sku: string;
+      amount_usd: number;
+      amount_base_units: string;
+      reference: string;
+      note: string;
+      accepts: { network: string; extra?: { sku?: string } }[];
+    };
     assert.equal(quoteBody.sku, "stamp_tx");
+    assert.equal(quoteBody.paid_sku, "stamp_tx");
+    assert.notEqual(quoteBody.paid_sku, "looks_20");
     assert.equal(quoteBody.amount_usd, 0.05);
+    assert.equal(quoteBody.amount_base_units, "50000");
+    assert.equal(quoteBody.accepts.find((row) => row.network === "base")?.extra?.sku, "stamp_tx");
+    const paymentRequired = JSON.parse(
+      Buffer.from(quote.headers.get("PAYMENT-REQUIRED") ?? "", "base64").toString("utf8"),
+    ) as { accepts: { network: string; amount: string; extra?: { sku?: string } }[] };
+    assert.equal(paymentRequired.accepts[0]?.network, "eip155:8453");
+    assert.equal(paymentRequired.accepts[0]?.amount, "50000");
+    assert.equal(paymentRequired.accepts[0]?.extra?.sku, "stamp_tx");
     assert.equal(quoteBody.note, "Take this ticket or we do not take your USDC.");
     assert.doesNotMatch(quoteBody.note, /Merchants can require/);
     assertMeter402IndexHeaders(quote, quoteBody.reference);
@@ -2102,5 +2139,196 @@ describe("Base EIP-3009 exact + credit-first packs", () => {
     );
     assert.equal(scan.status, 200);
     assert.equal(((await scan.json()) as { pass_remaining_calls: number }).pass_remaining_calls, 38);
+  });
+
+  it("returns the verifier invalidReason and invalidMessage on a rejected Base payment", async () => {
+    const signature = `0x${"ab".repeat(65)}`;
+    const payment = eip3009Payment({ value: "50000" });
+    const seen: string[] = [];
+    const denied = await settleExactEvmPayment(
+      payment,
+      { amount_base_units: "50000", sku: "stamp_tx", amount_usd: 0.05 },
+      {
+        fetch: async (url, init) => {
+          seen.push(url);
+          const body = JSON.parse(init.body) as { paymentPayload: { payload: { signature: string } } };
+          assert.equal(body.paymentPayload.payload.signature, signature);
+          return new Response(
+            JSON.stringify({
+              isValid: false,
+              invalidReason: "invalid_signature",
+              invalidMessage: `rejected ${signature}`,
+              payer: EIP3009_FROM,
+              signature,
+            }),
+            { status: 400, headers: { "content-type": "application/json" } },
+          );
+        },
+      },
+    );
+    assert.equal(denied.ok, false);
+    if (!denied.ok) {
+      assert.equal(denied.invalidReason, "invalid_signature");
+      assert.match(denied.invalidMessage ?? "", /\[redacted\]/);
+      assert.match(denied.error, /invalidReason: invalid_signature/);
+      assert.match(denied.error, /invalidMessage:/);
+      assert.doesNotMatch(denied.error, /abababab/);
+      assert.doesNotMatch(JSON.stringify(denied), /abababab/);
+    }
+    assert.equal(seen.length, 2);
+    assert.ok(seen.every((url) => url.endsWith("/verify")));
+  });
+
+  it("surfaces settle errorReason when the facilitator returns success false with a tx hash", async () => {
+    const tx = `0x${"cd".repeat(32)}`;
+    const denied = await settleExactEvmPayment(
+      eip3009Payment({ value: "50000" }),
+      { amount_base_units: "50000", sku: "stamp_tx", amount_usd: 0.05 },
+      {
+        fetch: async (url) => {
+          if (url.endsWith("/verify")) return new Response(JSON.stringify({ isValid: true }), { status: 200 });
+          return new Response(
+            JSON.stringify({
+              success: false,
+              errorReason: "insufficient_funds",
+              errorMessage: "Insufficient funds",
+              transaction: tx,
+              payer: EIP3009_FROM,
+            }),
+            { status: 400 },
+          );
+        },
+      },
+    );
+    assert.equal(denied.ok, false);
+    if (!denied.ok) {
+      assert.equal(denied.invalidReason, "insufficient_funds");
+      assert.equal(denied.invalidMessage, "Insufficient funds");
+      assert.match(denied.error, /could not be settled/);
+      assert.match(denied.error, /invalidReason: insufficient_funds/);
+      assert.doesNotMatch(denied.error, new RegExp(tx.slice(2, 20)));
+    }
+  });
+
+  it("aligns settle requirements to eip155:8453 when the payer accepted that network", async () => {
+    const payment = {
+      ...eip3009Payment({ value: "50000", invoice_id: "inv_stamp", reference: "ref_stamp" }),
+      accepted: {
+        network: "eip155:8453",
+        payTo: "0x000000000000000000000000000000000000dEaD",
+        amount: "1",
+        extra: { invoice_id: "inv_stamp", reference: "ref_stamp" },
+      },
+    };
+    const calls: { url: string; network: string; accepted: string; payTo: string; amount: string }[] = [];
+    const paid = await settleExactEvmPayment(
+      payment,
+      { amount_base_units: "50000", invoice_id: "inv_stamp", sku: "stamp_tx", amount_usd: 0.05 },
+      {
+        fetch: async (url, init) => {
+          const body = JSON.parse(init.body) as {
+            paymentRequirements: { network: string; payTo: string; amount: string };
+            paymentPayload: { accepted: { network: string; payTo: string }; payload: { signature: string } };
+          };
+          calls.push({
+            url,
+            network: body.paymentRequirements.network,
+            accepted: body.paymentPayload.accepted.network,
+            payTo: body.paymentRequirements.payTo,
+            amount: body.paymentRequirements.amount,
+          });
+          assert.equal(body.paymentPayload.accepted.payTo, EVM_PAYOUT_ADDRESS);
+          if (url.endsWith("/verify")) return new Response(JSON.stringify({ isValid: true }), { status: 200 });
+          return new Response(
+            JSON.stringify({ success: true, transaction: `0x${"cd".repeat(32)}`, payer: EIP3009_FROM }),
+            { status: 200 },
+          );
+        },
+      },
+    );
+    assert.equal(paid.ok, true);
+    assert.equal(calls[0]?.network, "eip155:8453");
+    assert.equal(calls[0]?.accepted, "eip155:8453");
+    assert.equal(calls[0]?.payTo, EVM_PAYOUT_ADDRESS);
+    assert.equal(calls[0]?.amount, "50000");
+    assert.ok(calls.every((call) => call.network === "eip155:8453"));
+    assert.ok(calls.every((call) => call.payTo === EVM_PAYOUT_ADDRESS));
+  });
+
+  it("retries the other Base network id when the verifier rejects the accepted alias", async () => {
+    const payment = {
+      ...eip3009Payment({ value: "50000" }),
+      accepted: { network: "eip155:8453", extra: {} },
+    };
+    const networks: string[] = [];
+    const paid = await settleExactEvmPayment(
+      payment,
+      { amount_base_units: "50000", sku: "stamp_tx", amount_usd: 0.05 },
+      {
+        fetch: async (url, init) => {
+          const body = JSON.parse(init.body) as {
+            paymentRequirements: { network: string; payTo: string };
+            paymentPayload: { accepted: { network: string } };
+          };
+          assert.equal(body.paymentPayload.accepted.network, body.paymentRequirements.network);
+          assert.equal(body.paymentRequirements.payTo, EVM_PAYOUT_ADDRESS);
+          if (url.endsWith("/verify")) {
+            networks.push(body.paymentRequirements.network);
+            if (body.paymentRequirements.network === "eip155:8453") {
+              return new Response(
+                JSON.stringify({
+                  isValid: false,
+                  invalidReason: "invalid_network",
+                  invalidMessage: "base and eip155:8453 do not match",
+                }),
+                { status: 400 },
+              );
+            }
+            return new Response(JSON.stringify({ isValid: true }), { status: 200 });
+          }
+          assert.equal(body.paymentRequirements.network, "base");
+          return new Response(
+            JSON.stringify({ success: true, transaction: `0x${"ef".repeat(32)}`, payer: EIP3009_FROM }),
+            { status: 200 },
+          );
+        },
+      },
+    );
+    assert.equal(paid.ok, true);
+    assert.ok(networks.includes("eip155:8453"));
+    assert.ok(networks.includes("base"));
+  });
+
+  it("puts verifier reasons on the HTTP 400 when Base settle rejects a stamp payment", async () => {
+    const store = createMeterStore();
+    const quote = await handleMeterRequest(
+      post("/api/v1/meter/pass", { sku: "stamp_tx" }),
+      "/api/v1/meter/pass",
+      store,
+    );
+    const invoice = (await quote.json()) as { invoice_id: string; reference: string; amount_base_units: string };
+    const payment = eip3009Payment({
+      invoice_id: invoice.invoice_id,
+      reference: invoice.reference,
+      value: invoice.amount_base_units,
+    });
+    const denied = await handleMeterRequest(
+      post("/api/v1/meter/pass", { invoice_id: invoice.invoice_id, payment }),
+      "/api/v1/meter/pass",
+      store,
+      {
+        settleExactEvm: async () => ({
+          ok: false,
+          error: "Base USDC EIP-3009 payment was not valid. invalidReason: invalid_network. invalidMessage: eip155:8453",
+          invalidReason: "invalid_network",
+          invalidMessage: "eip155:8453",
+        }),
+      },
+    );
+    assert.equal(denied.status, 400);
+    const body = (await denied.json()) as { error: string; invalidReason?: string; invalidMessage?: string };
+    assert.match(body.error, /invalidReason: invalid_network/);
+    assert.equal(body.invalidReason, "invalid_network");
+    assert.equal(body.invalidMessage, "eip155:8453");
   });
 });

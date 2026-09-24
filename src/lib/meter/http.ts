@@ -60,6 +60,7 @@ import {
   type StampFetchSource,
 } from "./store.ts";
 import {
+  exactEvmFailureBody,
   invoiceIdFromPayment,
   readX402Payment,
   referenceFromPayment,
@@ -150,7 +151,11 @@ async function settleExactIfPresent(
   body: Record<string, unknown>,
   deps: MeterHttpDeps,
   invoiceHint?: MeterInvoice | null,
-): Promise<{ token: string; invoice: MeterInvoice; pass: Awaited<ReturnType<MeterStore["fulfillInvoice"]>>["pass"] } | { error: string } | null> {
+): Promise<
+  | { token: string; invoice: MeterInvoice; pass: Awaited<ReturnType<MeterStore["fulfillInvoice"]>>["pass"] }
+  | { error: string; invalidReason?: string; invalidMessage?: string }
+  | null
+> {
   const payload = readX402Payment(request, body);
   if (!payload) return null;
   const invoiceKey =
@@ -162,7 +167,7 @@ async function settleExactIfPresent(
   const invoice = invoiceKey ? await store.getInvoice(invoiceKey) : (invoiceHint ?? null);
   if (!invoice) return { error: "unknown_invoice" };
   const settled = await settleExactEvmPayment(payload, invoice, { settler: deps.settleExactEvm });
-  if (!settled.ok) return { error: settled.error };
+  if (!settled.ok) return exactEvmFailureBody(settled);
   const issued = await store.fulfillInvoice(invoice.invoice_id, {
     signature: settled.transaction,
     amountUsdc: invoice.amount_usd,
@@ -414,7 +419,7 @@ async function issueOrInvoice(
     return paidPassResponse(settled, pass);
   }
   if (settled && "error" in settled) {
-    return json({ error: settled.error }, 400);
+    return json(settled, 400);
   }
 
   const invoiceKey = String(
@@ -583,7 +588,7 @@ async function applySettledPass(
 ): Promise<{ body: Record<string, unknown>; error: Response | null }> {
   const settled = await settleExactIfPresent(store, request, body, deps);
   if (!settled) return { body, error: null };
-  if ("error" in settled) return { body, error: json({ error: settled.error }, 400) };
+  if ("error" in settled) return { body, error: json(settled, 400) };
   return { body: { ...body, pass_token: settled.token }, error: null };
 }
 
