@@ -152,6 +152,8 @@ import { requireMerchantStamp } from "./stamp-gate.ts";
 export async function POST(req: Request) {
   const gate = await requireMerchantStamp(req, { seller: "your-slug" });
   if (!gate.ok) return Response.json(gate.body, { status: gate.status });
+  // stamp is allow: take the USDC and serve the request
+  return Response.json({ ok: true, stamp_id: gate.stamp_id });
 }
 # Express middleware
 app.use(async (req, res, next) => {

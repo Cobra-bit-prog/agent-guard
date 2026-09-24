@@ -407,6 +407,8 @@ describe("Agent Meter recipe on public discovery surfaces", () => {
       /Ask for a stamp first\. If the stamp is missing or says stop, do not take the USDC\./,
     );
     assert.match(STAMP_RECIPE, /Next\.js App Router route handler/);
+    assert.match(STAMP_RECIPE, /stamp is allow: take the USDC and serve the request/);
+    assert.match(STAMP_RECIPE, /return Response\.json\(\{ ok: true, stamp_id: gate\.stamp_id \}\)/);
     assert.match(STAMP_RECIPE, /Express middleware/);
     assert.match(STAMP_RECIPE, /Hono/);
     assert.match(STAMP_SELLER_STEPS[3]?.d ?? "", /\/api\/v1\/gate\/demo/);

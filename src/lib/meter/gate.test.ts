@@ -8,6 +8,7 @@ import {
   STAMP_ID_HEADER as ADAPTER_STAMP_HEADER,
   STAMP_TX_PRICE_USD,
   merchantStampRequiredBody,
+  readMerchantStampId,
   requireMerchantStamp,
   stampViewAllows,
   verifyMerchantStamp,
@@ -283,6 +284,42 @@ describe("merchant stamp helper", () => {
     const badLabel = await requireMerchantStamp(gateGet(), { ...opts, seller: "not a slug" });
     assert.equal(badLabel.ok, false);
     if (!badLabel.ok) assert.equal(badLabel.body.gate, "not a slug");
+  });
+
+  it("reads x-stamp-id from an Express headers object", async () => {
+    const fetchImpl: StampFetch = async (url) => {
+      if (url.endsWith("/stamp_allow")) {
+        return Response.json({ stamp_id: "stamp_allow", verified: true, decision: "allow" });
+      }
+      if (url.endsWith("/stamp_stop")) {
+        return Response.json({ stamp_id: "stamp_stop", verified: true, decision: "stop" });
+      }
+      return Response.json({ error: "unknown_stamp" }, { status: 404 });
+    };
+    const opts = { origin: ORIGIN, fetch: fetchImpl, seller: "your-slug" };
+
+    const allow = await requireMerchantStamp(
+      { headers: { "x-stamp-id": ["stamp_allow", "ignored"] } },
+      opts,
+    );
+    assert.deepEqual(allow, { ok: true, stamp_id: "stamp_allow", decision: "allow" });
+
+    const missing = await requireMerchantStamp({ headers: { host: "shop.example" } }, opts);
+    assert.equal(missing.ok, false);
+    if (!missing.ok) {
+      assert.equal(missing.status, 402);
+      assert.equal(missing.body.reason, "missing");
+      assert.equal(missing.body.gate, "your-slug");
+    }
+
+    const denied = await requireMerchantStamp({ headers: { "x-stamp-id": ["stamp_stop"] } }, opts);
+    assert.equal(denied.ok, false);
+    if (!denied.ok) {
+      assert.equal(denied.status, 402);
+      assert.equal(denied.body.reason, "stop");
+    }
+
+    assert.equal(readMerchantStampId({ headers: { "x-stamp-id": " stamp_allow " } }), "stamp_allow");
   });
 });
 

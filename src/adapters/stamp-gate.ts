@@ -72,6 +72,13 @@ export type MerchantStampDeny = {
   body: MerchantStampRequired;
 };
 
+/** Fetch Headers, or Express/Node IncomingMessage headers (lowercase keys). */
+export type MerchantStampHeaders = Headers | Record<string, string | string[] | undefined>;
+
+export type MerchantStampRequest = {
+  headers: MerchantStampHeaders;
+};
+
 /** Same shape as ?partner=: lowercase [a-z0-9][a-z0-9-]{0,31}. Drop-in file, no app imports. */
 function sellerSlug(value: string | undefined): string | null {
   if (typeof value !== "string") return null;
@@ -112,8 +119,14 @@ export function merchantStampRequiredBody(
   };
 }
 
-export function readMerchantStampId(request: Request): string {
-  return (request.headers.get(STAMP_ID_HEADER) ?? "").trim();
+export function readMerchantStampId(request: MerchantStampRequest): string {
+  const headers = request.headers;
+  if (typeof (headers as Headers).get === "function") {
+    return ((headers as Headers).get(STAMP_ID_HEADER) ?? "").trim();
+  }
+  const raw = (headers as Record<string, string | string[] | undefined>)["x-stamp-id"];
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return (value ?? "").trim();
 }
 
 function stampExpired(expires: unknown, nowMs: number): boolean {
@@ -167,7 +180,7 @@ export async function verifyMerchantStamp(
 }
 
 export async function requireMerchantStamp(
-  request: Request,
+  request: MerchantStampRequest,
   opts: MerchantStampOptions = {},
 ): Promise<MerchantStampAllow | MerchantStampDeny> {
   const stampId = readMerchantStampId(request);
