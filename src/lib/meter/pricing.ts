@@ -384,7 +384,7 @@ export function meter402Body(invoice: {
     error: "payment_required",
     http: 402,
     sku: catalog.id,
-    paid_sku: METER_PAID_SKU,
+    paid_sku: catalog.id,
     price_usd: catalog.price_usd,
     asset: invoice.asset,
     chain: invoice.chain,

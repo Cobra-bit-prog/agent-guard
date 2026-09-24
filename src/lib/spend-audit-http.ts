@@ -1,6 +1,7 @@
 import { json } from "./server/http.ts";
 import { lockedSolanaUsdcRecipient } from "./solana-pay.ts";
 import {
+  exactEvmFailureBody,
   invoiceIdFromPayment,
   readX402Payment,
   referenceFromPayment,
@@ -90,7 +91,7 @@ async function settleExactIfPresent(
   request: Request,
   body: Record<string, unknown>,
   deps: SpendAuditHttpDeps,
-): Promise<SpendAuditInvoice | { error: string } | null> {
+): Promise<SpendAuditInvoice | { error: string; invalidReason?: string; invalidMessage?: string } | null> {
   const payload = readX402Payment(request, body);
   if (!payload) return null;
   const invoiceKey =
@@ -100,7 +101,7 @@ async function settleExactIfPresent(
   const invoice = invoiceKey ? await store.getInvoice(invoiceKey) : null;
   if (!invoice) return { error: "unknown_invoice" };
   const settled = await settleExactEvmPayment(payload, invoice, { settler: deps.settleExactEvm });
-  if (!settled.ok) return { error: settled.error };
+  if (!settled.ok) return exactEvmFailureBody(settled);
   const paid = await store.fulfillInvoice(invoice.invoice_id, {
     signature: settled.transaction,
     amountUsdc: invoice.amount_usd,
@@ -234,7 +235,7 @@ export async function handleSpendAuditRequest(
     }
 
     const settled = await settleExactIfPresent(resolved, request, body, deps);
-    if (settled && "error" in settled) return json({ error: settled.error }, 400);
+    if (settled && "error" in settled) return json(settled, 400);
     if (settled && "invoice_id" in settled) {
       return json({ ...publicInvoiceView(settled), status: "paid" });
     }

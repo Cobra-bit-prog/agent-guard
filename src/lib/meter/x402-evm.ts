@@ -5,6 +5,7 @@
  */
 
 import {
+  BASE_CAIP2,
   BASE_USDC,
   BASE_X402_NETWORK,
   EVM_PAYOUT_ADDRESS,
@@ -21,7 +22,7 @@ const PAYAI_SETTLE = "https://facilitator.payai.network/settle";
 
 export type ExactEvmSettleResult =
   | { ok: true; transaction: string; payer: string }
-  | { ok: false; error: string };
+  | { ok: false; error: string; invalidReason?: string; invalidMessage?: string };
 
 export type ExactEvmSettler = (
   payload: Record<string, unknown>,
@@ -173,13 +174,118 @@ async function postJson(url: string, body: unknown, fetchFn: JsonFetch): Promise
   }
 }
 
+type BaseNetworkAlias = typeof BASE_X402_NETWORK | typeof BASE_CAIP2;
+
+type VerifierDetail = { reason: string; message: string };
+
+const EMPTY_VERIFIER_DETAIL: VerifierDetail = { reason: "", message: "" };
+
 function isValidVerify(body: Record<string, unknown>): boolean {
   if (body.isValid === true || body.valid === true || body.ok === true) return true;
   const nested = asRecord(body.result);
   return nested.isValid === true || nested.valid === true;
 }
 
+function canonicalBaseNetwork(raw: string): BaseNetworkAlias | null {
+  const network = raw.trim().toLowerCase();
+  if (network === BASE_X402_NETWORK) return BASE_X402_NETWORK;
+  if (network === BASE_CAIP2) return BASE_CAIP2;
+  return null;
+}
+
+/** Network id the payer put on the signed envelope. `base` and `eip155:8453` are the same chain. */
+function acceptedBaseNetwork(payload: Record<string, unknown>): BaseNetworkAlias | null {
+  const accepted = asRecord(payload.accepted);
+  return canonicalBaseNetwork(asTrimmed(accepted.network)) ?? canonicalBaseNetwork(asTrimmed(payload.network));
+}
+
+function withBaseNetwork(requirements: MeterExactAccept, network: BaseNetworkAlias): MeterExactAccept {
+  if (requirements.network === network) return requirements;
+  return { ...requirements, network };
+}
+
+function paymentForFacilitator(payload: Record<string, unknown>, requirements: MeterExactAccept): Record<string, unknown> {
+  const accepted = asRecord(payload.accepted);
+  const next: Record<string, unknown> = {
+    ...payload,
+    accepted: {
+      ...accepted,
+      scheme: requirements.scheme,
+      network: requirements.network,
+      payTo: requirements.payTo,
+      asset: requirements.asset,
+      maxAmountRequired: requirements.maxAmountRequired,
+      amount: requirements.amount,
+    },
+  };
+  if (typeof payload.network === "string") next.network = requirements.network;
+  return next;
+}
+
+/** Drop signatures and credential-shaped text. Facilitator reasons are short codes. */
+function sanitizeVerifierText(value: string): string {
+  const trimmed = value.replace(/\s+/g, " ").trim();
+  if (!trimmed) return "";
+  if (/api[_-]?key|private[_-]?key|secret[_-]?key|bearer\s+[a-z0-9._\-]+/i.test(trimmed)) return "";
+  return trimmed.replace(/0x[a-fA-F0-9]{66,}/g, "[redacted]").slice(0, 180);
+}
+
+function readVerifierDetail(body: Record<string, unknown>): VerifierDetail {
+  const nested = asRecord(body.result);
+  const reason = sanitizeVerifierText(
+    asTrimmed(body.invalidReason) ||
+      asTrimmed(nested.invalidReason) ||
+      asTrimmed(body.errorReason) ||
+      asTrimmed(nested.errorReason) ||
+      asTrimmed(body.reason) ||
+      asTrimmed(nested.reason),
+  );
+  const message = sanitizeVerifierText(
+    asTrimmed(body.invalidMessage) ||
+      asTrimmed(nested.invalidMessage) ||
+      asTrimmed(body.errorMessage) ||
+      asTrimmed(nested.errorMessage) ||
+      (typeof body.error === "string" ? body.error : "") ||
+      (typeof nested.error === "string" ? nested.error : "") ||
+      asTrimmed(body.message) ||
+      asTrimmed(nested.message),
+  );
+  return { reason, message: message === reason ? "" : message };
+}
+
+function isNetworkAliasFailure(detail: VerifierDetail): boolean {
+  const reason = detail.reason.toLowerCase();
+  if (reason.includes("network")) return true;
+  if (!reason && /network/i.test(detail.message)) return true;
+  return false;
+}
+
+function verifierFailure(prefix: string, detail: VerifierDetail): ExactEvmSettleResult {
+  const parts: string[] = [];
+  if (detail.reason) parts.push(`invalidReason: ${detail.reason}`);
+  if (detail.message) parts.push(`invalidMessage: ${detail.message}`);
+  return {
+    ok: false,
+    error: parts.length ? `${prefix} ${parts.join(". ")}` : prefix,
+    ...(detail.reason ? { invalidReason: detail.reason } : {}),
+    ...(detail.message ? { invalidMessage: detail.message } : {}),
+  };
+}
+
+export function exactEvmFailureBody(failure: {
+  error: string;
+  invalidReason?: string;
+  invalidMessage?: string;
+}): { error: string; invalidReason?: string; invalidMessage?: string } {
+  return {
+    error: failure.error,
+    ...(failure.invalidReason ? { invalidReason: failure.invalidReason } : {}),
+    ...(failure.invalidMessage ? { invalidMessage: failure.invalidMessage } : {}),
+  };
+}
+
 function isSettled(body: Record<string, unknown>): { transaction: string; payer: string } | null {
+  if (body.success === false || body.ok === false || body.isValid === false) return null;
   const success = body.success === true || body.ok === true || asTrimmed(body.transaction).startsWith("0x");
   const transaction = asTrimmed(body.transaction ?? body.txHash ?? body.signature ?? asRecord(body.result).transaction);
   const payer = asTrimmed(body.payer ?? asRecord(body.result).payer);
@@ -191,6 +297,46 @@ export function requirementsForInvoice(invoice: MeterAcceptInvoice): MeterExactA
   return meterBaseExactAccept(invoice);
 }
 
+/**
+ * PAYMENT-REQUIRED advertises Base as CAIP-2 (`eip155:8453`). The JSON 402 body
+ * and the Base adapter still say `base`. x402 v2 facilitators compare those
+ * strings and reject a mismatch. Match the id the payer accepted. If every
+ * verifier rejects that id as a network-alias problem, try the other Base id
+ * once. payTo, asset, and amount stay the locked invoice values.
+ */
+function baseNetworkAttempts(payload: Record<string, unknown>): BaseNetworkAlias[] {
+  const preferred = acceptedBaseNetwork(payload) ?? BASE_X402_NETWORK;
+  return preferred === BASE_CAIP2 ? [BASE_CAIP2, BASE_X402_NETWORK] : [BASE_X402_NETWORK, BASE_CAIP2];
+}
+
+async function verifyOnNetwork(
+  payload: Record<string, unknown>,
+  requirements: MeterExactAccept,
+  fetchFn: JsonFetch,
+): Promise<{ ok: true } | { ok: false; detail: VerifierDetail; networkFailure: boolean }> {
+  let networkDetail = EMPTY_VERIFIER_DETAIL;
+  let otherDetail = EMPTY_VERIFIER_DETAIL;
+  for (const url of verifyUrls()) {
+    const json = await postJson(
+      url,
+      { x402Version: 2, paymentPayload: payload, paymentRequirements: requirements },
+      fetchFn,
+    );
+    if (!json) continue;
+    if (isValidVerify(json)) return { ok: true };
+    const detail = readVerifierDetail(json);
+    if (!detail.reason && !detail.message) continue;
+    if (isNetworkAliasFailure(detail)) networkDetail = detail;
+    else otherDetail = detail;
+  }
+  const other = otherDetail.reason || otherDetail.message;
+  return {
+    ok: false,
+    detail: other ? otherDetail : networkDetail,
+    networkFailure: !other && Boolean(networkDetail.reason || networkDetail.message),
+  };
+}
+
 export async function settleExactEvmPayment(
   payload: Record<string, unknown>,
   invoice: { amount_base_units: string; invoice_id?: string; reference?: string; sku?: string; amount_usd?: number },
@@ -198,38 +344,48 @@ export async function settleExactEvmPayment(
 ): Promise<ExactEvmSettleResult> {
   const checked = assertExactEvmAuthorization(payload, invoice);
   if (!checked.ok) return checked;
-  const requirements = requirementsForInvoice(invoice);
-  if (opts.settler) return opts.settler(payload, requirements);
+  const locked = requirementsForInvoice(invoice);
+  const attempts = baseNetworkAttempts(payload);
+  const firstNetwork = attempts[0] ?? BASE_X402_NETWORK;
+  const firstRequirements = withBaseNetwork(locked, firstNetwork);
+  const firstPayload = paymentForFacilitator(payload, firstRequirements);
+  if (opts.settler) return opts.settler(firstPayload, firstRequirements);
 
   const fetchFn = opts.fetch ?? fetch;
-  const body = {
-    x402Version: 2,
-    paymentPayload: payload,
-    paymentRequirements: requirements,
-  };
-  let verified = false;
-  for (const url of verifyUrls()) {
-    const json = await postJson(url, body, fetchFn);
-    if (json && isValidVerify(json)) {
-      verified = true;
-      break;
+  let failure = EMPTY_VERIFIER_DETAIL;
+  for (let i = 0; i < attempts.length; i += 1) {
+    const network = attempts[i] ?? BASE_X402_NETWORK;
+    const requirements = withBaseNetwork(locked, network);
+    const aligned = paymentForFacilitator(payload, requirements);
+    const verified = await verifyOnNetwork(aligned, requirements, fetchFn);
+    if (!verified.ok) {
+      if (verified.detail.reason || verified.detail.message) failure = verified.detail;
+      if (!verified.networkFailure) break;
+      continue;
     }
-  }
-  if (!verified) return { ok: false, error: "Base USDC EIP-3009 payment was not valid." };
-
-  for (const url of settleUrls()) {
-    const json = await postJson(url, body, fetchFn);
-    if (!json) continue;
-    const settled = isSettled(json);
-    if (settled) {
-      return {
-        ok: true,
-        transaction: settled.transaction,
-        payer: settled.payer || checked.authorization.from,
-      };
+    const body = {
+      x402Version: 2,
+      paymentPayload: aligned,
+      paymentRequirements: requirements,
+    };
+    let settleDetail = EMPTY_VERIFIER_DETAIL;
+    for (const url of settleUrls()) {
+      const json = await postJson(url, body, fetchFn);
+      if (!json) continue;
+      const settled = isSettled(json);
+      if (settled) {
+        return {
+          ok: true,
+          transaction: settled.transaction,
+          payer: settled.payer || checked.authorization.from,
+        };
+      }
+      const detail = readVerifierDetail(json);
+      if (detail.reason || detail.message) settleDetail = detail;
     }
+    return verifierFailure("Base USDC EIP-3009 payment could not be settled.", settleDetail);
   }
-  return { ok: false, error: "Base USDC EIP-3009 payment could not be settled." };
+  return verifierFailure("Base USDC EIP-3009 payment was not valid.", failure);
 }
 
 export function lockedBasePayTo(): string {
