@@ -13,9 +13,11 @@ import { handleInternalMeterInvoices, handleMeterRequest } from "./http.ts";
 import {
   extractMeterInvoiceOrigin,
   hashMeterClientIp,
+  classifyMeterCaller,
   isMeterSmokeInvoice,
   isSmokeUserAgent,
   meterInvoiceSourceForMcpTool,
+  METER_PROBE_SQL,
   METER_SMOKE_OR_PROBE_SQL,
   METER_USER_AGENT_MAX,
 } from "./origin.ts";
@@ -1404,6 +1406,172 @@ describe("invoice origin", { concurrency: false }, () => {
     assert.equal(report.invoices_pending_smoke, 1);
     assert.equal(report.usdc_pending_fresh, 0.10);
     assert.equal(report.usdc_pending_smoke, 0.10);
+    assert.equal(report.invoices_pending_probe, 0);
+    assert.equal(report.invoices_probe, 0);
+  });
+
+  it("classifies directory monitors as probe and leaves agent SDK UAs alone", () => {
+    const probes = [
+      "CarbonMonitor/0.1 healthcheck (+https://carbon-cashmere.de)",
+      "x402-reliability-probe/1.0",
+      "x402-census-probe/2.1 (independent index research)",
+      "enclave402/verifier (+https://enclave402.com/trust)",
+      "402explorer/0.1 (+https://discover.paygent.net/about)",
+      "forum-labs-trust-prober/1.0",
+      "x402-client/1.0 (+https://the402.ai/bot)",
+      "x402-observer/1.0",
+      "CoinbaseBazaarDiscovery/1.0 (+https://docs.cdp.coinbase.com/x402)",
+      "x402statsweb/1.0",
+      "autobus-catalogue/1.0",
+      "csoai-x402-bazaar-conformance/1.0",
+      "x402-directory-verifier/1.0",
+    ];
+    for (const ua of probes) {
+      assert.equal(classifyMeterCaller(ua, "http_pass"), "probe", ua);
+      assert.equal(isSmokeUserAgent(ua), false, ua);
+    }
+    assert.equal(classifyMeterCaller("node-fetch/1.0"), "agent");
+    assert.equal(classifyMeterCaller("undici"), "agent");
+    assert.equal(classifyMeterCaller("undici/6.21.0"), "agent");
+    assert.equal(classifyMeterCaller("AgentKit/1.0"), "agent");
+    assert.equal(classifyMeterCaller("Cursor/1.0.0", "http_scan"), "agent");
+    assert.equal(classifyMeterCaller("node"), "smoke");
+    assert.equal(classifyMeterCaller("NODE"), "smoke");
+    assert.equal(isSmokeUserAgent("node"), true);
+    assert.match(METER_PROBE_SQL, /carbonmonitor/);
+    assert.match(METER_PROBE_SQL, /x402\[-\_\]/);
+    assert.match(METER_SMOKE_OR_PROBE_SQL, /lower\(btrim\(coalesce\(user_agent, ''\)\)\) = 'node'/);
+  });
+
+  it("probe 402 and GET census insert no row; a normal POST still does", async () => {
+    const probeUa = "CarbonMonitor/0.1 healthcheck (+https://carbon-cashmere.de)";
+    const store = createMeterStore();
+    const posted = await handleMeterRequest(
+      post("/api/v1/meter/pass", {}, { "user-agent": "node-fetch/1.0" }),
+      "/api/v1/meter/pass",
+      store,
+    );
+    const probed = await handleMeterRequest(
+      post("/api/v1/meter/pass", { sku: "looks_20" }, { "user-agent": probeUa }),
+      "/api/v1/meter/pass",
+      store,
+    );
+    const census = await handleMeterRequest(
+      new Request("https://agent-control.net/api/v1/meter/pass", {
+        method: "GET",
+        headers: { "user-agent": "MeterClient/1.0" },
+      }),
+      "/api/v1/meter/pass",
+      store,
+    );
+    const head = await handleMeterRequest(
+      new Request("https://agent-control.net/api/v1/meter/pass", {
+        method: "HEAD",
+        headers: { "user-agent": "Cursor/1.0.0" },
+      }),
+      "/api/v1/meter/pass",
+      store,
+    );
+    assert.equal(posted.status, 402);
+    assert.equal(probed.status, 402);
+    assert.equal(census.status, 402);
+    assert.equal(head.status, 402);
+    const postedBody = (await posted.json()) as Record<string, unknown>;
+    const probedBody = (await probed.json()) as Record<string, unknown>;
+    const censusBody = (await census.json()) as Record<string, unknown>;
+    assert.equal(await head.text(), "");
+    const scrub = (body: Record<string, unknown>, res: Response) => {
+      const id = String(body.invoice_id);
+      const ref = String(body.reference);
+      const clean = (value: string) => value.split(id).join("ID").split(ref).join("REF");
+      const encoded = res.headers.get("payment-required") ?? "";
+      const payment = encoded
+        ? clean(Buffer.from(encoded, "base64").toString("utf8"))
+        : "";
+      return {
+        body: clean(JSON.stringify(body)),
+        payment,
+        www: clean(res.headers.get("www-authenticate") ?? ""),
+      };
+    };
+    const live = scrub(postedBody, posted);
+    const probeShape = scrub(probedBody, probed);
+    const censusShape = scrub(censusBody, census);
+    assert.equal(probeShape.body, live.body);
+    assert.equal(probeShape.payment, live.payment);
+    assert.equal(probeShape.www, live.www);
+    assert.equal(censusShape.body, live.body);
+    assert.equal(censusShape.www, live.www);
+    assert.equal(probedBody.sku, "looks_20");
+    assert.equal(probedBody.price_usd, 0.2);
+    assert.equal(probedBody.amount_usd, 0.2);
+    assert.equal(probedBody.pay_to, postedBody.pay_to);
+    assert.equal(probedBody.base_pay_to, postedBody.base_pay_to);
+    assert.equal(JSON.stringify(Object.keys(probedBody).sort()), JSON.stringify(Object.keys(postedBody).sort()));
+    assert.equal((await store.getInvoice(String(probedBody.invoice_id))), null);
+    assert.equal((await store.getInvoice(String(censusBody.invoice_id))), null);
+    const kept = await store.getInvoice(String(postedBody.invoice_id));
+    assert.equal(kept?.source, "http_pass");
+    assert.equal(kept?.user_agent, "node-fetch/1.0");
+    assert.equal((await store.report()).invoices_created, 1);
+
+    const agent = await handleMeterRequest(
+      post("/api/v1/meter/pass", {}, { "user-agent": "AgentKit/1.0" }),
+      "/api/v1/meter/pass",
+      store,
+    );
+    assert.equal(agent.status, 402);
+    const agentBody = (await agent.json()) as { invoice_id: string };
+    assert.equal((await store.getInvoice(agentBody.invoice_id))?.user_agent, "AgentKit/1.0");
+    const cursor = await handleMeterRequest(
+      post("/api/v1/meter/scan", { chain: "solana", address: SCAN_SINK_FIXTURE }, { "user-agent": "Cursor/1.0.0" }),
+      "/api/v1/meter/scan",
+      store,
+    );
+    assert.equal(cursor.status, 402);
+    const cursorBody = (await cursor.json()) as { invoice_id: string };
+    assert.ok(await store.getInvoice(cursorBody.invoice_id));
+  });
+
+  it("excludes already-minted probe invoices from pending_fresh and pending_stale", async () => {
+    const store = createMeterStore();
+    store.createInvoice({
+      origin: {
+        source: "http_pass",
+        user_agent: "CarbonMonitor/0.1 healthcheck (+https://carbon-cashmere.de)",
+      },
+    });
+    store.createInvoice({
+      nowMs: Date.now() - PAY_EXPIRY_MS - 5_000,
+      origin: { source: "http_pass", user_agent: "x402-reliability-probe/1.0" },
+    });
+    store.createInvoice({
+      origin: { source: "http_pass", user_agent: "node-fetch/1.0" },
+    });
+    const report = await store.report();
+    assert.equal(report.invoices_created, 3);
+    assert.equal(report.invoices_pending_fresh, 1);
+    assert.equal(report.invoices_pending_stale, 0);
+    assert.equal(report.invoices_pending_smoke, 0);
+    assert.equal(report.invoices_pending_probe, 2);
+    assert.equal(report.invoices_probe, 2);
+    assert.equal(report.usdc_pending_fresh, 0.1);
+    assert.equal(report.usdc_pending_probe, 0.2);
+  });
+
+  it("watch of a non-persisted invoice id returns unknown/expired and does not insert", async () => {
+    const store = createMeterStore();
+    const res = await handleMeterRequest(
+      post("/api/v1/meter/watch", { invoice_id: "inv_not_stored" }),
+      "/api/v1/meter/watch",
+      store,
+    );
+    assert.equal(res.status, 404);
+    const body = (await res.json()) as { error: string; status: string; invoice_id: string };
+    assert.equal(body.error, "unknown_invoice");
+    assert.equal(body.status, "expired");
+    assert.equal(body.invoice_id, "inv_not_stored");
+    assert.equal((await store.report()).invoices_created, 0);
   });
 
   it("never auto-tags Phantom, browser, or MCP agent clients as smoke", async () => {

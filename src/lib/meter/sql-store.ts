@@ -5,6 +5,7 @@ import {
   blankInvoiceOrigin,
   isMeterInvoiceSource,
   METER_INVOICE_LIST_LIMIT,
+  METER_PROBE_SQL,
   METER_SMOKE_OR_PROBE_SQL,
 } from "./origin.ts";
 import { utcDayKey } from "./preflight.ts";
@@ -90,6 +91,7 @@ type StampFetchSqlRow = {
   seller: string | null;
   origin_hash: string | null;
   is_smoke: unknown;
+  is_probe: unknown;
   created_at: unknown;
 };
 
@@ -185,6 +187,7 @@ function mapStampFetch(row: StampFetchSqlRow): StampFetchRow {
     seller: row.seller,
     origin_hash: row.origin_hash,
     is_smoke: asBool(row.is_smoke),
+    is_probe: asBool(row.is_probe),
     created_at: iso(row.created_at),
   };
 }
@@ -290,9 +293,13 @@ export async function ensureMeterSchema(sql?: Sql): Promise<void> {
       seller text,
       origin_hash text,
       is_smoke boolean not null default false,
+      is_probe boolean not null default false,
       created_at timestamptz not null default now()
     )
   `);
+  await db.query(
+    `alter table meter_stamp_fetches add column if not exists is_probe boolean not null default false`,
+  );
   await db.query(
     `create index if not exists meter_stamp_fetches_created_idx on meter_stamp_fetches (created_at desc)`,
   );
@@ -627,16 +634,16 @@ export function createSqlMeterStore(db: Sql): MeterStore {
     async recordStampFetch(row: RecordStampFetchInput) {
       await db`
         insert into meter_stamp_fetches (
-          id, stamp_id, source, result, seller, origin_hash, is_smoke, created_at
+          id, stamp_id, source, result, seller, origin_hash, is_smoke, is_probe, created_at
         ) values (
           ${newMeterId("sfetch")}, ${row.stamp_id}, ${row.source}, ${row.result},
-          ${row.seller}, ${row.origin_hash}, ${row.is_smoke}, ${new Date().toISOString()}
+          ${row.seller}, ${row.origin_hash}, ${row.is_smoke}, ${row.is_probe}, ${new Date().toISOString()}
         )
       `;
     },
     async listStampFetches() {
       const rows = await db.query<StampFetchSqlRow>(
-        `select id, stamp_id, source, result, seller, origin_hash, is_smoke, created_at
+        `select id, stamp_id, source, result, seller, origin_hash, is_smoke, is_probe, created_at
          from meter_stamp_fetches
          order by created_at asc, id asc
          limit 1000`,
@@ -662,6 +669,8 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
     invoices_pending_fresh: 0,
     invoices_pending_stale: 0,
     invoices_pending_smoke: 0,
+    invoices_pending_probe: 0,
+    invoices_probe: 0,
     passes_issued: 0,
     agents_paid: 0,
     usdc_received: 0,
@@ -669,6 +678,7 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
     usdc_pending_fresh: 0,
     usdc_pending_stale: 0,
     usdc_pending_smoke: 0,
+    usdc_pending_probe: 0,
     calls: 0,
     tickets_fetched_by_seller: 0,
     stamp_fetches_total: 0,
@@ -686,26 +696,33 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
       invoices_pending_fresh: unknown;
       invoices_pending_stale: unknown;
       invoices_pending_smoke: unknown;
+      invoices_pending_probe: unknown;
+      invoices_probe: unknown;
       usdc_received: unknown;
       usdc_pending: unknown;
       usdc_pending_fresh: unknown;
       usdc_pending_stale: unknown;
       usdc_pending_smoke: unknown;
+      usdc_pending_probe: unknown;
       agents_paid: unknown;
     }>(
       `select
          count(*)::int as invoices_created,
          count(*) filter (where status = 'paid')::int as invoices_paid,
          count(*) filter (
-           where status in ('pending', 'underpaid') and not ${METER_SMOKE_OR_PROBE_SQL}
+           where status in ('pending', 'underpaid')
+             and not ${METER_SMOKE_OR_PROBE_SQL}
+             and not ${METER_PROBE_SQL}
          )::int as invoices_pending,
          count(*) filter (
            where status in ('pending', 'underpaid')
              and expires_at > now()
              and not ${METER_SMOKE_OR_PROBE_SQL}
+             and not ${METER_PROBE_SQL}
          )::int as invoices_pending_fresh,
          count(*) filter (
            where not ${METER_SMOKE_OR_PROBE_SQL}
+             and not ${METER_PROBE_SQL}
              and (
                status = 'expired'
                or (status in ('pending', 'underpaid') and expires_at <= now())
@@ -718,17 +735,32 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
                or status in ('pending', 'underpaid')
              )
          )::int as invoices_pending_smoke,
+         count(*) filter (
+           where ${METER_PROBE_SQL}
+             and not ${METER_SMOKE_OR_PROBE_SQL}
+             and (
+               status = 'expired'
+               or status in ('pending', 'underpaid')
+             )
+         )::int as invoices_pending_probe,
+         count(*) filter (
+           where ${METER_PROBE_SQL} and not ${METER_SMOKE_OR_PROBE_SQL}
+         )::int as invoices_probe,
          coalesce(sum(paid_amount_usd) filter (where status = 'paid'), 0) as usdc_received,
          coalesce(sum(amount_usd) filter (
-           where status in ('pending', 'underpaid') and not ${METER_SMOKE_OR_PROBE_SQL}
+           where status in ('pending', 'underpaid')
+             and not ${METER_SMOKE_OR_PROBE_SQL}
+             and not ${METER_PROBE_SQL}
          ), 0) as usdc_pending,
          coalesce(sum(amount_usd) filter (
            where status in ('pending', 'underpaid')
              and expires_at > now()
              and not ${METER_SMOKE_OR_PROBE_SQL}
+             and not ${METER_PROBE_SQL}
          ), 0) as usdc_pending_fresh,
          coalesce(sum(amount_usd) filter (
            where not ${METER_SMOKE_OR_PROBE_SQL}
+             and not ${METER_PROBE_SQL}
              and (
                status = 'expired'
                or (status in ('pending', 'underpaid') and expires_at <= now())
@@ -741,6 +773,14 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
                or status in ('pending', 'underpaid')
              )
          ), 0) as usdc_pending_smoke,
+         coalesce(sum(amount_usd) filter (
+           where ${METER_PROBE_SQL}
+             and not ${METER_SMOKE_OR_PROBE_SQL}
+             and (
+               status = 'expired'
+               or status in ('pending', 'underpaid')
+             )
+         ), 0) as usdc_pending_probe,
          count(distinct lower(coalesce(nullif(payer_address, ''), nullif(signature, ''), id)))
            filter (where status = 'paid')::int as agents_paid
        from meter_invoices`,
@@ -762,11 +802,14 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
     const invoicesPendingFresh = num(totals[0]?.invoices_pending_fresh);
     const invoicesPendingStale = num(totals[0]?.invoices_pending_stale);
     const invoicesPendingSmoke = num(totals[0]?.invoices_pending_smoke);
+    const invoicesPendingProbe = num(totals[0]?.invoices_pending_probe);
+    const invoicesProbe = num(totals[0]?.invoices_probe);
     const usdcReceived = num(totals[0]?.usdc_received);
     const usdcPending = num(totals[0]?.usdc_pending);
     const usdcPendingFresh = num(totals[0]?.usdc_pending_fresh);
     const usdcPendingStale = num(totals[0]?.usdc_pending_stale);
     const usdcPendingSmoke = num(totals[0]?.usdc_pending_smoke);
+    const usdcPendingProbe = num(totals[0]?.usdc_pending_probe);
     const recentPayments: MeterPaymentRow[] = recent.map((row) => ({
       invoice_id: row.id,
       pass_id: row.pass_id,
@@ -792,12 +835,14 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
       }>(
         `select
            count(*) filter (
-             where result = 'allow' and is_smoke = false and source <> 'gate_demo'
+             where result = 'allow' and is_smoke = false and is_probe = false and source <> 'gate_demo'
            )::int as tickets_fetched_by_seller,
-           count(*) filter (where is_smoke = false)::int as stamp_fetches_total,
-           count(*) filter (where is_smoke = false and source = 'gate_demo')::int as gate_demo_hits,
+           count(*) filter (where is_smoke = false and is_probe = false)::int as stamp_fetches_total,
+           count(*) filter (
+             where is_smoke = false and is_probe = false and source = 'gate_demo'
+           )::int as gate_demo_hits,
            count(distinct seller) filter (
-             where is_smoke = false and seller is not null
+             where is_smoke = false and is_probe = false and seller is not null
            )::int as fetch_unique_sellers,
            count(*) filter (where is_smoke = true)::int as stamp_fetches_smoke
          from meter_stamp_fetches`,
@@ -819,6 +864,8 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
       invoices_pending_fresh: invoicesPendingFresh,
       invoices_pending_stale: invoicesPendingStale,
       invoices_pending_smoke: invoicesPendingSmoke,
+      invoices_pending_probe: invoicesPendingProbe,
+      invoices_probe: invoicesProbe,
       passes_issued: num(passes[0]?.n),
       agents_paid: num(totals[0]?.agents_paid),
       usdc_received: Number(usdcReceived.toFixed(6)),
@@ -826,6 +873,7 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
       usdc_pending_fresh: Number(usdcPendingFresh.toFixed(6)),
       usdc_pending_stale: Number(usdcPendingStale.toFixed(6)),
       usdc_pending_smoke: Number(usdcPendingSmoke.toFixed(6)),
+      usdc_pending_probe: Number(usdcPendingProbe.toFixed(6)),
       calls: num(calls[0]?.n),
       ...fetchCounts,
       recent_payments: recentPayments,

@@ -17,7 +17,7 @@ import { STAMP_ID_HEADER } from "../meter-recipe.ts";
 import { METER_STAMP_TX } from "./pricing.ts";
 import { handleMeterRequest } from "./http.ts";
 import { handleStampGate } from "./gate.ts";
-import { STAMP_FETCH_ORIGIN_HASH_LEN, isStampFetchSmoke } from "./stamp-fetch.ts";
+import { STAMP_FETCH_ORIGIN_HASH_LEN, isStampFetchProbe, isStampFetchSmoke } from "./stamp-fetch.ts";
 import { createMeterStore, type MeterStore, type StampFetchRow } from "./store.ts";
 
 const ORIGIN = "https://agent-control.net";
@@ -376,6 +376,7 @@ describe("stamp fetch scoreboard", () => {
       assert.equal(row.result, "allow");
       assert.equal(row.seller, "acme");
       assert.equal(row.is_smoke, false);
+      assert.equal(row.is_probe, false);
       assert.equal(row.stamp_id, allow.stamp_id);
       const expectedHash = createHash("sha256")
         .update(origin)
@@ -383,6 +384,39 @@ describe("stamp fetch scoreboard", () => {
         .slice(0, STAMP_FETCH_ORIGIN_HASH_LEN);
       assert.equal(row.origin_hash, expectedHash);
       assert.equal(JSON.stringify(row).includes("203.0.113.9"), false);
+
+      const report = await store.report();
+      assert.equal(report.tickets_fetched_by_seller, 1);
+      assert.equal(report.stamp_fetches_total, 1);
+      assert.equal(report.stamp_fetches_smoke, 0);
+    });
+  });
+
+  it("probe verify is stored and excluded from tickets_fetched_by_seller", async () => {
+    await withLiveFetchEnv(async () => {
+      process.env.NODE_ENV = "test";
+      const store = createMeterStore();
+      const allow = await mintStamp(store, "allow");
+      process.env.NODE_ENV = "production";
+      const probeUa = "CarbonMonitor/0.1 healthcheck (+https://carbon-cashmere.de)";
+      assert.equal(isStampFetchProbe(stampGet(allow.stamp_id, { "user-agent": probeUa })), true);
+      const res = await handleMeterRequest(
+        stampGet(allow.stamp_id, { "user-agent": probeUa, "x-seller": "acme" }),
+        `/api/v1/meter/stamp/${allow.stamp_id}`,
+        store,
+      );
+      assert.equal(res.status, 200);
+      const rows = await store.listStampFetches();
+      assert.equal(rows.length, 1);
+      assert.equal(rows[0]?.source, "verify");
+      assert.equal(rows[0]?.result, "allow");
+      assert.equal(rows[0]?.seller, "acme");
+      assert.equal(rows[0]?.is_probe, true);
+      assert.equal(rows[0]?.is_smoke, false);
+      const report = await store.report();
+      assert.equal(report.tickets_fetched_by_seller, 0);
+      assert.equal(report.stamp_fetches_total, 0);
+      assert.equal(report.stamp_fetches_smoke, 0);
     });
   });
 

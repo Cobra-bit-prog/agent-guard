@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { parsePartnerSlug } from "../partner.ts";
-import { isExplicitMeterSmoke, isSmokeUserAgent } from "./origin.ts";
+import { classifyMeterCaller, isExplicitMeterSmoke, isSmokeUserAgent } from "./origin.ts";
 import type {
   MeterStore,
   RecordStampFetchInput,
@@ -43,7 +43,7 @@ function requestHostname(request: Request): string | null {
 /**
  * Same smoke signals as meter invoices (X-Meter-Smoke, body source=smoke, probe UAs),
  * plus test/CI/dev. A matching fetch is stored with is_smoke=true and left out of
- * tickets_fetched_by_seller.
+ * tickets_fetched_by_seller. Directory monitors are is_probe, not smoke.
  */
 export function isStampFetchSmoke(request: Request, env: NodeJS.ProcessEnv = process.env): boolean {
   if (isExplicitMeterSmoke(request)) return true;
@@ -51,6 +51,12 @@ export function isStampFetchSmoke(request: Request, env: NodeJS.ProcessEnv = pro
   if (isMeterTestCiDevEnv(env)) return true;
   const host = requestHostname(request);
   return host != null && LOCAL_HOSTS.has(host);
+}
+
+/** Directory/census UA. Smoke (including test/CI/dev) wins, so those rows stay is_probe=false. */
+export function isStampFetchProbe(request: Request, env: NodeJS.ProcessEnv = process.env): boolean {
+  if (isStampFetchSmoke(request, env)) return false;
+  return classifyMeterCaller(request.headers.get("user-agent")) === "probe";
 }
 
 /** X-Seller, same slug rules as ?partner=. Invalid values are stored as null. */
@@ -65,7 +71,7 @@ export function summarizeStampFetches(rows: StampFetchRow[]): {
   fetch_unique_sellers: number;
   stamp_fetches_smoke: number;
 } {
-  const live = rows.filter((row) => !row.is_smoke);
+  const live = rows.filter((row) => !row.is_smoke && !row.is_probe);
   const sellers = new Set(
     live.map((row) => row.seller).filter((seller): seller is string => Boolean(seller)),
   );
@@ -92,6 +98,7 @@ export async function noteStampFetch(
     seller: sellerSlugFromRequest(request),
     origin_hash: stampFetchOriginHash(request),
     is_smoke: isStampFetchSmoke(request),
+    is_probe: isStampFetchProbe(request),
   };
   try {
     await store.recordStampFetch(row);

@@ -8,6 +8,7 @@ create table if not exists meter_stamp_fetches (
   seller text,
   origin_hash text,
   is_smoke boolean not null default false,
+  is_probe boolean not null default false,
   created_at timestamptz not null default now()
 );
 

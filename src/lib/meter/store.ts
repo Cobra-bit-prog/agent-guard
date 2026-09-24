@@ -4,6 +4,7 @@ import { PAY_EXPIRY_MS, SOLANA_PAYOUT_ADDRESS } from "../solana-pay.ts";
 import {
   applyInvoiceOrigin,
   blankInvoiceOrigin,
+  isMeterProbeInvoice,
   isMeterSmokeInvoice,
   isMeterSmokeSource,
   METER_INVOICE_LIST_LIMIT,
@@ -106,6 +107,10 @@ export type MeterReport = {
   invoices_pending_fresh: number;
   invoices_pending_stale: number;
   invoices_pending_smoke: number;
+  /** Unpaid directory/census probes. Kept out of fresh and stale. */
+  invoices_pending_probe: number;
+  /** All probe-classified invoices, any status. */
+  invoices_probe: number;
   passes_issued: number;
   agents_paid: number;
   usdc_received: number;
@@ -113,8 +118,9 @@ export type MeterReport = {
   usdc_pending_fresh: number;
   usdc_pending_stale: number;
   usdc_pending_smoke: number;
+  usdc_pending_probe: number;
   calls: number;
-  /** Allow fetches that are not smoke and not the dogfood gate. */
+  /** Allow fetches that are not smoke, not probe, and not the dogfood gate. */
   tickets_fetched_by_seller: number;
   stamp_fetches_total: number;
   gate_demo_hits: number;
@@ -136,6 +142,7 @@ export type StampFetchRow = {
   seller: string | null;
   origin_hash: string | null;
   is_smoke: boolean;
+  is_probe: boolean;
   created_at: string;
 };
 
@@ -146,6 +153,7 @@ export type RecordStampFetchInput = {
   seller: string | null;
   origin_hash: string | null;
   is_smoke: boolean;
+  is_probe: boolean;
 };
 
 export type MeterInvoiceListOpts = {
@@ -564,14 +572,15 @@ export function createMeterStore(): MeterStore {
       const nowMs = Date.now();
       const all = [...invoices.values()].map((row) => expireInvoice(row, nowMs));
       const paidRows = all.filter((row) => row.status === "paid");
+      const liveUnpaid = (row: MeterInvoice) =>
+        !isMeterSmokeInvoice(row.source, row.user_agent) &&
+        !isMeterProbeInvoice(row.source, row.user_agent);
       const pendingRows = all.filter(
-        (row) =>
-          (row.status === "pending" || row.status === "underpaid") &&
-          !isMeterSmokeInvoice(row.source, row.user_agent),
+        (row) => (row.status === "pending" || row.status === "underpaid") && liveUnpaid(row),
       );
       const pendingFresh = pendingRows.filter((row) => Date.parse(row.expires_at) > nowMs);
       const pendingStale = all.filter((row) => {
-        if (isMeterSmokeInvoice(row.source, row.user_agent)) return false;
+        if (!liveUnpaid(row)) return false;
         if (row.status === "expired") return true;
         if (row.status === "pending" || row.status === "underpaid") {
           return Date.parse(row.expires_at) <= nowMs;
@@ -582,6 +591,10 @@ export function createMeterStore(): MeterStore {
         if (!isMeterSmokeInvoice(row.source, row.user_agent)) return false;
         return row.status === "expired" || row.status === "pending" || row.status === "underpaid";
       });
+      const probeRows = all.filter((row) => isMeterProbeInvoice(row.source, row.user_agent));
+      const pendingProbe = probeRows.filter(
+        (row) => row.status === "expired" || row.status === "pending" || row.status === "underpaid",
+      );
       const payers = new Set(
         paidRows
           .map((row) => (row.payer_address || row.signature || row.invoice_id).toLowerCase())
@@ -601,6 +614,8 @@ export function createMeterStore(): MeterStore {
         invoices_pending_fresh: pendingFresh.length,
         invoices_pending_stale: pendingStale.length,
         invoices_pending_smoke: pendingSmoke.length,
+        invoices_pending_probe: pendingProbe.length,
+        invoices_probe: probeRows.length,
         passes_issued: passes.size,
         agents_paid: payers.size,
         usdc_received: Number(usdcReceived.toFixed(6)),
@@ -608,6 +623,7 @@ export function createMeterStore(): MeterStore {
         usdc_pending_fresh: usdSum(pendingFresh),
         usdc_pending_stale: usdSum(pendingStale),
         usdc_pending_smoke: usdSum(pendingSmoke),
+        usdc_pending_probe: usdSum(pendingProbe),
         calls: logs.length,
         ...summarizeStampFetches(stampFetches),
         recent_payments: payments.slice(-50).reverse(),
