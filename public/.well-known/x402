@@ -7,7 +7,6 @@
     {
       "scheme": "exact",
       "network": "solana",
-      "maxAmountRequired": "200000",
       "amount": "200000",
       "payTo": "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR",
       "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
@@ -25,7 +24,6 @@
     {
       "scheme": "exact",
       "network": "base",
-      "maxAmountRequired": "200000",
       "amount": "200000",
       "payTo": "0xc5df91Fd7D9578A63efe9B0ee96Bacc5e7742E98",
       "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
@@ -46,7 +44,6 @@
     {
       "scheme": "exact",
       "network": "solana",
-      "maxAmountRequired": "100000",
       "amount": "100000",
       "payTo": "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR",
       "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
@@ -64,7 +61,6 @@
     {
       "scheme": "exact",
       "network": "base",
-      "maxAmountRequired": "100000",
       "amount": "100000",
       "payTo": "0xc5df91Fd7D9578A63efe9B0ee96Bacc5e7742E98",
       "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",

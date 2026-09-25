@@ -216,7 +216,6 @@ function auditExactAccepts(invoice: {
   const solana: MeterExactAccept = {
     scheme: "exact",
     network: "solana",
-    maxAmountRequired: amount,
     amount,
     payTo: lockedSolanaUsdcRecipient(),
     asset: USDC_MINT,
@@ -232,7 +231,6 @@ function auditExactAccepts(invoice: {
   const base: MeterExactAccept = {
     scheme: "exact",
     network: BASE_X402_NETWORK,
-    maxAmountRequired: amount,
     amount,
     payTo: lockedEvmUsdcRecipient(),
     asset: BASE_USDC,

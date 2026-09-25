@@ -40,8 +40,9 @@ describe("Agent Meter well-known discovery", () => {
     assert.equal(accepts.length, 4);
     assert.equal(accepts[0]?.scheme, "exact");
     assert.equal(accepts[0]?.network, "solana");
-    assert.equal(accepts[0]?.maxAmountRequired, "200000");
     assert.equal(accepts[0]?.amount, "200000");
+    assert.equal("maxAmountRequired" in (accepts[0] ?? {}), false);
+    assert.doesNotMatch(JSON.stringify(accepts), /maxAmountRequired/);
     assert.equal(accepts[0]?.payTo, SOLANA_PAYOUT_ADDRESS);
     assert.equal(accepts[0]?.payTo, PAY_TO);
     assert.equal(accepts[0]?.asset, USDC_MINT);
@@ -69,6 +70,7 @@ describe("Agent Meter well-known discovery", () => {
   it("describes Agent Meter look $0.10 Solana USDC for crawlers", () => {
     const body = x402WellKnown();
     assert.equal(body.x402Version, 2);
+    assert.doesNotMatch(JSON.stringify(body.accepts), /maxAmountRequired/);
     assert.equal(body.kind, "resource-server");
     assert.equal(body.name, "Agent Meter");
     assert.equal(
