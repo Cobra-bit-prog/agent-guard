@@ -27,10 +27,10 @@ const LOOKS_20_SKU = "looks_20";
 const LOOKS_20_USD = 0.2;
 const LOOKS_20_AMOUNT = "200000";
 
+/** x402 v2 exact accept. `amount` only — v1 `maxAmountRequired` makes facilitators reject v2. */
 export type MeterExactAccept = {
   scheme: "exact";
   network: string;
-  maxAmountRequired: string;
   amount: string;
   payTo: string;
   asset: string;
@@ -81,7 +81,6 @@ export function meterSolanaExactAccept(invoice?: MeterAcceptInvoice, sku?: Meter
   return {
     scheme: "exact",
     network: "solana",
-    maxAmountRequired: amount,
     amount,
     payTo: lockedSolanaUsdcRecipient(),
     asset: USDC_MINT,
@@ -109,7 +108,6 @@ export function meterBaseExactAccept(invoice?: MeterAcceptInvoice, sku?: MeterAc
   return {
     scheme: "exact",
     network: BASE_X402_NETWORK,
-    maxAmountRequired: amount,
     amount,
     payTo: lockedEvmUsdcRecipient(),
     asset: BASE_USDC,

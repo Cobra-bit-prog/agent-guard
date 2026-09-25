@@ -81,7 +81,7 @@ function assertMeter402IndexHeaders(
     accepts: Array<{
       scheme: string;
       network: string;
-      maxAmountRequired: string;
+      amount: string;
       payTo: string;
       asset: string;
       extra: {
@@ -95,6 +95,11 @@ function assertMeter402IndexHeaders(
     }>;
   };
   assert.equal(decoded.x402Version, 2);
+  assert.doesNotMatch(JSON.stringify(decoded.accepts), /maxAmountRequired/);
+  for (const row of decoded.accepts) {
+    assert.ok(row.amount);
+    assert.equal("maxAmountRequired" in row, false);
+  }
   assert.equal(decoded.error, "Payment required");
   assert.equal(decoded.description, METER_BAZAAR_DESCRIPTION);
   assert.ok((decoded.description ?? "").length <= 500);
@@ -346,6 +351,92 @@ describe("meter http", () => {
     assert.ok(payload.description.length <= 500);
     assert.equal(payload.extensions.bazaar.info.input.type, "http");
     assert.equal(payload.extensions.bazaar.info.input.method, "POST");
+  });
+
+  it("v2 accepts for stamp_tx and looks_20 keep amount and omit maxAmountRequired", async () => {
+    const skus = [
+      { sku: "stamp_tx" as const, amount_usd: 0.05, amount: "50000" },
+      { sku: "looks_20" as const, amount_usd: 0.2, amount: "200000" },
+    ];
+    for (const row of skus) {
+      const invoice = {
+        invoice_id: `inv_${row.sku}`,
+        pay_to: "HostileWalletDoNotPay11111111111111111111",
+        reference: "ref_v2",
+        amount_usd: row.amount_usd,
+        amount_base_units: row.amount,
+        chain: "solana",
+        asset: "usdc",
+        sku: row.sku,
+      };
+      const offers = [meter402Body(invoice).accepts, meter402PaymentRequiredPayload(invoice).accepts];
+      for (const accepts of offers) {
+        const json = JSON.stringify(accepts);
+        assert.doesNotMatch(json, /maxAmountRequired/);
+        const base = accepts.find((item) => item.network === "base" || item.network === BASE_CAIP2);
+        const solana = accepts.find((item) => item.network === "solana" || item.network === SOLANA_CAIP2);
+        assert.ok(base);
+        assert.ok(solana);
+        assert.equal(base.amount, row.amount);
+        assert.equal(solana.amount, row.amount);
+        assert.equal("maxAmountRequired" in base, false);
+        assert.equal("maxAmountRequired" in solana, false);
+        assert.equal(base.extra.name, "USD Coin");
+        assert.equal(base.extra.version, "2");
+        assert.equal(base.extra.assetTransferMethod, "eip3009");
+        assert.equal(base.extra.caip2, "eip155:8453");
+        assert.equal(base.extra.sku, row.sku);
+        assert.equal(solana.extra.match, "solana-pay-reference");
+        assert.equal(solana.extra.reference, "ref_v2");
+        assert.equal(solana.extra.sku, row.sku);
+      }
+    }
+
+    process.env.NODE_ENV = "test";
+    const store = createMeterStore();
+    for (const row of skus) {
+      const res = await handleMeterRequest(
+        post("/api/v1/meter/pass", { sku: row.sku }),
+        "/api/v1/meter/pass",
+        store,
+      );
+      assert.equal(res.status, 402);
+      const body = (await res.json()) as {
+        sku: string;
+        amount_usd: number;
+        amount_base_units: string;
+        reference: string;
+        accepts: Array<{
+          network: string;
+          amount: string;
+          extra: { name?: string; version?: string; assetTransferMethod?: string; caip2?: string; match?: string; reference?: string; sku?: string };
+        }>;
+      };
+      assert.equal(body.sku, row.sku);
+      assert.equal(body.amount_usd, row.amount_usd);
+      assert.equal(body.amount_base_units, row.amount);
+      const paymentRequired = JSON.parse(
+        Buffer.from(res.headers.get("PAYMENT-REQUIRED") ?? "", "base64").toString("utf8"),
+      ) as { x402Version: number; accepts: typeof body.accepts };
+      assert.equal(paymentRequired.x402Version, 2);
+      for (const accepts of [body.accepts, paymentRequired.accepts]) {
+        assert.doesNotMatch(JSON.stringify(accepts), /maxAmountRequired/);
+        const base = accepts.find((item) => item.network === "base" || item.network === BASE_CAIP2);
+        const solana = accepts.find((item) => item.network === "solana" || item.network === SOLANA_CAIP2);
+        assert.ok(base);
+        assert.ok(solana);
+        assert.equal(base.amount, row.amount);
+        assert.equal(solana.amount, row.amount);
+        assert.equal("maxAmountRequired" in base, false);
+        assert.equal("maxAmountRequired" in solana, false);
+        assert.equal(base.extra.name, "USD Coin");
+        assert.equal(base.extra.version, "2");
+        assert.equal(base.extra.assetTransferMethod, "eip3009");
+        assert.equal(base.extra.caip2, "eip155:8453");
+        assert.equal(solana.extra.match, "solana-pay-reference");
+        assert.equal(solana.extra.reference, body.reference);
+      }
+    }
   });
 
   it("scans a sink after a looks_20 pack", async () => {
@@ -2253,6 +2344,58 @@ describe("Base EIP-3009 exact + credit-first packs", () => {
     assert.equal(calls[0]?.amount, "50000");
     assert.ok(calls.every((call) => call.network === "eip155:8453"));
     assert.ok(calls.every((call) => call.payTo === EVM_PAYOUT_ADDRESS));
+  });
+
+  it("strips echoed maxAmountRequired before v2 Base verify", async () => {
+    const payment = {
+      ...eip3009Payment({ value: "50000", invoice_id: "inv_stamp", reference: "ref_stamp" }),
+      maxAmountRequired: "50000",
+      accepted: {
+        scheme: "exact",
+        network: "base",
+        maxAmountRequired: "50000",
+        amount: "50000",
+        payTo: EVM_PAYOUT_ADDRESS,
+        extra: { invoice_id: "inv_stamp", reference: "ref_stamp" },
+      },
+    };
+    let checked = false;
+    const paid = await settleExactEvmPayment(
+      payment,
+      { amount_base_units: "50000", invoice_id: "inv_stamp", reference: "ref_stamp", sku: "stamp_tx", amount_usd: 0.05 },
+      {
+        fetch: async (url, init) => {
+          const body = JSON.parse(init.body) as {
+            x402Version: number;
+            paymentRequirements: {
+              amount: string;
+              extra: { name?: string; version?: string; assetTransferMethod?: string; caip2?: string };
+            };
+            paymentPayload: { accepted: { amount?: string; extra?: { reference?: string } } };
+          };
+          const wire = JSON.stringify(body);
+          assert.doesNotMatch(wire, /maxAmountRequired/);
+          assert.equal(body.x402Version, 2);
+          assert.equal(body.paymentRequirements.amount, "50000");
+          assert.equal("maxAmountRequired" in body.paymentRequirements, false);
+          assert.equal("maxAmountRequired" in body.paymentPayload.accepted, false);
+          assert.equal(body.paymentPayload.accepted.amount, "50000");
+          assert.equal(body.paymentRequirements.extra.name, "USD Coin");
+          assert.equal(body.paymentRequirements.extra.version, "2");
+          assert.equal(body.paymentRequirements.extra.assetTransferMethod, "eip3009");
+          assert.equal(body.paymentRequirements.extra.caip2, "eip155:8453");
+          assert.equal(body.paymentPayload.accepted.extra?.reference, "ref_stamp");
+          checked = true;
+          if (url.endsWith("/verify")) return new Response(JSON.stringify({ isValid: true }), { status: 200 });
+          return new Response(
+            JSON.stringify({ success: true, transaction: `0x${"cd".repeat(32)}`, payer: EIP3009_FROM }),
+            { status: 200 },
+          );
+        },
+      },
+    );
+    assert.equal(paid.ok, true);
+    assert.equal(checked, true);
   });
 
   it("retries the other Base network id when the verifier rejects the accepted alias", async () => {

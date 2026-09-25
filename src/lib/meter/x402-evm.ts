@@ -204,20 +204,29 @@ function withBaseNetwork(requirements: MeterExactAccept, network: BaseNetworkAli
   return { ...requirements, network };
 }
 
+/** v2 wire shape. Drop echoed v1 `maxAmountRequired` so facilitators do not classify the offer as v1. */
+function v2Requirements(requirements: MeterExactAccept): Record<string, unknown> {
+  const row: Record<string, unknown> = { ...requirements, extra: { ...requirements.extra } };
+  delete row.maxAmountRequired;
+  return row;
+}
+
 function paymentForFacilitator(payload: Record<string, unknown>, requirements: MeterExactAccept): Record<string, unknown> {
   const accepted = asRecord(payload.accepted);
+  const forwarded: Record<string, unknown> = {
+    ...accepted,
+    scheme: requirements.scheme,
+    network: requirements.network,
+    payTo: requirements.payTo,
+    asset: requirements.asset,
+    amount: requirements.amount,
+  };
+  delete forwarded.maxAmountRequired;
   const next: Record<string, unknown> = {
     ...payload,
-    accepted: {
-      ...accepted,
-      scheme: requirements.scheme,
-      network: requirements.network,
-      payTo: requirements.payTo,
-      asset: requirements.asset,
-      maxAmountRequired: requirements.maxAmountRequired,
-      amount: requirements.amount,
-    },
+    accepted: forwarded,
   };
+  delete next.maxAmountRequired;
   if (typeof payload.network === "string") next.network = requirements.network;
   return next;
 }
@@ -319,7 +328,7 @@ async function verifyOnNetwork(
   for (const url of verifyUrls()) {
     const json = await postJson(
       url,
-      { x402Version: 2, paymentPayload: payload, paymentRequirements: requirements },
+      { x402Version: 2, paymentPayload: payload, paymentRequirements: v2Requirements(requirements) },
       fetchFn,
     );
     if (!json) continue;
@@ -366,7 +375,7 @@ export async function settleExactEvmPayment(
     const body = {
       x402Version: 2,
       paymentPayload: aligned,
-      paymentRequirements: requirements,
+      paymentRequirements: v2Requirements(requirements),
     };
     let settleDetail = EMPTY_VERIFIER_DETAIL;
     for (const url of settleUrls()) {

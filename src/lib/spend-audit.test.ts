@@ -95,6 +95,9 @@ describe("Wallet Spend Audit catalog", () => {
     assert.match(body.pay_url, new RegExp(`^solana:${SOLANA_PAYOUT_ADDRESS}`));
     assert.doesNotMatch(body.pay_url, /WrongWallet/);
     assert.equal(body.accepts[0]?.extra.assetTransferMethod, "eip3009");
+    assert.equal(body.accepts[0]?.amount, "49000000");
+    assert.equal(body.accepts[1]?.extra.match, "solana-pay-reference");
+    assert.doesNotMatch(JSON.stringify(body.accepts), /maxAmountRequired/);
     assert.equal(body.sku, "wallet_spend_audit");
     assert.equal(body.note, SPEND_AUDIT_HONESTY);
     assert.equal(body.starter.copy, SPEND_AUDIT_UPSELL);
