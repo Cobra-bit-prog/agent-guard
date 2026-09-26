@@ -1,5 +1,6 @@
 import { getSql } from "@/lib/db";
-import { PLANS, type PlanId } from "@/lib/plans";
+import { PLANS } from "@/lib/plans";
+import { humanInboxPlan, payPlanQuote } from "@/lib/shop-shield";
 import { uid } from "@/lib/utils";
 import { PAY_EXPIRY_MS, PERIOD_DAYS, usdcBaseUnits, type PayChain } from "@/lib/solana-pay";
 import { findMatchingUsdcPayment, newPayReference, payoutAddress } from "@/lib/solana-pay.server";
@@ -7,7 +8,6 @@ import {
   guestUserId,
   isGuestUserId,
   parseEmail,
-  parsePaidPlan,
   paymentsFromHeliusPayload,
   viewInvoice,
   type InvoiceView,
@@ -141,7 +141,7 @@ export async function sendInvoiceIfNeeded(userId: string, row: PayRow): Promise<
       return;
     }
     const chain = asPayChain(row.chain);
-    const planName = PLANS[(row.plan as PlanId) in PLANS ? (row.plan as PlanId) : "starter"].name;
+    const planName = payPlanQuote(row.plan).name;
     const asset = asPayAsset(row.asset);
     const amountUsdc = `${formatExactAmount(
       String(row.amount_base_units ?? usdcBaseUnits(Number(row.amount_usdc))),
@@ -196,18 +196,19 @@ export async function markInvoicePaid(
   row.paid_amount_usdc = match.amountUsdc;
   row.paid_at = paidAt;
   row.user_id = userId;
-  const plan = parsePaidPlan(row.plan);
+  const inbox = humanInboxPlan(row.plan);
   if (!isGuestUserId(userId)) {
-    await applyPaidPlan(userId, plan, chain);
-    const planName = PLANS[plan].name;
-    await sendNewSubscriberNotifyEmail({
-      kind: "paid",
-      planName,
-      at: paidAt,
-      userEmail: (await lookupUserEmail(userId)) || row.guest_email,
-      payRequestId: row.id,
-      chain: CHAIN_LABEL[chain],
-    });
+    if (inbox) {
+      await applyPaidPlan(userId, inbox, chain);
+      await sendNewSubscriberNotifyEmail({
+        kind: "paid",
+        planName: PLANS[inbox].name,
+        at: paidAt,
+        userEmail: (await lookupUserEmail(userId)) || row.guest_email,
+        payRequestId: row.id,
+        chain: CHAIN_LABEL[chain],
+      });
+    }
     await sendInvoiceIfNeeded(userId, row);
   }
   return row;
@@ -258,8 +259,8 @@ export async function createUsdcInvoice(opts: {
   source?: string;
 }): Promise<PayRow> {
   await ensureSchema();
-  const planId = parsePaidPlan(opts.plan);
-  const plan = PLANS[planId];
+  const quote = payPlanQuote(opts.plan);
+  const planId = quote.id;
   const email = parseEmail(opts.email);
   const sql = await getSql();
   const recipient = payoutAddress();
@@ -293,7 +294,7 @@ export async function createUsdcInvoice(opts: {
   const id = uid();
   if (!userId) userId = guestUserId(id);
   const reference = newPayReference();
-  const amountBase = usdcBaseUnits(plan.price);
+  const amountBase = usdcBaseUnits(quote.price);
   const expires = new Date(Date.now() + PAY_EXPIRY_MS).toISOString();
   const source = opts.source || "human";
 
@@ -302,7 +303,7 @@ export async function createUsdcInvoice(opts: {
       id, user_id, plan, chain, asset, amount_usdc, amount_base_units, reference, recipient,
       status, expires_at, guest_email, source
     ) values ($1,$2,$3,'solana','usdc',$4,$5,$6,$7,'pending',$8,$9,$10)`,
-    [id, userId, planId, plan.price, amountBase, reference, recipient, expires, email, source],
+    [id, userId, planId, quote.price, amountBase, reference, recipient, expires, email, source],
   );
   const rows = await sql.query<PayRow>(
     `select ${PAY_SELECT} from pay_requests where id = $1`,
@@ -360,7 +361,7 @@ export async function applyHeliusPayload(body: unknown): Promise<Array<{ id: str
       const row = await findInvoiceByReference(key);
       if (!row || row.status === "paid") continue;
       if (!isHumanUsdcInvoice(row)) continue;
-      const need = PLANS[parsePaidPlan(row.plan)].price;
+      const need = payPlanQuote(row.plan).price;
       if (pay.amountUsdc + 1e-9 >= need) {
         const next = await markInvoicePaid(row, {
           signature: pay.signature,
@@ -393,7 +394,8 @@ export async function claimPaidInvoicesForUser(userId: string, email: string | n
   for (const row of rows) {
     await sql`update pay_requests set user_id = ${userId} where id = ${row.id}`;
     row.user_id = userId;
-    await applyPaidPlan(userId, parsePaidPlan(row.plan), asPayChain(row.chain));
+    const inbox = humanInboxPlan(row.plan);
+    if (inbox) await applyPaidPlan(userId, inbox, asPayChain(row.chain));
     await sendInvoiceIfNeeded(userId, row);
   }
 }

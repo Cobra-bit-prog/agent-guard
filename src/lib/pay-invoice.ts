@@ -3,7 +3,13 @@
  * Match on Solana Pay reference — never unique dust amounts.
  */
 import { APP_ORIGIN } from "./warning-alert.ts";
-import { PLANS, type PlanId } from "./plans.ts";
+import {
+  humanInboxPlan,
+  parsePayPlan,
+  payPlanQuote,
+  SHOP_SHIELD_COPY,
+  type PayPlanId,
+} from "./shop-shield.ts";
 import {
   PAY_EXPIRY_MS,
   SOLANA_PAYOUT_ADDRESS,
@@ -286,7 +292,7 @@ export type InvoiceRow = {
 
 export type InvoiceView = {
   id: string;
-  plan: PaidPlanId;
+  plan: PayPlanId;
   asset: "usdc";
   chain: "solana";
   amount_usdc: number;
@@ -316,27 +322,40 @@ export function humanPayUrl(invoiceId: string, origin?: string | null): string {
   return `${invoiceOrigin(origin)}/billing/pay?id=${encodeURIComponent(invoiceId)}`;
 }
 
+export function billingPaySearch(search: Record<string, unknown>): {
+  id?: string;
+  plan?: PayPlanId;
+  email?: string;
+} {
+  const id = typeof search.id === "string" ? search.id.trim() : "";
+  const email = parseEmail(search.email);
+  const out: { id?: string; plan?: PayPlanId; email?: string } = {};
+  if (id) out.id = id;
+  if (search.plan) out.plan = parsePayPlan(search.plan);
+  if (email) out.email = email;
+  return out;
+}
+
 export function viewInvoice(row: InvoiceRow, origin?: string | null): InvoiceView {
-  const planId = parsePaidPlan(row.plan);
-  const plan = PLANS[planId];
-  const copy = copyFor(plan.price);
+  const quote = payPlanQuote(row.plan);
+  const copy = quote.id === "shield" ? { ...SHOP_SHIELD_COPY } : copyFor(quote.price);
   const recipient = lockedSolanaUsdcRecipient(row.recipient);
   const payUrl = buildSolanaPayUrl({
     recipient,
-    amountUsdc: plan.price,
+    amountUsdc: quote.price,
     reference: row.reference,
-    planName: plan.name,
+    planName: quote.name,
   });
   const base = invoiceOrigin(origin);
   const email = row.email || row.guest_email || null;
   return {
     id: row.id,
-    plan: planId,
+    plan: quote.id,
     asset: "usdc",
     chain: "solana",
-    amount_usdc: plan.price,
-    amount_base_units: usdcBaseUnits(plan.price),
-    exact_amount: String(plan.price),
+    amount_usdc: quote.price,
+    amount_base_units: usdcBaseUnits(quote.price),
+    exact_amount: String(quote.price),
     recipient,
     reference: row.reference,
     email,
@@ -354,8 +373,9 @@ export function viewInvoice(row: InvoiceRow, origin?: string | null): InvoiceVie
 }
 
 export function planNameFor(plan: string): string {
-  const id: PlanId = plan in PLANS ? (plan as PlanId) : "starter";
-  return PLANS[id].name;
+  return payPlanQuote(plan).name;
 }
+
+export { humanInboxPlan, parsePayPlan, payPlanQuote };
 
 export { PAY_EXPIRY_MS, USDC_MINT, usdcBaseUnits };

@@ -2,7 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { authMiddleware } from "@/lib/auth/middleware";
 import { getSql } from "@/lib/db";
-import { PLANS, type PlanId } from "@/lib/plans";
+import { PLANS } from "@/lib/plans";
+import { humanInboxPlan, payPlanQuote } from "@/lib/shop-shield";
 import { uid } from "@/lib/utils";
 import {
   PAY_EXPIRY_MS,
@@ -65,7 +66,7 @@ function truncRecipient(value: string) {
 }
 
 function view(row: PayRow): PayRequestView {
-  const planName = PLANS[(row.plan as PlanId) in PLANS ? (row.plan as PlanId) : "starter"].name;
+  const planName = payPlanQuote(row.plan).name;
   const chain = asPayChain(row.chain);
   const asset = asPayAsset(row.asset);
   const amountBaseUnits = String(row.amount_base_units ?? usdcBaseUnits(Number(row.amount_usdc)));
@@ -352,20 +353,22 @@ export const watchPayRequest = createServerFn({ method: "POST" })
             paid_at = ${paidAt}
         where id = ${row.id}
       `;
-      await applyPaidPlan(context.userId, row.plan as "starter" | "pro" | "team", chain);
+      const inbox = humanInboxPlan(row.plan);
+      if (inbox) {
+        await applyPaidPlan(context.userId, inbox, chain);
+        await sendNewSubscriberNotifyEmail({
+          kind: "paid",
+          planName: PLANS[inbox].name,
+          at: paidAt,
+          userEmail: await lookupUserEmail(context.userId),
+          payRequestId: row.id,
+          chain: CHAIN_LABEL[chain],
+        });
+      }
       row.status = "paid";
       row.signature = match.signature;
       row.paid_amount_usdc = match.amountUsdc;
       row.paid_at = paidAt;
-      const planName = PLANS[(row.plan as PlanId) in PLANS ? (row.plan as PlanId) : "starter"].name;
-      await sendNewSubscriberNotifyEmail({
-        kind: "paid",
-        planName,
-        at: paidAt,
-        userEmail: await lookupUserEmail(context.userId),
-        payRequestId: row.id,
-        chain: CHAIN_LABEL[chain],
-      });
       await sendInvoiceIfNeeded(context.userId, row);
       return view(row);
     }

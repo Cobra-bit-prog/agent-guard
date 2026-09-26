@@ -5,6 +5,7 @@
  */
 
 import { METER_PACKS_FIRST, STAMP_MERCHANT_COPY } from "./meter/pricing.ts";
+import { SHOP_SHIELD_STAMP_NOTE } from "./shop-shield.ts";
 
 export { METER_PACKS_FIRST, STAMP_MERCHANT_COPY };
 
@@ -125,6 +126,7 @@ export const STAMP_RECIPE = `# Stamp seller
 # ${METER_TICKET}
 # Seller page: ${STAMP_URL}
 # Separate from the Human App. Agents pay themselves. No inbox. No email. No API key. No Approval Inbox.
+# ${SHOP_SHIELD_STAMP_NOTE}
 # ${METER_QUESTION} ${METER_PACKS_FIRST}
 # ${METER_PACKS}
 # Base USDC (EIP-3009 exact) and Solana USDC. pass_1h catalog-only.
