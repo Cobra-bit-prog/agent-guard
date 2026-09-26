@@ -56,6 +56,7 @@ import { Route as ApiV1InternalMeterRouteImport } from './routes/api/v1/internal
 import { Route as ApiV1InternalStatsRouteImport } from './routes/api/v1/internal/stats'
 import { Route as ApiV1InternalTrialMailRouteImport } from './routes/api/v1/internal/trial-mail'
 import { Route as ApiV1MeterSplatRouteImport } from './routes/api/v1/meter.$'
+import { Route as ApiV1ShieldStatusRouteImport } from './routes/api/v1/shield.status'
 import { Route as ApiV1StorefrontAttachRouteImport } from './routes/api/v1/storefront.attach'
 import { Route as ApiV1StorefrontCheckoutRouteImport } from './routes/api/v1/storefront.checkout'
 import { Route as ApiV1StorefrontPricingRouteImport } from './routes/api/v1/storefront.pricing'
@@ -297,6 +298,11 @@ const ApiV1MeterSplatRoute = ApiV1MeterSplatRouteImport.update({
   path: '/api/v1/meter/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1ShieldStatusRoute = ApiV1ShieldStatusRouteImport.update({
+  id: '/api/v1/shield/status',
+  path: '/api/v1/shield/status',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1StorefrontAttachRoute = ApiV1StorefrontAttachRouteImport.update({
   id: '/api/v1/storefront/attach',
   path: '/api/v1/storefront/attach',
@@ -376,6 +382,7 @@ export interface FileRoutesByFullPath {
   '/api/v1/internal/stats': typeof ApiV1InternalStatsRoute
   '/api/v1/internal/trial-mail': typeof ApiV1InternalTrialMailRoute
   '/api/v1/meter/$': typeof ApiV1MeterSplatRoute
+  '/api/v1/shield/status': typeof ApiV1ShieldStatusRoute
   '/api/v1/storefront/attach': typeof ApiV1StorefrontAttachRoute
   '/api/v1/storefront/checkout': typeof ApiV1StorefrontCheckoutRoute
   '/api/v1/storefront/pricing': typeof ApiV1StorefrontPricingRoute
@@ -427,6 +434,7 @@ export interface FileRoutesByTo {
   '/api/v1/internal/stats': typeof ApiV1InternalStatsRoute
   '/api/v1/internal/trial-mail': typeof ApiV1InternalTrialMailRoute
   '/api/v1/meter/$': typeof ApiV1MeterSplatRoute
+  '/api/v1/shield/status': typeof ApiV1ShieldStatusRoute
   '/api/v1/storefront/attach': typeof ApiV1StorefrontAttachRoute
   '/api/v1/storefront/checkout': typeof ApiV1StorefrontCheckoutRoute
   '/api/v1/storefront/pricing': typeof ApiV1StorefrontPricingRoute
@@ -483,6 +491,7 @@ export interface FileRoutesById {
   '/api/v1/internal/stats': typeof ApiV1InternalStatsRoute
   '/api/v1/internal/trial-mail': typeof ApiV1InternalTrialMailRoute
   '/api/v1/meter/$': typeof ApiV1MeterSplatRoute
+  '/api/v1/shield/status': typeof ApiV1ShieldStatusRoute
   '/api/v1/storefront/attach': typeof ApiV1StorefrontAttachRoute
   '/api/v1/storefront/checkout': typeof ApiV1StorefrontCheckoutRoute
   '/api/v1/storefront/pricing': typeof ApiV1StorefrontPricingRoute
@@ -539,6 +548,7 @@ export interface FileRouteTypes {
     | '/api/v1/internal/stats'
     | '/api/v1/internal/trial-mail'
     | '/api/v1/meter/$'
+    | '/api/v1/shield/status'
     | '/api/v1/storefront/attach'
     | '/api/v1/storefront/checkout'
     | '/api/v1/storefront/pricing'
@@ -590,6 +600,7 @@ export interface FileRouteTypes {
     | '/api/v1/internal/stats'
     | '/api/v1/internal/trial-mail'
     | '/api/v1/meter/$'
+    | '/api/v1/shield/status'
     | '/api/v1/storefront/attach'
     | '/api/v1/storefront/checkout'
     | '/api/v1/storefront/pricing'
@@ -645,6 +656,7 @@ export interface FileRouteTypes {
     | '/api/v1/internal/stats'
     | '/api/v1/internal/trial-mail'
     | '/api/v1/meter/$'
+    | '/api/v1/shield/status'
     | '/api/v1/storefront/attach'
     | '/api/v1/storefront/checkout'
     | '/api/v1/storefront/pricing'
@@ -687,6 +699,7 @@ export interface RootRouteChildren {
   ApiV1InternalStatsRoute: typeof ApiV1InternalStatsRoute
   ApiV1InternalTrialMailRoute: typeof ApiV1InternalTrialMailRoute
   ApiV1MeterSplatRoute: typeof ApiV1MeterSplatRoute
+  ApiV1ShieldStatusRoute: typeof ApiV1ShieldStatusRoute
   ApiV1StorefrontAttachRoute: typeof ApiV1StorefrontAttachRoute
   ApiV1StorefrontCheckoutRoute: typeof ApiV1StorefrontCheckoutRoute
   ApiV1StorefrontPricingRoute: typeof ApiV1StorefrontPricingRoute
@@ -1025,6 +1038,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1MeterSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/shield/status': {
+      id: '/api/v1/shield/status'
+      path: '/api/v1/shield/status'
+      fullPath: '/api/v1/shield/status'
+      preLoaderRoute: typeof ApiV1ShieldStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/storefront/attach': {
       id: '/api/v1/storefront/attach'
       path: '/api/v1/storefront/attach'
@@ -1181,6 +1201,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiV1InternalStatsRoute: ApiV1InternalStatsRoute,
   ApiV1InternalTrialMailRoute: ApiV1InternalTrialMailRoute,
   ApiV1MeterSplatRoute: ApiV1MeterSplatRoute,
+  ApiV1ShieldStatusRoute: ApiV1ShieldStatusRoute,
   ApiV1StorefrontAttachRoute: ApiV1StorefrontAttachRoute,
   ApiV1StorefrontCheckoutRoute: ApiV1StorefrontCheckoutRoute,
   ApiV1StorefrontPricingRoute: ApiV1StorefrontPricingRoute,

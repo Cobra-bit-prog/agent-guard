@@ -1,8 +1,8 @@
 import { useEffect, useState, type FormEvent, type MouseEvent } from "react";
 import { PayQr } from "@/components/pay-qr";
 import { Button } from "@/components/ui/button";
-import { copyFor, parseEmail, parsePaidPlan, type InvoiceView, type PaidPlanId } from "@/lib/pay-invoice";
-import { PLANS } from "@/lib/plans";
+import { copyFor, parseEmail, type InvoiceView } from "@/lib/pay-invoice";
+import { parsePayPlan, payPlanQuote, SHOP_SHIELD_COPY } from "@/lib/shop-shield";
 import { SOLANA_PAYOUT_ADDRESS } from "@/lib/solana-pay";
 
 type InvoicePayload = InvoiceView & { error?: string };
@@ -52,7 +52,7 @@ export function SolanaPayBlock(opts: {
   lock?: boolean;
   onPaid?: (row: InvoiceView) => void;
 }) {
-  const plan = parsePaidPlan(opts.plan);
+  const plan = parsePayPlan(opts.plan);
   const [email, setEmail] = useState(opts.email ?? "");
   const [row, setRow] = useState<InvoiceView | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -121,7 +121,6 @@ export function SolanaPayBlock(opts: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [row?.id, row?.status]);
 
-  const copy = copyFor(PLANS[plan].price);
   const recipient = SOLANA_PAYOUT_ADDRESS;
 
   async function onCopy() {
@@ -166,8 +165,11 @@ export function SolanaPayBlock(opts: {
     return <div className="h-80 animate-pulse rounded-[20px] bg-elevated" />;
   }
 
+  const quote = payPlanQuote(row.plan);
+  const shield = quote.id === "shield";
+  const copy = shield ? SHOP_SHIELD_COPY : copyFor(quote.price);
   const paid = row.status === "paid";
-  const price = PLANS[row.plan as PaidPlanId]?.price ?? PLANS.starter.price;
+  const price = quote.price;
 
   return (
     <div className="space-y-5">
@@ -193,22 +195,28 @@ export function SolanaPayBlock(opts: {
 
       <div className="rounded-[20px] border border-border bg-surface p-6 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]">
         <p className="text-meta font-semibold uppercase tracking-[0.16em] text-navy">
-          {PLANS[parsePaidPlan(row.plan)].name}
+          {quote.name}
         </p>
         <h1 className="mt-2 text-title font-semibold tracking-tight">
           {paid ? copy.done : copy.title}
         </h1>
         <p className="mt-2 text-muted">
-          {paid ? "The console stays on for 30 days. No auto-renewal." : copy.body}
+          {paid
+            ? shield
+              ? "Agents still buy the five-cent ticket."
+              : "The console stays on for 30 days. No auto-renewal."
+            : copy.body}
         </p>
         {paid ? (
           <>
             <p className="mt-4 rounded-[14px] bg-[#dcfce7] px-3.5 py-3 text-body font-medium text-[#166534]">
               {copy.done}
             </p>
-            <Button asChild className="mt-5 h-11 w-full rounded-full">
-              <a href="/dashboard">Open console</a>
-            </Button>
+            {shield ? null : (
+              <Button asChild className="mt-5 h-11 w-full rounded-full">
+                <a href="/dashboard">Open console</a>
+              </Button>
+            )}
           </>
         ) : (
           <>
@@ -250,8 +258,9 @@ export function SolanaPayBlock(opts: {
             <details className="mt-5 rounded-[14px] border border-border bg-elevated px-3.5 py-3">
               <summary className="cursor-pointer text-body font-medium text-navy">Other</summary>
               <p className="mt-2 text-body text-muted">
-                SOL and ETH sit under Other. Default is ${price} USDC on Solana. Scan or tap Pay. We
-                unlock when it lands.
+                {shield
+                  ? "Shop Shield — gate + verify for your host. Agents buy the five-cent ticket."
+                  : `SOL and ETH sit under Other. Default is $${price} USDC on Solana. Scan or tap Pay. We unlock when it lands.`}
               </p>
             </details>
           </>

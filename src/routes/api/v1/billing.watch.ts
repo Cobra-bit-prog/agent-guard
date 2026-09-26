@@ -6,9 +6,8 @@ import {
   isHumanUsdcInvoice,
   watchUsdcInvoice,
 } from "@/lib/server/billing-core.server";
-import { parsePaidPlan } from "@/lib/pay-invoice";
+import { payPlanQuote } from "@/lib/shop-shield";
 import { findMatchingUsdcPayment, payoutAddress } from "@/lib/solana-pay.server";
-import { PLANS } from "@/lib/plans";
 
 /** Public status poll. Pay UI works without Helius. */
 export const Route = createFileRoute("/api/v1/billing/watch")({
@@ -44,13 +43,13 @@ async function handleWatch({ request }: { request: Request }) {
     return json({ error: "Invoice is not Solana USDC.", asset: row.asset, chain: row.chain }, 409);
   }
   if (!row) {
-    const plan = parsePaidPlan(url.searchParams.get("plan") || body.plan);
+    const quote = payPlanQuote(url.searchParams.get("plan") || body.plan);
     if (!reference) return json({ error: "Invoice not found." }, 404);
     try {
       const match = await findMatchingUsdcPayment({
         reference,
         recipient: payoutAddress(),
-        amountUsdc: PLANS[plan].price,
+        amountUsdc: quote.price,
       });
       return json({
         status: match.kind === "paid" ? "paid" : "pending",
