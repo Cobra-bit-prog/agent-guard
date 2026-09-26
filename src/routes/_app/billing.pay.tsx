@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SolanaPayBlock } from "@/components/solana-pay-block";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
-import { parseEmail, parsePaidPlan } from "@/lib/pay-invoice";
+import { billingPaySearch } from "@/lib/pay-invoice";
 import { asPayAsset } from "@/lib/pay-asset";
 import { getPayRequest, watchPayRequest } from "@/lib/server/solana-billing";
 import { PAY_CHAIN_LABEL, type PayChain } from "@/lib/solana-pay";
@@ -19,15 +19,8 @@ type PaySearch = { id?: string; plan?: string; email?: string };
 
 export const Route = createFileRoute("/_app/billing/pay")({
   validateSearch: (search: Record<string, unknown>): PaySearch => {
-    const id = typeof search.id === "string" ? search.id.trim() : "";
-    const plan = parsePaidPlan(search.plan);
-    const email = parseEmail(search.email);
-    const out: PaySearch = {};
-    if (id) out.id = id;
-    if (search.plan) out.plan = plan;
-    if (email) out.email = email;
     // search.recipient is ignored — query strings cannot retarget funds.
-    return out;
+    return billingPaySearch(search);
   },
   component: PayRequestPage,
 });
