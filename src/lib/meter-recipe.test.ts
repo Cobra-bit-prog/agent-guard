@@ -49,6 +49,7 @@ import {
   STAMP_TXT_URL,
   STAMP_URL,
   STAMP_VERIFY_CURL,
+  STAMP_VERIFY_SELLER_CURL,
 } from "./meter-recipe.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -251,6 +252,10 @@ await buyMeterPassBase({ from, signExact });`,
     assert.match(STAMP_SELLER_VERIFY, /meter_verify_stamp/);
     assert.match(STAMP_SELLER_VERIFY, /If verified is true and decision is allow/);
     assert.equal(STAMP_VERIFY_CURL, "curl -s https://agent-control.net/api/v1/meter/stamp/<stamp_id>");
+    assert.equal(
+      STAMP_VERIFY_SELLER_CURL,
+      "curl -s https://agent-control.net/api/v1/meter/stamp/<stamp_id> -H 'X-Seller: your-slug'",
+    );
     assert.match(STAMP_SELLER_STEPS[0]?.d ?? "", /Can I pay this address\?/);
     assert.match(STAMP_SELLER_STEPS[0]?.d ?? "", /looks_20 pack \(\$0\.20\)/);
     assert.match(STAMP_SELLER_STEPS[0]?.d ?? "", /stamp_tx \$0\.05/);
@@ -424,6 +429,8 @@ describe("Agent Meter recipe on public discovery surfaces", () => {
     assert.doesNotMatch(stampTxt, /Merchants can require/);
     assert.match(stampTxt, /curl -s -X POST https:\/\/agent-control\.net\/api\/v1\/meter\/pass/);
     assert.match(stampTxt, /curl -s https:\/\/agent-control\.net\/api\/v1\/meter\/stamp\/<stamp_id>/);
+    assert.match(stampTxt, /X-Seller: your-slug/);
+    assert.match(STAMP_RECIPE, /X-Seller: your-slug/);
 
     const robots = read("public/robots.txt");
     const sitemap = read("public/sitemap.xml");

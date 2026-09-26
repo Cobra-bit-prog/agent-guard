@@ -36,6 +36,9 @@ export const STAMP_SELLER_VERIFY =
   "GET /api/v1/meter/stamp/:id or MCP meter_verify_stamp. If verified is true and decision is allow, take the USDC. If not, do not take it.";
 export const STAMP_VERIFY_CURL =
   "curl -s https://agent-control.net/api/v1/meter/stamp/<stamp_id>";
+/** Same GET verify, with the seller slug browsers send as X-Seller. */
+export const STAMP_VERIFY_SELLER_CURL =
+  "curl -s https://agent-control.net/api/v1/meter/stamp/<stamp_id> -H 'X-Seller: your-slug'";
 /** Live dogfood gate. Header X-Stamp-Id. No allow stamp → 402 stamp_tx $0.05. */
 export const STAMP_ID_HEADER = "X-Stamp-Id";
 export const GATE_DEMO_PATH = "/api/v1/gate/demo";
@@ -137,6 +140,8 @@ curl -s -X POST https://agent-control.net/api/v1/meter/watch -H 'content-type: a
 ${STAMP_MINT_CURL}
 # 2 merchant verifies free at ${STAMP_URL} or GET /api/v1/meter/stamp/:id or MCP meter_verify_stamp. Public. No email. No API key.
 ${STAMP_VERIFY_CURL}
+# Same GET with the seller slug. Browser preflight allows X-Seller.
+${STAMP_VERIFY_SELLER_CURL}
 # 3 merchant only accepts USDC if verified is true and decision is allow. If not, do not take the USDC.
 # ${METER_TICKET}
 # 4 dogfood gate. Live on this site. GET or POST ${GATE_DEMO_PATH}. Header ${STAMP_ID_HEADER}. No valid allow stamp → 402 stamp_tx $0.05. verified true and decision allow → 200.

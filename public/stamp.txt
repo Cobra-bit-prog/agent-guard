@@ -19,6 +19,8 @@ curl -s -X POST https://agent-control.net/api/v1/meter/watch -H 'content-type: a
 curl -s -X POST https://agent-control.net/api/v1/meter/stamp -H 'content-type: application/json' -H 'X-Agent-Pass: <token>' -d '{"decision":"allow","chain":"solana","to":"<merchant>"}'
 # 2 merchant verifies free at https://agent-control.net/stamp or GET /api/v1/meter/stamp/:id or MCP meter_verify_stamp. Public. No email. No API key.
 curl -s https://agent-control.net/api/v1/meter/stamp/<stamp_id>
+# Same GET with the seller slug. Browser preflight allows X-Seller.
+curl -s https://agent-control.net/api/v1/meter/stamp/<stamp_id> -H 'X-Seller: your-slug'
 # 3 merchant only accepts USDC if verified is true and decision is allow. If not, do not take the USDC.
 # Take this ticket or we do not take your USDC.
 # 4 dogfood gate. Live on this site. GET or POST /api/v1/gate/demo. Header X-Stamp-Id. No valid allow stamp → 402 stamp_tx $0.05. verified true and decision allow → 200.
