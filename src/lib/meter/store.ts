@@ -21,6 +21,7 @@ import {
   METER_LOOK_SKU,
   type MeterSku,
 } from "./pricing.ts";
+import { splitPaidMeterRows } from "./owner-test.ts";
 import { utcDayKey } from "./preflight.ts";
 import { summarizeStampFetches } from "./stamp-fetch.ts";
 import type { StampDecision } from "./stamp.ts";
@@ -103,6 +104,10 @@ export type MeterReport = {
   };
   invoices_created: number;
   invoices_paid: number;
+  /** Paid invoices on OWNER_TEST_INVOICE_IDS. Raw invoices_paid still includes these. */
+  invoices_paid_owner_test: number;
+  /** Paid invoices that are not owner tests. */
+  invoices_paid_third_party: number;
   invoices_pending: number;
   invoices_pending_fresh: number;
   invoices_pending_stale: number;
@@ -113,7 +118,15 @@ export type MeterReport = {
   invoices_probe: number;
   passes_issued: number;
   agents_paid: number;
+  /** Paid invoices on OWNER_TEST_INVOICE_IDS. Raw agents_paid still includes these. */
+  agents_paid_owner_test: number;
+  /** Distinct payers on paid invoices that are not owner tests. */
+  agents_paid_third_party: number;
   usdc_received: number;
+  /** Sum of paid amounts on OWNER_TEST_INVOICE_IDS. Raw usdc_received still includes this. */
+  usdc_received_owner_test: number;
+  /** Sum of paid amounts that are not owner tests. */
+  usdc_received_third_party: number;
   usdc_pending: number;
   usdc_pending_fresh: number;
   usdc_pending_stale: number;
@@ -601,6 +614,14 @@ export function createMeterStore(): MeterStore {
           .filter(Boolean),
       );
       const usdcReceived = payments.reduce((sum, row) => sum + Number(row.amount_usd || 0), 0);
+      const paidCohorts = splitPaidMeterRows(
+        paidRows.map((row) => ({
+          invoice_id: row.invoice_id,
+          payer_address: row.payer_address,
+          signature: row.signature,
+          amount_usd: Number(row.paid_amount_usd || 0),
+        })),
+      );
       return {
         product: "Agent Meter",
         funds: {
@@ -610,6 +631,8 @@ export function createMeterStore(): MeterStore {
         },
         invoices_created: all.length,
         invoices_paid: paidRows.length,
+        invoices_paid_owner_test: paidCohorts.invoices_paid_owner_test,
+        invoices_paid_third_party: paidCohorts.invoices_paid_third_party,
         invoices_pending: pendingRows.length,
         invoices_pending_fresh: pendingFresh.length,
         invoices_pending_stale: pendingStale.length,
@@ -618,7 +641,11 @@ export function createMeterStore(): MeterStore {
         invoices_probe: probeRows.length,
         passes_issued: passes.size,
         agents_paid: payers.size,
+        agents_paid_owner_test: paidCohorts.agents_paid_owner_test,
+        agents_paid_third_party: paidCohorts.agents_paid_third_party,
         usdc_received: Number(usdcReceived.toFixed(6)),
+        usdc_received_owner_test: paidCohorts.usdc_received_owner_test,
+        usdc_received_third_party: paidCohorts.usdc_received_third_party,
         usdc_pending: usdSum(pendingRows),
         usdc_pending_fresh: usdSum(pendingFresh),
         usdc_pending_stale: usdSum(pendingStale),

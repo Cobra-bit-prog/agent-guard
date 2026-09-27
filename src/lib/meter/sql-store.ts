@@ -8,6 +8,7 @@ import {
   METER_PROBE_SQL,
   METER_SMOKE_OR_PROBE_SQL,
 } from "./origin.ts";
+import { ownerTestInvoiceMatchSql, ZERO_PAID_COHORT_SPLIT } from "./owner-test.ts";
 import { utcDayKey } from "./preflight.ts";
 import { METER_ANON_IDENTITY, METER_FREE_LOOKS, METER_LOOK, METER_LOOK_SKU, meterSkuOrDefault } from "./pricing.ts";
 import {
@@ -687,11 +688,15 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
     stamp_fetches_smoke: 0,
     recent_payments: [],
     generated_at: new Date().toISOString(),
+    ...ZERO_PAID_COHORT_SPLIT,
   };
   try {
+    const ownerTestSql = ownerTestInvoiceMatchSql();
     const totals = await db.query<{
       invoices_created: unknown;
       invoices_paid: unknown;
+      invoices_paid_owner_test: unknown;
+      invoices_paid_third_party: unknown;
       invoices_pending: unknown;
       invoices_pending_fresh: unknown;
       invoices_pending_stale: unknown;
@@ -699,16 +704,22 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
       invoices_pending_probe: unknown;
       invoices_probe: unknown;
       usdc_received: unknown;
+      usdc_received_owner_test: unknown;
+      usdc_received_third_party: unknown;
       usdc_pending: unknown;
       usdc_pending_fresh: unknown;
       usdc_pending_stale: unknown;
       usdc_pending_smoke: unknown;
       usdc_pending_probe: unknown;
       agents_paid: unknown;
+      agents_paid_owner_test: unknown;
+      agents_paid_third_party: unknown;
     }>(
       `select
          count(*)::int as invoices_created,
          count(*) filter (where status = 'paid')::int as invoices_paid,
+         count(*) filter (where status = 'paid' and ${ownerTestSql})::int as invoices_paid_owner_test,
+         count(*) filter (where status = 'paid' and not (${ownerTestSql}))::int as invoices_paid_third_party,
          count(*) filter (
            where status in ('pending', 'underpaid')
              and not ${METER_SMOKE_OR_PROBE_SQL}
@@ -747,6 +758,8 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
            where ${METER_PROBE_SQL} and not ${METER_SMOKE_OR_PROBE_SQL}
          )::int as invoices_probe,
          coalesce(sum(paid_amount_usd) filter (where status = 'paid'), 0) as usdc_received,
+         coalesce(sum(paid_amount_usd) filter (where status = 'paid' and ${ownerTestSql}), 0) as usdc_received_owner_test,
+         coalesce(sum(paid_amount_usd) filter (where status = 'paid' and not (${ownerTestSql})), 0) as usdc_received_third_party,
          coalesce(sum(amount_usd) filter (
            where status in ('pending', 'underpaid')
              and not ${METER_SMOKE_OR_PROBE_SQL}
@@ -782,7 +795,11 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
              )
          ), 0) as usdc_pending_probe,
          count(distinct lower(coalesce(nullif(payer_address, ''), nullif(signature, ''), id)))
-           filter (where status = 'paid')::int as agents_paid
+           filter (where status = 'paid')::int as agents_paid,
+         count(distinct lower(coalesce(nullif(payer_address, ''), nullif(signature, ''), id)))
+           filter (where status = 'paid' and ${ownerTestSql})::int as agents_paid_owner_test,
+         count(distinct lower(coalesce(nullif(payer_address, ''), nullif(signature, ''), id)))
+           filter (where status = 'paid' and not (${ownerTestSql}))::int as agents_paid_third_party
        from meter_invoices`,
     );
     const passes = await db.query<{ n: unknown }>(`select count(*)::int as n from meter_passes`);
@@ -798,6 +815,8 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
       `select id, pass_id, signature, paid_amount_usd, payer_address, paid_at
        from meter_invoices where status = 'paid' order by paid_at desc nulls last limit 50`,
     );
+    const invoicesPaidOwnerTest = num(totals[0]?.invoices_paid_owner_test);
+    const invoicesPaidThirdParty = num(totals[0]?.invoices_paid_third_party);
     const invoicesPending = num(totals[0]?.invoices_pending);
     const invoicesPendingFresh = num(totals[0]?.invoices_pending_fresh);
     const invoicesPendingStale = num(totals[0]?.invoices_pending_stale);
@@ -805,6 +824,8 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
     const invoicesPendingProbe = num(totals[0]?.invoices_pending_probe);
     const invoicesProbe = num(totals[0]?.invoices_probe);
     const usdcReceived = num(totals[0]?.usdc_received);
+    const usdcReceivedOwnerTest = num(totals[0]?.usdc_received_owner_test);
+    const usdcReceivedThirdParty = num(totals[0]?.usdc_received_third_party);
     const usdcPending = num(totals[0]?.usdc_pending);
     const usdcPendingFresh = num(totals[0]?.usdc_pending_fresh);
     const usdcPendingStale = num(totals[0]?.usdc_pending_stale);
@@ -860,6 +881,8 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
       funds: { pay_to: SOLANA_PAYOUT_ADDRESS, chain: "solana", asset: "usdc" },
       invoices_created: num(totals[0]?.invoices_created),
       invoices_paid: num(totals[0]?.invoices_paid),
+      invoices_paid_owner_test: invoicesPaidOwnerTest,
+      invoices_paid_third_party: invoicesPaidThirdParty,
       invoices_pending: invoicesPending,
       invoices_pending_fresh: invoicesPendingFresh,
       invoices_pending_stale: invoicesPendingStale,
@@ -868,7 +891,11 @@ export async function collectMeterSqlReport(sql?: Sql): Promise<MeterReport> {
       invoices_probe: invoicesProbe,
       passes_issued: num(passes[0]?.n),
       agents_paid: num(totals[0]?.agents_paid),
+      agents_paid_owner_test: num(totals[0]?.agents_paid_owner_test),
+      agents_paid_third_party: num(totals[0]?.agents_paid_third_party),
       usdc_received: Number(usdcReceived.toFixed(6)),
+      usdc_received_owner_test: Number(usdcReceivedOwnerTest.toFixed(6)),
+      usdc_received_third_party: Number(usdcReceivedThirdParty.toFixed(6)),
       usdc_pending: Number(usdcPending.toFixed(6)),
       usdc_pending_fresh: Number(usdcPendingFresh.toFixed(6)),
       usdc_pending_stale: Number(usdcPendingStale.toFixed(6)),
