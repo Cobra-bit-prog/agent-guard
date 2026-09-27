@@ -8,7 +8,7 @@ import {
   setInvoiceEmail,
   watchUsdcInvoice,
 } from "@/lib/server/billing-core.server";
-import { parseEmail, parsePaidPlan } from "@/lib/pay-invoice";
+import { parseEmail } from "@/lib/pay-invoice";
 
 export const Route = createFileRoute("/api/v1/billing/invoice")({
   server: {
@@ -37,7 +37,7 @@ export const Route = createFileRoute("/api/v1/billing/invoice")({
             return json(invoiceView(row, originFromRequest(request)));
           }
           const row = await createUsdcInvoice({
-            plan: parsePaidPlan(rec.plan),
+            plan: rec.plan,
             email: parseEmail(rec.email ?? rec.human_email),
             source: "human",
             // rec.recipient / query wallets are ignored — payout is hard-locked.

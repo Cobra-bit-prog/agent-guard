@@ -3,6 +3,7 @@
 # Take this ticket or we do not take your USDC.
 # Seller page: https://agent-control.net/stamp
 # Separate from the Human App. Agents pay themselves. No inbox. No email. No API key. No Approval Inbox.
+# Shop Shield $49/mo — pay at /billing/pay?plan=shield
 # Can I pay this address? Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05.
 # Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05.
 # Base USDC (EIP-3009 exact) and Solana USDC. pass_1h catalog-only.
