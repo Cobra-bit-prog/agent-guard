@@ -46,6 +46,15 @@ import {
   type MeterChainFinder,
 } from "./settle.ts";
 import { stampViewAllows } from "../../adapters/stamp-gate.ts";
+import {
+  getSlip,
+  issueMissSlip,
+  publishName,
+  resolveName,
+  sameShop,
+  startWatch,
+  tickWatch,
+} from "./map.ts";
 import { publicStampView, signStamp, type StampDecision, type StampPayload } from "./stamp.ts";
 import { noteStampFetch } from "./stamp-fetch.ts";
 import {
@@ -299,6 +308,37 @@ export async function handleMeterRequest(
 
   if (request.method === "POST" && suffix === "receipts") {
     return runReceipts(request, body, resolved, deps);
+  }
+
+  // Agent Map. POST /watch stays payment confirm. Follow is the vendor day watch.
+  // Names, follows, and slips are in-process and reset on cold start.
+  if (request.method === "POST" && suffix === "name") {
+    return runPublishName(body);
+  }
+
+  if (request.method === "GET" && suffix.startsWith("resolve/")) {
+    return runResolve(request, resolved, deps, suffix.slice("resolve/".length));
+  }
+
+  if (request.method === "POST" && (suffix === "same-shop" || suffix === "same_shop")) {
+    return runSameShop(request, body, resolved, deps);
+  }
+
+  if (request.method === "POST" && suffix === "follow") {
+    return runFollow(request, body, resolved, deps);
+  }
+
+  const followTick = suffix.match(/^follow\/([^/]+)\/tick$/);
+  if (request.method === "POST" && followTick?.[1]) {
+    return runFollowTick(body, followTick[1]);
+  }
+
+  if (request.method === "POST" && suffix === "miss") {
+    return runMiss(request, body, resolved, deps);
+  }
+
+  if (request.method === "GET" && suffix.startsWith("miss/")) {
+    return runGetMiss(suffix.slice("miss/".length));
   }
 
   return json({ error: "unknown_meter_route", usage: meterPricing().endpoints }, 404);
@@ -959,6 +999,170 @@ async function runReceipts(request: Request, body: Record<string, unknown>, stor
     calls: report.calls,
     ...lookAccessFields({ pass: consumed.after, freeRemaining: consumed.freeRemaining }),
   });
+}
+
+const MAP_STORE_NOTE = "Names, follows, and slips reset on cold start.";
+
+function decodePathPart(raw: string): string {
+  try {
+    return decodeURIComponent(raw).trim();
+  } catch {
+    return raw.trim();
+  }
+}
+
+function mapPayload(result: object, extra: Record<string, unknown> = {}) {
+  const rest = { ...(result as Record<string, unknown>) };
+  delete rest.http;
+  return { ...rest, ...extra, store: "in_process", note: MAP_STORE_NOTE };
+}
+
+function mapErrorResponse(result: { error: string; http: number }): Response {
+  const { http, ...rest } = result;
+  return json({ ...rest, store: "in_process", note: MAP_STORE_NOTE }, http);
+}
+
+async function chargeMapKind(
+  request: Request,
+  body: Record<string, unknown>,
+  store: MeterStore,
+  deps: MeterHttpDeps,
+  kind: string,
+): Promise<
+  | { body: Record<string, unknown>; consumed: { after: MeterPass | null; freeRemaining: number | null } }
+  | { response: Response }
+> {
+  const applied = await applySettledPass(request, body, store, deps);
+  if (applied.error) return { response: applied.error };
+  const nextBody = applied.body;
+  const source = invoiceSourceForMeterPath("scan");
+  const gate = await requireLookOrPack(request, nextBody, store, source, kind);
+  if (gate.response) return { response: gate.response };
+  const consumed = await consumeLookGrant(store, gate);
+  if (consumed === "exhausted") {
+    return {
+      response: await paymentRequired(store, request, source, nextBody, defaultSkuForKind(kind).id),
+    };
+  }
+  return { body: nextBody, consumed };
+}
+
+function runPublishName(body: Record<string, unknown>): Response {
+  const result = publishName({
+    name: body.name,
+    chain: body.chain,
+    address: body.address,
+    url: body.url,
+  });
+  if ("error" in result) return mapErrorResponse(result);
+  return json(mapPayload(result));
+}
+
+async function runResolve(
+  request: Request,
+  store: MeterStore,
+  deps: MeterHttpDeps,
+  rawName: string,
+): Promise<Response> {
+  const name = decodePathPart(rawName);
+  if (!name) return json({ error: "Provide name." }, 400);
+  const charged = await chargeMapKind(request, {}, store, deps, "resolve");
+  if ("response" in charged) return charged.response;
+  const result = resolveName(name);
+  if ("error" in result) return mapErrorResponse(result);
+  return json(
+    mapPayload(result, lookAccessFields({ pass: charged.consumed.after, freeRemaining: charged.consumed.freeRemaining })),
+  );
+}
+
+async function runSameShop(
+  request: Request,
+  body: Record<string, unknown>,
+  store: MeterStore,
+  deps: MeterHttpDeps,
+): Promise<Response> {
+  const a = body.a ?? body.address_a;
+  const b = body.b ?? body.address_b;
+  if (!String(a ?? "").trim() || !String(b ?? "").trim()) return json({ error: "Provide a and b." }, 400);
+  const charged = await chargeMapKind(request, body, store, deps, "same_shop");
+  if ("response" in charged) return charged.response;
+  const result = sameShop(a, b);
+  if ("error" in result) return mapErrorResponse(result);
+  return json(
+    mapPayload(result, lookAccessFields({ pass: charged.consumed.after, freeRemaining: charged.consumed.freeRemaining })),
+  );
+}
+
+async function runFollow(
+  request: Request,
+  body: Record<string, unknown>,
+  store: MeterStore,
+  deps: MeterHttpDeps,
+): Promise<Response> {
+  const url = String(body.url ?? "").trim();
+  const address = String(body.address ?? "").trim();
+  const name = String(body.name ?? "").trim();
+  if (!url && !address && !name) return json({ error: "Provide url, address, or name." }, 400);
+  const charged = await chargeMapKind(request, body, store, deps, "watch_day");
+  if ("response" in charged) return charged.response;
+  const result = startWatch({ url: body.url, address: body.address, name: body.name, chain: body.chain });
+  if ("error" in result) return mapErrorResponse(result);
+  return json(
+    mapPayload(result, lookAccessFields({ pass: charged.consumed.after, freeRemaining: charged.consumed.freeRemaining })),
+  );
+}
+
+function runFollowTick(body: Record<string, unknown>, rawId: string): Response {
+  const id = decodePathPart(rawId);
+  if (!id) return json({ error: "unknown_watch", store: "in_process", note: MAP_STORE_NOTE }, 404);
+  const result = tickWatch(id, { address: body.address, live: body.live, from: body.from });
+  if ("error" in result) return mapErrorResponse(result);
+  return json(mapPayload(result));
+}
+
+async function runMiss(
+  request: Request,
+  body: Record<string, unknown>,
+  store: MeterStore,
+  deps: MeterHttpDeps,
+): Promise<Response> {
+  const payTo = String(body.pay_to ?? "").trim();
+  const url = String(body.url ?? "").trim();
+  const amountUsd = Number(body.amount_usd);
+  if (!payTo || !url || !Number.isFinite(amountUsd)) {
+    return json({ error: "Provide pay_to, url, and amount_usd." }, 400);
+  }
+  const status = Number(body.status);
+  const bodyEmpty = Boolean(body.body_empty ?? (body.body == null || body.body === ""));
+  const paid = Boolean(body.paid);
+  const delivered = paid && Number.isFinite(status) && status >= 200 && status < 300 && !bodyEmpty;
+  if (delivered) return json({ error: "This was delivered. No miss slip." }, 400);
+  if (!paid) return json({ error: "No payment on file." }, 400);
+  const charged = await chargeMapKind(request, body, store, deps, "miss_slip");
+  if ("response" in charged) return charged.response;
+  const result = issueMissSlip({
+    pay_to: body.pay_to,
+    url: body.url,
+    amount_usd: body.amount_usd,
+    status: body.status,
+    body_empty: body.body_empty,
+    body: body.body,
+    paid: body.paid,
+    paid_at: body.paid_at,
+    chain: body.chain,
+  });
+  if ("error" in result) return mapErrorResponse(result);
+  return json(
+    mapPayload(result, lookAccessFields({ pass: charged.consumed.after, freeRemaining: charged.consumed.freeRemaining })),
+  );
+}
+
+function runGetMiss(rawId: string): Response {
+  const id = decodePathPart(rawId);
+  if (!id) return json({ error: "unknown_slip", store: "in_process", note: MAP_STORE_NOTE }, 404);
+  const result = getSlip(id);
+  if ("error" in result) return mapErrorResponse(result);
+  return json(mapPayload(result));
 }
 
 export function meterPassRemaining(pass: { sku?: string; included_calls: number; used_calls: number; expires_at: string }) {

@@ -49,7 +49,11 @@ export type MeterSkuId =
   | "compare"
   | "ping"
   | "receipts_50"
-  | "allow_list";
+  | "allow_list"
+  | "resolve"
+  | "same_shop"
+  | "watch_day"
+  | "miss_slip";
 
 export type MeterSku = {
   id: MeterSkuId;
@@ -196,6 +200,56 @@ export const METER_ALLOW_LIST: MeterSku = {
   job: "Today's known-ok hosts.",
 };
 
+/** Where do I send it now? One paid resolve. Door look/stamp stay put. */
+export const METER_RESOLVE: MeterSku = {
+  id: "resolve",
+  price_usd: 0.01,
+  duration_sec: 600,
+  included_calls: 1,
+  covers: ["resolve"],
+  asset: "usdc",
+  chain: "solana",
+  amount_base_units: "10000",
+  job: "Where do I send it now?",
+};
+
+export const METER_SAME_SHOP: MeterSku = {
+  id: "same_shop",
+  price_usd: 0.1,
+  duration_sec: 600,
+  included_calls: 1,
+  covers: ["same_shop"],
+  asset: "usdc",
+  chain: "solana",
+  amount_base_units: "100000",
+  job: "Same shop?",
+};
+
+/** One day of vendor follow. Not the payment-confirm /watch door. */
+export const METER_WATCH_DAY: MeterSku = {
+  id: "watch_day",
+  price_usd: 0.2,
+  duration_sec: 86400,
+  included_calls: 1,
+  covers: ["watch_day"],
+  asset: "usdc",
+  chain: "solana",
+  amount_base_units: "200000",
+  job: "Follow the vendor for a day.",
+};
+
+export const METER_MISS_SLIP: MeterSku = {
+  id: "miss_slip",
+  price_usd: 0.05,
+  duration_sec: 600,
+  included_calls: 1,
+  covers: ["miss_slip"],
+  asset: "usdc",
+  chain: "solana",
+  amount_base_units: "50000",
+  job: "I paid. I got nothing.",
+};
+
 export const METER_SKUS: Record<MeterSkuId, MeterSku> = {
   look: METER_LOOK,
   looks_20: METER_LOOKS_20,
@@ -208,6 +262,10 @@ export const METER_SKUS: Record<MeterSkuId, MeterSku> = {
   ping: METER_PING,
   receipts_50: METER_RECEIPTS_50,
   allow_list: METER_ALLOW_LIST,
+  resolve: METER_RESOLVE,
+  same_shop: METER_SAME_SHOP,
+  watch_day: METER_WATCH_DAY,
+  miss_slip: METER_MISS_SLIP,
 };
 
 export const METER_SKU_IDS = Object.keys(METER_SKUS) as MeterSkuId[];
@@ -221,6 +279,10 @@ export function defaultSkuForKind(kind: string): MeterSku {
   if (kind === "allow_list") return METER_ALLOW_LIST;
   if (kind === "bound") return METER_BOUND_PASS;
   if (kind === "job") return METER_JOB_1;
+  if (kind === "resolve") return METER_RESOLVE;
+  if (kind === "same_shop") return METER_SAME_SHOP;
+  if (kind === "watch_day" || kind === "follow") return METER_WATCH_DAY;
+  if (kind === "miss_slip" || kind === "miss") return METER_MISS_SLIP;
   return METER_LOOKS_20;
 }
 
@@ -313,8 +375,40 @@ export function meterPricing() {
       ping: "POST /api/v1/meter/ping",
       receipts: "POST /api/v1/meter/receipts",
       allow_list: "GET or POST /api/v1/meter/allow-list",
+      name: "POST /api/v1/meter/name",
+      resolve: "GET /api/v1/meter/resolve/:name",
+      same_shop: "POST /api/v1/meter/same-shop",
+      follow: "POST /api/v1/meter/follow",
+      follow_tick: "POST /api/v1/meter/follow/:id/tick",
+      miss: "POST /api/v1/meter/miss",
+      miss_get: "GET /api/v1/meter/miss/:id",
       gate_demo: "GET or POST /api/v1/gate/demo",
       report: "GET /api/v1/meter/report",
+    },
+    map: {
+      store: "in_process",
+      note: "Names, follows, and slips reset on cold start.",
+      name: { price_usd: 0 },
+      resolve: {
+        sku: METER_RESOLVE.id,
+        price_usd: METER_RESOLVE.price_usd,
+        amount_base_units: METER_RESOLVE.amount_base_units,
+      },
+      same_shop: {
+        sku: METER_SAME_SHOP.id,
+        price_usd: METER_SAME_SHOP.price_usd,
+        amount_base_units: METER_SAME_SHOP.amount_base_units,
+      },
+      watch_day: {
+        sku: METER_WATCH_DAY.id,
+        price_usd: METER_WATCH_DAY.price_usd,
+        amount_base_units: METER_WATCH_DAY.amount_base_units,
+      },
+      miss_slip: {
+        sku: METER_MISS_SLIP.id,
+        price_usd: METER_MISS_SLIP.price_usd,
+        amount_base_units: METER_MISS_SLIP.amount_base_units,
+      },
     },
     header: "X-Agent-Pass",
     identity: "X-Agent-Pass or anon. No email.",

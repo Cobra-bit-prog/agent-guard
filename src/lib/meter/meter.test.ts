@@ -889,7 +889,7 @@ describe("extra meter skus", () => {
       pass: { id: string; price_usd: number };
       packs: { looks_20: { price_usd: number }; addresses_100: { price_usd: number } };
       ticket: { price_usd: number; copy?: string; merchant?: string };
-      skus: { id: string; price_usd: number }[];
+      skus: { id: string; price_usd: number; amount_base_units: string }[];
       funds: { pay_to: string; base_pay_to: string; accepts: { chain: string }[] };
       free_looks: number;
       note?: string;
@@ -903,12 +903,36 @@ describe("extra meter skus", () => {
     assert.doesNotMatch(body.note ?? "", /First 5 free|free-5/);
     assert.deepEqual(
       body.skus.map((row) => row.id),
-      ["look", "looks_20", "addresses_100", "stamp_tx", "pass_1h", "bound_pass", "job_1", "compare", "ping", "receipts_50", "allow_list"],
+      [
+        "look",
+        "looks_20",
+        "addresses_100",
+        "stamp_tx",
+        "pass_1h",
+        "bound_pass",
+        "job_1",
+        "compare",
+        "ping",
+        "receipts_50",
+        "allow_list",
+        "resolve",
+        "same_shop",
+        "watch_day",
+        "miss_slip",
+      ],
     );
     assert.equal(body.skus.find((row) => row.id === "look")?.price_usd, 0.1);
     assert.equal(body.skus.find((row) => row.id === "looks_20")?.price_usd, 0.2);
     assert.equal(body.skus.find((row) => row.id === "addresses_100")?.price_usd, 0.15);
     assert.equal(body.skus.find((row) => row.id === "stamp_tx")?.price_usd, 0.05);
+    assert.equal(body.skus.find((row) => row.id === "resolve")?.price_usd, 0.01);
+    assert.equal(body.skus.find((row) => row.id === "resolve")?.amount_base_units, "10000");
+    assert.equal(body.skus.find((row) => row.id === "same_shop")?.price_usd, 0.1);
+    assert.equal(body.skus.find((row) => row.id === "same_shop")?.amount_base_units, "100000");
+    assert.equal(body.skus.find((row) => row.id === "watch_day")?.price_usd, 0.2);
+    assert.equal(body.skus.find((row) => row.id === "watch_day")?.amount_base_units, "200000");
+    assert.equal(body.skus.find((row) => row.id === "miss_slip")?.price_usd, 0.05);
+    assert.equal(body.skus.find((row) => row.id === "miss_slip")?.amount_base_units, "50000");
     assert.equal(body.skus.find((row) => row.id === "pass_1h")?.price_usd, 0.25);
     assert.equal(body.packs.looks_20.price_usd, 0.2);
     assert.equal(body.packs.addresses_100.price_usd, 0.15);
