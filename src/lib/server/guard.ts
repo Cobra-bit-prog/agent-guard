@@ -16,6 +16,11 @@ import {
 } from "@/lib/server/approvals";
 import { ensureAuditReportsTable } from "@/lib/server/audit-reports";
 import {
+  decideActionForUser,
+  findActionHoldForUser,
+  listOpenActionHolds,
+} from "@/lib/server/action-gate";
+import {
   notifyInboxHold,
   notifyWarningAlert,
   queueNotice,
@@ -1441,16 +1446,72 @@ export const getHoldCount = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await ensureSchema();
     const count = await countOpenHolds(context.userId);
-    return { count };
+    let actionCount = 0;
+    try {
+      actionCount = (await listOpenActionHolds(context.userId)).length;
+    } catch (err) {
+      console.error("[inbox] action hold count failed", err instanceof Error ? err.name : "error");
+    }
+    return { count: count + actionCount };
   });
 
 export const getInbox = createServerFn({ method: "GET" })
   .middleware([authMiddleware])
   .handler(async ({ context }) => {
     await ensureWorkspace(context.userId);
-    const items = await listOpenHolds(context.userId);
+    const spend = (await listOpenHolds(context.userId)).map((item) => ({
+      ...item,
+      kind: "spend" as const,
+    }));
+    let actions: Array<{
+      id: string;
+      user_id: string;
+      agent_id: string;
+      tx_id: null;
+      to_address: string;
+      value_usd: number;
+      native: null;
+      reasons: string[];
+      status: "hold";
+      expires_at: string;
+      decided_at: string | null;
+      created_at: string;
+      agent_name?: string;
+      kind: "action";
+      action_type: string;
+      summary: string;
+      preview: string;
+      target: string | null;
+      risk: string | null;
+    }> = [];
+    try {
+      const rows = await listOpenActionHolds(context.userId);
+      actions = rows.map((row) => ({
+        id: row.id,
+        user_id: row.userId,
+        agent_id: row.agentId,
+        tx_id: null,
+        to_address: row.target ?? row.actionType,
+        value_usd: 0,
+        native: null,
+        reasons: [row.summary],
+        status: "hold" as const,
+        expires_at: row.expiresAt,
+        decided_at: row.decidedAt,
+        created_at: row.createdAt,
+        agent_name: row.agent_name,
+        kind: "action" as const,
+        action_type: row.actionType,
+        summary: row.summary,
+        preview: row.preview,
+        target: row.target,
+        risk: row.risk,
+      }));
+    } catch (err) {
+      console.error("[inbox] action holds failed", err instanceof Error ? err.name : "error");
+    }
     const ent = await loadEntitlement(context.userId);
-    return { items, writable: ent.writable };
+    return { items: [...actions, ...spend], writable: ent.writable };
   });
 
 export const decideApproval = createServerFn({ method: "POST" })
@@ -1466,6 +1527,19 @@ export const decideApproval = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     await requireWritable(context.userId);
     await ensureSchema();
+    const actionHold = await findActionHoldForUser(context.userId, data.id);
+    if (actionHold) {
+      if (data.decision === "always") {
+        throw new Error("Action Gate supports Allow once or Block.");
+      }
+      const decided = await decideActionForUser({
+        userId: context.userId,
+        approvalId: data.id,
+        decision: data.decision,
+      });
+      if (!decided.ok) throw new Error(decided.error);
+      return { ok: true, decision: data.decision };
+    }
     const sql = await getSql();
     const now = new Date().toISOString();
     const rows = await sql`

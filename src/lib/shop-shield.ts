@@ -12,6 +12,12 @@ import { PLANS } from "./plans.ts";
 export const SHOP_SHIELD_PLAN = "shield" as const;
 export const SHOP_SHIELD_PRICE_USD = 49;
 export const SHOP_SHIELD_PRODUCT = "Shop Shield" as const;
+
+/** Action Gate — $49/mo stop-and-ask for non-money actions. Not a Human Inbox seat. */
+export const ACTION_GATE_PLAN = "action" as const;
+export const ACTION_GATE_PRICE_USD = 49;
+export const ACTION_GATE_PRODUCT = "Action Gate" as const;
+export const ACTION_GATE_HREF = "/billing/pay?plan=action";
 export const SHOP_SHIELD_HREF = "/billing/pay?plan=shield";
 /** Seller note. Meter stamp_tx lines stay as they are. */
 export const SHOP_SHIELD_STAMP_NOTE =
@@ -29,16 +35,21 @@ export const SHOP_SHIELD_COPY = {
 
 const HUMAN_PLANS = ["starter", "pro", "team"] as const;
 export type HumanPlanId = (typeof HUMAN_PLANS)[number];
-export type PayPlanId = HumanPlanId | typeof SHOP_SHIELD_PLAN;
+export type PayPlanId = HumanPlanId | typeof SHOP_SHIELD_PLAN | typeof ACTION_GATE_PLAN;
 
 export function isShopShieldPlan(value: unknown): boolean {
   return String(value ?? "").trim().toLowerCase() === SHOP_SHIELD_PLAN;
 }
 
-/** Pay-page plan. Unknown values stay on Starter. Shield stays Shield. */
+export function isActionGatePlan(value: unknown): boolean {
+  return String(value ?? "").trim().toLowerCase() === ACTION_GATE_PLAN;
+}
+
+/** Pay-page plan. Unknown values stay on Starter. Shield stays Shield. Action stays Action. */
 export function parsePayPlan(value: unknown): PayPlanId {
   const id = String(value ?? "starter").trim().toLowerCase();
   if (id === SHOP_SHIELD_PLAN) return SHOP_SHIELD_PLAN;
+  if (id === ACTION_GATE_PLAN) return ACTION_GATE_PLAN;
   return (HUMAN_PLANS as readonly string[]).includes(id) ? (id as HumanPlanId) : "starter";
 }
 
@@ -47,18 +58,21 @@ export function payPlanQuote(plan: unknown): { id: PayPlanId; name: string; pric
   if (id === SHOP_SHIELD_PLAN) {
     return { id, name: SHOP_SHIELD_PRODUCT, price: SHOP_SHIELD_PRICE_USD };
   }
+  if (id === ACTION_GATE_PLAN) {
+    return { id, name: ACTION_GATE_PRODUCT, price: ACTION_GATE_PRICE_USD };
+  }
   return { id, name: PLANS[id].name, price: PLANS[id].price };
 }
 
 /**
  * Human Inbox plan to activate after payment.
- * Shop Shield returns null so a $49 shop invoice does not open Pro seats.
+ * Shop Shield and Action Gate return null so those invoices do not replace Starter/Pro/Team.
  * Any other value keeps the existing Starter fallback.
  */
 export function humanInboxPlan(plan: unknown): HumanPlanId | null {
-  if (isShopShieldPlan(plan)) return null;
+  if (isShopShieldPlan(plan) || isActionGatePlan(plan)) return null;
   const id = parsePayPlan(plan);
-  return id === SHOP_SHIELD_PLAN ? null : id;
+  return id === SHOP_SHIELD_PLAN || id === ACTION_GATE_PLAN ? null : id;
 }
 
 export type ShieldCustomer = {

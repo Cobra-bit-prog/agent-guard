@@ -1,4 +1,5 @@
 import { agentStatusForKey, checkTransferIntent, pollApprovalIntent } from "@/lib/server/intent";
+import { checkActionIntent } from "@/lib/server/action-gate";
 import { dispatchStorefrontTool } from "@/lib/server/storefront";
 import type { McpToolCallResult } from "@/lib/mcp/handle.ts";
 import { meterMcpToolResult, rejectMeterKeyUpload } from "@/lib/mcp/meter-result.ts";
@@ -97,6 +98,23 @@ export async function dispatchMcpTool(
       return { ok: false, status: 401, code: 401, message: "Unknown API key." };
     }
     return { ok: true, result: status };
+  }
+
+  if (name === "check_action" || name === "ask_human") {
+    const result = await checkActionIntent({
+      apiKey,
+      body: {
+        action_type: args.action_type,
+        summary: args.summary,
+        preview: args.preview,
+        target: args.target,
+        risk: args.risk,
+      },
+    });
+    if (!result.ok) {
+      return { ok: false, status: result.status, code: result.status, message: result.error };
+    }
+    return { ok: true, result: result.result };
   }
 
   if (name === "check_transfer") {

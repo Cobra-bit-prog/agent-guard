@@ -218,6 +218,14 @@ function BillingPage() {
         Free is a one-time {FREE_TRIAL_DAYS}-day trial. After it ends, scans and new agents pause
         until you pay $29 USDC on Solana. No silent autopay.
       </p>
+      <p className="text-xs text-subtle">
+        Action Gate is $49 USDC a month for non-money actions (email, Slack, CRM, deploy). It does
+        not replace Starter.{" "}
+        <a href="/billing/pay?plan=action" className="text-primary underline-offset-4 hover:underline">
+          Pay Action Gate
+        </a>
+        . Docs: <a href="/docs#action-gate" className="text-primary underline-offset-4 hover:underline">/docs#action-gate</a>.
+      </p>
     </div>
   );
 }

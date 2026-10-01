@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent, type MouseEvent } from "react";
 import { PayQr } from "@/components/pay-qr";
 import { Button } from "@/components/ui/button";
 import { copyFor, parseEmail, type InvoiceView } from "@/lib/pay-invoice";
+import { ACTION_GATE_COPY } from "@/lib/action-gate";
 import { parsePayPlan, payPlanQuote, SHOP_SHIELD_COPY } from "@/lib/shop-shield";
 import { SOLANA_PAYOUT_ADDRESS } from "@/lib/solana-pay";
 
@@ -167,7 +168,8 @@ export function SolanaPayBlock(opts: {
 
   const quote = payPlanQuote(row.plan);
   const shield = quote.id === "shield";
-  const copy = shield ? SHOP_SHIELD_COPY : copyFor(quote.price);
+  const action = quote.id === "action";
+  const copy = shield ? SHOP_SHIELD_COPY : action ? ACTION_GATE_COPY : copyFor(quote.price);
   const paid = row.status === "paid";
   const price = quote.price;
 
@@ -204,7 +206,9 @@ export function SolanaPayBlock(opts: {
           {paid
             ? shield
               ? "Agents still buy the five-cent ticket."
-              : "The console stays on for 30 days. No auto-renewal."
+              : action
+                ? "Action Gate is on for 30 days. Agents must ask before they act."
+                : "The console stays on for 30 days. No auto-renewal."
             : copy.body}
         </p>
         {paid ? (
@@ -214,7 +218,9 @@ export function SolanaPayBlock(opts: {
             </p>
             {shield ? null : (
               <Button asChild className="mt-5 h-11 w-full rounded-full">
-                <a href="/dashboard">Open console</a>
+                <a href={action ? "/inbox" : "/dashboard"}>
+                  {action ? "Open Approval Inbox" : "Open console"}
+                </a>
               </Button>
             )}
           </>
@@ -260,7 +266,9 @@ export function SolanaPayBlock(opts: {
               <p className="mt-2 text-body text-muted">
                 {shield
                   ? "Shop Shield — gate + verify for your host. Agents buy the five-cent ticket."
-                  : `SOL and ETH sit under Other. Default is $${price} USDC on Solana. Scan or tap Pay. We unlock when it lands.`}
+                  : action
+                    ? "Action Gate is $49 USDC on Solana. Same receive address. No card."
+                    : `SOL and ETH sit under Other. Default is $${price} USDC on Solana. Scan or tap Pay. We unlock when it lands.`}
               </p>
             </details>
           </>

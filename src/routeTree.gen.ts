@@ -41,6 +41,7 @@ import { Route as AppBillingIndexRouteImport } from './routes/_app/billing.index
 import { Route as AppBillingPayRouteImport } from './routes/_app/billing.pay'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiV1CheckRouteImport } from './routes/api/v1/check'
+import { Route as ApiV1CheckActionRouteImport } from './routes/api/v1/check_action'
 import { Route as ApiV1McpRouteImport } from './routes/api/v1/mcp'
 import { Route as ApiV1ApprovalsIdRouteImport } from './routes/api/v1/approvals.$id'
 import { Route as ApiV1AuditSplatRouteImport } from './routes/api/v1/audit.$'
@@ -223,6 +224,11 @@ const ApiV1CheckRoute = ApiV1CheckRouteImport.update({
   path: '/api/v1/check',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1CheckActionRoute = ApiV1CheckActionRouteImport.update({
+  id: '/api/v1/check_action',
+  path: '/api/v1/check_action',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1McpRoute = ApiV1McpRouteImport.update({
   id: '/api/v1/mcp',
   path: '/api/v1/mcp',
@@ -365,6 +371,7 @@ export interface FileRoutesByFullPath {
   '/billing/pay': typeof AppBillingPayRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/v1/check': typeof ApiV1CheckRoute
+  '/api/v1/check_action': typeof ApiV1CheckActionRoute
   '/api/v1/mcp': typeof ApiV1McpRoute
   '/agents/': typeof AppAgentsIndexRoute
   '/billing/': typeof AppBillingIndexRoute
@@ -417,6 +424,7 @@ export interface FileRoutesByTo {
   '/billing/pay': typeof AppBillingPayRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/v1/check': typeof ApiV1CheckRoute
+  '/api/v1/check_action': typeof ApiV1CheckActionRoute
   '/api/v1/mcp': typeof ApiV1McpRoute
   '/agents': typeof AppAgentsIndexRoute
   '/billing': typeof AppBillingIndexRoute
@@ -474,6 +482,7 @@ export interface FileRoutesById {
   '/_app/billing/pay': typeof AppBillingPayRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/v1/check': typeof ApiV1CheckRoute
+  '/api/v1/check_action': typeof ApiV1CheckActionRoute
   '/api/v1/mcp': typeof ApiV1McpRoute
   '/_app/agents/': typeof AppAgentsIndexRoute
   '/_app/billing/': typeof AppBillingIndexRoute
@@ -531,6 +540,7 @@ export interface FileRouteTypes {
     | '/billing/pay'
     | '/api/auth/$'
     | '/api/v1/check'
+    | '/api/v1/check_action'
     | '/api/v1/mcp'
     | '/agents/'
     | '/billing/'
@@ -583,6 +593,7 @@ export interface FileRouteTypes {
     | '/billing/pay'
     | '/api/auth/$'
     | '/api/v1/check'
+    | '/api/v1/check_action'
     | '/api/v1/mcp'
     | '/agents'
     | '/billing'
@@ -639,6 +650,7 @@ export interface FileRouteTypes {
     | '/_app/billing/pay'
     | '/api/auth/$'
     | '/api/v1/check'
+    | '/api/v1/check_action'
     | '/api/v1/mcp'
     | '/_app/agents/'
     | '/_app/billing/'
@@ -684,6 +696,7 @@ export interface RootRouteChildren {
   OauthTokenRoute: typeof OauthTokenRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiV1CheckRoute: typeof ApiV1CheckRoute
+  ApiV1CheckActionRoute: typeof ApiV1CheckActionRoute
   ApiV1McpRoute: typeof ApiV1McpRoute
   ApiV1ApprovalsIdRoute: typeof ApiV1ApprovalsIdRoute
   ApiV1AuditSplatRoute: typeof ApiV1AuditSplatRoute
@@ -931,6 +944,13 @@ declare module '@tanstack/react-router' {
       path: '/api/v1/check'
       fullPath: '/api/v1/check'
       preLoaderRoute: typeof ApiV1CheckRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/check_action': {
+      id: '/api/v1/check_action'
+      path: '/api/v1/check_action'
+      fullPath: '/api/v1/check_action'
+      preLoaderRoute: typeof ApiV1CheckActionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/v1/mcp': {
@@ -1186,6 +1206,7 @@ const rootRouteChildren: RootRouteChildren = {
   OauthTokenRoute: OauthTokenRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiV1CheckRoute: ApiV1CheckRoute,
+  ApiV1CheckActionRoute: ApiV1CheckActionRoute,
   ApiV1McpRoute: ApiV1McpRoute,
   ApiV1ApprovalsIdRoute: ApiV1ApprovalsIdRoute,
   ApiV1AuditSplatRoute: ApiV1AuditSplatRoute,

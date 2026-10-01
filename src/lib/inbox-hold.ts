@@ -126,8 +126,10 @@ export function inboxHoldEmailCopy(opts: InboxHoldCopyOpts): InboxHoldEmailCopy 
   };
 }
 
-export function inboxHoldWebhookPayload(opts: InboxHoldCopyOpts & { ctaUrl: string }): SlackIncomingWebhookPayload {
-  const copy = inboxHoldEmailCopy(opts);
+export function inboxHoldWebhookPayload(
+  opts: InboxHoldCopyOpts & { ctaUrl: string; emailCopy?: InboxHoldEmailCopy },
+): SlackIncomingWebhookPayload {
+  const copy = opts.emailCopy ?? inboxHoldEmailCopy(opts);
   const ctaUrl = opts.ctaUrl.trim() || inboxHoldUrl(opts.approvalId);
   const text = [copy.title, ...copy.bodyLines, ctaUrl].join(" ");
   const mrkdwn = [`*${copy.title}*`, ...copy.bodyLines.map((line) => line)].join("\n");

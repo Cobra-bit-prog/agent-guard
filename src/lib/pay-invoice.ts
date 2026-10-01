@@ -10,6 +10,7 @@ import {
   SHOP_SHIELD_COPY,
   type PayPlanId,
 } from "./shop-shield.ts";
+import { ACTION_GATE_COPY } from "./action-gate.ts";
 import {
   PAY_EXPIRY_MS,
   SOLANA_PAYOUT_ADDRESS,
@@ -338,7 +339,12 @@ export function billingPaySearch(search: Record<string, unknown>): {
 
 export function viewInvoice(row: InvoiceRow, origin?: string | null): InvoiceView {
   const quote = payPlanQuote(row.plan);
-  const copy = quote.id === "shield" ? { ...SHOP_SHIELD_COPY } : copyFor(quote.price);
+  const copy =
+    quote.id === "shield"
+      ? { ...SHOP_SHIELD_COPY }
+      : quote.id === "action"
+        ? { ...ACTION_GATE_COPY }
+        : copyFor(quote.price);
   const recipient = lockedSolanaUsdcRecipient(row.recipient);
   const payUrl = buildSolanaPayUrl({
     recipient,
