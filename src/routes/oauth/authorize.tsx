@@ -5,17 +5,20 @@ import { Logo } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { SIGN_IN_PATH } from "@/lib/auth/gates";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
-import { listConsentAgents } from "@/lib/oauth/consent";
+import { describeConsentClient, listConsentAgents } from "@/lib/oauth/consent";
 import {
   CONSENT_ALLOW,
+  CONSENT_APP_LABEL,
   CONSENT_DENY,
   CONSENT_EYEBROW,
   CONSENT_HEADLINE,
   CONSENT_HUMAN_LINE,
   CONSENT_KEYS,
   CONSENT_LEDE,
+  CONSENT_LOOPBACK,
   CONSENT_NO_AGENTS,
   CONSENT_PICK_AGENT,
+  CONSENT_REDIRECT_LABEL,
   CONSENT_SIGN_IN,
   CONSENT_WHAT,
   CONSENT_WHAT_HEADING,
@@ -54,11 +57,11 @@ export const Route = createFileRoute("/oauth/authorize")({
   }),
   head: () => ({
     meta: [
-      { title: "Allow Claude — Agent Control" },
+      { title: "Allow a connector — Agent Control" },
       {
         name: "description",
         content:
-          "Let Claude ask Agent Control before a send. You stay the customer of record. You keep the keys.",
+          "Review the registered app and callback before you allow a send. You stay the customer of record. You keep the keys.",
       },
       { name: "theme-color", content: "#eef3f8" },
     ],
@@ -72,6 +75,14 @@ function str(value: unknown): string | undefined {
 function AuthorizePage() {
   const search = Route.useSearch();
   const { user, isPending } = useCurrentUserState();
+  const consentQuery = useQuery({
+    queryKey: ["oauth-consent-client", search.client_id, search.redirect_uri],
+    queryFn: () =>
+      describeConsentClient({
+        data: { clientId: search.client_id ?? "", redirectUri: search.redirect_uri ?? "" },
+      }),
+    retry: false,
+  });
   const agentsQuery = useQuery({
     queryKey: ["oauth-consent-agents"],
     queryFn: () => listConsentAgents(),
@@ -87,6 +98,13 @@ function AuthorizePage() {
     const qs = params.toString();
     return qs ? `/oauth/authorize?${qs}` : "/oauth/authorize";
   }, [search]);
+
+  const consent = consentQuery.data;
+  const consentError = consentQuery.error
+    ? "Could not check this app. Refresh and try again."
+    : consent && !consent.ok
+      ? consent.error
+      : null;
 
   if (isPending) {
     return (
@@ -104,6 +122,13 @@ function AuthorizePage() {
           <Logo href="/" markClassName="text-navy" />
           <h1 className="mt-6 text-display font-semibold">{CONSENT_HEADLINE}</h1>
           <p className="mt-4 text-body text-muted">{CONSENT_LEDE}</p>
+          <ConsentIdentity
+            pending={consentQuery.isPending}
+            error={consentError}
+            clientName={consent?.ok ? consent.client_name : ""}
+            redirectUri={consent?.ok ? consent.redirect_uri : ""}
+            loopback={consent?.ok ? consent.loopback : false}
+          />
           <p className="mt-3 text-body text-muted">{CONSENT_SIGN_IN}</p>
           <Button asChild className="mt-6 w-full rounded-full">
             <a href={href}>Sign in</a>
@@ -121,11 +146,20 @@ function AuthorizePage() {
     const href = `${SIGN_IN_PATH}?callbackURL=${encodeURIComponent(callbackURL)}`;
     return (
       <main className="sky grid min-h-screen place-items-center bg-bg px-5 py-10">
-        <p className="text-body text-muted">
-          <a href={href} className="font-medium text-navy hover:text-coral">
-            {CONSENT_SIGN_IN}
-          </a>
-        </p>
+        <div className="w-full max-w-md rounded-[28px] border border-border bg-surface p-8 shadow-[var(--shadow-panel)]">
+          <ConsentIdentity
+            pending={consentQuery.isPending}
+            error={consentError}
+            clientName={consent?.ok ? consent.client_name : ""}
+            redirectUri={consent?.ok ? consent.redirect_uri : ""}
+            loopback={consent?.ok ? consent.loopback : false}
+          />
+          <p className="mt-4 text-body text-muted">
+            <a href={href} className="font-medium text-navy hover:text-coral">
+              {CONSENT_SIGN_IN}
+            </a>
+          </p>
+        </div>
       </main>
     );
   }
@@ -147,6 +181,13 @@ function AuthorizePage() {
           ))}
         </ul>
         <p className="mt-4 text-body text-muted">{CONSENT_KEYS}</p>
+        <ConsentIdentity
+          pending={consentQuery.isPending}
+          error={consentError}
+          clientName={consent?.ok ? consent.client_name : ""}
+          redirectUri={consent?.ok ? consent.redirect_uri : ""}
+          loopback={consent?.ok ? consent.loopback : false}
+        />
 
         <form method="post" className="mt-8 space-y-4">
           {hiddenFields(search)}
@@ -181,17 +222,59 @@ function AuthorizePage() {
               name="decision"
               value="allow"
               className="rounded-full"
-              disabled={agents.length === 0}
+              disabled={agents.length === 0 || consent?.ok !== true}
             >
               {CONSENT_ALLOW}
             </Button>
-            <Button type="submit" name="decision" value="deny" variant="secondary" className="rounded-full">
+            <Button
+              type="submit"
+              name="decision"
+              value="deny"
+              variant="secondary"
+              className="rounded-full"
+            >
               {CONSENT_DENY}
             </Button>
           </div>
         </form>
       </div>
     </main>
+  );
+}
+
+function ConsentIdentity({
+  pending,
+  error,
+  clientName,
+  redirectUri,
+  loopback,
+}: {
+  pending: boolean;
+  error: string | null;
+  clientName: string;
+  redirectUri: string;
+  loopback: boolean;
+}) {
+  return (
+    <div className="mt-6 rounded-2xl border border-border bg-bg px-4 py-3">
+      {pending ? (
+        <p className="text-body text-muted">Checking this app…</p>
+      ) : error ? (
+        <p className="text-body text-muted">{error}</p>
+      ) : (
+        <>
+          <p className="text-meta font-medium uppercase tracking-[0.18em] text-coral">
+            {CONSENT_APP_LABEL}
+          </p>
+          <p className="mt-1 break-all text-body font-medium text-fg">{clientName}</p>
+          <p className="mt-3 text-meta font-medium uppercase tracking-[0.18em] text-coral">
+            {CONSENT_REDIRECT_LABEL}
+          </p>
+          <p className="mt-1 break-all text-body text-fg">{redirectUri}</p>
+          {loopback ? <p className="mt-3 text-body text-muted">{CONSENT_LOOPBACK}</p> : null}
+        </>
+      )}
+    </div>
   );
 }
 

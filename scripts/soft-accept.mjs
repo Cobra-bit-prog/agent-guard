@@ -56,6 +56,16 @@ export function mcpWrongPathResponse() {
   });
 }
 
+/**
+ * TanStack Start server functions (`/_serverFn/...`).
+ * GET calls send `Accept: application/x-tss-framed`, which is not a document.
+ * @param {string | null | undefined} pathname
+ */
+export function isServerFnPath(pathname) {
+  const path = String(pathname ?? "");
+  return path === "/_serverFn" || path.startsWith("/_serverFn/");
+}
+
 /** @param {string | null | undefined} pathname */
 export function isOauthMachinePath(pathname) {
   const path = String(pathname ?? "");
@@ -84,7 +94,8 @@ export function isWellKnownMachineJsonPath(pathname) {
 
 /**
  * True when a request would otherwise fall through to Start HTML SSR and 500.
- * GET/HEAD only so POST server-function / RPC traffic is untouched.
+ * GET/HEAD only so POST RPC traffic is untouched. GET `/_serverFn` is also
+ * left alone: that is how consent and other server functions load.
  * @param {{ method?: string | null, pathname?: string | null, accept?: string | null }} opts
  */
 export function shouldSoftReject({ method, pathname, accept }) {
@@ -92,6 +103,7 @@ export function shouldSoftReject({ method, pathname, accept }) {
   if (verb !== "GET" && verb !== "HEAD") return false;
   const path = String(pathname ?? "");
   if (isApiPath(path)) return false;
+  if (isServerFnPath(path)) return false;
   if (isOauthMachinePath(path)) return false;
   if (isWellKnownMachineJsonPath(path)) return false;
   if (path === "/__grok" || path.startsWith("/__grok/")) return false;

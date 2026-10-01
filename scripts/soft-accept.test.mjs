@@ -140,6 +140,25 @@ test("shouldSoftReject: leaves Claude OAuth discovery and token/register JSON al
   );
 });
 
+test("shouldSoftReject: leaves GET /_serverFn calls alone", () => {
+  assert.equal(
+    shouldSoftReject({
+      method: "GET",
+      pathname: "/_serverFn/eyJmaWxlIjoidGVzdCJ9",
+      accept: "application/x-tss-framed, application/x-ndjson, application/json",
+    }),
+    false,
+  );
+  assert.equal(
+    shouldSoftReject({
+      method: "GET",
+      pathname: "/oauth/authorize",
+      accept: "application/json",
+    }),
+    true,
+  );
+});
+
 test("shouldSoftReject: POST server-fn traffic is not intercepted", () => {
   assert.equal(
     shouldSoftReject({
