@@ -3,6 +3,16 @@ import { CopyCode } from "@/components/copy-code";
 import { SkyShell, SUPPORT_MAIL } from "@/components/marketing/chrome";
 import { ConnectCtas } from "@/components/marketing/connect-path";
 import { SupportedChains } from "@/components/chain-icons";
+import {
+  ACTION_GATE_CURL_CRM,
+  ACTION_GATE_CURL_EMAIL,
+  ACTION_GATE_CURL_SLACK,
+  ACTION_GATE_DB_ENV,
+  ACTION_GATE_HREF,
+  ACTION_GATE_MCP_NOTE,
+  ACTION_GATE_PRICE_USD,
+  ACTION_GATE_SCHEMA,
+} from "@/lib/action-gate";
 import { AGENTKIT_RECIPE_CODE, AGENTKIT_RECIPE_STEPS } from "@/lib/agentkit-recipe";
 import {
   CONNECT_BUILDERS_HEADING,
@@ -225,6 +235,9 @@ function DocsPage() {
           <a href="#policy-recipe" className="text-muted hover:text-fg">
             Policy recipe
           </a>
+          <a href="#action-gate" className="text-muted hover:text-fg">
+            Action Gate
+          </a>
           <a href="#compare" className="text-muted hover:text-fg">
             Compare
           </a>
@@ -429,6 +442,39 @@ client.onBeforePaymentCreation(
               </a>
               . If the check says stop, do not send.
             </p>
+          </article>
+          <article
+            id="action-gate"
+            className="mt-8 scroll-mt-6 rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]"
+          >
+            <h3 className="text-card font-medium">Action Gate</h3>
+            <p className="mt-2 text-body text-muted">
+              Humans pay ${ACTION_GATE_PRICE_USD} USDC a month so an agent must stop and ask before
+              a consequential action that is not a wallet send. Email, Slack, CRM writes, and
+              deploys wait in Approval Inbox. Allow once or Block. No decision in 10 minutes =
+              stop. The agent still sends the email after go. You keep the keys and the tools.
+            </p>
+            <p className="mt-3 text-body text-muted">
+              Pay at{" "}
+              <a href={ACTION_GATE_HREF} className="font-medium text-navy hover:text-coral">
+                {ACTION_GATE_HREF}
+              </a>
+              . Same Solana USDC path as other plans. No card. Action Gate does not replace
+              Starter. Durable decisions use <span className="font-mono text-fg">{ACTION_GATE_DB_ENV}</span>{" "}
+              (Neon already on this project) and <span className="font-mono text-fg">{ACTION_GATE_SCHEMA}</span>,
+              applied on boot. If that variable is missing, the check returns stop.
+            </p>
+            <p className="mt-3 text-body text-muted">{ACTION_GATE_MCP_NOTE}</p>
+            <p className="mt-4 text-body font-medium text-fg">email.send</p>
+            <CopyCode code={ACTION_GATE_CURL_EMAIL} label="Copy email.send" />
+            <p className="mt-4 text-body font-medium text-fg">slack.post</p>
+            <CopyCode code={ACTION_GATE_CURL_SLACK} label="Copy slack.post" />
+            <p className="mt-4 text-body font-medium text-fg">crm.write</p>
+            <CopyCode code={ACTION_GATE_CURL_CRM} label="Copy crm.write" />
+            <pre className="mt-4 overflow-x-auto rounded-[16px] bg-[#12263f] p-4 font-mono text-meta leading-relaxed text-[#e8eef6]">
+              {`# MCP tools/call check_action  (ask_human is the same tool)
+# then poll get_approval with approval_id until go or stop`}
+            </pre>
           </article>
           <article
             id="hold-notifications"

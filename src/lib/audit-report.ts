@@ -26,7 +26,7 @@ export type AuditSnapshot = {
 };
 
 export const AUDIT_KIND_LEGEND =
-  "Kind: check = the agent asked first; send = a recorded transfer; alert = policy ping; decision = your Inbox choice.";
+  "Kind: check = the agent asked first; send = a recorded transfer; alert = policy ping; decision = your Inbox choice, including Action Gate go, stop, and timeout.";
 
 export const AUDIT_DISCLAIMER =
   "Agent Control audit trail: pre-sign checks, alerts, operator decisions, and recorded transfers. This is not a full on-chain replay. " +

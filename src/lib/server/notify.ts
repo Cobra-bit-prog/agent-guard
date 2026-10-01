@@ -164,6 +164,8 @@ export async function notifyInboxHold(opts: {
   message: string;
   valueUsd?: number;
   to?: string;
+  /** Action Gate passes its own subject/body. Spend holds keep the default copy. */
+  emailCopy?: ReturnType<typeof inboxHoldEmailCopy>;
 }): Promise<void> {
   try {
     const approvalId = opts.approvalId.trim();
@@ -188,13 +190,15 @@ export async function notifyInboxHold(opts: {
       from profiles where user_id = ${opts.userId} limit 1
     `;
     const ctaUrl = inboxHoldUrl(approvalId);
-    const copy = inboxHoldEmailCopy({
-      agentName: opts.agentName,
-      message: opts.message,
-      approvalId,
-      valueUsd: opts.valueUsd,
-      to: opts.to,
-    });
+    const copy =
+      opts.emailCopy ??
+      inboxHoldEmailCopy({
+        agentName: opts.agentName,
+        message: opts.message,
+        approvalId,
+        valueUsd: opts.valueUsd,
+        to: opts.to,
+      });
     const logMessage = holdNoticeMessage(approvalId, opts.message);
 
     if (profile[0]?.email_alerts ?? true) {
@@ -223,6 +227,7 @@ export async function notifyInboxHold(opts: {
         valueUsd: opts.valueUsd,
         to: opts.to,
         ctaUrl,
+        emailCopy: copy,
       });
       await postSlackIncomingWebhook(webhookUrl, payload);
       await queueNotice(opts.userId, webhookLogChannel(webhookUrl), logMessage);
@@ -231,14 +236,16 @@ export async function notifyInboxHold(opts: {
     const chatId = String(profile[0]?.telegram_chat_id ?? "").trim();
     const telegramOn = Boolean(profile[0]?.telegram_alerts);
     if (telegramOn && chatId && process.env.TELEGRAM_BOT_TOKEN?.trim()) {
-      const text = inboxHoldTelegramText({
-        agentName: opts.agentName,
-        message: opts.message,
-        approvalId,
-        valueUsd: opts.valueUsd,
-        to: opts.to,
-        ctaUrl,
-      });
+      const text = opts.emailCopy
+        ? [...copy.bodyLines, "", `${copy.ctaLabel}:`, ctaUrl].join("\n")
+        : inboxHoldTelegramText({
+            agentName: opts.agentName,
+            message: opts.message,
+            approvalId,
+            valueUsd: opts.valueUsd,
+            to: opts.to,
+            ctaUrl,
+          });
       await sendTelegramHold({ chatId, text });
       await queueNotice(opts.userId, "telegram", logMessage);
     }

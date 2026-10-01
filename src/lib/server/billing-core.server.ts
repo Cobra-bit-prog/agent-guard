@@ -1,6 +1,7 @@
 import { getSql } from "@/lib/db";
 import { PLANS } from "@/lib/plans";
-import { humanInboxPlan, payPlanQuote } from "@/lib/shop-shield";
+import { humanInboxPlan, isActionGatePlan, payPlanQuote } from "@/lib/shop-shield";
+import { applyActionEntitlement } from "@/lib/server/action-gate";
 import { uid } from "@/lib/utils";
 import { PAY_EXPIRY_MS, PERIOD_DAYS, usdcBaseUnits, type PayChain } from "@/lib/solana-pay";
 import { findMatchingUsdcPayment, newPayReference, payoutAddress } from "@/lib/solana-pay.server";
@@ -209,6 +210,7 @@ export async function markInvoicePaid(
         chain: CHAIN_LABEL[chain],
       });
     }
+    if (isActionGatePlan(row.plan)) await applyActionEntitlement(userId);
     await sendInvoiceIfNeeded(userId, row);
   }
   return row;
@@ -396,6 +398,7 @@ export async function claimPaidInvoicesForUser(userId: string, email: string | n
     row.user_id = userId;
     const inbox = humanInboxPlan(row.plan);
     if (inbox) await applyPaidPlan(userId, inbox, asPayChain(row.chain));
+    if (isActionGatePlan(row.plan)) await applyActionEntitlement(userId);
     await sendInvoiceIfNeeded(userId, row);
   }
 }

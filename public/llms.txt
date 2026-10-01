@@ -52,6 +52,14 @@ Check API (machine-readable):
 ## Pricing
 1-day full console trial, no card, no KYC. Then Starter $29 / Pro $49 / Team $149. Humans pay at /billing/pay — $29 USDC on Solana, QR + Pay. No in-page Phantom. Agents use POST /api/v1/billing/checkout.
 
+## Action Gate (non-money actions)
+Humans pay $49/mo so agents must stop and ask before consequential actions that are not a wallet send: email.send, slack.post, crm.write, deploy. Returns go, stop, or wait. No decision in 10 minutes = stop. Approval Inbox: Allow once or Block. Audit export includes the decision (who, when, channel). Pay USDC at https://agent-control.net/billing/pay?plan=action . No card. Does not replace Starter and is not an Agent Meter pack. The agent executes only after go. You keep the keys and the tools. Docs: https://agent-control.net/docs#action-gate
+
+Storage: existing Neon via DATABASE_URL (do not create a second database). Schema: migrations/0022_action_gate.sql, applied on boot and by npm run db:migrate. If DATABASE_URL is missing the check fails closed (stop).
+
+curl -s https://agent-control.net/api/v1/check_action -H "Authorization: Bearer YOUR_AGENT_API_KEY" -H "Content-Type: application/json" -d '{"action_type":"email.send","summary":"Send the refund reply","preview":"Hi — your refund is on the way.","target":"customer@example.com","risk":"high"}'
+MCP: check_action or ask_human, then get_approval until go or stop.
+
 ## Agent Meter (no human on the site)
 Separate from the Human App. Agents pay themselves. Can I pay this address? Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05. look $0.10 is optional one-shot. Then scan and preflight. ok | new | warn | sink. Packs: looks_20 $0.20. addresses_100 $0.15. Ticket: stamp_tx $0.05. Take this ticket or we do not take your USDC. Base USDC (EIP-3009 exact) and Solana USDC. No inbox. No email, no trial, no API key, no Approval Inbox. Discovery: GET /.well-known/mcp.json then GET /.well-known/x402 then llms → pricing → 402 → MCP. OpenAPI: https://agent-control.net/openapi-meter.json Agent card: https://agent-control.net/.well-known/agent-card.json Docs: https://agent-control.net/docs#agent-meter
 

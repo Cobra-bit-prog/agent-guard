@@ -3,7 +3,8 @@ import { z } from "zod";
 import { authMiddleware } from "@/lib/auth/middleware";
 import { getSql } from "@/lib/db";
 import { PLANS } from "@/lib/plans";
-import { humanInboxPlan, payPlanQuote } from "@/lib/shop-shield";
+import { humanInboxPlan, isActionGatePlan, payPlanQuote } from "@/lib/shop-shield";
+import { applyActionEntitlement } from "@/lib/server/action-gate";
 import { uid } from "@/lib/utils";
 import {
   PAY_EXPIRY_MS,
@@ -365,6 +366,7 @@ export const watchPayRequest = createServerFn({ method: "POST" })
           chain: CHAIN_LABEL[chain],
         });
       }
+      if (isActionGatePlan(row.plan)) await applyActionEntitlement(context.userId);
       row.status = "paid";
       row.signature = match.signature;
       row.paid_amount_usdc = match.amountUsdc;

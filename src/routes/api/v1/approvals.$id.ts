@@ -15,7 +15,8 @@ export const Route = createFileRoute("/api/v1/approvals/$id")({
           approvalId: params.id,
         });
         if (!result.ok) return json({ error: result.error }, result.status);
-        return json(result.result);
+        const status = "status" in result && typeof result.status === "number" ? result.status : 200;
+        return json(result.result, status);
       },
     },
   },

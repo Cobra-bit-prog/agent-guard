@@ -160,6 +160,45 @@ export const MCP_TOOLS = [
     },
   },
   {
+    name: "check_action",
+    title: "Ask before a non-money action",
+    description:
+      "Action Gate. MUST be called before email.send, slack.post, crm.write, deploy, or any other consequential non-money action. Returns go, stop, or wait. If decision is wait, poll get_approval until go or stop. No decision in 10 minutes = stop. If must_abort is true, do not act. You keep the keys and the tools. Alias: ask_human.",
+    annotations: writes,
+    inputSchema: {
+      type: "object",
+      properties: {
+        action_type: {
+          type: "string",
+          description: "email.send, slack.post, crm.write, deploy, or another action id",
+        },
+        summary: { type: "string", description: "One line a human can decide from" },
+        preview: { type: "string", description: "Bounded text of what the agent will do after go" },
+        target: { type: "string", description: "Optional email, channel, or record id" },
+        risk: { type: "string", description: "Optional tag such as low, medium, or high" },
+      },
+      required: ["action_type", "summary", "preview"],
+    },
+  },
+  {
+    name: "ask_human",
+    title: "Ask a human before acting",
+    description:
+      "Same as check_action. Stop and ask before a consequential non-money action. Returns go, stop, or wait plus approval_id. Poll get_approval. Timeout is stop.",
+    annotations: writes,
+    inputSchema: {
+      type: "object",
+      properties: {
+        action_type: { type: "string" },
+        summary: { type: "string" },
+        preview: { type: "string" },
+        target: { type: "string" },
+        risk: { type: "string" },
+      },
+      required: ["action_type", "summary", "preview"],
+    },
+  },
+  {
     name: "get_agent_status",
     title: "Get agent status",
     description: "Returns whether this agent is paused, expired, or healthy.",
@@ -170,7 +209,7 @@ export const MCP_TOOLS = [
     name: "get_approval",
     title: "Get approval decision",
     description:
-      "Poll a held pre-sign check. Pass approval_id from check_transfer. Repeat until decision is allow or block.",
+      "Poll a held check. Pass approval_id from check_transfer (allow or block) or check_action (go, stop, or wait). Repeat until the decision is final. Action Gate timeout is stop.",
     annotations: readOnly,
     inputSchema: {
       type: "object",

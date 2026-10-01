@@ -4,6 +4,7 @@ import { evaluateEntitlement } from "@/lib/plans";
 import { evaluateTransfer, isNearDailyLimit, nearLimitMessage } from "@/lib/policy";
 import { ensureSchema } from "@/lib/server/guard";
 import { getApprovalForAgent, insertHold } from "@/lib/server/approvals";
+import { pollActionIntent } from "@/lib/server/action-gate";
 import {
   notifyInboxHold,
   notifyWarningAlert,
@@ -286,7 +287,7 @@ export async function pollApprovalIntent(input: { apiKey: string; approvalId: st
     approvalId: input.approvalId,
     agentId: String(agent.id),
   });
-  if (!row) return { ok: false as const, status: 404, error: "Unknown approval." };
+  if (!row) return pollActionIntent({ apiKey: key, approvalId: input.approvalId });
 
   const decision = pollDecisionFromStatus(row.status);
   const mustAbort = decision !== "allow";

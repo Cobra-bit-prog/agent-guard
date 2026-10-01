@@ -108,7 +108,8 @@ function AuditPage() {
         <p className="text-sm text-muted">
           On-demand report of this agent’s Agent Control trail — checks, alerts, operator decisions,
           and recorded transfers. Kind: check = the agent asked first; send = a recorded transfer;
-          alert = policy ping; decision = your Inbox choice. Not a full chain replay. Generate, then
+          alert = policy ping; decision = your Inbox choice, including Action Gate go, stop, and
+          timeout. Not a full chain replay. Generate, then
           download Excel, PDF, or CSV.
         </p>
         <p className="mt-2 text-sm text-muted">

@@ -36,10 +36,10 @@ function InboxPage() {
     onSuccess: (_r, vars) => {
       toast.success(
         vars.decision === "block"
-          ? "Blocked. The agent must not sign."
+          ? "Blocked. The agent must not continue."
           : vars.decision === "always"
             ? "Allowed. This address is now on the allowlist."
-            : "Allowed once. The agent may sign this send.",
+            : "Allowed once.",
       );
       void qc.invalidateQueries({ queryKey: ["inbox"] });
       void qc.invalidateQueries({ queryKey: ["holds-count"] });
@@ -76,8 +76,9 @@ function InboxPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Waiting for you</h1>
         <p className="text-sm text-muted">
           Off-policy and first-time destinations pause here if the agent called check before it
-          signs. If you do nothing, the hold expires in 10 minutes and the agent must abort
-          (treated as a block).
+          signs. Action Gate rows pause here before email, Slack, CRM, or deploy. If you do
+          nothing, the hold expires in 10 minutes and the agent must abort (spend is a block;
+          an action is a stop).
         </p>
       </div>
 
@@ -111,52 +112,90 @@ function InboxPage() {
               className={cn("scroll-mt-24", focused && "ring-2 ring-navy/40")}
             >
               <CardContent className="flex flex-col gap-4 p-5">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant={focused ? "primary" : "warning"}>
-                        {focused ? "This hold" : "Waiting for you"}
-                      </Badge>
-                      <span className="text-sm font-medium">
-                        {it.agent_name ?? "Agent"}
-                        {it.chain ? ` · ${it.chain}` : ""}
-                      </span>
+                {it.kind === "action" ? (
+                  <>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant={focused ? "primary" : "warning"}>Action</Badge>
+                        <span className="text-sm font-medium">
+                          {it.agent_name ?? "Agent"} · {it.action_type}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-sm font-medium">{it.summary}</p>
+                      <p className="mt-1 whitespace-pre-wrap text-sm text-muted">{it.preview}</p>
+                      {it.target ? (
+                        <p className="mt-1 font-mono text-xs text-muted">Target {it.target}</p>
+                      ) : null}
+                      <p className="text-xs text-subtle">{timeAgo(it.created_at)}</p>
                     </div>
-                    <p className="mt-2 font-mono text-xs text-muted">
-                      {shortAddress(it.to_address, 6)}
-                    </p>
-                    <p className="mt-1 text-sm text-muted">{it.reasons[0]}</p>
-                    <p className="text-xs text-subtle">{timeAgo(it.created_at)}</p>
-                  </div>
-                  <p className="text-2xl font-semibold tabular-nums tracking-tight">
-                    {formatUsd(it.value_usd)}
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    className="min-h-11"
-                    disabled={!writable || decide.isPending}
-                    onClick={() => decide.mutate({ id: it.id, decision: "allow" })}
-                  >
-                    Allow once
-                  </Button>
-                  <Button
-                    className="min-h-11"
-                    variant="secondary"
-                    disabled={!writable || decide.isPending}
-                    onClick={() => decide.mutate({ id: it.id, decision: "always" })}
-                  >
-                    Always allow this address
-                  </Button>
-                  <Button
-                    className="min-h-11"
-                    variant="danger"
-                    disabled={!writable || decide.isPending}
-                    onClick={() => decide.mutate({ id: it.id, decision: "block" })}
-                  >
-                    Block
-                  </Button>
-                </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        className="min-h-11"
+                        disabled={!writable || decide.isPending}
+                        onClick={() => decide.mutate({ id: it.id, decision: "allow" })}
+                      >
+                        Allow once
+                      </Button>
+                      <Button
+                        className="min-h-11"
+                        variant="danger"
+                        disabled={!writable || decide.isPending}
+                        onClick={() => decide.mutate({ id: it.id, decision: "block" })}
+                      >
+                        Block
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant={focused ? "primary" : "warning"}>
+                            {focused ? "This hold" : "Waiting for you"}
+                          </Badge>
+                          <span className="text-sm font-medium">
+                            {it.agent_name ?? "Agent"}
+                            {it.chain ? ` · ${it.chain}` : ""}
+                          </span>
+                        </div>
+                        <p className="mt-2 font-mono text-xs text-muted">
+                          {shortAddress(it.to_address, 6)}
+                        </p>
+                        <p className="mt-1 text-sm text-muted">{it.reasons[0]}</p>
+                        <p className="text-xs text-subtle">{timeAgo(it.created_at)}</p>
+                      </div>
+                      <p className="text-2xl font-semibold tabular-nums tracking-tight">
+                        {formatUsd(it.value_usd)}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        className="min-h-11"
+                        disabled={!writable || decide.isPending}
+                        onClick={() => decide.mutate({ id: it.id, decision: "allow" })}
+                      >
+                        Allow once
+                      </Button>
+                      <Button
+                        className="min-h-11"
+                        variant="secondary"
+                        disabled={!writable || decide.isPending}
+                        onClick={() => decide.mutate({ id: it.id, decision: "always" })}
+                      >
+                        Always allow this address
+                      </Button>
+                      <Button
+                        className="min-h-11"
+                        variant="danger"
+                        disabled={!writable || decide.isPending}
+                        onClick={() => decide.mutate({ id: it.id, decision: "block" })}
+                      >
+                        Block
+                      </Button>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           );
