@@ -22,6 +22,8 @@ function SettingsPage() {
   const [emailOn, setEmailOn] = useState(true);
   const [tgOn, setTgOn] = useState(false);
   const [webhook, setWebhook] = useState("");
+  const [crmWebhook, setCrmWebhook] = useState("");
+  const [agentmailInbox, setAgentmailInbox] = useState("");
 
   useEffect(() => {
     if (!q.data) return;
@@ -29,6 +31,8 @@ function SettingsPage() {
     setEmailOn(q.data.email_alerts);
     setTgOn(q.data.telegram_alerts);
     setWebhook(q.data.webhook_url ?? "");
+    setCrmWebhook(q.data.crm_webhook_url ?? "");
+    setAgentmailInbox(q.data.agentmail_inbox_id ?? "");
   }, [q.data]);
 
   const save = useMutation({
@@ -39,6 +43,8 @@ function SettingsPage() {
           email_alerts: emailOn,
           telegram_alerts: tgOn,
           webhook_url: webhook,
+          crm_webhook_url: crmWebhook,
+          agentmail_inbox_id: agentmailInbox,
         },
       }),
     onSuccess: () => toast.success("Preferences saved"),
@@ -116,7 +122,34 @@ function SettingsPage() {
             <p className="text-xs text-subtle">
               Used for Inbox hold notifications. Paste a Slack incoming webhook URL. We POST Slack
               JSON (text + blocks) with a link to that hold. If you do nothing within 10 minutes,
-              the hold expires and the agent must abort (treated as a block).
+              the hold expires and the agent must abort (treated as a block). Write Gate slack.post
+              uses this same URL after you allow once.
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            <Label>CRM webhook URL (https)</Label>
+            <Input
+              value={crmWebhook}
+              onChange={(e) => setCrmWebhook(e.target.value)}
+              placeholder="https://example.com/hooks/crm"
+              disabled={!writable}
+            />
+            <p className="text-xs text-subtle">
+              Write Gate crm.write POSTs the approved preview here after you allow once. Leave
+              blank and the tool stops.
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Agentmail inbox id</Label>
+            <Input
+              value={agentmailInbox}
+              onChange={(e) => setAgentmailInbox(e.target.value)}
+              placeholder="support@your-domain.com"
+              disabled={!writable}
+            />
+            <p className="text-xs text-subtle">
+              Write Gate email.send uses this inbox after you allow once. Leave blank and the tool
+              stops. Nothing is sent in its place.
             </p>
           </div>
           <Button onClick={() => save.mutate()} disabled={save.isPending || !writable}>

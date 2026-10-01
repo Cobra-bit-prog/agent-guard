@@ -1,5 +1,7 @@
 import { agentStatusForKey, checkTransferIntent, pollApprovalIntent } from "@/lib/server/intent";
 import { checkActionIntent } from "@/lib/server/action-gate";
+import { executeWriteTool } from "@/lib/server/write-gate";
+import { isWriteGateTool } from "@/lib/write-gate";
 import { dispatchStorefrontTool } from "@/lib/server/storefront";
 import type { McpToolCallResult } from "@/lib/mcp/handle.ts";
 import { meterMcpToolResult, rejectMeterKeyUpload } from "@/lib/mcp/meter-result.ts";
@@ -98,6 +100,14 @@ export async function dispatchMcpTool(
       return { ok: false, status: 401, code: 401, message: "Unknown API key." };
     }
     return { ok: true, result: status };
+  }
+
+  if (isWriteGateTool(name)) {
+    const result = await executeWriteTool({ apiKey, tool: name, args });
+    if (!result.ok) {
+      return { ok: false, status: result.status, code: result.status, message: result.error };
+    }
+    return { ok: true, result: result.result };
   }
 
   if (name === "check_action" || name === "ask_human") {
