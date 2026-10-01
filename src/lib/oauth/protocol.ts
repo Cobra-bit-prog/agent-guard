@@ -74,17 +74,80 @@ export function authorizeQueryFromRecord(input: Record<string, string>): Authori
   };
 }
 
+/**
+ * Hosted Claude (claude.ai, Desktop, mobile, Cowork) redirects to exactly one
+ * callback. Source: https://claude.com/docs/connectors/building/authentication
+ * and the connector tests in this repo.
+ */
+export const CLAUDE_MCP_REDIRECT_URI = "https://claude.ai/api/mcp/auth_callback";
+
+/**
+ * Public Dynamic Client Registration stays open for Claude Connectors.
+ * redirect_uris must be the hosted Claude callback, or an http loopback URL
+ * on localhost / 127.0.0.1 (any port and path) for Claude Code and local dev.
+ * Arbitrary https callbacks are rejected so a phisher cannot register their
+ * own host and collect the authorization code after consent.
+ *
+ * The raw host text must be `localhost` or `127.0.0.1`. Decimal, octal, and
+ * hex spellings of loopback normalize to 127.0.0.1 in the URL parser and are
+ * rejected so the consent screen shows the host the operator expects.
+ */
 export function isAllowedRedirectUri(uri: string): boolean {
+  let parsed: URL;
   try {
-    const parsed = new URL(uri);
-    if (parsed.hash) return false;
-    if (parsed.protocol === "http:") {
-      return parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1";
-    }
-    return parsed.protocol === "https:";
+    parsed = new URL(uri);
   } catch {
     return false;
   }
+  if (parsed.hash || parsed.username || parsed.password) return false;
+  if (parsed.protocol === "https:") {
+    const canonical = new URL(CLAUDE_MCP_REDIRECT_URI);
+    return (
+      parsed.hostname === canonical.hostname &&
+      parsed.port === "" &&
+      parsed.pathname === canonical.pathname &&
+      parsed.search === ""
+    );
+  }
+  if (parsed.protocol !== "http:") return false;
+  return isExplicitLoopback(uri, parsed);
+}
+
+export function isLoopbackRedirectUri(uri: string): boolean {
+  if (!isAllowedRedirectUri(uri)) return false;
+  try {
+    return new URL(uri).protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+function isExplicitLoopback(uri: string, parsed: URL): boolean {
+  const match = /^http:\/\/([^/?#]*)/i.exec(uri);
+  if (!match) return false;
+  const authority = match[1] ?? "";
+  if (
+    !authority ||
+    authority.includes("@") ||
+    authority.includes("\\") ||
+    authority.startsWith("[")
+  ) {
+    return false;
+  }
+  let host = authority;
+  const colon = authority.lastIndexOf(":");
+  if (colon !== -1) {
+    host = authority.slice(0, colon);
+    const portText = authority.slice(colon + 1);
+    if (!/^[1-9]\d{0,4}$/.test(portText)) return false;
+    const portNum = Number(portText);
+    if (portNum > 65535) return false;
+    const expectedPort = portNum === 80 ? "" : String(portNum);
+    if (parsed.port !== expectedPort) return false;
+  }
+  const hostLower = host.toLowerCase();
+  if (hostLower !== "localhost" && hostLower !== "127.0.0.1") return false;
+  return parsed.hostname === hostLower;
 }
 
 function appendQuery(redirectUri: string, params: Record<string, string>): string {
@@ -138,12 +201,14 @@ export async function checkAuthorizeRequest(
     };
   }
   const client = await store.getClient(query.client_id);
-  if (!client) {
+  if (!client || client.redirect_uris.some((uri) => !isAllowedRedirectUri(uri))) {
     return {
       ok: false,
       status: 400,
       error: "invalid_client",
-      error_description: "Unknown client. Register first.",
+      error_description: client
+        ? "This client's redirect_uris are not allowed."
+        : "Unknown client. Register first.",
     };
   }
   if (!client.redirect_uris.includes(query.redirect_uri)) {
@@ -195,7 +260,10 @@ export async function completeAuthorize(
   }
   const agent = await store.getAgentForUser(input.userId, input.agentId);
   if (!agent) {
-    return { status: 400, body: { error: "invalid_request", error_description: "Choose one of your agents." } };
+    return {
+      status: 400,
+      body: { error: "invalid_request", error_description: "Choose one of your agents." },
+    };
   }
   const code = newOpaque(CODE_PREFIX);
   await store.insertCode({
@@ -236,6 +304,34 @@ export function denyAuthorize(query: AuthorizeQuery, issuer?: string): OauthHttp
   };
 }
 
+export type ConsentTarget =
+  | { ok: true; client_name: string; redirect_uri: string; loopback: boolean }
+  | { ok: false; error: string };
+
+/** What the consent screen may show before Allow. Uses the registered client, not the query name. */
+export async function describeConsentTarget(
+  store: OauthStore,
+  clientId: string,
+  redirectUri: string,
+): Promise<ConsentTarget> {
+  if (!isAllowedRedirectUri(redirectUri)) {
+    return { ok: false, error: "This callback URL is not allowed." };
+  }
+  const client = await store.getClient(clientId);
+  if (!client || client.redirect_uris.some((uri) => !isAllowedRedirectUri(uri))) {
+    return { ok: false, error: "This app is not registered." };
+  }
+  if (!client.redirect_uris.includes(redirectUri)) {
+    return { ok: false, error: "This callback URL does not match the registered app." };
+  }
+  return {
+    ok: true,
+    client_name: client.client_name,
+    redirect_uri: redirectUri,
+    loopback: isLoopbackRedirectUri(redirectUri),
+  };
+}
+
 function asStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.map((item) => String(item).trim()).filter(Boolean);
@@ -250,14 +346,18 @@ export async function registerClient(
   if (redirectUris.length === 0 || !redirectUris.every(isAllowedRedirectUri)) {
     return {
       status: 400,
-      body: { error: "invalid_redirect_uri", error_description: "Provide https (or localhost) redirect_uris." },
+      body: {
+        error: "invalid_redirect_uri",
+        error_description:
+          "redirect_uri must be https://claude.ai/api/mcp/auth_callback or http://localhost / http://127.0.0.1.",
+      },
     };
   }
   const client = newOpaque(CLIENT_PREFIX);
   const name =
     typeof body.client_name === "string" && body.client_name.trim()
       ? body.client_name.trim().slice(0, 80)
-      : "Claude";
+      : "MCP client";
   const row = {
     client_id: client.raw,
     client_name: name,
@@ -296,7 +396,13 @@ async function issueTokens(
     resource: string | null;
     now: number;
   },
-): Promise<{ access_token: string; refresh_token: string; expires_in: number; token_type: "Bearer"; scope: string }> {
+): Promise<{
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+  token_type: "Bearer";
+  scope: string;
+}> {
   const access = newOpaque(ACCESS_PREFIX);
   const refresh = newOpaque(REFRESH_PREFIX);
   await store.insertToken({
@@ -333,7 +439,11 @@ export async function exchangeToken(
       return { status: 400, body: { error: "invalid_grant" } };
     }
     const existing = await store.getTokenByRefreshHash(sha256Hex(raw));
-    if (!existing || !existing.refresh_expires_at || new Date(existing.refresh_expires_at).getTime() <= now) {
+    if (
+      !existing ||
+      !existing.refresh_expires_at ||
+      new Date(existing.refresh_expires_at).getTime() <= now
+    ) {
       return { status: 400, body: { error: "invalid_grant" } };
     }
     const clientId = readForm(body, "client_id");
@@ -381,7 +491,11 @@ export async function exchangeToken(
   if (!row || row.used_at || new Date(row.expires_at).getTime() <= now) {
     return { status: 400, body: { error: "invalid_grant" } };
   }
-  if (row.client_id !== clientId || row.redirect_uri !== redirectUri) {
+  if (
+    !isAllowedRedirectUri(redirectUri) ||
+    row.client_id !== clientId ||
+    row.redirect_uri !== redirectUri
+  ) {
     return { status: 400, body: { error: "invalid_grant" } };
   }
   if (s256Challenge(verifier) !== row.code_challenge) {

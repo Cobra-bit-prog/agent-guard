@@ -6,11 +6,14 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   CONSENT_ALLOW,
+  CONSENT_APP_LABEL,
   CONSENT_EYEBROW,
   CONSENT_HEADLINE,
   CONSENT_HUMAN_LINE,
   CONSENT_KEYS,
   CONSENT_LEDE,
+  CONSENT_LOOPBACK,
+  CONSENT_REDIRECT_LABEL,
   CONSENT_WHAT,
   CONSENT_WHAT_HEADING,
   MCP_HUMAN_SCOPE,
@@ -23,15 +26,22 @@ import {
 } from "./copy.ts";
 import { isAccessToken, s256Challenge, sha256Hex } from "./crypto.ts";
 import { handleOauthDiscovery } from "./http.ts";
-import { authorizationServerMetadata, oauthWwwAuthenticate, protectedResourceMetadata } from "./metadata.ts";
+import {
+  authorizationServerMetadata,
+  oauthWwwAuthenticate,
+  protectedResourceMetadata,
+} from "./metadata.ts";
 import {
   checkAuthorizeRequest,
   completeAuthorize,
   denyAuthorize,
+  describeConsentTarget,
   exchangeToken,
+  isAllowedRedirectUri,
   mcpResourceUrl,
   registerClient,
 } from "./protocol.ts";
+import { clientIpForRegisterLimit, consumeRegisterSlot } from "./register-limit.ts";
 import { resolveMcpCredential } from "./resolve.ts";
 import { memoryOauthStore } from "./store.ts";
 
@@ -197,6 +207,151 @@ describe("Claude Connectors OAuth 2.1 + PKCE", () => {
     assert.equal(bad.status, 400);
   });
 
+  it("rejects arbitrary https redirect_uris and keeps the Claude callback plus loopback", async () => {
+    const store = memoryOauthStore();
+    const evil = await registerClient(store, {
+      client_name: "Claude",
+      redirect_uris: ["https://evil.example/steal"],
+    });
+    assert.equal(evil.status, 400);
+    assert.equal((evil.body as { error: string }).error, "invalid_redirect_uri");
+
+    const mixed = await registerClient(store, {
+      redirect_uris: [REDIRECT, "https://evil.example/steal"],
+    });
+    assert.equal(mixed.status, 400);
+
+    const lookalike = await registerClient(store, {
+      redirect_uris: ["https://claude.ai.evil.com/api/mcp/auth_callback"],
+    });
+    assert.equal(lookalike.status, 400);
+
+    const decimalLoopback = await registerClient(store, {
+      redirect_uris: ["http://2130706433/cb"],
+    });
+    assert.equal(decimalLoopback.status, 400);
+
+    const userinfo = await registerClient(store, {
+      redirect_uris: ["https://user:pass@claude.ai/api/mcp/auth_callback"],
+    });
+    assert.equal(userinfo.status, 400);
+
+    const hosted = await registerClient(store, {
+      client_name: "Claude",
+      redirect_uris: [REDIRECT],
+    });
+    assert.equal(hosted.status, 201);
+
+    const local = await registerClient(store, {
+      client_name: "Local tool",
+      redirect_uris: ["http://127.0.0.1:3118/callback"],
+    });
+    assert.equal(local.status, 201);
+    assert.equal((local.body as { client_name: string }).client_name, "Local tool");
+
+    const localhost = await registerClient(store, {
+      redirect_uris: ["http://localhost:8080/any/path?x=1"],
+    });
+    assert.equal(localhost.status, 201);
+    assert.equal((localhost.body as { client_name: string }).client_name, "MCP client");
+
+    assert.equal(isAllowedRedirectUri(REDIRECT), true);
+    assert.equal(isAllowedRedirectUri("https://CLAUDE.ai/api/mcp/auth_callback"), true);
+    assert.equal(isAllowedRedirectUri("http://localhost/callback"), true);
+    assert.equal(isAllowedRedirectUri("http://127.0.0.1:9/cb"), true);
+    assert.equal(isAllowedRedirectUri("https://evil.example/steal"), false);
+    assert.equal(isAllowedRedirectUri("https://claude.ai/api/mcp/auth_callback/extra"), false);
+    assert.equal(isAllowedRedirectUri("http://localhost.evil.com/callback"), false);
+    assert.equal(isAllowedRedirectUri("https://127.0.0.1/callback"), false);
+  });
+
+  it("does not authorize or deny-redirect to a non-allowlisted redirect_uri", async () => {
+    const store = memoryOauthStore([
+      {
+        id: "agent-1",
+        user_id: "user-1",
+        name: "Ops bot",
+        chain: "solana",
+        address: "addr",
+        api_key: "ag_live_key",
+        is_demo: false,
+      },
+    ]);
+    await store.insertClient({
+      client_id: "oc_evil",
+      client_name: "Claude",
+      redirect_uris: ["https://evil.example/steal"],
+      token_endpoint_auth_method: "none",
+      created_at: new Date(0).toISOString(),
+    });
+    const query = {
+      response_type: "code",
+      client_id: "oc_evil",
+      redirect_uri: "https://evil.example/steal",
+      state: "phish",
+      code_challenge: s256Challenge(verifier()),
+      code_challenge_method: "S256",
+      scope: MCP_HUMAN_SCOPE,
+      resource: MCP,
+    };
+    const checked = await checkAuthorizeRequest(store, query, ISSUER);
+    assert.equal(checked.ok, false);
+    if (!checked.ok) assert.equal(checked.redirect, undefined);
+    const denied = denyAuthorize(query, ISSUER);
+    assert.equal(denied.status, 400);
+    assert.equal(denied.redirect, undefined);
+
+    const described = await describeConsentTarget(store, "oc_evil", "https://evil.example/steal");
+    assert.equal(described.ok, false);
+  });
+
+  it("shows the registered client name and the exact redirect the code will use", async () => {
+    const store = memoryOauthStore();
+    const registered = await registerClient(store, {
+      client_name: "Local tool",
+      redirect_uris: ["http://127.0.0.1:3118/callback"],
+    });
+    const clientId = (registered.body as { client_id: string }).client_id;
+    const described = await describeConsentTarget(
+      store,
+      clientId,
+      "http://127.0.0.1:3118/callback",
+    );
+    assert.equal(described.ok, true);
+    if (described.ok) {
+      assert.equal(described.client_name, "Local tool");
+      assert.equal(described.redirect_uri, "http://127.0.0.1:3118/callback");
+      assert.equal(described.loopback, true);
+    }
+    const mismatch = await describeConsentTarget(store, clientId, "http://localhost:3118/callback");
+    assert.equal(mismatch.ok, false);
+  });
+
+  it("rate-limits registration attempts per client IP", () => {
+    const buckets = new Map<string, number[]>();
+    const opts = { max: 2, windowMs: 10_000, buckets };
+    assert.equal(consumeRegisterSlot("203.0.113.9", 1_000, opts).ok, true);
+    assert.equal(consumeRegisterSlot("203.0.113.9", 1_100, opts).ok, true);
+    const blocked = consumeRegisterSlot("203.0.113.9", 1_200, opts);
+    assert.equal(blocked.ok, false);
+    if (!blocked.ok) assert.ok(blocked.retryAfterSec >= 1);
+    assert.equal(consumeRegisterSlot("203.0.113.10", 1_200, opts).ok, true);
+    assert.equal(consumeRegisterSlot("203.0.113.9", 1_000 + 10_000, opts).ok, true);
+
+    const request = new Request("https://agent-control.net/oauth/register", {
+      headers: { "x-forwarded-for": "203.0.113.9, 10.0.0.1" },
+    });
+    assert.equal(clientIpForRegisterLimit(request), "203.0.113.9");
+    const realIp = new Request("https://agent-control.net/oauth/register", {
+      headers: { "x-real-ip": "198.51.100.4" },
+    });
+    assert.equal(clientIpForRegisterLimit(realIp), "198.51.100.4");
+    assert.equal(
+      clientIpForRegisterLimit(new Request("https://agent-control.net/oauth/register")),
+      "unknown",
+    );
+  });
+
   it("deny redirects with access_denied and never binds an agent", async () => {
     const denied = denyAuthorize(
       {
@@ -260,7 +415,9 @@ describe("OAuth discovery metadata", () => {
   });
 
   it("serves well-known JSON for AS and protected resource", async () => {
-    const as = handleOauthDiscovery(new Request(`${ISSUER}/.well-known/oauth-authorization-server`));
+    const as = handleOauthDiscovery(
+      new Request(`${ISSUER}/.well-known/oauth-authorization-server`),
+    );
     assert.ok(as);
     assert.equal(as.status, 200);
     const asBody = (await as.json()) as { token_endpoint: string };
@@ -297,6 +454,9 @@ describe("privacy and consent copy contract", () => {
       CONSENT_KEYS,
       CONSENT_ALLOW,
       CONSENT_WHAT_HEADING,
+      CONSENT_APP_LABEL,
+      CONSENT_REDIRECT_LABEL,
+      CONSENT_LOOPBACK,
       ...CONSENT_WHAT,
     ].join(" ");
     assert.match(blob, /You stay the customer of record/);
@@ -328,6 +488,21 @@ describe("privacy and consent copy contract", () => {
     assert.match(consent, /text-title font-semibold tracking-tight/);
     assert.match(consent, /text-body text-muted">\{CONSENT_LEDE\}/);
     assert.doesNotMatch(consent, /text-card text-muted">\{CONSENT_LEDE\}/);
+    assert.match(consent, /CONSENT_APP_LABEL/);
+    assert.match(consent, /CONSENT_REDIRECT_LABEL/);
+    assert.match(consent, /client_name/);
+    assert.match(consent, /redirect_uri/);
+    assert.doesNotMatch(consent, /Allow Claude/);
+    const registerRoute = read("src/routes/oauth/register.ts");
+    assert.match(registerRoute, /consumeRegisterSlot/);
+    assert.match(registerRoute, /\b429\b/);
+    const scrub = read("migrations/0023_oauth_dcr_redirect_scrub.sql");
+    assert.match(scrub, /oc_1bU6z8SaoeoRlStOJl0oTrWwwP-CnlWYmJNUYx2kwws/);
+    assert.match(scrub, /oc_dmurdNaX9cvvH8Q1iidwwgOIA27OTihm/);
+    assert.match(scrub, /oc_eHzS8tel4nLCf6ubDGRONJFuTuAO3Ygf/);
+    assert.match(scrub, /oauth_access_tokens/);
+    assert.match(scrub, /oauth_auth_codes/);
+    assert.match(scrub, /https:\/\/claude\.ai\/api\/mcp\/auth_callback/);
     assert.match(consent, /text-body text-muted/);
     assert.doesNotMatch(privacy, /text-\[\d+px\]/);
     assert.doesNotMatch(consent, /text-\[\d+px\]/);

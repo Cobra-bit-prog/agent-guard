@@ -1,5 +1,11 @@
 import { getSql, type Sql } from "../db.ts";
-import type { OauthAccessToken, OauthAgent, OauthAuthCode, OauthClient, OauthStore } from "./store.ts";
+import type {
+  OauthAccessToken,
+  OauthAgent,
+  OauthAuthCode,
+  OauthClient,
+  OauthStore,
+} from "./store.ts";
 
 function asStringArray(value: unknown): string[] {
   if (Array.isArray(value)) return value.map((item) => String(item));
@@ -72,7 +78,7 @@ export async function ensureOauthSchema(sql?: Sql): Promise<void> {
 function mapClient(row: Record<string, unknown>): OauthClient {
   return {
     client_id: String(row.client_id),
-    client_name: String(row.client_name ?? "Claude"),
+    client_name: String(row.client_name ?? "MCP client"),
     redirect_uris: asStringArray(row.redirect_uris),
     token_endpoint_auth_method: "none",
     created_at: iso(row.created_at),
@@ -173,11 +179,13 @@ export function sqlOauthStore(sql: Sql): OauthStore {
       `;
     },
     async getToken(tokenHash) {
-      const rows = await sql`select * from oauth_access_tokens where token_hash = ${tokenHash} limit 1`;
+      const rows =
+        await sql`select * from oauth_access_tokens where token_hash = ${tokenHash} limit 1`;
       return rows[0] ? mapToken(rows[0]) : null;
     },
     async getTokenByRefreshHash(refreshHash) {
-      const rows = await sql`select * from oauth_access_tokens where refresh_hash = ${refreshHash} limit 1`;
+      const rows =
+        await sql`select * from oauth_access_tokens where refresh_hash = ${refreshHash} limit 1`;
       return rows[0] ? mapToken(rows[0]) : null;
     },
     async replaceToken(oldTokenHash, next) {
