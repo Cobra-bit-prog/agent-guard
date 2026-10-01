@@ -13,6 +13,7 @@ import {
   ACTION_GATE_PRICE_USD,
   ACTION_GATE_SCHEMA,
 } from "@/lib/action-gate";
+import { WRITE_GATE_ASK_VS_ENFORCE } from "@/lib/write-gate";
 import { AGENTKIT_RECIPE_CODE, AGENTKIT_RECIPE_STEPS } from "@/lib/agentkit-recipe";
 import {
   CONNECT_BUILDERS_HEADING,
@@ -451,9 +452,10 @@ client.onBeforePaymentCreation(
             <p className="mt-2 text-body text-muted">
               Humans pay ${ACTION_GATE_PRICE_USD} USDC a month so an agent must stop and ask before
               a consequential action that is not a wallet send. Email, Slack, CRM writes, and
-              deploys wait in Approval Inbox. Allow once or Block. No decision in 10 minutes =
-              stop. The agent still sends the email after go. You keep the keys and the tools.
+              deploys wait in Approval Inbox. Allow once or Block. No Always allow for actions. No
+              decision in 10 minutes = stop. You keep the keys.
             </p>
+            <p className="mt-3 text-body text-muted">{WRITE_GATE_ASK_VS_ENFORCE}</p>
             <p className="mt-3 text-body text-muted">
               Pay at{" "}
               <a href={ACTION_GATE_HREF} className="font-medium text-navy hover:text-coral">
@@ -472,8 +474,11 @@ client.onBeforePaymentCreation(
             <p className="mt-4 text-body font-medium text-fg">crm.write</p>
             <CopyCode code={ACTION_GATE_CURL_CRM} label="Copy crm.write" />
             <pre className="mt-4 overflow-x-auto rounded-[16px] bg-[#12263f] p-4 font-mono text-meta leading-relaxed text-[#e8eef6]">
-              {`# MCP tools/call check_action  (ask_human is the same tool)
-# then poll get_approval with approval_id until go or stop`}
+              {`# Ask: MCP tools/call check_action  (ask_human is the same tool)
+# then poll get_approval with approval_id until go or stop
+# Enforce: MCP tools/call email.send | slack.post | crm.write
+# wait → poll get_approval → call the same tool with approval_id
+# Write Gate forwards only on go`}
             </pre>
           </article>
           <article
@@ -497,6 +502,10 @@ client.onBeforePaymentCreation(
             /api/v1/mcp and the server answers as JSON or as a short event stream, with a session
             header on initialize. Tools:{" "}
             <code className="font-mono text-fg">check_transfer</code>,{" "}
+            <code className="font-mono text-fg">check_action</code>,{" "}
+            <code className="font-mono text-fg">email.send</code>,{" "}
+            <code className="font-mono text-fg">slack.post</code>,{" "}
+            <code className="font-mono text-fg">crm.write</code>,{" "}
             <code className="font-mono text-fg">get_approval</code>,{" "}
             <code className="font-mono text-fg">get_agent_status</code>, plus storefront{" "}
             <code className="font-mono text-fg">get_pricing</code>,{" "}

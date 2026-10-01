@@ -11,6 +11,7 @@ import { createPayRequest, getCheckoutConfig } from "@/lib/server/solana-billing
 import { FREE_TRIAL_DAYS, PLANS, formatTrialLeft, type PlanId } from "@/lib/plans";
 import { PAY_ASSET_LABEL, type PayAsset } from "@/lib/pay-asset";
 import { cn } from "@/lib/utils";
+import { WRITE_GATE_BILLING_LINE } from "@/lib/write-gate";
 
 export const Route = createFileRoute("/_app/billing/")({
   component: BillingPage,
@@ -219,8 +220,7 @@ function BillingPage() {
         until you pay $29 USDC on Solana. No silent autopay.
       </p>
       <p className="text-xs text-subtle">
-        Action Gate is $49 USDC a month for non-money actions (email, Slack, CRM, deploy). It does
-        not replace Starter.{" "}
+        {WRITE_GATE_BILLING_LINE}{" "}
         <a href="/billing/pay?plan=action" className="text-primary underline-offset-4 hover:underline">
           Pay Action Gate
         </a>

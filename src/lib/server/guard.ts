@@ -371,6 +371,9 @@ export async function ensureSchema() {
     `alter table policies add column if not exists max_hourly_txs integer not null default 20`,
   );
   await sql.query(`alter table profiles add column if not exists webhook_url text`);
+  await sql.query(`alter table profiles add column if not exists crm_webhook_url text`);
+  await sql.query(`alter table profiles add column if not exists agentmail_inbox_id text`);
+  await sql.query(`alter table action_approvals add column if not exists forwarded_at timestamptz`);
   await sql.query(`
     create table if not exists audit_events (
       id text primary key,
@@ -1357,7 +1360,8 @@ export const getProfile = createServerFn({ method: "GET" })
     await ensureWorkspace(context.userId);
     const sql = await getSql();
     const p = await sql`
-      select telegram_chat_id, email_alerts, telegram_alerts, webhook_url from profiles where user_id = ${context.userId}
+      select telegram_chat_id, email_alerts, telegram_alerts, webhook_url, crm_webhook_url, agentmail_inbox_id
+      from profiles where user_id = ${context.userId}
     `;
     const notices = await sql`
       select id, channel, message, created_at from notification_log
@@ -1374,6 +1378,8 @@ export const getProfile = createServerFn({ method: "GET" })
       email_alerts: Boolean(p[0]?.email_alerts ?? true),
       telegram_alerts: Boolean(p[0]?.telegram_alerts ?? false),
       webhook_url: String(p[0]?.webhook_url ?? ""),
+      crm_webhook_url: String(p[0]?.crm_webhook_url ?? ""),
+      agentmail_inbox_id: String(p[0]?.agentmail_inbox_id ?? ""),
       notices: notices.map((n) => ({
         id: String(n.id),
         channel: String(n.channel),
@@ -1401,6 +1407,8 @@ export const saveProfile = createServerFn({ method: "POST" })
         email_alerts: z.boolean(),
         telegram_alerts: z.boolean(),
         webhook_url: z.string().max(200),
+        crm_webhook_url: z.string().max(500).optional(),
+        agentmail_inbox_id: z.string().max(200).optional(),
       })
       .parse(d),
   )
@@ -1410,13 +1418,23 @@ export const saveProfile = createServerFn({ method: "POST" })
     if (url && !url.startsWith("https://")) {
       throw new Error("Webhook must be an https URL.");
     }
+    const crm = data.crm_webhook_url === undefined ? null : data.crm_webhook_url.trim();
+    if (crm && !crm.startsWith("https://")) {
+      throw new Error("CRM webhook must be an https URL.");
+    }
+    const inboxId = data.agentmail_inbox_id === undefined ? null : data.agentmail_inbox_id.trim();
+    if (inboxId && !/^[A-Za-z0-9][A-Za-z0-9._@+-]{0,199}$/.test(inboxId)) {
+      throw new Error("Agentmail inbox id must be a short id or email, with no spaces.");
+    }
     const sql = await getSql();
     await sql`
       update profiles
       set telegram_chat_id = ${data.telegram_chat_id},
           email_alerts = ${data.email_alerts},
           telegram_alerts = ${data.telegram_alerts},
-          webhook_url = ${url}
+          webhook_url = ${url},
+          crm_webhook_url = coalesce(${crm}, crm_webhook_url),
+          agentmail_inbox_id = coalesce(${inboxId}, agentmail_inbox_id)
       where user_id = ${context.userId}
     `;
     return { ok: true };

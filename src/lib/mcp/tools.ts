@@ -163,7 +163,7 @@ export const MCP_TOOLS = [
     name: "check_action",
     title: "Ask before a non-money action",
     description:
-      "Action Gate. MUST be called before email.send, slack.post, crm.write, deploy, or any other consequential non-money action. Returns go, stop, or wait. If decision is wait, poll get_approval until go or stop. No decision in 10 minutes = stop. If must_abort is true, do not act. You keep the keys and the tools. Alias: ask_human.",
+      "Action Gate Ask. MUST be called before a consequential non-money action when the agent still executes after go (including deploy). Returns go, stop, or wait. If decision is wait, poll get_approval until go or stop. No decision in 10 minutes = stop. If must_abort is true, do not act. This tool does not send the email, post, or CRM write. To enforce those, call email.send, slack.post, or crm.write. Alias: ask_human.",
     annotations: writes,
     inputSchema: {
       type: "object",
@@ -184,7 +184,7 @@ export const MCP_TOOLS = [
     name: "ask_human",
     title: "Ask a human before acting",
     description:
-      "Same as check_action. Stop and ask before a consequential non-money action. Returns go, stop, or wait plus approval_id. Poll get_approval. Timeout is stop.",
+      "Same as check_action (Ask). Stop and ask before a consequential non-money action. Returns go, stop, or wait plus approval_id. Poll get_approval. Timeout is stop. Does not forward email, Slack, or CRM. Use email.send, slack.post, or crm.write to enforce.",
     annotations: writes,
     inputSchema: {
       type: "object",
@@ -199,6 +199,67 @@ export const MCP_TOOLS = [
     },
   },
   {
+    name: "email.send",
+    title: "Send email after a human allows it",
+    description:
+      "Write Gate. Validates the message, runs Action Gate check_action for email.send, and sends only when the decision is go. Unpaid, missing DATABASE_URL, stop, and timeout do not send. If decision is wait, poll get_approval, then call email.send again with approval_id. Uses the human's connected Agentmail inbox. If email is not connected, returns stop and does not send. Same $49 Action Gate seat (plan=action).",
+    annotations: writes,
+    inputSchema: {
+      type: "object",
+      properties: {
+        to: { type: "string", description: "One recipient email address" },
+        subject: { type: "string", description: "Subject the human approves" },
+        text: { type: "string", description: "Plain-text body the human approves" },
+        approval_id: {
+          type: "string",
+          description: "From a previous wait. Call again after get_approval returns go.",
+        },
+        risk: { type: "string", description: "Optional tag such as low, medium, or high" },
+      },
+    },
+  },
+  {
+    name: "slack.post",
+    title: "Post to Slack after a human allows it",
+    description:
+      "Write Gate. Validates the message, runs Action Gate check_action for slack.post, and posts only when the decision is go. Unpaid, missing DATABASE_URL, stop, and timeout do not post. If decision is wait, poll get_approval, then call slack.post again with approval_id. Uses the Slack incoming webhook saved in Settings. If that webhook is missing, returns stop and does not post. Same $49 Action Gate seat (plan=action).",
+    annotations: writes,
+    inputSchema: {
+      type: "object",
+      properties: {
+        text: { type: "string", description: "Message the human approves" },
+        channel: { type: "string", description: "Optional channel label, such as #support" },
+        summary: { type: "string", description: "Optional one-line summary. Defaults to the message." },
+        approval_id: {
+          type: "string",
+          description: "From a previous wait. Call again after get_approval returns go.",
+        },
+        risk: { type: "string", description: "Optional tag such as low, medium, or high" },
+      },
+    },
+  },
+  {
+    name: "crm.write",
+    title: "Write to CRM after a human allows it",
+    description:
+      "Write Gate. Validates the preview, runs Action Gate check_action for crm.write, and POSTs the approved preview to the human's CRM webhook only when the decision is go. Unpaid, missing DATABASE_URL, stop, and timeout do not post. If decision is wait, poll get_approval, then call crm.write again with approval_id. If the CRM webhook is missing, returns stop and does not post. Same $49 Action Gate seat (plan=action).",
+    annotations: writes,
+    inputSchema: {
+      type: "object",
+      properties: {
+        summary: { type: "string", description: "One line a human can decide from" },
+        preview: { type: "string", description: "Approved text posted to the CRM webhook" },
+        payload: { type: "object", description: "Optional JSON object included in the approved preview" },
+        target: { type: "string", description: "Optional record id" },
+        approval_id: {
+          type: "string",
+          description: "From a previous wait. Call again after get_approval returns go.",
+        },
+        risk: { type: "string", description: "Optional tag such as low, medium, or high" },
+      },
+    },
+  },
+  {
     name: "get_agent_status",
     title: "Get agent status",
     description: "Returns whether this agent is paused, expired, or healthy.",
@@ -209,7 +270,7 @@ export const MCP_TOOLS = [
     name: "get_approval",
     title: "Get approval decision",
     description:
-      "Poll a held check. Pass approval_id from check_transfer (allow or block) or check_action (go, stop, or wait). Repeat until the decision is final. Action Gate timeout is stop.",
+      "Poll a held check. Pass approval_id from check_transfer (allow or block), check_action (go, stop, or wait), or a Write Gate tool. Repeat until the decision is final. Action Gate timeout is stop. Write Gate forwards only when you call email.send, slack.post, or crm.write again with that approval_id after the decision is go.",
     annotations: readOnly,
     inputSchema: {
       type: "object",

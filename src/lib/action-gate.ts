@@ -1,7 +1,8 @@
 /**
  * Action Gate — humans pay $49/mo so agents stop-and-ask before consequential
- * non-money actions (email, Slack, CRM, deploy). The agent still executes
- * after go. We never send the email, post, or write.
+ * non-money actions (email, Slack, CRM, deploy).
+ * Ask (check_action): the agent still executes after go.
+ * Enforce (Write Gate tools): we forward only on go.
  *
  * Durable state lives in Postgres (Neon) when DATABASE_URL is set.
  * migrations/0022_action_gate.sql is the schema. If DATABASE_URL is missing
@@ -34,7 +35,7 @@ export const ACTION_GATE_PAY_URL = ACTION_GATE_HREF;
 
 export const ACTION_GATE_COPY = {
   title: "Action Gate — $49. Ask before the agent acts.",
-  body: "Send $49 USDC on Solana. Agents must stop and ask before email, Slack, CRM writes, and deploys.",
+  body: "Send $49 USDC on Solana. Agents must stop and ask before email, Slack, CRM writes, and deploys. Write Gate tools forward only after you allow once. Same $49 seat.",
   cta: "Pay $49",
   waiting: "Waiting for $49 USDC on Solana.",
   done: "Paid. Action Gate is on for 30 days.",
@@ -448,7 +449,7 @@ export const ACTION_GATE_CURL_CRM = `curl -s https://agent-control.net/api/v1/ch
   -d '{"action_type":"crm.write","summary":"Update the deal stage","preview":"Move Acme to Closed Won.","target":"deal_8841","risk":"high"}'`;
 
 export const ACTION_GATE_MCP_NOTE =
-  "MCP tool check_action (alias ask_human) takes the same fields. If decision is wait, poll get_approval until go or stop. No decision in 10 minutes = stop. Do not send, post, or write until decision is go. You keep the keys and the tools.";
+  "Ask: MCP check_action (alias ask_human) takes the same fields. If decision is wait, poll get_approval until go or stop. No decision in 10 minutes = stop. The agent still executes after go. Enforce: MCP email.send, slack.post, and crm.write. Write Gate forwards only on go. Same $49 seat (plan=action). You keep the keys.";
 
 export function actionHoldEmailCopy(opts: {
   agentName: string;

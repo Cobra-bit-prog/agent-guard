@@ -16,6 +16,7 @@ import {
   CONNECT_STARTER_LINE,
   CONNECT_X402_CODE,
 } from "@/lib/connect-path";
+import { WRITE_GATE_BILLING_LINE } from "@/lib/write-gate";
 import {
   METER_CONNECT_BODY,
   METER_DISCOVERY,
@@ -75,6 +76,13 @@ function ConnectPage() {
         </div>
         <p className="mt-2 text-meta font-medium leading-snug text-muted">
           1-day (24 hour) trial, then $29 USDC on Solana. No card. No KYC.
+        </p>
+        <p className="mt-3 max-w-[52ch] text-body text-muted">
+          {WRITE_GATE_BILLING_LINE}{" "}
+          <a href="/docs#action-gate" className="font-medium text-navy hover:text-coral">
+            Docs
+          </a>
+          .
         </p>
 
         <section
