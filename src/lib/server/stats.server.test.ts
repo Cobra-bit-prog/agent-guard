@@ -2,9 +2,12 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import type { Sql } from "../db.ts";
 import {
+  ACTIVE_PAID_SEAT_SQL,
   authorizeInternalStats,
+  CASH_RECEIVED_SQL,
   collectAccountLeads,
   collectAccountStats,
+  formatAccountStatsReport,
   FREE_OR_TRIAL_SQL,
 } from "./stats.server.ts";
 
@@ -125,5 +128,95 @@ describe("collectAccountLeads", () => {
     assert.ok(freeListSql, "list query uses FREE_OR_TRIAL_SQL");
     assert.match(FREE_OR_TRIAL_SQL, /s\.plan = 'free'/);
     assert.match(FREE_OR_TRIAL_SQL, /period_ends_at <= now\(\)/);
+    assert.deepEqual(leads.cashReceived, { usdc: 0, everPaid: 0 });
+    assert.deepEqual(stats.cashReceived, { usdc: 0, everPaid: 0 });
+  });
+});
+
+describe("expired Starter is not an active seat", () => {
+  const expiredLead = {
+    email: "starter-expired@example.com",
+    name: "Expired Starter",
+    created_at: new Date("2026-09-01T00:00:00.000Z"),
+    email_verified: true,
+    plan: "starter",
+    status: "active",
+    trial_ends_at: null,
+    period_ends_at: "2026-09-28T00:00:00.000Z",
+  };
+
+  it("keeps the seat at zero and still counts the historical Starter payment", async () => {
+    const { sql, texts } = mockSql((text) => {
+      if (text.includes("count(*)::int as signed_up")) return [{ signed_up: 1, unverified: 0 }];
+      if (text.includes("group by s.plan")) {
+        const periodGate = text.includes(ACTIVE_PAID_SEAT_SQL) && /period_ends_at > now\(\)/.test(text);
+        if (!periodGate) return [{ plan: "starter", n: 1 }];
+        return [];
+      }
+      if (text.includes("cash_usdc")) {
+        const ledger =
+          text.includes(CASH_RECEIVED_SQL) &&
+          text.includes("paid_amount_usdc") &&
+          text.includes("status = 'paid'") &&
+          !text.includes("period_ends_at");
+        if (!ledger) return [{ ever_paid: 0, cash_usdc: 0 }];
+        return [{ ever_paid: 1, cash_usdc: "29.000000" }];
+      }
+      if (text.includes("count(*)::int as n") && text.includes(FREE_OR_TRIAL_SQL)) return [{ n: 1 }];
+      if (text.includes("user_partner_source")) return [];
+      if (text.includes(ACCOUNT_LEAD_EMAIL_VERIFIED) && text.includes(FREE_OR_TRIAL_SQL)) {
+        return [expiredLead];
+      }
+      if (text.includes("from pay_requests p")) return [];
+      return [];
+    });
+
+    const stats = await collectAccountStats(sql);
+    const leads = await collectAccountLeads(sql);
+
+    assert.equal(stats.paid.starter, 0);
+    assert.equal(stats.paid.pro, 0);
+    assert.equal(stats.paid.team, 0);
+    assert.equal(stats.freeOrTrial, 1);
+    assert.deepEqual(stats.cashReceived, { usdc: 29, everPaid: 1 });
+    assert.deepEqual(leads.cashReceived, { usdc: 29, everPaid: 1 });
+    assert.equal(leads.freeOrTrial[0]?.plan, "starter");
+    assert.equal(leads.freeOrTrial[0]?.period_ends_at, "2026-09-28T00:00:00.000Z");
+
+    const paidSql = texts.find((text) => text.includes("group by s.plan"));
+    const cashSql = texts.find((text) => text.includes("as cash_usdc"));
+    assert.ok(paidSql, "active paid query ran");
+    assert.ok(cashSql, "cash received query ran");
+    assert.match(paidSql, /period_ends_at > now\(\)/);
+    assert.match(FREE_OR_TRIAL_SQL, /period_ends_at <= now\(\)/);
+    assert.match(CASH_RECEIVED_SQL, /p\.plan in \('starter', 'pro', 'team'\)/);
+    assert.doesNotMatch(cashSql, /period_ends_at/);
+    assert.doesNotMatch(CASH_RECEIVED_SQL, /action|shield/);
+
+    const report = formatAccountStatsReport(stats);
+    assert.match(report, /Paid Starter: 0\n/);
+    assert.match(report, /Cash received \/ ever paid: 29 USDC \(1\)\n/);
+    assert.doesNotMatch(report, /Paid Starter: 1/);
+  });
+
+  it("still counts a Starter whose period has not ended", async () => {
+    const { sql } = mockSql((text) => {
+      if (text.includes("count(*)::int as signed_up")) return [{ signed_up: 1, unverified: 0 }];
+      if (text.includes("group by s.plan")) {
+        if (!text.includes("period_ends_at > now()")) return [];
+        return [{ plan: "starter", n: 1 }];
+      }
+      if (text.includes("cash_usdc")) return [{ ever_paid: 1, cash_usdc: 29 }];
+      if (text.includes("count(*)::int as n") && text.includes(FREE_OR_TRIAL_SQL)) return [{ n: 0 }];
+      return [];
+    });
+
+    const stats = await collectAccountStats(sql);
+    assert.equal(stats.paid.starter, 1);
+    assert.equal(stats.freeOrTrial, 0);
+    assert.deepEqual(stats.cashReceived, { usdc: 29, everPaid: 1 });
+    const report = formatAccountStatsReport(stats);
+    assert.match(report, /Paid Starter: 1\n/);
+    assert.match(report, /Cash received \/ ever paid: 29 USDC \(1\)\n/);
   });
 });

@@ -1,11 +1,19 @@
 import { timingSafeEqual } from "node:crypto";
 import type { Sql } from "@/lib/db";
 
+/** Cash already received for human inbox plans. Not an active seat. */
+export type CashReceived = {
+  usdc: number;
+  /** Paid starter/pro/team invoices, including seats whose period has ended. */
+  everPaid: number;
+};
+
 export type AccountStats = {
   signedUp: number;
   unverified: number;
   freeOrTrial: number;
   paid: { starter: number; pro: number; team: number };
+  cashReceived: CashReceived;
   partners: Record<string, number>;
   generatedAt: string;
 };
@@ -34,12 +42,27 @@ export type AccountLeads = {
   freeOrTrial: AccountLead[];
   unverified: AccountLead[];
   unpaidStarterCheckouts: UnpaidStarterCheckout[];
+  cashReceived: CashReceived;
 };
 
-/** Same free/trial definition as collectAccountStats. */
+/** Same free/trial definition as collectAccountStats. Expired paid plans stay here. */
 export const FREE_OR_TRIAL_SQL = `s.user_id is null
         or s.plan = 'free'
         or (s.plan in ('starter', 'pro', 'team') and s.period_ends_at is not null and s.period_ends_at <= now())`;
+
+/** Active paid seats only. A null period stays active; an ended period does not. */
+export const ACTIVE_PAID_SEAT_SQL = `s.plan in ('starter', 'pro', 'team')
+       and (s.period_ends_at is null or s.period_ends_at > now())`;
+
+/**
+ * Human inbox cash already received. Period end does not remove a paid invoice.
+ * Action Gate and Shop Shield are not inbox seats and stay out of this sum.
+ */
+export const CASH_RECEIVED_SQL = `coalesce(p.source, 'human') = 'human'
+         and p.plan in ('starter', 'pro', 'team')
+         and p.status = 'paid'`;
+
+const EMPTY_CASH: CashReceived = { usdc: 0, everPaid: 0 };
 
 const ACCOUNT_LEAD_SELECT = `
   u.email,
@@ -72,6 +95,18 @@ export function authorizeInternalStats(request: Request): "missing" | "denied" |
 function asInt(value: unknown): number {
   const n = Number(value ?? 0);
   return Number.isFinite(n) ? n : 0;
+}
+
+function asUsdc(value: unknown): number {
+  const n = Number(value ?? 0);
+  if (!Number.isFinite(n)) return 0;
+  return Math.round(n * 1_000_000) / 1_000_000;
+}
+
+export function formatUsdcAmount(amount: number): string {
+  const rounded = asUsdc(amount);
+  if (Number.isInteger(rounded)) return String(rounded);
+  return rounded.toFixed(6).replace(/0+$/, "").replace(/\.$/, "");
 }
 
 function asIso(value: unknown): string | null {
@@ -113,6 +148,24 @@ function mapAccountLead(row: AccountLeadRow): AccountLead {
   };
 }
 
+export async function collectCashReceived(sql: Sql): Promise<CashReceived> {
+  try {
+    const rows = await sql.query<{ ever_paid: number; cash_usdc: unknown }>(
+      `select count(*)::int as ever_paid,
+              coalesce(sum(coalesce(p.paid_amount_usdc, p.amount_usdc)), 0) as cash_usdc
+       from pay_requests p
+       where ${CASH_RECEIVED_SQL}`,
+    );
+    return {
+      usdc: asUsdc(rows[0]?.cash_usdc),
+      everPaid: asInt(rows[0]?.ever_paid),
+    };
+  } catch {
+    console.error("[stats] cash received query failed");
+    return EMPTY_CASH;
+  }
+}
+
 export async function collectAccountStats(sql: Sql): Promise<AccountStats> {
   const users = await sql.query<{ signed_up: number; unverified: number }>(
     `select count(*)::int as signed_up,
@@ -123,10 +176,10 @@ export async function collectAccountStats(sql: Sql): Promise<AccountStats> {
     `select s.plan, count(*)::int as n
      from "user" u
      join subscriptions s on s.user_id = u.id
-     where s.plan in ('starter', 'pro', 'team')
-       and (s.period_ends_at is null or s.period_ends_at > now())
+     where ${ACTIVE_PAID_SEAT_SQL}
      group by s.plan`,
   );
+  const cashReceived = await collectCashReceived(sql);
   const freeRows = await sql.query<{ n: number }>(
     `select count(*)::int as n
      from "user" u
@@ -159,6 +212,7 @@ export async function collectAccountStats(sql: Sql): Promise<AccountStats> {
     unverified: asInt(users[0]?.unverified),
     freeOrTrial: asInt(freeRows[0]?.n),
     paid,
+    cashReceived,
     partners,
     generatedAt: new Date().toISOString(),
   };
@@ -215,7 +269,26 @@ export async function collectAccountLeads(sql: Sql): Promise<AccountLeads> {
     freeOrTrial: freeOrTrialRows.map(mapAccountLead),
     unverified: unverifiedRows.map(mapAccountLead),
     unpaidStarterCheckouts,
+    cashReceived: await collectCashReceived(sql),
   };
+}
+
+/** Human register text. Paid lines stay period-based; cash is a separate ledger line. */
+export function formatAccountStatsReport(stats: AccountStats): string {
+  const partnerLines = Object.entries(stats.partners)
+    .map(([slug, n]) => `Partner ${slug}: ${n}`)
+    .join("\n");
+  return (
+    `Agent Control daily stats (${stats.generatedAt})\n\n` +
+    `Signed up: ${stats.signedUp}\n` +
+    `Unverified: ${stats.unverified}\n` +
+    `Free/trial: ${stats.freeOrTrial}\n` +
+    `Paid Starter: ${stats.paid.starter}\n` +
+    `Paid Pro: ${stats.paid.pro}\n` +
+    `Paid Team: ${stats.paid.team}\n` +
+    `Cash received / ever paid: ${formatUsdcAmount(stats.cashReceived.usdc)} USDC (${stats.cashReceived.everPaid})\n` +
+    (partnerLines ? `\n${partnerLines}\n` : "")
+  );
 }
 
 export async function emailAccountStats(stats: AccountStats): Promise<void> {
@@ -226,18 +299,7 @@ export async function emailAccountStats(stats: AccountStats): Promise<void> {
     return;
   }
   const from = process.env.EMAIL_FROM?.trim() || "Agent Control <noreply@agent-control.net>";
-  const partnerLines = Object.entries(stats.partners)
-    .map(([slug, n]) => `Partner ${slug}: ${n}`)
-    .join("\n");
-  const body =
-    `Agent Control daily stats (${stats.generatedAt})\n\n` +
-    `Signed up: ${stats.signedUp}\n` +
-    `Unverified: ${stats.unverified}\n` +
-    `Free/trial: ${stats.freeOrTrial}\n` +
-    `Paid Starter: ${stats.paid.starter}\n` +
-    `Paid Pro: ${stats.paid.pro}\n` +
-    `Paid Team: ${stats.paid.team}\n` +
-    (partnerLines ? `\n${partnerLines}\n` : "");
+  const body = formatAccountStatsReport(stats);
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
