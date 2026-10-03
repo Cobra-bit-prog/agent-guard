@@ -287,7 +287,7 @@ export const MCP_TOOLS = [
     name: "get_pricing",
     title: "Get pricing",
     description:
-      "List Agent Control plans and trial truth. Starter $29 / Pro $49 / Team $149. 1-day trial, no card, no KYC. Pay on-chain USDC on Solana. A human principal owns billing and Approval Inbox.",
+      "List Agent Control plans and trial truth. Action Gate is $49/mo Solana USDC (plan=action): a person taps go, stop, or wait before Slack or a CRM write. Wallet console: Starter $29 / Pro $49 / Team $149, with a 1-day trial, no card, no KYC. Pay on-chain USDC on Solana. A human principal owns billing and Approval Inbox.",
     annotations: readOnly,
     inputSchema: { type: "object", properties: {} },
   },
@@ -323,12 +323,12 @@ export const MCP_TOOLS = [
     name: "create_checkout",
     title: "Create checkout",
     description:
-      "Open a pay request on the human principal that owns this agent. Wraps POST /api/v1/billing/checkout. The human pays on-chain USDC (Solana). Not automatic payment. Agents cannot decide Approval Inbox.",
+      "Open a pay request on the human principal that owns this agent. Wraps POST /api/v1/billing/checkout. plan action opens Action Gate at $49 Solana USDC. starter, pro, and team open the wallet console. The human pays on-chain. Not automatic payment. Agents cannot decide Approval Inbox.",
     annotations: writes,
     inputSchema: {
       type: "object",
       properties: {
-        plan: { type: "string", description: "starter, pro, or team" },
+        plan: { type: "string", description: "action ($49 Action Gate, Solana USDC), starter, pro, or team" },
         asset: { type: "string", description: "usdc (default), sol, or eth" },
         chain: { type: "string", description: "solana (default), ethereum, or base" },
       },

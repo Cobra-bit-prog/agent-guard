@@ -13,6 +13,7 @@ import {
   getPricing,
   isReusableOpenPayRequest,
   listPaidPlans,
+  checkoutPriceUsd,
   parseCheckoutBody,
   parseHumanEmail,
   parsePrincipalId,
@@ -103,6 +104,7 @@ function memoryCheckout(seed?: {
         plan: input.plan,
         asset: input.asset,
         chain: input.chain,
+        amount_usdc: checkoutPriceUsd(input.plan),
         reference: `ref_new_${deps.createCalls}`,
       });
       rows.push(row);
@@ -139,6 +141,13 @@ describe("getPricing", () => {
     assert.equal(pricing.pay.no_virtual_card, true);
     assert.match(pricing.pay.note, /Send \$29 USDC on Solana/);
     assert.equal(pricing.storefront.checkout, "POST /api/v1/billing/checkout");
+    assert.equal(pricing.action_gate.id, "action");
+    assert.equal(pricing.action_gate.price_usd, 49);
+    assert.equal(pricing.action_gate.href, "/billing/pay?plan=action");
+    assert.equal(pricing.action_gate.chain, "solana");
+    assert.equal(pricing.action_gate.asset, "usdc");
+    assert.match(pricing.action_gate.note, /Slack/);
+    assert.doesNotMatch(pricing.action_gate.note, /Pay \$29/);
     assert.ok(pricing.storefront.mcp_tools.includes("get_pricing"));
     assert.ok(pricing.storefront.mcp_tools.includes("create_checkout"));
     assert.doesNotMatch(JSON.stringify(pricing), /\bbroadcast/i);
@@ -357,6 +366,34 @@ describe("create_checkout — agent key pays for the principal", () => {
       error: "Unknown API key.",
     });
     assert.equal(deps.createCalls, 0);
+  });
+
+  it("opens an Action Gate pay request at $49 Solana USDC", async () => {
+    const parsed = parseCheckoutBody({ plan: "action" });
+    assert.equal(parsed.ok, true);
+    if (!parsed.ok) return;
+    assert.deepEqual(parsed.data, { plan: "action", asset: "usdc", chain: "solana" });
+    assert.equal(checkoutPriceUsd("action"), 49);
+    assert.equal(checkoutPriceUsd("starter"), 29);
+
+    const sol = parseCheckoutBody({ plan: "action", asset: "sol" });
+    assert.equal(sol.ok, false);
+    if (sol.ok) return;
+    assert.match(sol.error, /Solana USDC only/);
+
+    const base = parseCheckoutBody({ plan: "action", chain: "base" });
+    assert.equal(base.ok, false);
+
+    const deps = memoryCheckout({ agents: { [KEY]: agent() } });
+    const result = await runCreateCheckout({ apiKey: KEY, body: { plan: "action" } }, deps);
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.result.plan, "action");
+    assert.equal(result.result.asset, "usdc");
+    assert.equal(result.result.chain, "solana");
+    assert.equal(result.result.amount_usdc, 49);
+    assert.equal(deps.createdUserIds[0], HUMAN);
+    assert.equal(deps.createCalls, 1);
   });
 
   it("rejects free and maps a missing payout to 503", async () => {

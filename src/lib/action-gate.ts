@@ -15,6 +15,7 @@ import {
   ACTION_GATE_PRICE_USD,
   ACTION_GATE_PRODUCT,
 } from "./shop-shield.ts";
+import { absoluteAppUrl } from "./warning-alert.ts";
 
 export {
   ACTION_GATE_HREF,
@@ -32,6 +33,19 @@ export const ACTION_GATE_DB_ERROR =
   "Action Gate requires DATABASE_URL (Neon Postgres). Decisions are not stored until it is set. The gate fails closed (stop). Apply migrations/0022_action_gate.sql with npm run db:migrate on that database.";
 
 export const ACTION_GATE_PAY_URL = ACTION_GATE_HREF;
+
+/** Full pay link so an unpaid stop is one click, including from an API response. */
+export const ACTION_GATE_PAY_ABSOLUTE = absoluteAppUrl(ACTION_GATE_HREF);
+
+export const ACTION_GATE_PAY_CTA = "Pay $49";
+
+/** Plain stop a stranger can read on docs and Connect. Slack and CRM only. */
+export const ACTION_GATE_STOP_EXAMPLE =
+  "The agent wants to post in Slack: \"We are investigating the checkout errors.\" Nothing goes out. You tap go, stop, or wait. If you do not answer in 10 minutes, it stops. A CRM write waits the same way. After you tap go, that Slack post or CRM write can go out. You keep the keys.";
+
+/** Email send is not live. Do not describe it as working. */
+export const ACTION_GATE_EMAIL_NOTE =
+  "Email send stops until email is connected. Nothing is sent.";
 
 export const ACTION_GATE_COPY = {
   title: "Action Gate — $49. Ask before the agent acts.",
@@ -288,7 +302,7 @@ export async function checkActionWith(opts: {
       result: {
         decision: "stop",
         reasons: [
-          `Action Gate is not unlocked. Pay $${ACTION_GATE_PRICE_USD} USDC at ${ACTION_GATE_PAY_URL}.`,
+          `Action Gate is not unlocked. Pay $${ACTION_GATE_PRICE_USD} USDC on Solana: ${ACTION_GATE_PAY_ABSOLUTE}`,
         ],
         must_abort: true,
         approval_id: null,
