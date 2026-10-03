@@ -1,5 +1,6 @@
 import { getSql } from "@/lib/db";
-import { evaluateEntitlement, PLANS } from "@/lib/plans";
+import { evaluateEntitlement } from "@/lib/plans";
+import { payPlanQuote } from "@/lib/shop-shield";
 import { uid } from "@/lib/utils";
 import { PAY_EXPIRY_MS, usdcBaseUnits, type PayChain } from "@/lib/solana-pay";
 import { newPayReference, payoutAddress } from "@/lib/solana-pay.server";
@@ -157,7 +158,7 @@ async function createPayRequestForPrincipal(
   userId: string,
   input: ResolvedCheckout,
 ): Promise<CheckoutPayRequest> {
-  const plan = PLANS[input.plan];
+  const price = payPlanQuote(input.plan).price;
   const sql = await getSql();
   const id = uid();
   const expires = new Date(Date.now() + PAY_EXPIRY_MS).toISOString();
@@ -184,7 +185,7 @@ async function createPayRequestForPrincipal(
     `;
     amountBase = allocateUniqueNativeAmount(
       used.map((r) => r.amount_base_units),
-      plan.price,
+      price,
       quote.sol,
       9,
     );
@@ -205,7 +206,7 @@ async function createPayRequestForPrincipal(
     `;
     amountBase = allocateUniqueNativeAmount(
       used.map((r) => r.amount_base_units),
-      plan.price,
+      price,
       quote.eth,
       18,
     );
@@ -214,7 +215,7 @@ async function createPayRequestForPrincipal(
     if (!addr) throw new CheckoutNotConfiguredError("Checkout is not configured for Solana.");
     recipient = addr;
     reference = newPayReference();
-    amountBase = usdcBaseUnits(plan.price);
+    amountBase = usdcBaseUnits(price);
   } else {
     const addr = evmPayoutAddress();
     if (!addr) {
@@ -233,7 +234,7 @@ async function createPayRequestForPrincipal(
     `;
     amountBase = await allocateUniqueUsdcAmount(
       used.map((r) => r.amount_base_units),
-      plan.price,
+      price,
     );
   }
 
@@ -242,7 +243,7 @@ async function createPayRequestForPrincipal(
       id, user_id, plan, chain, asset, amount_usdc, amount_base_units, reference, recipient,
       status, expires_at
     ) values (
-      ${id}, ${userId}, ${input.plan}, ${chain}, ${asset}, ${plan.price}, ${amountBase},
+      ${id}, ${userId}, ${input.plan}, ${chain}, ${asset}, ${price}, ${amountBase},
       ${reference}, ${recipient}, ${"pending"}, ${expires}
     )
   `;

@@ -8,10 +8,13 @@ import {
   ACTION_GATE_CURL_EMAIL,
   ACTION_GATE_CURL_SLACK,
   ACTION_GATE_DB_ENV,
+  ACTION_GATE_EMAIL_NOTE,
   ACTION_GATE_HREF,
   ACTION_GATE_MCP_NOTE,
+  ACTION_GATE_PAY_CTA,
   ACTION_GATE_PRICE_USD,
   ACTION_GATE_SCHEMA,
+  ACTION_GATE_STOP_EXAMPLE,
 } from "@/lib/action-gate";
 import { WRITE_GATE_ASK_VS_ENFORCE } from "@/lib/write-gate";
 import { AGENTKIT_RECIPE_CODE, AGENTKIT_RECIPE_STEPS } from "@/lib/agentkit-recipe";
@@ -203,6 +206,9 @@ function DocsPage() {
         <SupportedChains className="mt-5" />
 
         <nav aria-label="On this page" className="mt-8 flex flex-wrap gap-x-4 gap-y-2 text-body">
+          <a href="#action-gate" className="font-medium text-navy hover:text-coral">
+            Action Gate · ${ACTION_GATE_PRICE_USD}
+          </a>
           <a href="#quick-start" className="text-muted hover:text-fg">
             Quick start
           </a>
@@ -235,9 +241,6 @@ function DocsPage() {
           </a>
           <a href="#policy-recipe" className="text-muted hover:text-fg">
             Policy recipe
-          </a>
-          <a href="#action-gate" className="text-muted hover:text-fg">
-            Action Gate
           </a>
           <a href="#compare" className="text-muted hover:text-fg">
             Compare
@@ -450,29 +453,38 @@ client.onBeforePaymentCreation(
           >
             <h3 className="text-card font-medium">Action Gate</h3>
             <p className="mt-2 text-body text-muted">
-              Humans pay ${ACTION_GATE_PRICE_USD} USDC a month so an agent must stop and ask before
-              a consequential action that is not a wallet send. Email, Slack, CRM writes, and
-              deploys wait in Approval Inbox. Allow once or Block. No Always allow for actions. No
-              decision in 10 minutes = stop. You keep the keys.
+              Before your agent posts to Slack or changes the CRM, it stops. You tap go, stop, or
+              wait. If you do not answer in 10 minutes, it stops. ${ACTION_GATE_PRICE_USD} a month,
+              paid in USDC on Solana. You keep the keys.
             </p>
-            <p className="mt-3 text-body text-muted">{WRITE_GATE_ASK_VS_ENFORCE}</p>
+            <p className="mt-3 text-body text-fg">{ACTION_GATE_STOP_EXAMPLE}</p>
+            <p className="mt-3 text-body text-muted">{ACTION_GATE_EMAIL_NOTE}</p>
+            <a
+              href={ACTION_GATE_HREF}
+              className="mt-5 inline-flex h-11 items-center rounded-full bg-primary px-5 text-body font-semibold text-primary-fg"
+            >
+              {ACTION_GATE_PAY_CTA}
+            </a>
             <p className="mt-3 text-body text-muted">
-              Pay at{" "}
+              Solana USDC only. No card.{" "}
               <a href={ACTION_GATE_HREF} className="font-medium text-navy hover:text-coral">
                 {ACTION_GATE_HREF}
               </a>
-              . Same Solana USDC path as other plans. No card. Action Gate does not replace
-              Starter. Durable decisions use <span className="font-mono text-fg">{ACTION_GATE_DB_ENV}</span>{" "}
+            </p>
+            <p className="mt-3 text-body text-muted">{WRITE_GATE_ASK_VS_ENFORCE}</p>
+            <p className="mt-3 text-body text-muted">
+              Durable decisions use <span className="font-mono text-fg">{ACTION_GATE_DB_ENV}</span>{" "}
               (Neon already on this project) and <span className="font-mono text-fg">{ACTION_GATE_SCHEMA}</span>,
               applied on boot. If that variable is missing, the check returns stop.
             </p>
             <p className="mt-3 text-body text-muted">{ACTION_GATE_MCP_NOTE}</p>
-            <p className="mt-4 text-body font-medium text-fg">email.send</p>
-            <CopyCode code={ACTION_GATE_CURL_EMAIL} label="Copy email.send" />
             <p className="mt-4 text-body font-medium text-fg">slack.post</p>
             <CopyCode code={ACTION_GATE_CURL_SLACK} label="Copy slack.post" />
             <p className="mt-4 text-body font-medium text-fg">crm.write</p>
             <CopyCode code={ACTION_GATE_CURL_CRM} label="Copy crm.write" />
+            <p className="mt-4 text-body font-medium text-fg">email.send</p>
+            <p className="mt-1 text-body text-muted">{ACTION_GATE_EMAIL_NOTE}</p>
+            <CopyCode code={ACTION_GATE_CURL_EMAIL} label="Copy email.send" />
             <pre className="mt-4 overflow-x-auto rounded-[16px] bg-[#12263f] p-4 font-mono text-meta leading-relaxed text-[#e8eef6]">
               {`# Ask: MCP tools/call check_action  (ask_human is the same tool)
 # then poll get_approval with approval_id until go or stop
@@ -612,7 +624,9 @@ client.onBeforePaymentCreation(
               <h3 className="mt-2 text-card font-medium">Start checkout</h3>
               <p className="mt-1 text-muted">
                 POST /api/v1/billing/checkout with the agent API key. That opens a pay request for
-                the human principal — Solana USDC by default.
+                the human principal — Solana USDC by default. Plan action opens the ${ACTION_GATE_PRICE_USD}{" "}
+                Action Gate seat. Slack and CRM wait for a person. Email send stops until email is
+                connected.
               </p>
               <pre className="mt-3 overflow-x-auto rounded-[16px] bg-[#12263f] p-4 font-mono text-meta leading-relaxed text-[#e8eef6]">
                 {`fetch("https://agent-control.net/api/v1/billing/checkout", {
@@ -621,9 +635,12 @@ client.onBeforePaymentCreation(
     Authorization: "Bearer YOUR_AGENT_API_KEY",
     "Content-Type": "application/json",
   },
-  body: JSON.stringify({ plan: "starter" }),
+  body: JSON.stringify({ plan: "action" }),
 })`}
               </pre>
+              <p className="mt-3 text-muted">
+                Wallet console plans stay starter, pro, or team. Send plan starter for the $29 seat.
+              </p>
             </li>
           </ol>
           <p className="mt-6 text-body leading-relaxed text-muted">

@@ -13,10 +13,14 @@ import {
   ACTION_GATE_CURL_SLACK,
   ACTION_GATE_DB_ENV,
   ACTION_GATE_DB_ERROR,
+  ACTION_GATE_EMAIL_NOTE,
   ACTION_GATE_HREF,
   ACTION_GATE_MCP_NOTE,
+  ACTION_GATE_PAY_ABSOLUTE,
+  ACTION_GATE_PAY_CTA,
   ACTION_GATE_PRICE_USD,
   ACTION_GATE_SCHEMA,
+  ACTION_GATE_STOP_EXAMPLE,
   actionAuditDetail,
   actionGateDatabaseReady,
   checkActionWith,
@@ -204,6 +208,10 @@ describe("Action Gate decisions", () => {
     assert.equal(locked.result.decision, "stop");
     assert.equal(locked.result.approval_id, null);
     assert.equal(locked.result.pay_url, ACTION_GATE_HREF);
+    assert.match(locked.result.reasons[0] ?? "", /\$49/);
+    assert.match(locked.result.reasons[0] ?? "", new RegExp(ACTION_GATE_PAY_ABSOLUTE.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    assert.equal(ACTION_GATE_PAY_ABSOLUTE, "https://agent-control.net/billing/pay?plan=action");
+    assert.doesNotMatch(locked.result.reasons.join(" "), /\$29|plan=starter|Starter/);
 
     const missing = await checkActionWith({
       databaseReady: false,
@@ -315,5 +323,24 @@ describe("Action Gate billing and audit", () => {
     assert.match(docs, /ACTION_GATE_CURL_EMAIL/);
     assert.match(docs, /ACTION_GATE_CURL_SLACK/);
     assert.match(docs, /ACTION_GATE_CURL_CRM/);
+    assert.match(docs, /ACTION_GATE_STOP_EXAMPLE/);
+    assert.match(docs, /ACTION_GATE_EMAIL_NOTE/);
+    assert.match(docs, /ACTION_GATE_PAY_CTA/);
+    assert.match(ACTION_GATE_STOP_EXAMPLE, /Slack/);
+    assert.match(ACTION_GATE_STOP_EXAMPLE, /CRM/);
+    assert.match(ACTION_GATE_EMAIL_NOTE, /Nothing is sent/);
+    assert.equal(ACTION_GATE_PAY_CTA, "Pay $49");
+    assert.doesNotMatch(ACTION_GATE_STOP_EXAMPLE, /\$29/);
+    const connect = readFileSync(join(ROOT, "src/routes/connect.tsx"), "utf8");
+    const llms = readFileSync(join(ROOT, "public/llms.txt"), "utf8");
+    assert.match(connect, /ACTION_GATE_HREF/);
+    assert.match(connect, /ACTION_GATE_PAY_CTA/);
+    assert.match(connect, /ACTION_GATE_STOP_EXAMPLE/);
+    const payAt = llms.indexOf("https://agent-control.net/billing/pay?plan=action");
+    const starterAt = llms.indexOf("Then Starter $29");
+    assert.ok(payAt >= 0 && starterAt > payAt);
+    assert.match(llms, /Nothing goes out/);
+    assert.match(llms, /Email send stops until email is connected/);
+    assert.match(llms, /plan starter\|pro\|team\|action/);
   });
 });

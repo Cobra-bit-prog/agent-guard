@@ -1,5 +1,12 @@
 import { FREE_TRIAL_DAYS, FREE_TRIAL_HOURS, PLANS, type Entitlement, type PlanId } from "./plans.ts";
 import { PAY_ASSET_CHAIN, asPayAsset, type PayAsset } from "./pay-asset.ts";
+import {
+  ACTION_GATE_HREF,
+  ACTION_GATE_PLAN,
+  ACTION_GATE_PRICE_USD,
+  ACTION_GATE_PRODUCT,
+  payPlanQuote,
+} from "./shop-shield.ts";
 import { SOLANA_PAYOUT_ADDRESS, lockedSolanaUsdcRecipient, type PayChain } from "./solana-pay.ts";
 import { APP_ORIGIN, absoluteAppUrl } from "./warning-alert.ts";
 
@@ -20,6 +27,8 @@ export const PAY_ASSETS = ["usdc", "sol", "eth"] as const;
 export const PAY_CHAINS = ["solana", "ethereum", "base"] as const;
 
 export type PaidPlanId = (typeof PAID_PLANS)[number];
+/** Wallet console plans plus Action Gate. Action Gate is Solana USDC only. */
+export type CheckoutPlanId = PaidPlanId | typeof ACTION_GATE_PLAN;
 
 export type StorefrontPlan = {
   id: PaidPlanId;
@@ -43,6 +52,15 @@ export type StorefrontPricing = {
     note: string;
   };
   plans: StorefrontPlan[];
+  action_gate: {
+    id: typeof ACTION_GATE_PLAN;
+    name: typeof ACTION_GATE_PRODUCT;
+    price_usd: number;
+    asset: "usdc";
+    chain: "solana";
+    href: string;
+    note: string;
+  };
   pay: {
     method: "solana-pay";
     asset: "USDC";
@@ -106,6 +124,15 @@ export function getPricing(): StorefrontPricing {
       note: "1-day full console trial, no card, no KYC. Then Starter $29 / Pro $49 / Team $149.",
     },
     plans: listPaidPlans(),
+    action_gate: {
+      id: ACTION_GATE_PLAN,
+      name: ACTION_GATE_PRODUCT,
+      price_usd: ACTION_GATE_PRICE_USD,
+      asset: "usdc",
+      chain: "solana",
+      href: ACTION_GATE_HREF,
+      note: "Before Slack or a CRM write, a person taps go, stop, or wait. No answer means stop. Solana USDC only. Email send stops until email is connected.",
+    },
     pay: {
       method: "solana-pay",
       asset: "USDC",
@@ -401,7 +428,7 @@ export function storefrontInviteCopy(email: string): { subject: string; text: st
 }
 
 export type ResolvedCheckout = {
-  plan: PaidPlanId;
+  plan: CheckoutPlanId;
   asset: PayAsset;
   chain: PayChain;
 };
@@ -444,7 +471,14 @@ export const CHECKOUT_USAGE = {
     chain: "solana" as const,
     human_email: "ops@example.com",
   },
-  note: "Opens a pay request on the human account that owns this agent. The human pays at pay_url. Not automatic payment. Not the human front door — humans use /billing/pay. Agents cannot decide Approval Inbox.",
+  action_gate: {
+    plan: ACTION_GATE_PLAN,
+    asset: "usdc" as const,
+    chain: "solana" as const,
+    amount_usd: ACTION_GATE_PRICE_USD,
+    note: "Opens the $49 Action Gate pay request. Solana USDC only. The human pays at pay_url.",
+  },
+  note: "Opens a pay request on the human account that owns this agent. The human pays at pay_url. Not automatic payment. Not the human front door — humans use /billing/pay. Agents cannot decide Approval Inbox. plan action is Action Gate ($49, Solana USDC only).",
   wraps: "POST /api/v1/billing/checkout — agent key → pay request for the human principal.",
 };
 
@@ -465,6 +499,14 @@ function isPaidPlan(value: unknown): value is PaidPlanId {
   return typeof value === "string" && (PAID_PLANS as readonly string[]).includes(value);
 }
 
+function isCheckoutPlan(value: unknown): value is CheckoutPlanId {
+  return isPaidPlan(value) || value === ACTION_GATE_PLAN;
+}
+
+export function checkoutPriceUsd(plan: CheckoutPlanId): number {
+  return payPlanQuote(plan).price;
+}
+
 function isPayAsset(value: unknown): value is PayAsset {
   return typeof value === "string" && (PAY_ASSETS as readonly string[]).includes(value);
 }
@@ -478,7 +520,7 @@ export function checkoutPayUrl(payRequestId: string): string {
 }
 
 export function resolveCheckoutInput(data: {
-  plan: PaidPlanId;
+  plan: CheckoutPlanId;
   asset?: PayAsset;
   chain?: PayChain;
 }): ResolvedCheckout {
@@ -496,14 +538,20 @@ export function parseCheckoutBody(
   const rec = body as Record<string, unknown>;
   const inbox = refuseAgentInboxApprove(rec.decision ?? rec.action);
   if (inbox) return inbox;
-  if (!isPaidPlan(rec.plan)) {
-    return { ok: false, status: 400, error: "Provide plan as starter, pro, or team." };
+  if (!isCheckoutPlan(rec.plan)) {
+    return { ok: false, status: 400, error: "Provide plan as starter, pro, team, or action." };
   }
   if (rec.asset !== undefined && !isPayAsset(rec.asset)) {
     return { ok: false, status: 400, error: "Invalid asset or chain." };
   }
   if (rec.chain !== undefined && !isPayChain(rec.chain)) {
     return { ok: false, status: 400, error: "Invalid asset or chain." };
+  }
+  if (rec.plan === ACTION_GATE_PLAN) {
+    if ((rec.asset !== undefined && rec.asset !== "usdc") || (rec.chain !== undefined && rec.chain !== "solana")) {
+      return { ok: false, status: 400, error: "Action Gate is Solana USDC only." };
+    }
+    return { ok: true, data: { plan: ACTION_GATE_PLAN, asset: "usdc", chain: "solana" } };
   }
   return {
     ok: true,

@@ -22,7 +22,7 @@ export const WRITE_GATE_ASK_VS_ENFORCE =
   "Ask: call check_action (or ask_human). The agent still executes after go. Enforce: call the Write Gate tools email.send, slack.post, and crm.write. Those tools run the same check, then forward only when the decision is go. If the decision is wait, poll get_approval and call the tool again with approval_id. The agent cannot skip the check. Same $49 Action Gate seat (plan=action). Not a second plan.";
 
 export const WRITE_GATE_BILLING_LINE =
-  "Action Gate is $49 USDC a month. Use Write Gate tools (email.send, slack.post, crm.write) so the agent cannot skip the check. Same seat as Ask (plan=action). It does not replace Starter.";
+  "Action Gate is $49 a month in USDC on Solana (plan=action). Before Slack or a CRM write, you tap go, stop, or wait. If you do not answer, it stops. You keep the keys. Email send stops until email is connected.";
 
 export const WRITE_GATE_POLL =
   "Poll get_approval with approval_id. When the decision is go, call this tool again with approval_id. Write Gate forwards only on go.";
