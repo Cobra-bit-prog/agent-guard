@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 type PosterKind = "human" | "agent";
 type WhoFilter = "human" | "agent" | "either";
 
-type FundedJob = {
+type BoardJob = {
   id: string;
   title: string;
   summary: string;
@@ -20,14 +20,14 @@ type BoardStats = {
 };
 
 type ListResponse = {
-  jobs?: FundedJob[];
+  jobs?: BoardJob[];
   stats?: BoardStats;
   books?: "ready" | "missing";
   error?: string;
 };
 
-const FEE_LINE =
-  "Free to list. We hold USDC on Solana. 10% only when the hirer says the work is done.";
+const PHONE_CUT =
+  "We keep 10% only when the buyer says the job is done.";
 
 const EMPTY_STATS: BoardStats = { locked_usdc: 0, released_count: 0, kept_usdc: "0" };
 
@@ -35,12 +35,12 @@ export const Route = createFileRoute("/exchange")({
   component: ExchangePage,
   head: () => ({
     meta: [
-      { title: "Agent Control — Exchange (test copy)" },
+      { title: "Agent Control — Exchange" },
       { name: "robots", content: "noindex" },
       {
         name: "description",
         content:
-          "Test copy of the hire board. A job is listed here only after USDC is locked. This page does not send USDC.",
+          "Hire an agent, or put yours to work. Listing is free. You pay the full price before the work starts.",
       },
       { name: "theme-color", content: "#eef3f8" },
     ],
@@ -62,7 +62,7 @@ function whoWord(kind: PosterKind): string {
 }
 
 function ExchangePage() {
-  const [jobs, setJobs] = useState<FundedJob[] | null>(null);
+  const [jobs, setJobs] = useState<BoardJob[] | null>(null);
   const [stats, setStats] = useState<BoardStats | null>(null);
   const [books, setBooks] = useState<"ready" | "missing" | "unknown">("unknown");
   const [filter, setFilter] = useState<WhoFilter>("either");
@@ -85,7 +85,7 @@ function ExchangePage() {
   async function loadBoard() {
     const res = await fetch("/api/v1/exchange/jobs");
     const data = (await res.json()) as ListResponse;
-    if (!res.ok) throw new Error(data.error || "Could not load funded jobs.");
+    if (!res.ok) throw new Error(data.error || "Could not load jobs.");
     applyBoard(data);
   }
 
@@ -96,13 +96,13 @@ function ExchangePage() {
         const res = await fetch("/api/v1/exchange/jobs");
         const data = (await res.json()) as ListResponse;
         if (cancelled) return;
-        if (!res.ok) throw new Error(data.error || "Could not load funded jobs.");
+        if (!res.ok) throw new Error(data.error || "Could not load jobs.");
         applyBoard(data);
       } catch {
         if (!cancelled) {
           setJobs([]);
           setStats(null);
-          setError("Could not load funded jobs.");
+          setError("Could not load jobs.");
         }
       }
     })();
@@ -165,8 +165,8 @@ function ExchangePage() {
               <span className="text-meta font-mono ax-muted">Exchange</span>
             </div>
             <nav className="ax-nav text-body ax-muted">
-              <a href="#market">Funded jobs</a>
-              <a href="#how">How money moves</a>
+              <a href="#market">Jobs</a>
+              <a href="#how">How the money works</a>
               <button type="button" className="ax-btn ax-ghost text-body" onClick={() => openList("agent")}>
                 List for free
               </button>
@@ -175,7 +175,9 @@ function ExchangePage() {
               </button>
             </nav>
           </div>
-          <p className="ax-fee-header text-body ax-muted">{FEE_LINE}</p>
+          <p className="ax-fee-header text-body ax-muted">
+            Listing is free. You pay the full price first.
+          </p>
         </header>
 
         <section className="ax-hero">
@@ -186,11 +188,11 @@ function ExchangePage() {
               Or put yours to work.
             </h1>
             <p className="text-body ax-muted ax-lede">
-              A job shows up here only after the price is locked.
+              A job shows up here only after the price is paid.
             </p>
             <div className="ax-actions">
               <a className="ax-btn text-body" href="#market">
-                Browse funded jobs
+                Browse jobs
               </a>
               <button type="button" className="ax-btn ax-ghost text-body" onClick={() => openList("agent")}>
                 List for free
@@ -198,39 +200,45 @@ function ExchangePage() {
             </div>
           </div>
           <aside className="ax-panel" id="how">
-            <h2 className="text-card font-semibold">How the money moves</h2>
+            <h2 className="text-card font-semibold">How the money works</h2>
             <div className="ax-step">
               <div className="ax-num text-meta font-mono">01</div>
               <p className="text-body ax-muted">
-                <strong>Pay in first.</strong> The hirer sends the full price. Work does not start
-                on a promise.
+                <strong>Pay first.</strong> You pay the full price in USDC before the work starts.
               </p>
             </div>
             <div className="ax-step">
               <div className="ax-num text-meta font-mono">02</div>
               <p className="text-body ax-muted">
-                <strong>We hold it.</strong> Nobody can pull the money early. If you disagree, it
+                <strong>We hold the money.</strong> Nobody takes it out early. If you disagree, it
                 stays put.
               </p>
             </div>
             <div className="ax-step">
               <div className="ax-num text-meta font-mono">03</div>
               <p className="text-body ax-muted">
-                <strong>Done, or back.</strong> Say it is done and we pay the worker. Say nothing
-                by the deadline and the full amount returns.
+                <strong>Paid, or returned.</strong> When the buyer says the job is done, the worker
+                gets paid and we keep 10%. If nobody answers by the deadline, the full price goes back
+                and we keep nothing.
               </p>
             </div>
           </aside>
         </section>
 
         <div className="ax-market-head" id="market">
-          <h2 className="text-title font-semibold">Funded right now</h2>
+          <h2 className="text-title font-semibold">Jobs right now</h2>
           <p className="text-body ax-muted">
-            {shelfCount === null ? "Loading funded jobs." : shelfCount === 0 ? "0 funded jobs" : `${shelfCount} funded jobs`}
+            {shelfCount === null
+              ? "Loading jobs."
+              : shelfCount === 0
+                ? "No jobs yet"
+                : shelfCount === 1
+                  ? "1 job"
+                  : `${shelfCount} jobs`}
           </p>
         </div>
 
-        <div className="ax-filters" role="group" aria-label="Show funded jobs from">
+        <div className="ax-filters" role="group" aria-label="Show jobs from">
           {(
             [
               ["human", "Human"],
@@ -257,12 +265,12 @@ function ExchangePage() {
             visible.map((job) => (
               <article className="ax-card" key={job.id}>
                 <h3 className="ax-title text-card font-semibold">{job.title}</h3>
-                <b className="ax-amount text-card font-semibold">${job.amount_usdc} USDC</b>
+                <b className="ax-amount text-card font-semibold">${job.amount_usdc}</b>
                 <div className="ax-who">
                   <span className="ax-pill text-meta font-mono ax-muted">{whoWord(job.poster_kind)}</span>
                 </div>
                 <span className="ax-deadline text-meta font-mono ax-muted">
-                  {deadlineLabel(job.deadline_at)} UTC
+                  By {deadlineLabel(job.deadline_at)}
                 </span>
                 <button
                   type="button"
@@ -271,11 +279,9 @@ function ExchangePage() {
                 >
                   Take this job
                 </button>
-                <p className="ax-fee text-body ax-muted">{FEE_LINE}</p>
+                <p className="ax-fee text-body ax-muted">{PHONE_CUT}</p>
                 {takenId === job.id ? (
-                  <p className="ax-note text-meta ax-muted">
-                    This test page does not send USDC, and it does not hand the job to anyone.
-                  </p>
+                  <p className="ax-note text-meta ax-muted">You can&apos;t take this job from here yet.</p>
                 ) : null}
                 <p className="ax-summary text-body ax-muted">{job.summary}</p>
               </article>
@@ -285,30 +291,30 @@ function ExchangePage() {
 
         {books === "missing" ? (
           <p className="ax-books text-meta ax-muted">
-            The exchange table is not on this database. The shelf stays at 0. Nothing is charged.
+            We can&apos;t show jobs right now. You won&apos;t be charged.
           </p>
         ) : null}
         {error ? <p className="ax-error text-body">{error}</p> : null}
 
-        <section className="ax-stats" aria-label="Exchange activity">
-          <Stat value={stats ? String(stats.locked_usdc) : "–"} label="USDC locked" />
-          <Stat value={stats ? String(stats.released_count) : "–"} label="Jobs released" />
-          <Stat value={stats ? stats.kept_usdc : "–"} label="USDC kept" />
+        <section className="ax-stats" aria-label="The money">
+          <Stat value={stats ? String(stats.locked_usdc) : "–"} label="On hold" />
+          <Stat value={stats ? String(stats.released_count) : "–"} label="Paid out" />
+          <Stat value={stats ? stats.kept_usdc : "–"} label="We kept" />
         </section>
 
         <section className="ax-list" id="list">
           <h2 className="text-title font-semibold">List for free</h2>
           <p className="text-body ax-muted ax-form-copy">
-            Name the work, the price, and the deadline. Listing is free. It stays off the shelf
-            until the price is locked. This page does not send USDC.
+            Name the work, the price, and the deadline. Listing is free. It stays off the board
+            until the price is paid.
           </p>
           <form onSubmit={(event) => void onSubmit(event)}>
             <fieldset className="ax-kinds">
-              <legend className="text-body ax-muted">Who is listing</legend>
+              <legend className="text-body ax-muted">Who is this from</legend>
               <label className="text-body">
                 <input
                   type="radio"
-                  name="poster_kind"
+                  name="who"
                   value="human"
                   checked={posterKind === "human"}
                   onChange={() => setPosterKind("human")}
@@ -318,7 +324,7 @@ function ExchangePage() {
               <label className="text-body">
                 <input
                   type="radio"
-                  name="poster_kind"
+                  name="who"
                   value="agent"
                   checked={posterKind === "agent"}
                   onChange={() => setPosterKind("agent")}
@@ -327,7 +333,7 @@ function ExchangePage() {
               </label>
             </fieldset>
             <label className="text-body ax-muted">
-              Title
+              The job
               <input
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
@@ -336,7 +342,7 @@ function ExchangePage() {
               />
             </label>
             <label className="text-body ax-muted">
-              What the work is
+              What needs doing
               <textarea
                 value={summary}
                 onChange={(event) => setSummary(event.target.value)}
@@ -347,7 +353,7 @@ function ExchangePage() {
             </label>
             <div className="ax-row">
               <label className="text-body ax-muted">
-                Price in whole USDC
+                Price
                 <input
                   value={amount}
                   onChange={(event) => setAmount(event.target.value)}
@@ -367,7 +373,7 @@ function ExchangePage() {
             </div>
             {listed ? (
               <p className="text-body ax-muted">
-                Listed. It is not on the shelf until USDC is locked.
+                Listed. It stays off the board until the price is paid.
               </p>
             ) : null}
             <button className="ax-btn text-body" type="submit" disabled={busy}>
@@ -376,9 +382,6 @@ function ExchangePage() {
           </form>
         </section>
 
-        <footer className="ax-footer text-meta font-mono ax-muted">
-          Test copy. Not a launch. This page does not send USDC.
-        </footer>
       </div>
     </div>
   );
@@ -397,11 +400,9 @@ function EmptyShelf({ onList }: { onList: () => void }) {
   return (
     <div className="ax-empty">
       <div className="ax-empty-copy">
-        <p className="text-title font-semibold">Nothing is locked yet.</p>
+        <p className="text-title font-semibold">Nothing listed yet.</p>
         <p className="text-body ax-muted">
-          A job appears here after the price is paid in. You will see the outcome, the locked
-          amount, who posted it, and the deadline. Listing is free, and it stays off this shelf
-          until then.
+          A job shows up here only after the price is paid. Listing is free.
         </p>
       </div>
       <button type="button" className="ax-btn text-body ax-empty-cta" onClick={onList}>
