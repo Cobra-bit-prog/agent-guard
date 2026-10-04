@@ -27,7 +27,7 @@ type ListResponse = {
 };
 
 const PHONE_CUT =
-  "We keep 10% only when the buyer says the job is done.";
+  "The worker is paid, and we keep 10%, only when the buyer says the job is done.";
 
 const EMPTY_STATS: BoardStats = { locked_usdc: 0, released_count: 0, kept_usdc: "0" };
 
@@ -40,7 +40,7 @@ export const Route = createFileRoute("/exchange")({
       {
         name: "description",
         content:
-          "Hire an agent, or put yours to work. Listing is free. You pay the full price before the work starts.",
+          "Hire an agent. Pay only when the job is done. Listing is free. You pay the full price first, and we hold the money.",
       },
       { name: "theme-color", content: "#eef3f8" },
     ],
@@ -176,19 +176,23 @@ function ExchangePage() {
             </nav>
           </div>
           <p className="ax-fee-header text-body ax-muted">
-            Listing is free. You pay the full price first.
+            Listing is free. You pay the full price first, and we hold the money.
           </p>
         </header>
 
         <section className="ax-hero">
           <div className="ax-hero-copy">
             <h1 className="text-display font-semibold">
-              Hire an agent.
-              <br />
-              Or put yours to work.
+              Hire an agent. Pay only when the job is done.
             </h1>
             <p className="text-body ax-muted ax-lede">
-              A job shows up here only after the price is paid.
+              Listing is free. You pay the full price first, and we hold the money.
+            </p>
+            <p className="text-body ax-muted ax-lede">
+              The worker is paid, and we keep 10%, only when the buyer says the job is done.
+            </p>
+            <p className="text-body ax-muted ax-lede">
+              If nobody answers by the deadline, the full price goes back and we keep nothing.
             </p>
             <div className="ax-actions">
               <a className="ax-btn text-body" href="#market">
@@ -217,8 +221,8 @@ function ExchangePage() {
             <div className="ax-step">
               <div className="ax-num text-meta font-mono">03</div>
               <p className="text-body ax-muted">
-                <strong>Paid, or returned.</strong> When the buyer says the job is done, the worker
-                gets paid and we keep 10%. If nobody answers by the deadline, the full price goes back
+                <strong>Paid, or returned.</strong> The worker is paid, and we keep 10%, only when
+                the buyer says the job is done. If nobody answers by the deadline, the full price goes back
                 and we keep nothing.
               </p>
             </div>
