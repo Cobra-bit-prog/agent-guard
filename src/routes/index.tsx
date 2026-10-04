@@ -4,7 +4,6 @@ import { SkyShell } from "@/components/marketing/chrome";
 import { LandingCatch } from "@/components/marketing/landing-catch";
 import { LandingGate } from "@/components/marketing/landing-gate";
 import { LandingProductTabs } from "@/components/marketing/landing-modules";
-import { LandingPreview } from "@/components/marketing/landing-preview";
 import { LandingVerdict } from "@/components/marketing/landing-verdict";
 import { LandingFaq } from "@/components/landing-faq";
 import { ConnectCtas, ConnectSteps } from "@/components/marketing/connect-path";
@@ -209,39 +208,16 @@ function Home() {
             </p>
             <div className="landing-rise mt-8 flex flex-wrap items-center gap-3">
               <Button size="lg" asChild className="rounded-full text-body">
-                <a href="/signup">Post a job</a>
+                <a href="/exchange">Post a job</a>
               </Button>
               <Button size="lg" variant="outline" asChild className="rounded-full text-body">
-                <a href="/docs">Browse jobs</a>
+                <a href="/exchange">Browse jobs</a>
               </Button>
             </div>
           </div>
         </div>
         <div className="mx-auto w-full max-w-[1140px] px-5 pb-16 md:px-6">
-            <div className="landing-rise flex flex-wrap gap-1">
-              <span className="mt-1 mr-1 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-white px-2.5 py-1.5 text-meta text-fg shadow-[0_1px_0_rgb(18_38_63/0.04)]">
-                <i className="inline-grid size-5 place-items-center rounded-full bg-[#dcfce7] text-meta font-bold not-italic leading-none text-[#166534]">
-                  ✓
-                </i>
-                Within policy = auto
-              </span>
-              <span className="mt-1 mr-1 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-white px-2.5 py-1.5 text-meta text-fg shadow-[0_1px_0_rgb(18_38_63/0.04)]">
-                <i className="inline-grid size-5 place-items-center rounded-full bg-[#fde8e6] text-meta font-bold not-italic leading-none text-danger">
-                  ✕
-                </i>
-                Outside policy = stop
-              </span>
-              <span className="mt-1 mr-1 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-white px-2.5 py-1.5 text-meta text-fg shadow-[0_1px_0_rgb(18_38_63/0.04)]">
-                <i className="inline-grid size-5 place-items-center rounded-full bg-[#e8eef6] text-meta font-bold not-italic leading-none text-navy">
-                  🔑
-                </i>
-                Keys stay with you
-              </span>
-            </div>
-            <SupportedChains className="landing-rise mt-5" />
-            <div className="mt-8 max-w-[28rem]">
-              <LandingPreview />
-            </div>
+          <SupportedChains className="landing-rise mt-5" />
         </div>
       </section>
 

@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as ConnectRouteImport } from './routes/connect'
 import { Route as DocsRouteImport } from './routes/docs'
+import { Route as ExchangeRouteImport } from './routes/exchange'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LogosRouteImport } from './routes/logos'
 import { Route as PartnersRouteImport } from './routes/partners'
@@ -82,6 +83,11 @@ const ConnectRoute = ConnectRouteImport.update({
 const DocsRoute = DocsRouteImport.update({
   id: '/docs',
   path: '/docs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExchangeRoute = ExchangeRouteImport.update({
+  id: '/exchange',
+  path: '/exchange',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -345,6 +351,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/connect': typeof ConnectRoute
   '/docs': typeof DocsRoute
+  '/exchange': typeof ExchangeRoute
   '/login': typeof LoginRoute
   '/logos': typeof LogosRoute
   '/partners': typeof PartnersRoute
@@ -401,6 +408,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/connect': typeof ConnectRoute
   '/docs': typeof DocsRoute
+  '/exchange': typeof ExchangeRoute
   '/login': typeof LoginRoute
   '/logos': typeof LogosRoute
   '/partners': typeof PartnersRoute
@@ -456,6 +464,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/connect': typeof ConnectRoute
   '/docs': typeof DocsRoute
+  '/exchange': typeof ExchangeRoute
   '/login': typeof LoginRoute
   '/logos': typeof LogosRoute
   '/partners': typeof PartnersRoute
@@ -514,6 +523,7 @@ export interface FileRouteTypes {
     | '/'
     | '/connect'
     | '/docs'
+    | '/exchange'
     | '/login'
     | '/logos'
     | '/partners'
@@ -570,6 +580,7 @@ export interface FileRouteTypes {
     | '/'
     | '/connect'
     | '/docs'
+    | '/exchange'
     | '/login'
     | '/logos'
     | '/partners'
@@ -624,6 +635,7 @@ export interface FileRouteTypes {
     | '/_app'
     | '/connect'
     | '/docs'
+    | '/exchange'
     | '/login'
     | '/logos'
     | '/partners'
@@ -682,6 +694,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   ConnectRoute: typeof ConnectRoute
   DocsRoute: typeof DocsRoute
+  ExchangeRoute: typeof ExchangeRoute
   LoginRoute: typeof LoginRoute
   LogosRoute: typeof LogosRoute
   PartnersRoute: typeof PartnersRoute
@@ -748,6 +761,13 @@ declare module '@tanstack/react-router' {
       path: '/docs'
       fullPath: '/docs'
       preLoaderRoute: typeof DocsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/exchange': {
+      id: '/exchange'
+      path: '/exchange'
+      fullPath: '/exchange'
+      preLoaderRoute: typeof ExchangeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -1192,6 +1212,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   ConnectRoute: ConnectRoute,
   DocsRoute: DocsRoute,
+  ExchangeRoute: ExchangeRoute,
   LoginRoute: LoginRoute,
   LogosRoute: LogosRoute,
   PartnersRoute: PartnersRoute,

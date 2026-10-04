@@ -21,6 +21,7 @@ test("marketing landing never imports pay-extension (SSR-unsafe wallet send)", (
     join(ROOT, "src/routes/index.tsx"),
     join(ROOT, "src/routes/docs.tsx"),
     join(ROOT, "src/routes/connect.tsx"),
+    join(ROOT, "src/routes/exchange.tsx"),
     join(ROOT, "src/routes/partners.tsx"),
     join(ROOT, "src/routes/privacy.tsx"),
     join(ROOT, "src/routes/oauth/authorize.tsx"),
@@ -147,6 +148,16 @@ test("homepage copy ships three product tabs and 24-hour trial truth", () => {
     home,
     /LandingVerdict[\s\S]*LandingProductTabs[\s\S]*LandingCatch[\s\S]*id="how"[\s\S]*id="connect"[\s\S]*id="pricing"[\s\S]*LandingGate[\s\S]*LandingFaq/,
   );
+});
+
+test("exchange page is a static coming-soon note", () => {
+  const page = readFileSync(join(ROOT, "src/routes/exchange.tsx"), "utf8");
+  assert.match(page, /createFileRoute\("\/exchange"\)/);
+  assert.match(page, /Job board opens soon\./);
+  assert.match(page, /Looking for work\? Same list\./);
+  assert.doesNotMatch(page, /<form|type="email"|useState|createServerFn|loader:/);
+  assert.doesNotMatch(page, /escrow|\bfunded\b|USDC mint|Solana rail|\bhirer\b|\bsignature\b/i);
+  assert.doesNotMatch(page, /Leave your email|we’ll tell you|we’ll email you|we'll tell you|we'll email you/i);
 });
 
 test("marketing sky theme uses darker navy muted copy for contrast", () => {
@@ -506,6 +517,14 @@ test("FAQ and Compare drop competitor names; homepage hero uses the locked hire 
   const hero = home.split('className="landing-hero')[1]?.split("</section>")[0] ?? "";
   assert.match(hero, />\s*Post a job\s*</);
   assert.match(hero, />\s*Browse jobs\s*</);
+  assert.match(hero, /href="\/exchange"[^>]*>\s*Post a job\s*</);
+  assert.match(hero, /href="\/exchange"[^>]*>\s*Browse jobs\s*</);
+  assert.doesNotMatch(hero, /href="\/signup"/);
+  assert.doesNotMatch(hero, /href="\/docs"/);
+  assert.doesNotMatch(hero, /Within policy = auto/);
+  assert.doesNotMatch(hero, /Outside policy = stop/);
+  assert.doesNotMatch(hero, /Keys stay with you/);
+  assert.doesNotMatch(hero, /LandingPreview/);
   assert.doesNotMatch(hero, /Start free trial/);
   assert.doesNotMatch(hero, /1-day \(24 hour\) trial, then pay on-chain/);
   assert.doesNotMatch(hero, /we hold it|pay the full price|keep 10%/i);
@@ -528,6 +547,7 @@ test("FAQ and Compare drop competitor names; homepage hero uses the locked hire 
 test("customer marketing surfaces never say abort / must abort", () => {
   const files = [
     join(ROOT, "src/routes/index.tsx"),
+    join(ROOT, "src/routes/exchange.tsx"),
     join(ROOT, "src/routes/connect.tsx"),
     join(ROOT, "src/routes/partners.tsx"),
     join(ROOT, "src/routes/privacy.tsx"),
@@ -711,6 +731,7 @@ test("marketing surfaces use the five-step type scale, not ad-hoc px sizes", () 
     join(ROOT, "src/routes/index.tsx"),
     join(ROOT, "src/routes/docs.tsx"),
     join(ROOT, "src/routes/connect.tsx"),
+    join(ROOT, "src/routes/exchange.tsx"),
     join(ROOT, "src/routes/partners.tsx"),
     join(ROOT, "src/routes/privacy.tsx"),
     join(ROOT, "src/routes/oauth/authorize.tsx"),
