@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ExchangeBooksError, createOpenJob, isUndefinedTable, listOpenJobs } from "@/lib/exchange/books";
+import { ExchangeBooksError, createOpenJob, isUndefinedTable, listFundedBoard } from "@/lib/exchange/books";
 import { getSql } from "@/lib/db";
 import { CORS, json } from "@/lib/server/http";
 
@@ -8,14 +8,15 @@ export const Route = createFileRoute("/api/v1/exchange/jobs")({
     handlers: {
       OPTIONS: () => new Response(null, { status: 204, headers: CORS }),
       GET: async () => {
+        const emptyStats = { locked_usdc: 0, released_count: 0, kept_usdc: "0" };
         try {
           const sql = await getSql();
-          const jobs = await listOpenJobs(sql);
-          return json({ jobs, books: "ready" });
+          const board = await listFundedBoard(sql);
+          return json({ jobs: board.jobs, stats: board.stats, books: "ready" });
         } catch (err) {
-          if (isUndefinedTable(err)) return json({ jobs: [], books: "missing" });
+          if (isUndefinedTable(err)) return json({ jobs: [], stats: emptyStats, books: "missing" });
           console.error("[exchange] list failed", err instanceof Error ? err.name : "error");
-          return json({ error: "Could not read open jobs" }, 500);
+          return json({ error: "Could not read funded jobs" }, 500);
         }
       },
       POST: async ({ request }) => {

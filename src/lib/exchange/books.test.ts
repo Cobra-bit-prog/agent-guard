@@ -11,6 +11,7 @@ import {
   createOpenJob,
   exchangeBalances,
   getJob,
+  listFundedBoard,
   recordHirerOk,
   recordWorkerOk,
   releaseDueJobs,
@@ -115,7 +116,15 @@ describe("exchange books on a throwaway database", () => {
     assert.doesNotMatch(page, /solana:/);
     assert.doesNotMatch(page, /49QioAKP/);
     assert.doesNotMatch(page, /One-page market brief|Draft the customer email|Check before deploy/);
-    assert.match(page, /No open jobs yet/);
+    assert.doesNotMatch(page, /Turn a call into tasks|Summarize a public report|Answer one support thread/);
+    assert.doesNotMatch(page, /\$40|\$25|\$60|\$18|\$20|\$15/);
+    assert.match(page, /0 funded jobs/);
+    assert.match(page, /Card shape\. Not a funded job\./);
+    assert.match(
+      page,
+      /Free to list\. We hold USDC on Solana\. 10% only when the hirer says the work is done\./,
+    );
+    assert.doesNotMatch(page, /No open jobs yet|ninety percent|We keep ten|founding tier|0% under/i);
     assert.doesNotMatch(readFileSync(join(ROOT, "src/routes/index.tsx"), "utf8"), /exchange/i);
     assert.doesNotMatch(readFileSync(join(ROOT, "src/routes/_app/billing.pay.tsx"), "utf8"), /exchange/i);
   });
@@ -439,6 +448,45 @@ describe("exchange books on a throwaway database", () => {
       /receive wallet/,
     );
     assert.equal((await getJob(q, open.id)).status, "open");
+  });
+});
+
+describe("funded shelf", () => {
+  it("keeps unpaid listings off the shelf and prints zeros until a job is released", async () => {
+    const { q } = await openDb();
+    const open = await listJob(q, 12);
+    let board = await listFundedBoard(q);
+    assert.deepEqual(board.jobs, []);
+    assert.equal(board.stats.locked_usdc, 0);
+    assert.equal(board.stats.released_count, 0);
+    assert.equal(board.stats.kept_usdc, "0");
+
+    const held = await attachPayIn(q, {
+      jobId: open.id,
+      signature: "payin_shelf_12",
+      payerAddress: PAYER,
+      amountUsdc: 12,
+    });
+    await listJob(q, 7);
+    board = await listFundedBoard(q);
+    assert.equal(board.jobs.length, 1);
+    assert.equal(board.jobs[0]?.id, held.id);
+    assert.equal(board.jobs[0]?.amount_usdc, 12);
+    assert.equal(board.jobs[0]?.poster_kind, "human");
+    assert.equal(board.jobs[0]?.title, "Read the public page");
+    assert.equal("pay_in_signature" in (board.jobs[0] as object), false);
+    assert.equal("payer_address" in (board.jobs[0] as object), false);
+    assert.equal(board.stats.locked_usdc, 12);
+    assert.equal(board.stats.released_count, 0);
+    assert.equal(board.stats.kept_usdc, "0");
+
+    await recordHirerOk(q, held.id, BEFORE);
+    await recordWorkerOk(q, held.id, WORKER, BEFORE);
+    board = await listFundedBoard(q);
+    assert.deepEqual(board.jobs, []);
+    assert.equal(board.stats.locked_usdc, 0);
+    assert.equal(board.stats.released_count, 1);
+    assert.equal(board.stats.kept_usdc, feeUsdc(12));
   });
 });
 

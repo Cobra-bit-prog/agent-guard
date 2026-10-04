@@ -253,6 +253,62 @@ export async function listOpenJobs(db: ExchangeQuery): Promise<OpenJobCard[]> {
   return rows.map((row) => toCard(mapJob(row)));
 }
 
+export type FundedJobCard = {
+  id: string;
+  title: string;
+  summary: string;
+  poster_kind: PosterKind;
+  amount_usdc: number;
+  deadline_at: string;
+};
+
+/** Numbers the public page can print. Held jobs only; open listings stay off the shelf. */
+export type ExchangeBoardStats = {
+  locked_usdc: number;
+  released_count: number;
+  kept_usdc: string;
+};
+
+export async function listFundedBoard(
+  db: ExchangeQuery,
+): Promise<{ jobs: FundedJobCard[]; stats: ExchangeBoardStats }> {
+  const rows = await db.query<JobRow>(
+    `select ${JOB_COLUMNS} from exchange_jobs
+     where status = 'held'
+     order by deadline_at asc
+     limit 100`,
+  );
+  const statsRows = await db.query<{ locked_usdc: string; released_count: string; kept_usdc: string }>(
+    `select
+       coalesce(sum(amount_usdc) filter (where status = 'held'), 0)::text as locked_usdc,
+       coalesce(count(*) filter (where status = 'done'), 0)::text as released_count,
+       coalesce(sum(fee_usdc) filter (where status = 'done'), 0)::text as kept_usdc
+     from exchange_jobs`,
+  );
+  const stats = statsRows[0];
+  const locked = Number(stats?.locked_usdc ?? 0);
+  const released = Number(stats?.released_count ?? 0);
+  return {
+    jobs: rows.map((row) => {
+      const job = mapJob(row);
+      if (job.status !== "held") throw new ExchangeBooksError("The public shelf only lists funded jobs");
+      return {
+        id: job.id,
+        title: job.title,
+        summary: job.summary,
+        poster_kind: job.poster_kind,
+        amount_usdc: job.amount_usdc,
+        deadline_at: job.deadline_at,
+      };
+    }),
+    stats: {
+      locked_usdc: Number.isInteger(locked) ? locked : 0,
+      released_count: Number.isInteger(released) ? released : 0,
+      kept_usdc: normalizeUsdc(stats?.kept_usdc ?? 0),
+    },
+  };
+}
+
 export async function getJob(db: ExchangeQuery, id: string): Promise<ExchangeJob> {
   const rows = await db.query<JobRow>(
     `select ${JOB_COLUMNS} from exchange_jobs where id = $1`,

@@ -2,22 +2,34 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 
 type PosterKind = "human" | "agent";
+type WhoFilter = "human" | "agent" | "either";
 
-type OpenJob = {
+type FundedJob = {
   id: string;
   title: string;
   summary: string;
   poster_kind: PosterKind;
   amount_usdc: number;
-  status: "open";
   deadline_at: string;
 };
 
+type BoardStats = {
+  locked_usdc: number;
+  released_count: number;
+  kept_usdc: string;
+};
+
 type ListResponse = {
-  jobs?: OpenJob[];
+  jobs?: FundedJob[];
+  stats?: BoardStats;
   books?: "ready" | "missing";
   error?: string;
 };
+
+const FEE_LINE =
+  "Free to list. We hold USDC on Solana. 10% only when the hirer says the work is done.";
+
+const EMPTY_STATS: BoardStats = { locked_usdc: 0, released_count: 0, kept_usdc: "0" };
 
 export const Route = createFileRoute("/exchange")({
   component: ExchangePage,
@@ -28,7 +40,7 @@ export const Route = createFileRoute("/exchange")({
       {
         name: "description",
         content:
-          "Test copy of the agent job board. Listings are free. This page does not send USDC.",
+          "Test copy of the hire board. A job is listed here only after USDC is locked. This page does not send USDC.",
       },
       { name: "theme-color", content: "#eef3f8" },
     ],
@@ -45,22 +57,36 @@ function deadlineLabel(iso: string): string {
   }).format(date);
 }
 
+function whoWord(kind: PosterKind): string {
+  return kind === "agent" ? "Agent" : "Human";
+}
+
 function ExchangePage() {
-  const [jobs, setJobs] = useState<OpenJob[] | null>(null);
+  const [jobs, setJobs] = useState<FundedJob[] | null>(null);
+  const [stats, setStats] = useState<BoardStats | null>(null);
   const [books, setBooks] = useState<"ready" | "missing" | "unknown">("unknown");
+  const [filter, setFilter] = useState<WhoFilter>("either");
   const [posterKind, setPosterKind] = useState<PosterKind>("agent");
   const [title, setTitle] = useState("");
   const [summary, setSummary] = useState("");
-  const [amount, setAmount] = useState("40");
+  const [amount, setAmount] = useState("");
   const [deadline, setDeadline] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [listed, setListed] = useState(false);
+  const [takenId, setTakenId] = useState<string | null>(null);
 
-  async function loadJobs() {
+  function applyBoard(data: ListResponse) {
+    setJobs(data.jobs ?? []);
+    setStats(data.stats ?? EMPTY_STATS);
+    setBooks(data.books === "missing" ? "missing" : "ready");
+  }
+
+  async function loadBoard() {
     const res = await fetch("/api/v1/exchange/jobs");
     const data = (await res.json()) as ListResponse;
-    setJobs(data.jobs ?? []);
-    setBooks(data.books === "missing" ? "missing" : "ready");
+    if (!res.ok) throw new Error(data.error || "Could not load funded jobs.");
+    applyBoard(data);
   }
 
   useEffect(() => {
@@ -70,12 +96,13 @@ function ExchangePage() {
         const res = await fetch("/api/v1/exchange/jobs");
         const data = (await res.json()) as ListResponse;
         if (cancelled) return;
-        setJobs(data.jobs ?? []);
-        setBooks(data.books === "missing" ? "missing" : "ready");
+        if (!res.ok) throw new Error(data.error || "Could not load funded jobs.");
+        applyBoard(data);
       } catch {
         if (!cancelled) {
           setJobs([]);
-          setError("Could not load open jobs.");
+          setStats(null);
+          setError("Could not load funded jobs.");
         }
       }
     })();
@@ -93,6 +120,7 @@ function ExchangePage() {
     event.preventDefault();
     setBusy(true);
     setError(null);
+    setListed(false);
     const amountUsdc = Number(amount);
     const deadlineAt = deadline ? new Date(deadline).toISOString() : "";
     try {
@@ -111,7 +139,10 @@ function ExchangePage() {
       if (!res.ok) throw new Error(data.error || "Could not list the job.");
       setTitle("");
       setSummary("");
-      await loadJobs();
+      setAmount("");
+      setDeadline("");
+      setListed(true);
+      await loadBoard();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not list the job.");
     } finally {
@@ -119,156 +150,194 @@ function ExchangePage() {
     }
   }
 
+  const visible =
+    jobs?.filter((job) => filter === "either" || job.poster_kind === filter) ?? [];
+  const shelfCount = jobs === null ? null : visible.length;
+
   return (
     <div className="ax">
       <style>{EXCHANGE_CSS}</style>
       <div className="ax-wrap">
         <header className="ax-header">
-          <div className="ax-brand">
-            <strong>Agent Control</strong>
-            <span>Exchange</span>
+          <div className="ax-header-row">
+            <div className="ax-brand">
+              <strong className="text-card font-semibold">Agent Control</strong>
+              <span className="text-meta font-mono ax-muted">Exchange</span>
+            </div>
+            <nav className="ax-nav text-body ax-muted">
+              <a href="#market">Funded jobs</a>
+              <a href="#how">How money moves</a>
+              <button type="button" className="ax-btn ax-ghost text-body" onClick={() => openList("agent")}>
+                List for free
+              </button>
+              <button type="button" className="ax-btn text-body" onClick={() => openList("human")}>
+                Hire
+              </button>
+            </nav>
           </div>
-          <nav className="ax-nav">
-            <a href="#market">Open jobs</a>
-            <a href="#how">How money moves</a>
-            <button type="button" className="ax-btn ax-ghost" onClick={() => openList("agent")}>
-              List an agent
-            </button>
-            <button type="button" className="ax-btn" onClick={() => openList("human")}>
-              Hire
-            </button>
-          </nav>
+          <p className="ax-fee-header text-body ax-muted">{FEE_LINE}</p>
         </header>
 
         <section className="ax-hero">
-          <div>
-            <h1>
+          <div className="ax-hero-copy">
+            <h1 className="text-display font-semibold">
               Hire an agent.
               <br />
               Or put yours to work.
             </h1>
-            <p className="ax-lede">
-              Humans and agents post the job. The price is paid up front, in USDC on Solana. We
-              hold it until the work is done. Then the worker gets ninety percent. We keep ten.
+            <p className="text-body ax-muted ax-lede">
+              A job shows up here only after the price is locked.
             </p>
             <div className="ax-actions">
-              <a className="ax-btn" href="#market">
-                Browse open jobs
+              <a className="ax-btn text-body" href="#market">
+                Browse funded jobs
               </a>
-              <button type="button" className="ax-btn ax-ghost" onClick={() => openList("agent")}>
-                List your agent, free
+              <button type="button" className="ax-btn ax-ghost text-body" onClick={() => openList("agent")}>
+                List for free
               </button>
             </div>
           </div>
           <aside className="ax-panel" id="how">
-            <h2>How the money moves</h2>
+            <h2 className="text-card font-semibold">How the money moves</h2>
             <div className="ax-step">
-              <div className="ax-num">01</div>
-              <p>
+              <div className="ax-num text-meta font-mono">01</div>
+              <p className="text-body ax-muted">
                 <strong>Pay in first.</strong> The hirer sends the full price. Work does not start
                 on a promise.
               </p>
             </div>
             <div className="ax-step">
-              <div className="ax-num">02</div>
-              <p>
+              <div className="ax-num text-meta font-mono">02</div>
+              <p className="text-body ax-muted">
                 <strong>We hold it.</strong> Nobody can pull the money early. If you disagree, it
                 stays put.
               </p>
             </div>
             <div className="ax-step">
-              <div className="ax-num">03</div>
-              <p>
-                <strong>Done, or back.</strong> Say it’s done and we pay the worker. Say nothing by
-                the deadline and the full amount returns.
+              <div className="ax-num text-meta font-mono">03</div>
+              <p className="text-body ax-muted">
+                <strong>Done, or back.</strong> Say it is done and we pay the worker. Say nothing
+                by the deadline and the full amount returns.
               </p>
             </div>
           </aside>
         </section>
 
         <div className="ax-market-head" id="market">
-          <h2>Open right now</h2>
-          <div className="ax-note">Live rows only. No sample customers.</div>
+          <h2 className="text-title font-semibold">Funded right now</h2>
+          <p className="text-body ax-muted">
+            {shelfCount === null ? "Loading funded jobs." : shelfCount === 0 ? "0 funded jobs" : `${shelfCount} funded jobs`}
+          </p>
         </div>
+
+        <div className="ax-filters" role="group" aria-label="Show funded jobs from">
+          {(
+            [
+              ["human", "Human"],
+              ["agent", "Agent"],
+              ["either", "Either"],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              className={filter === value ? "ax-filter ax-filter-on text-body" : "ax-filter text-body"}
+              aria-pressed={filter === value}
+              onClick={() => setFilter(value)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         <section className="ax-grid" aria-live="polite">
-          {jobs === null ? (
-            <p className="ax-empty">Loading open jobs.</p>
-          ) : jobs.length === 0 ? (
-            <p className="ax-empty">No open jobs yet.</p>
+          {jobs === null ? null : visible.length === 0 ? (
+            <ShapeCard />
           ) : (
-            jobs.map((job) => (
+            visible.map((job) => (
               <article className="ax-card" key={job.id}>
                 <div className="ax-who">
-                  <span className={job.poster_kind === "agent" ? "ax-pill ax-agent" : "ax-pill ax-human"}>
-                    {job.poster_kind === "agent" ? "Agent hire" : "Human hire"}
-                  </span>
-                  <span className="ax-pill">Open</span>
+                  <span className="ax-pill text-meta font-mono ax-muted">{whoWord(job.poster_kind)}</span>
+                  <span className="ax-pill text-meta font-mono ax-muted">Funded</span>
                 </div>
-                <h3>{job.title}</h3>
-                <p>{job.summary}</p>
-                <div className="ax-price">
-                  <b>${job.amount_usdc}</b>
-                  <span>by {deadlineLabel(job.deadline_at)} UTC</span>
-                </div>
+                <h3 className="ax-title text-card font-semibold">{job.title}</h3>
+                <p className="ax-summary text-body ax-muted">{job.summary}</p>
+                <b className="ax-amount text-card font-semibold">${job.amount_usdc} USDC</b>
+                <span className="ax-deadline text-meta font-mono ax-muted">
+                  {deadlineLabel(job.deadline_at)} UTC
+                </span>
+                <button
+                  type="button"
+                  className="ax-btn ax-action text-body"
+                  onClick={() => setTakenId(job.id)}
+                >
+                  Take this job
+                </button>
+                {takenId === job.id ? (
+                  <p className="ax-note text-meta ax-muted">
+                    This test page does not send USDC, and it does not hand the job to anyone.
+                  </p>
+                ) : null}
+                <p className="ax-fee text-body ax-muted">{FEE_LINE}</p>
               </article>
             ))
           )}
         </section>
+
         {books === "missing" ? (
-          <p className="ax-note ax-books">
-            The exchange table is not on this database. Listings stay empty here. Nothing is
-            charged.
+          <p className="ax-books text-meta ax-muted">
+            The exchange table is not on this database. The shelf stays at 0. Nothing is charged.
           </p>
         ) : null}
+        {error ? <p className="ax-error text-body">{error}</p> : null}
 
-        <section className="ax-rules">
-          <div>
-            <h2>Free to be found</h2>
-            <p>Listing an agent costs nothing. We only earn when a job is paid out.</p>
-          </div>
-          <div>
-            <h2>Ten percent</h2>
-            <p>Taken only when the hirer says the work is done.</p>
-          </div>
-          <div>
-            <h2>Silence returns the money</h2>
-            <p>No answer by the deadline means a full refund. We keep nothing.</p>
-          </div>
+        <section className="ax-stats" aria-label="Exchange activity">
+          <Stat value={stats ? String(stats.locked_usdc) : "–"} label="USDC locked" />
+          <Stat value={stats ? String(stats.released_count) : "–"} label="Jobs released" />
+          <Stat value={stats ? stats.kept_usdc : "–"} label="USDC kept" />
         </section>
 
         <section className="ax-list" id="list">
-          <h2>List an agent, free</h2>
-          <p className="ax-lede">
-            Post the work. A human or an agent can list it. This test copy does not take a
-            payment and does not send USDC.
+          <h2 className="text-title font-semibold">List for free</h2>
+          <p className="text-body ax-muted ax-lede">
+            Post the work. It stays off the shelf until USDC is locked. This page does not send
+            USDC.
           </p>
           <form onSubmit={(event) => void onSubmit(event)}>
-            <div className="ax-kinds">
-              <label>
+            <fieldset className="ax-kinds">
+              <legend className="text-body ax-muted">Who is listing</legend>
+              <label className="text-body">
                 <input
                   type="radio"
                   name="poster_kind"
-                  checked={posterKind === "agent"}
-                  onChange={() => setPosterKind("agent")}
-                />
-                Agent
-              </label>
-              <label>
-                <input
-                  type="radio"
-                  name="poster_kind"
+                  value="human"
                   checked={posterKind === "human"}
                   onChange={() => setPosterKind("human")}
                 />
                 Human
               </label>
-            </div>
-            <label>
+              <label className="text-body">
+                <input
+                  type="radio"
+                  name="poster_kind"
+                  value="agent"
+                  checked={posterKind === "agent"}
+                  onChange={() => setPosterKind("agent")}
+                />
+                Agent
+              </label>
+            </fieldset>
+            <label className="text-body ax-muted">
               Title
-              <input value={title} onChange={(event) => setTitle(event.target.value)} required maxLength={140} />
+              <input
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                required
+                maxLength={140}
+              />
             </label>
-            <label>
-              Summary
+            <label className="text-body ax-muted">
+              What the work is
               <textarea
                 value={summary}
                 onChange={(event) => setSummary(event.target.value)}
@@ -278,7 +347,7 @@ function ExchangePage() {
               />
             </label>
             <div className="ax-row">
-              <label>
+              <label className="text-body ax-muted">
                 Price in whole USDC
                 <input
                   value={amount}
@@ -287,7 +356,7 @@ function ExchangePage() {
                   required
                 />
               </label>
-              <label>
+              <label className="text-body ax-muted">
                 Deadline
                 <input
                   type="datetime-local"
@@ -297,18 +366,51 @@ function ExchangePage() {
                 />
               </label>
             </div>
-            {error ? <p className="ax-error">{error}</p> : null}
-            <button className="ax-btn" type="submit" disabled={busy}>
+            {listed ? (
+              <p className="text-body ax-muted">
+                Listed. It is not on the shelf until USDC is locked.
+              </p>
+            ) : null}
+            <button className="ax-btn text-body" type="submit" disabled={busy}>
               {busy ? "Listing…" : "List for free"}
             </button>
           </form>
         </section>
 
-        <footer className="ax-footer">
+        <footer className="ax-footer text-meta font-mono ax-muted">
           Test copy. Not a launch. This page does not send USDC.
         </footer>
       </div>
     </div>
+  );
+}
+
+function Stat({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="ax-stat">
+      <p className="text-title font-semibold ax-stat-value">{value}</p>
+      <p className="text-meta ax-stat-label">{label}</p>
+    </div>
+  );
+}
+
+function ShapeCard() {
+  return (
+    <article className="ax-card ax-card-shape" aria-label="Card shape. Not a funded job.">
+      <p className="ax-shape-label text-meta font-mono ax-muted">Card shape. Not a funded job.</p>
+      <div className="ax-who">
+        <span className="ax-pill text-meta font-mono ax-muted">Human or Agent</span>
+      </div>
+      <p className="ax-category text-meta ax-muted">Category</p>
+      <h3 className="ax-title text-card font-semibold">Outcome</h3>
+      <p className="ax-summary text-body ax-muted">What gets delivered.</p>
+      <b className="ax-amount text-card font-semibold">Locked USDC</b>
+      <span className="ax-deadline text-meta font-mono ax-muted">Deadline</span>
+      <button type="button" className="ax-btn ax-ghost ax-action text-body" disabled>
+        Take this job
+      </button>
+      <p className="ax-fee text-body ax-muted">{FEE_LINE}</p>
+    </article>
   );
 }
 
@@ -319,109 +421,229 @@ const EXCHANGE_CSS = `
   --ax-elev: #f6f8fb;
   --ax-fg: #12263f;
   --ax-muted: #3a4d63;
-  --ax-subtle: #4a5d73;
   --ax-line: #dce4ee;
   --ax-coral: #e85d4c;
   --ax-navy: #1e3a5f;
-  --ax-ok: #1f7a4c;
+  --ax-stat: #f4f7fb;
+  --ax-stat-label: #d5deea;
   min-height: 100vh;
   background: var(--ax-bg);
   color: var(--ax-fg);
-  font-family: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
-  font-size: 16px;
-  line-height: 1.5;
+  font-family: var(--font-sans);
+}
+html:has(.ax),
+html:has(.ax) body,
+html:has(.ax) #app {
+  background: #eef3f8;
+  color: #12263f;
 }
 .ax * { box-sizing: border-box; }
+.ax :focus-visible { outline-color: var(--ax-coral); }
 .ax-wrap { width: min(1120px, calc(100% - 48px)); margin: 0 auto; }
-.ax-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 22px 0 8px; gap: 16px;
+.ax-muted { color: var(--ax-muted); }
+.ax-header { padding: 22px 0 8px; }
+.ax-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 .ax-brand { display: flex; align-items: baseline; gap: 10px; }
-.ax-brand strong { font-size: 18px; letter-spacing: -0.02em; }
-.ax-brand span {
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
-  font-size: 13px; color: var(--ax-muted);
+.ax-nav {
+  display: flex;
+  gap: 22px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
-.ax-nav { display: flex; gap: 22px; align-items: center; color: var(--ax-muted); font-size: 16px; flex-wrap: wrap; }
 .ax-nav a { color: inherit; text-decoration: none; }
+.ax-fee-header { margin: 14px 0 0; max-width: 40rem; }
 .ax-btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  background: var(--ax-coral); color: white; border: 0; border-radius: 999px;
-  padding: 10px 16px; font: inherit; font-weight: 600; cursor: pointer; text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ax-coral);
+  color: #fff;
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-weight: 600;
+  text-decoration: none;
 }
-.ax-btn:disabled { opacity: 0.7; cursor: wait; }
+.ax-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 .ax-ghost {
-  background: transparent; color: var(--ax-fg);
+  background: transparent;
+  color: var(--ax-fg);
   border: 1px solid var(--ax-line);
 }
-.ax-hero { padding: 54px 0 28px; display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 40px; align-items: end; }
-.ax h1 {
-  font-size: 40px; line-height: 1.1; letter-spacing: -0.03em;
-  font-weight: 600; margin: 0 0 16px;
+.ax-hero {
+  padding: 48px 0 12px;
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 40px;
+  align-items: end;
 }
-.ax-lede { font-size: 18px; color: var(--ax-muted); margin: 0 0 22px; max-width: 36rem; }
+.ax h1 { margin: 0 0 16px; }
+.ax-lede { margin: 0 0 22px; max-width: 36rem; }
 .ax-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .ax-panel {
-  background: var(--ax-surface); border: 1px solid var(--ax-line); border-radius: 16px;
-  padding: 18px 18px 8px; box-shadow: 0 18px 40px -28px rgb(18 38 63 / 0.35);
+  background: var(--ax-surface);
+  border: 1px solid var(--ax-line);
+  border-radius: 16px;
+  padding: 18px 18px 8px;
+  box-shadow: 0 18px 40px -28px rgb(18 38 63 / 0.35);
 }
-.ax-panel h2 { font-size: 18px; margin: 0 0 8px; letter-spacing: -0.02em; }
-.ax-step { display: grid; grid-template-columns: 28px 1fr; gap: 10px; padding: 10px 0; border-top: 1px solid var(--ax-line); }
-.ax-num {
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
-  color: var(--ax-coral); font-size: 13px; padding-top: 2px;
+.ax-panel h2 { margin: 0 0 8px; }
+.ax-step {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--ax-line);
 }
-.ax-step p { margin: 0; color: var(--ax-muted); font-size: 16px; }
+.ax-step p { margin: 0; }
 .ax-step strong { color: var(--ax-fg); font-weight: 600; }
-.ax-market-head { display: flex; justify-content: space-between; align-items: baseline; margin: 28px 0 12px; gap: 12px; }
-.ax-market-head h2, .ax-list h2 { font-size: 24px; letter-spacing: -0.02em; margin: 0; }
-.ax-note { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 13px; color: var(--ax-subtle); }
+.ax-num { color: var(--ax-coral); padding-top: 3px; }
+.ax-market-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin: 36px 0 14px;
+}
+.ax-market-head h2, .ax-list h2 { margin: 0; }
+.ax-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.ax-filter {
+  background: var(--ax-surface);
+  color: var(--ax-fg);
+  border: 1px solid var(--ax-line);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: 600;
+}
+.ax-filter-on {
+  background: var(--ax-navy);
+  color: #fff;
+  border-color: var(--ax-navy);
+}
 .ax-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 .ax-card {
-  background: var(--ax-surface); border: 1px solid var(--ax-line); border-radius: 16px;
-  padding: 16px; min-height: 176px; display: flex; flex-direction: column;
+  background: var(--ax-surface);
+  border: 1px solid var(--ax-line);
+  border-radius: 16px;
+  padding: 16px;
+  min-height: 228px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "label label"
+    "who who"
+    "category category"
+    "title title"
+    "summary summary"
+    "amount deadline"
+    "action action"
+    "note note"
+    "fee fee";
+  align-content: start;
+  column-gap: 12px;
+  row-gap: 8px;
 }
-.ax-who { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 8px; }
+.ax-card-shape {
+  background: var(--ax-elev);
+  border-style: dashed;
+}
+.ax-shape-label { grid-area: label; margin: 0; }
+.ax-who { grid-area: who; display: flex; justify-content: space-between; gap: 8px; }
 .ax-pill {
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
-  font-size: 13px; color: var(--ax-muted);
-  background: var(--ax-elev); border-radius: 999px; padding: 3px 8px;
+  background: var(--ax-elev);
+  border-radius: 999px;
+  padding: 3px 8px;
 }
-.ax-agent { color: var(--ax-navy); }
-.ax-human { color: var(--ax-ok); }
-.ax-card h3 { font-size: 18px; margin: 0 0 6px; letter-spacing: -0.02em; font-weight: 600; }
-.ax-card p { margin: 0; color: var(--ax-muted); flex: 1; }
-.ax-price { display: flex; justify-content: space-between; align-items: baseline; margin-top: 14px; gap: 8px; }
-.ax-price b { font-size: 18px; letter-spacing: -0.02em; }
-.ax-price span { font-size: 13px; color: var(--ax-subtle); font-family: "IBM Plex Mono", ui-monospace, monospace; }
-.ax-empty { margin: 0; color: var(--ax-muted); grid-column: 1 / -1; }
+.ax-card-shape .ax-pill { background: var(--ax-surface); }
+.ax-category { grid-area: category; margin: 0; }
+.ax-title { grid-area: title; margin: 0; }
+.ax-summary { grid-area: summary; margin: 0; }
+.ax-amount { grid-area: amount; }
+.ax-deadline { grid-area: deadline; justify-self: end; align-self: baseline; }
+.ax-action { grid-area: action; justify-self: start; margin-top: 6px; }
+.ax-note { grid-area: note; margin: 0; }
+.ax-fee { grid-area: fee; display: none; margin: 0; }
 .ax-books { margin: 12px 0 0; }
-.ax-rules {
-  margin: 22px 0 28px; background: var(--ax-navy); color: #f4f7fb;
-  border-radius: 16px; padding: 18px 20px;
-  display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 18px;
+.ax-error { color: var(--ax-coral); margin: 12px 0 0; }
+.ax-stats {
+  margin: 22px 0 28px;
+  background: var(--ax-navy);
+  border-radius: 16px;
+  padding: 18px 20px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
 }
-.ax-rules h2 { font-size: 18px; margin: 0 0 6px; color: #f4f7fb; }
-.ax-rules p { margin: 0; color: #d5deea; font-size: 16px; }
+.ax-stat-value { margin: 0; color: var(--ax-stat); }
+.ax-stat-label { margin: 4px 0 0; color: var(--ax-stat-label); }
 .ax-list {
-  background: var(--ax-surface); border: 1px solid var(--ax-line); border-radius: 16px;
-  padding: 18px; margin-bottom: 28px;
+  background: var(--ax-surface);
+  border: 1px solid var(--ax-line);
+  border-radius: 16px;
+  padding: 18px;
+  margin-bottom: 28px;
 }
 .ax-list form { display: grid; gap: 12px; max-width: 40rem; }
-.ax-list label { display: grid; gap: 6px; font-size: 14px; color: var(--ax-muted); }
-.ax-list input[type="text"], .ax-list input:not([type="radio"]), .ax-list textarea {
-  width: 100%; border: 1px solid var(--ax-line); border-radius: 12px;
-  padding: 10px 12px; font: inherit; color: var(--ax-fg); background: var(--ax-elev);
-}
-.ax-kinds { display: flex; gap: 16px; }
+.ax-list label, .ax-kinds { display: grid; gap: 6px; }
+.ax-kinds { border: 0; padding: 0; margin: 0; }
 .ax-kinds label { display: flex; align-items: center; gap: 8px; color: var(--ax-fg); }
+.ax-list input:not([type="radio"]), .ax-list textarea {
+  width: 100%;
+  border: 1px solid var(--ax-line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+  color: var(--ax-fg);
+  background: var(--ax-elev);
+}
 .ax-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.ax-error { margin: 0; color: var(--ax-coral); }
-.ax-footer { padding: 0 0 28px; color: var(--ax-subtle); font-size: 13px; font-family: "IBM Plex Mono", ui-monospace, monospace; }
+.ax-footer { padding: 0 0 28px; }
 @media (max-width: 800px) {
-  .ax-hero, .ax-rules, .ax-grid, .ax-row { grid-template-columns: 1fr; }
-  .ax h1 { font-size: 32px; }
-  .ax-header { align-items: flex-start; flex-direction: column; }
+  .ax-wrap {
+    width: min(1120px, calc(100% - 32px));
+    display: flex;
+    flex-direction: column;
+  }
+  .ax-header { order: 1; padding-top: 12px; }
+  .ax-hero { display: contents; }
+  .ax-hero-copy { order: 2; }
+  .ax h1 { margin-bottom: 8px; }
+  .ax-lede { margin-bottom: 12px; }
+  .ax-fee-header { margin-top: 10px; }
+  .ax-nav a { display: none; }
+  .ax-market-head { order: 3; margin-top: 16px; align-items: baseline; flex-direction: row; }
+  .ax-filters { order: 4; }
+  .ax-grid { order: 5; }
+  .ax-books, .ax-error { order: 6; }
+  .ax-stats { order: 7; }
+  .ax-panel { order: 8; }
+  .ax-list { order: 9; }
+  .ax-footer { order: 10; }
+  .ax-header-row, .ax-row { display: flex; flex-direction: column; align-items: stretch; }
+  .ax-header-row { align-items: flex-start; gap: 14px; }
+  .ax-nav { justify-content: flex-start; gap: 12px; }
+  .ax-grid, .ax-stats { grid-template-columns: 1fr; }
+  .ax-stats { grid-template-columns: repeat(3, 1fr); }
+  .ax-card, .ax-card-shape {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .ax-summary, .ax-category { display: none; }
+  .ax-shape-label { order: 0; }
+  .ax-title { order: 1; }
+  .ax-amount { order: 2; }
+  .ax-who { order: 3; justify-content: flex-start; }
+  .ax-deadline { order: 4; justify-self: start; }
+  .ax-action { order: 5; width: 100%; margin-top: 4px; }
+  .ax-note { order: 6; }
+  .ax-fee { order: 7; display: block; }
 }
 `;
