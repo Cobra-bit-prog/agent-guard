@@ -1,4 +1,8 @@
-import { pendingMigrations } from "../../scripts/migration-plan.mjs";
+import {
+  EXCHANGE_JOBS_MIGRATION,
+  exchangeJobsHoldNotice,
+  pendingMigrations,
+} from "../../scripts/migration-plan.mjs";
 
 /** Which database backend is active. */
 export type DbSource = "neon" | "pglite";
@@ -93,6 +97,13 @@ function migrationSources(): Record<string, string> {
   }) as Record<string, string>;
 }
 
+function logHeldExchangeMigration(paths: Iterable<string>): void {
+  const held = [...paths].some((path) => path.endsWith(EXCHANGE_JOBS_MIGRATION));
+  if (!held) return;
+  const notice = exchangeJobsHoldNotice();
+  if (notice) console.log(notice);
+}
+
 /**
  * Apply pending `migrations/*.sql` on the existing Neon database (`DATABASE_URL`).
  * Same bookkeeping as `scripts/migrate.mjs`: one transaction per file, recorded
@@ -107,6 +118,7 @@ async function applyNeonMigrations(pool: import("pg").Pool): Promise<void> {
     const doneRows = await client.query<{ name: string }>("select name from _migrations");
     const done = doneRows.rows.map((row) => row.name);
     const migrations = migrationSources();
+    logHeldExchangeMigration(Object.keys(migrations));
     for (const { name, path } of pendingMigrations(Object.keys(migrations), done)) {
       const text = migrations[path];
       try {
@@ -183,6 +195,7 @@ async function createPgliteSql(): Promise<Sql> {
   // double-apply.
   const migrate = async (): Promise<void> => {
     const migrations = migrationSources();
+    logHeldExchangeMigration(Object.keys(migrations));
     const doneRows = await pg.query<{ name: string }>(
       "select name from _migrations",
     );

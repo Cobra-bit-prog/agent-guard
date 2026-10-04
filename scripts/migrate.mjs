@@ -11,12 +11,20 @@
  *
  * No DATABASE_URL (local / preview builds) -> skip; the PGLite fallback applies
  * the same files at startup instead (see src/lib/db.ts).
+ *
+ * `0025_exchange_jobs.sql` is held back by pendingMigrations unless
+ * EXCHANGE_JOBS_APPLY_MIGRATION=1, and is always held when VERCEL_ENV=preview.
+ * Preview builds of this repo use the production DATABASE_URL.
  */
 import { readdir, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import pg from "pg";
-import { pendingMigrations } from "./migration-plan.mjs";
+import {
+  exchangeJobsHoldNotice,
+  pendingMigrations,
+  EXCHANGE_JOBS_MIGRATION,
+} from "./migration-plan.mjs";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
@@ -37,8 +45,16 @@ async function main() {
     return;
   }
   // An app with no schema of its own must not pay for a database connection.
-  if (pendingMigrations(entries, []).length === 0) {
+  if (pendingMigrations(entries, []).length === 0 && !entries.includes(EXCHANGE_JOBS_MIGRATION)) {
     console.log("[migrate] no migrations — nothing to do.");
+    return;
+  }
+  if (entries.includes(EXCHANGE_JOBS_MIGRATION)) {
+    const notice = exchangeJobsHoldNotice();
+    if (notice) console.log(notice);
+  }
+  if (pendingMigrations(entries, []).length === 0) {
+    console.log("[migrate] no migrations to apply.");
     return;
   }
 

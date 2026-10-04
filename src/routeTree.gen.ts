@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as ConnectRouteImport } from './routes/connect'
 import { Route as DocsRouteImport } from './routes/docs'
+import { Route as ExchangeRouteImport } from './routes/exchange'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LogosRouteImport } from './routes/logos'
 import { Route as PartnersRouteImport } from './routes/partners'
@@ -41,16 +42,19 @@ import { Route as AppBillingIndexRouteImport } from './routes/_app/billing.index
 import { Route as AppBillingPayRouteImport } from './routes/_app/billing.pay'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiV1CheckRouteImport } from './routes/api/v1/check'
-import { Route as ApiV1CheckActionRouteImport } from './routes/api/v1/check_action'
+import { Route as ApiV1Check_actionRouteImport } from './routes/api/v1/check_action'
 import { Route as ApiV1McpRouteImport } from './routes/api/v1/mcp'
+import { Route as ApiV1ShopRouteImport } from './routes/api/v1/shop'
 import { Route as ApiV1ApprovalsIdRouteImport } from './routes/api/v1/approvals.$id'
 import { Route as ApiV1AuditSplatRouteImport } from './routes/api/v1/audit.$'
+import { Route as ApiV1BillingCardRouteImport } from './routes/api/v1/billing.card'
 import { Route as ApiV1BillingCheckoutRouteImport } from './routes/api/v1/billing.checkout'
 import { Route as ApiV1BillingConfigRouteImport } from './routes/api/v1/billing.config'
 import { Route as ApiV1BillingHeliusRouteImport } from './routes/api/v1/billing.helius'
 import { Route as ApiV1BillingHeliusSetupRouteImport } from './routes/api/v1/billing.helius-setup'
 import { Route as ApiV1BillingInvoiceRouteImport } from './routes/api/v1/billing.invoice'
 import { Route as ApiV1BillingWatchRouteImport } from './routes/api/v1/billing.watch'
+import { Route as ApiV1ExchangeJobsRouteImport } from './routes/api/v1/exchange.jobs'
 import { Route as ApiV1GateDemoRouteImport } from './routes/api/v1/gate.demo'
 import { Route as ApiV1InternalAccountsRouteImport } from './routes/api/v1/internal/accounts'
 import { Route as ApiV1InternalMeterRouteImport } from './routes/api/v1/internal/meter'
@@ -82,6 +86,11 @@ const ConnectRoute = ConnectRouteImport.update({
 const DocsRoute = DocsRouteImport.update({
   id: '/docs',
   path: '/docs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExchangeRoute = ExchangeRouteImport.update({
+  id: '/exchange',
+  path: '/exchange',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -224,7 +233,7 @@ const ApiV1CheckRoute = ApiV1CheckRouteImport.update({
   path: '/api/v1/check',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiV1CheckActionRoute = ApiV1CheckActionRouteImport.update({
+const ApiV1Check_actionRoute = ApiV1Check_actionRouteImport.update({
   id: '/api/v1/check_action',
   path: '/api/v1/check_action',
   getParentRoute: () => rootRouteImport,
@@ -232,6 +241,11 @@ const ApiV1CheckActionRoute = ApiV1CheckActionRouteImport.update({
 const ApiV1McpRoute = ApiV1McpRouteImport.update({
   id: '/api/v1/mcp',
   path: '/api/v1/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1ShopRoute = ApiV1ShopRouteImport.update({
+  id: '/api/v1/shop',
+  path: '/api/v1/shop',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiV1ApprovalsIdRoute = ApiV1ApprovalsIdRouteImport.update({
@@ -242,6 +256,11 @@ const ApiV1ApprovalsIdRoute = ApiV1ApprovalsIdRouteImport.update({
 const ApiV1AuditSplatRoute = ApiV1AuditSplatRouteImport.update({
   id: '/api/v1/audit/$',
   path: '/api/v1/audit/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1BillingCardRoute = ApiV1BillingCardRouteImport.update({
+  id: '/api/v1/billing/card',
+  path: '/api/v1/billing/card',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiV1BillingCheckoutRoute = ApiV1BillingCheckoutRouteImport.update({
@@ -272,6 +291,11 @@ const ApiV1BillingInvoiceRoute = ApiV1BillingInvoiceRouteImport.update({
 const ApiV1BillingWatchRoute = ApiV1BillingWatchRouteImport.update({
   id: '/api/v1/billing/watch',
   path: '/api/v1/billing/watch',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1ExchangeJobsRoute = ApiV1ExchangeJobsRouteImport.update({
+  id: '/api/v1/exchange/jobs',
+  path: '/api/v1/exchange/jobs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiV1GateDemoRoute = ApiV1GateDemoRouteImport.update({
@@ -345,6 +369,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/connect': typeof ConnectRoute
   '/docs': typeof DocsRoute
+  '/exchange': typeof ExchangeRoute
   '/login': typeof LoginRoute
   '/logos': typeof LogosRoute
   '/partners': typeof PartnersRoute
@@ -371,18 +396,21 @@ export interface FileRoutesByFullPath {
   '/billing/pay': typeof AppBillingPayRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/v1/check': typeof ApiV1CheckRoute
-  '/api/v1/check_action': typeof ApiV1CheckActionRoute
+  '/api/v1/check_action': typeof ApiV1Check_actionRoute
   '/api/v1/mcp': typeof ApiV1McpRoute
+  '/api/v1/shop': typeof ApiV1ShopRoute
   '/agents/': typeof AppAgentsIndexRoute
   '/billing/': typeof AppBillingIndexRoute
   '/api/v1/approvals/$id': typeof ApiV1ApprovalsIdRoute
   '/api/v1/audit/$': typeof ApiV1AuditSplatRoute
+  '/api/v1/billing/card': typeof ApiV1BillingCardRoute
   '/api/v1/billing/checkout': typeof ApiV1BillingCheckoutRoute
   '/api/v1/billing/config': typeof ApiV1BillingConfigRoute
   '/api/v1/billing/helius': typeof ApiV1BillingHeliusRoute
   '/api/v1/billing/helius-setup': typeof ApiV1BillingHeliusSetupRoute
   '/api/v1/billing/invoice': typeof ApiV1BillingInvoiceRoute
   '/api/v1/billing/watch': typeof ApiV1BillingWatchRoute
+  '/api/v1/exchange/jobs': typeof ApiV1ExchangeJobsRoute
   '/api/v1/gate/demo': typeof ApiV1GateDemoRoute
   '/api/v1/internal/accounts': typeof ApiV1InternalAccountsRoute
   '/api/v1/internal/meter': typeof ApiV1InternalMeterRouteWithChildren
@@ -401,6 +429,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/connect': typeof ConnectRoute
   '/docs': typeof DocsRoute
+  '/exchange': typeof ExchangeRoute
   '/login': typeof LoginRoute
   '/logos': typeof LogosRoute
   '/partners': typeof PartnersRoute
@@ -424,18 +453,21 @@ export interface FileRoutesByTo {
   '/billing/pay': typeof AppBillingPayRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/v1/check': typeof ApiV1CheckRoute
-  '/api/v1/check_action': typeof ApiV1CheckActionRoute
+  '/api/v1/check_action': typeof ApiV1Check_actionRoute
   '/api/v1/mcp': typeof ApiV1McpRoute
+  '/api/v1/shop': typeof ApiV1ShopRoute
   '/agents': typeof AppAgentsIndexRoute
   '/billing': typeof AppBillingIndexRoute
   '/api/v1/approvals/$id': typeof ApiV1ApprovalsIdRoute
   '/api/v1/audit/$': typeof ApiV1AuditSplatRoute
+  '/api/v1/billing/card': typeof ApiV1BillingCardRoute
   '/api/v1/billing/checkout': typeof ApiV1BillingCheckoutRoute
   '/api/v1/billing/config': typeof ApiV1BillingConfigRoute
   '/api/v1/billing/helius': typeof ApiV1BillingHeliusRoute
   '/api/v1/billing/helius-setup': typeof ApiV1BillingHeliusSetupRoute
   '/api/v1/billing/invoice': typeof ApiV1BillingInvoiceRoute
   '/api/v1/billing/watch': typeof ApiV1BillingWatchRoute
+  '/api/v1/exchange/jobs': typeof ApiV1ExchangeJobsRoute
   '/api/v1/gate/demo': typeof ApiV1GateDemoRoute
   '/api/v1/internal/accounts': typeof ApiV1InternalAccountsRoute
   '/api/v1/internal/meter': typeof ApiV1InternalMeterRouteWithChildren
@@ -456,6 +488,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/connect': typeof ConnectRoute
   '/docs': typeof DocsRoute
+  '/exchange': typeof ExchangeRoute
   '/login': typeof LoginRoute
   '/logos': typeof LogosRoute
   '/partners': typeof PartnersRoute
@@ -482,18 +515,21 @@ export interface FileRoutesById {
   '/_app/billing/pay': typeof AppBillingPayRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/v1/check': typeof ApiV1CheckRoute
-  '/api/v1/check_action': typeof ApiV1CheckActionRoute
+  '/api/v1/check_action': typeof ApiV1Check_actionRoute
   '/api/v1/mcp': typeof ApiV1McpRoute
+  '/api/v1/shop': typeof ApiV1ShopRoute
   '/_app/agents/': typeof AppAgentsIndexRoute
   '/_app/billing/': typeof AppBillingIndexRoute
   '/api/v1/approvals/$id': typeof ApiV1ApprovalsIdRoute
   '/api/v1/audit/$': typeof ApiV1AuditSplatRoute
+  '/api/v1/billing/card': typeof ApiV1BillingCardRoute
   '/api/v1/billing/checkout': typeof ApiV1BillingCheckoutRoute
   '/api/v1/billing/config': typeof ApiV1BillingConfigRoute
   '/api/v1/billing/helius': typeof ApiV1BillingHeliusRoute
   '/api/v1/billing/helius-setup': typeof ApiV1BillingHeliusSetupRoute
   '/api/v1/billing/invoice': typeof ApiV1BillingInvoiceRoute
   '/api/v1/billing/watch': typeof ApiV1BillingWatchRoute
+  '/api/v1/exchange/jobs': typeof ApiV1ExchangeJobsRoute
   '/api/v1/gate/demo': typeof ApiV1GateDemoRoute
   '/api/v1/internal/accounts': typeof ApiV1InternalAccountsRoute
   '/api/v1/internal/meter': typeof ApiV1InternalMeterRouteWithChildren
@@ -514,6 +550,7 @@ export interface FileRouteTypes {
     | '/'
     | '/connect'
     | '/docs'
+    | '/exchange'
     | '/login'
     | '/logos'
     | '/partners'
@@ -542,16 +579,19 @@ export interface FileRouteTypes {
     | '/api/v1/check'
     | '/api/v1/check_action'
     | '/api/v1/mcp'
+    | '/api/v1/shop'
     | '/agents/'
     | '/billing/'
     | '/api/v1/approvals/$id'
     | '/api/v1/audit/$'
+    | '/api/v1/billing/card'
     | '/api/v1/billing/checkout'
     | '/api/v1/billing/config'
     | '/api/v1/billing/helius'
     | '/api/v1/billing/helius-setup'
     | '/api/v1/billing/invoice'
     | '/api/v1/billing/watch'
+    | '/api/v1/exchange/jobs'
     | '/api/v1/gate/demo'
     | '/api/v1/internal/accounts'
     | '/api/v1/internal/meter'
@@ -570,6 +610,7 @@ export interface FileRouteTypes {
     | '/'
     | '/connect'
     | '/docs'
+    | '/exchange'
     | '/login'
     | '/logos'
     | '/partners'
@@ -595,16 +636,19 @@ export interface FileRouteTypes {
     | '/api/v1/check'
     | '/api/v1/check_action'
     | '/api/v1/mcp'
+    | '/api/v1/shop'
     | '/agents'
     | '/billing'
     | '/api/v1/approvals/$id'
     | '/api/v1/audit/$'
+    | '/api/v1/billing/card'
     | '/api/v1/billing/checkout'
     | '/api/v1/billing/config'
     | '/api/v1/billing/helius'
     | '/api/v1/billing/helius-setup'
     | '/api/v1/billing/invoice'
     | '/api/v1/billing/watch'
+    | '/api/v1/exchange/jobs'
     | '/api/v1/gate/demo'
     | '/api/v1/internal/accounts'
     | '/api/v1/internal/meter'
@@ -624,6 +668,7 @@ export interface FileRouteTypes {
     | '/_app'
     | '/connect'
     | '/docs'
+    | '/exchange'
     | '/login'
     | '/logos'
     | '/partners'
@@ -652,16 +697,19 @@ export interface FileRouteTypes {
     | '/api/v1/check'
     | '/api/v1/check_action'
     | '/api/v1/mcp'
+    | '/api/v1/shop'
     | '/_app/agents/'
     | '/_app/billing/'
     | '/api/v1/approvals/$id'
     | '/api/v1/audit/$'
+    | '/api/v1/billing/card'
     | '/api/v1/billing/checkout'
     | '/api/v1/billing/config'
     | '/api/v1/billing/helius'
     | '/api/v1/billing/helius-setup'
     | '/api/v1/billing/invoice'
     | '/api/v1/billing/watch'
+    | '/api/v1/exchange/jobs'
     | '/api/v1/gate/demo'
     | '/api/v1/internal/accounts'
     | '/api/v1/internal/meter'
@@ -682,6 +730,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   ConnectRoute: typeof ConnectRoute
   DocsRoute: typeof DocsRoute
+  ExchangeRoute: typeof ExchangeRoute
   LoginRoute: typeof LoginRoute
   LogosRoute: typeof LogosRoute
   PartnersRoute: typeof PartnersRoute
@@ -696,16 +745,19 @@ export interface RootRouteChildren {
   OauthTokenRoute: typeof OauthTokenRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiV1CheckRoute: typeof ApiV1CheckRoute
-  ApiV1CheckActionRoute: typeof ApiV1CheckActionRoute
+  ApiV1Check_actionRoute: typeof ApiV1Check_actionRoute
   ApiV1McpRoute: typeof ApiV1McpRoute
+  ApiV1ShopRoute: typeof ApiV1ShopRoute
   ApiV1ApprovalsIdRoute: typeof ApiV1ApprovalsIdRoute
   ApiV1AuditSplatRoute: typeof ApiV1AuditSplatRoute
+  ApiV1BillingCardRoute: typeof ApiV1BillingCardRoute
   ApiV1BillingCheckoutRoute: typeof ApiV1BillingCheckoutRoute
   ApiV1BillingConfigRoute: typeof ApiV1BillingConfigRoute
   ApiV1BillingHeliusRoute: typeof ApiV1BillingHeliusRoute
   ApiV1BillingHeliusSetupRoute: typeof ApiV1BillingHeliusSetupRoute
   ApiV1BillingInvoiceRoute: typeof ApiV1BillingInvoiceRoute
   ApiV1BillingWatchRoute: typeof ApiV1BillingWatchRoute
+  ApiV1ExchangeJobsRoute: typeof ApiV1ExchangeJobsRoute
   ApiV1GateDemoRoute: typeof ApiV1GateDemoRoute
   ApiV1InternalAccountsRoute: typeof ApiV1InternalAccountsRoute
   ApiV1InternalMeterRoute: typeof ApiV1InternalMeterRouteWithChildren
@@ -748,6 +800,13 @@ declare module '@tanstack/react-router' {
       path: '/docs'
       fullPath: '/docs'
       preLoaderRoute: typeof DocsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/exchange': {
+      id: '/exchange'
+      path: '/exchange'
+      fullPath: '/exchange'
+      preLoaderRoute: typeof ExchangeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -950,7 +1009,7 @@ declare module '@tanstack/react-router' {
       id: '/api/v1/check_action'
       path: '/api/v1/check_action'
       fullPath: '/api/v1/check_action'
-      preLoaderRoute: typeof ApiV1CheckActionRouteImport
+      preLoaderRoute: typeof ApiV1Check_actionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/v1/mcp': {
@@ -958,6 +1017,13 @@ declare module '@tanstack/react-router' {
       path: '/api/v1/mcp'
       fullPath: '/api/v1/mcp'
       preLoaderRoute: typeof ApiV1McpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/shop': {
+      id: '/api/v1/shop'
+      path: '/api/v1/shop'
+      fullPath: '/api/v1/shop'
+      preLoaderRoute: typeof ApiV1ShopRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/v1/approvals/$id': {
@@ -972,6 +1038,13 @@ declare module '@tanstack/react-router' {
       path: '/api/v1/audit/$'
       fullPath: '/api/v1/audit/$'
       preLoaderRoute: typeof ApiV1AuditSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/billing/card': {
+      id: '/api/v1/billing/card'
+      path: '/api/v1/billing/card'
+      fullPath: '/api/v1/billing/card'
+      preLoaderRoute: typeof ApiV1BillingCardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/v1/billing/checkout': {
@@ -1014,6 +1087,13 @@ declare module '@tanstack/react-router' {
       path: '/api/v1/billing/watch'
       fullPath: '/api/v1/billing/watch'
       preLoaderRoute: typeof ApiV1BillingWatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/exchange/jobs': {
+      id: '/api/v1/exchange/jobs'
+      path: '/api/v1/exchange/jobs'
+      fullPath: '/api/v1/exchange/jobs'
+      preLoaderRoute: typeof ApiV1ExchangeJobsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/v1/gate/demo': {
@@ -1192,6 +1272,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   ConnectRoute: ConnectRoute,
   DocsRoute: DocsRoute,
+  ExchangeRoute: ExchangeRoute,
   LoginRoute: LoginRoute,
   LogosRoute: LogosRoute,
   PartnersRoute: PartnersRoute,
@@ -1206,16 +1287,19 @@ const rootRouteChildren: RootRouteChildren = {
   OauthTokenRoute: OauthTokenRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiV1CheckRoute: ApiV1CheckRoute,
-  ApiV1CheckActionRoute: ApiV1CheckActionRoute,
+  ApiV1Check_actionRoute: ApiV1Check_actionRoute,
   ApiV1McpRoute: ApiV1McpRoute,
+  ApiV1ShopRoute: ApiV1ShopRoute,
   ApiV1ApprovalsIdRoute: ApiV1ApprovalsIdRoute,
   ApiV1AuditSplatRoute: ApiV1AuditSplatRoute,
+  ApiV1BillingCardRoute: ApiV1BillingCardRoute,
   ApiV1BillingCheckoutRoute: ApiV1BillingCheckoutRoute,
   ApiV1BillingConfigRoute: ApiV1BillingConfigRoute,
   ApiV1BillingHeliusRoute: ApiV1BillingHeliusRoute,
   ApiV1BillingHeliusSetupRoute: ApiV1BillingHeliusSetupRoute,
   ApiV1BillingInvoiceRoute: ApiV1BillingInvoiceRoute,
   ApiV1BillingWatchRoute: ApiV1BillingWatchRoute,
+  ApiV1ExchangeJobsRoute: ApiV1ExchangeJobsRoute,
   ApiV1GateDemoRoute: ApiV1GateDemoRoute,
   ApiV1InternalAccountsRoute: ApiV1InternalAccountsRoute,
   ApiV1InternalMeterRoute: ApiV1InternalMeterRouteWithChildren,

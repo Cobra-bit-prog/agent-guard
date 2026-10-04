@@ -10,7 +10,14 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { isMigrationFile, migrationName, pendingMigrations } from "./migration-plan.mjs";
+import {
+  EXCHANGE_JOBS_MIGRATION,
+  exchangeJobsHoldNotice,
+  exchangeJobsMigrationHeld,
+  isMigrationFile,
+  migrationName,
+  pendingMigrations,
+} from "./migration-plan.mjs";
 import { projectRoot } from "./with-app-env.mjs";
 
 const AUTH_MIGRATION = "0001_auth.sql";
@@ -87,4 +94,34 @@ test("the copy check reads both files and catches an edit", () => {
   writeFileSync(join(root, "migrations", AUTH_MIGRATION), "create table t (x int);\n");
   const drifted = authSchemaCopy(root);
   assert.notEqual(drifted.copy, drifted.source);
+});
+
+test("exchange jobs migration stays held on a preview build", () => {
+  const name = EXCHANGE_JOBS_MIGRATION;
+  assert.equal(name, "0025_exchange_jobs.sql");
+  assert.equal(existsSync(join(projectRoot(), "migrations", name)), true);
+  assert.equal(exchangeJobsMigrationHeld({}), true);
+  assert.equal(exchangeJobsMigrationHeld({ EXCHANGE_JOBS_APPLY_MIGRATION: "1" }), false);
+  assert.equal(
+    exchangeJobsMigrationHeld({ VERCEL_ENV: "preview", EXCHANGE_JOBS_APPLY_MIGRATION: "1" }),
+    true,
+  );
+  assert.deepEqual(pendingMigrations([name], [], {}), []);
+  assert.deepEqual(pendingMigrations([name], [], { VERCEL_ENV: "preview", EXCHANGE_JOBS_APPLY_MIGRATION: "1" }), []);
+  assert.deepEqual(pendingMigrations([`migrations/${name}`], [], { EXCHANGE_JOBS_APPLY_MIGRATION: "1" }), [
+    { name, path: `migrations/${name}` },
+  ]);
+  const notice = exchangeJobsHoldNotice({ VERCEL_ENV: "preview" });
+  assert.match(notice, /production DATABASE_URL/);
+  assert.match(notice, /not applied/);
+  const migrate = readFileSync(join(projectRoot(), "scripts/migrate.mjs"), "utf8");
+  const db = readFileSync(join(projectRoot(), "src/lib/db.ts"), "utf8");
+  assert.match(migrate, /pendingMigrations/);
+  assert.match(migrate, /exchangeJobsHoldNotice/);
+  assert.match(db, /pendingMigrations/);
+  assert.match(db, /exchangeJobsHoldNotice/);
+  const listed = readdirSync(join(projectRoot(), "migrations")).filter((entry) => entry.endsWith(".sql"));
+  const preview = pendingMigrations(listed, [], { VERCEL_ENV: "preview", EXCHANGE_JOBS_APPLY_MIGRATION: "1" });
+  assert.equal(preview.some((entry) => entry.name === name), false);
+  assert.equal(preview.some((entry) => entry.name === "0024_write_gate.sql"), true);
 });
