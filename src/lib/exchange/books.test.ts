@@ -16,8 +16,11 @@ import {
   recordWorkerOk,
   releaseDueJobs,
   releaseHeldJob,
+  tagHeldApartFromEarned,
   type ExchangeQuery,
 } from "./books.ts";
+import { EVM_PAYOUT_ADDRESS, lockedEvmUsdcRecipient } from "../evm-pay.ts";
+import { lockedSolanaUsdcRecipient } from "../solana-pay.ts";
 import { SOLANA_PAYOUT_ADDRESS, USDC_MINT, feeUsdc, fullAmountUsdc, usdcEqual, workerShareUsdc } from "./money.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -131,7 +134,20 @@ describe("exchange books on a throwaway database", () => {
     assert.equal((page.match(/USDC/g) ?? []).length, 1);
     assert.doesNotMatch(page, /Card shape|funded|hirer|escrow|Test copy|does not send|Nothing is locked|on Solana|USDC mint/i);
     assert.doesNotMatch(page, /No open jobs yet|ninety percent|We keep ten|founding tier|0% under/i);
-    assert.doesNotMatch(readFileSync(join(ROOT, "src/routes/index.tsx"), "utf8"), /exchange/i);
+    const home = readFileSync(join(ROOT, "src/routes/index.tsx"), "utf8");
+    const hero = home.split('className="landing-hero')[1]?.split("</section>")[0] ?? "";
+    assert.match(hero, /Hire an agent\. Pay only when the job is done\./);
+    assert.match(hero, /List the job for free\. If nobody takes it by the deadline, you get every dollar back\./);
+    assert.match(hero, /The worker is paid when you say the work is done\./);
+    assert.doesNotMatch(hero, /we hold it|pay the full price|keep 10%/i);
+    assert.doesNotMatch(home, /exchange/i);
+    assert.doesNotMatch(home, /\bbroadcast\b/i);
+    const checkout = readFileSync(join(ROOT, "src/components/solana-pay-block.tsx"), "utf8");
+    assert.match(
+      checkout,
+      /You pay the full price now\. We hold it\. The worker is paid, and we keep 10%, only when you mark the job done\. Full refund if nobody answers by the deadline\./,
+    );
+    assert.doesNotMatch(checkout, /\bbroadcast\b/i);
     assert.doesNotMatch(readFileSync(join(ROOT, "src/routes/_app/billing.pay.tsx"), "utf8"), /exchange/i);
   });
 
@@ -454,6 +470,97 @@ describe("exchange books on a throwaway database", () => {
       /receive wallet/,
     );
     assert.equal((await getJob(q, open.id)).status, "open");
+  });
+
+  it("tags held money apart from earned money on the same wallet", async () => {
+    assert.equal(SOLANA_PAYOUT_ADDRESS, "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR");
+    assert.equal(EVM_PAYOUT_ADDRESS, "0xc5df91Fd7D9578A63efe9B0ee96Bacc5e7742E98");
+    assert.equal(lockedSolanaUsdcRecipient("a-different-wallet"), SOLANA_PAYOUT_ADDRESS);
+    assert.equal(lockedEvmUsdcRecipient("0x0000000000000000000000000000000000000001"), EVM_PAYOUT_ADDRESS);
+    const booksSrc = readFileSync(join(ROOT, "src/lib/exchange/books.ts"), "utf8");
+    const moneySrc = readFileSync(join(ROOT, "src/lib/exchange/money.ts"), "utf8");
+    assert.doesNotMatch(`${booksSrc}\n${moneySrc}`, /sweep/i);
+    assert.doesNotMatch(`${booksSrc}\n${moneySrc}`, /\bbroadcast\b/i);
+    assert.doesNotMatch(`${booksSrc}\n${moneySrc}`, /49QioAKP|0xc5df91/i);
+    assert.doesNotMatch(booksSrc, /kind: "fee"|fee_10/);
+
+    const { db, q } = await openDb();
+    const stillHeld = await holdJob(q, 40, "payin_tag_held");
+    const doneJob = await holdJob(q, 25, "payin_tag_done");
+    const silent = await holdJob(q, 18, "payin_tag_silence");
+    const disagreed = await holdJob(q, 15, "payin_tag_disagree");
+
+    await recordHirerOk(q, doneJob.id, BEFORE);
+    const done = await recordWorkerOk(q, doneJob.id, WORKER, BEFORE);
+    assert.equal(done.job.status, "done");
+    assert.equal(done.transfer?.kind, "worker_90");
+    assert.equal(done.transfer?.amount_usdc, workerShareUsdc(25));
+    assert.equal(done.job.fee_usdc, feeUsdc(25));
+    assert.equal(done.transfer?.signature, `sim_out_worker_90_${doneJob.id}`);
+    assert.notEqual(done.transfer?.amount_usdc, feeUsdc(25));
+
+    const silence = await releaseHeldJob(q, silent.id, AT_DEADLINE);
+    assert.equal(silence.job.status, "refunded");
+    assert.equal(silence.job.fee_usdc, "0");
+    assert.equal(silence.transfer?.kind, "refund_100");
+    assert.equal(silence.transfer?.amount_usdc, fullAmountUsdc(18));
+    assert.equal(silence.transfer?.to, PAYER);
+    assert.equal(silence.transfer?.signature, `sim_out_refund_100_${silent.id}`);
+
+    const oneSide = await recordHirerOk(q, disagreed.id, BEFORE);
+    assert.equal(oneSide.job.status, "held");
+    assert.equal(oneSide.transfer, null);
+    const disagreement = await releaseHeldJob(q, disagreed.id, AT_DEADLINE);
+    assert.equal(disagreement.job.status, "refunded");
+    assert.equal(disagreement.job.fee_usdc, "0");
+    assert.equal(disagreement.transfer?.kind, "refund_100");
+    assert.equal(disagreement.transfer?.amount_usdc, fullAmountUsdc(15));
+    assert.equal(disagreement.transfer?.signature, `sim_out_refund_100_${disagreed.id}`);
+
+    await db.query(
+      `insert into pay_requests (id, signature, amount_usdc, status) values ($1, $2, $3, $4)`,
+      ["pay_tag", "earned_invoice_sig", 49, "paid"],
+    );
+    const open = await listJob(q, 49);
+    await assert.rejects(
+      () =>
+        attachPayIn(q, {
+          jobId: open.id,
+          signature: "earned_invoice_sig",
+          payerAddress: PAYER,
+          amountUsdc: 49,
+        }),
+      /already earned/,
+    );
+    assert.equal(await classifyIncoming(q, "earned_invoice_sig"), "earned");
+    assert.equal((await getJob(q, open.id)).status, "open");
+    assert.equal(await classifyIncoming(q, "incoming_nobody_claimed"), "unmatched");
+
+    const tags = tagHeldApartFromEarned(await exchangeBalances(q));
+    assert.equal(tags.held.tag, "held");
+    assert.equal(tags.held.usdc, "40");
+    assert.equal(tags.held.profit, false);
+    assert.equal(tags.earned.tag, "earned");
+    assert.equal(tags.earned.usdc, feeUsdc(25));
+    assert.equal(tags.profit_usdc, tags.earned.usdc);
+    assert.equal(tags.wallet_balance_usdc, "42.5");
+    assert.notEqual(tags.wallet_balance_usdc, tags.profit_usdc);
+    assert.notEqual(tags.held.usdc, tags.profit_usdc);
+    assert.equal((await getJob(q, stillHeld.id)).status, "held");
+    assert.equal((await getJob(q, stillHeld.id)).payout_signature, null);
+    assert.equal((await getJob(q, stillHeld.id)).fee_usdc, "0");
+
+    const rows = await q.query<{ id: string; status: string; fee_usdc: string; payout_signature: string | null }>(
+      `select id, status, fee_usdc::text as fee_usdc, payout_signature from exchange_jobs order by created_at`,
+    );
+    const settled = rows.filter((row) => row.payout_signature);
+    assert.equal(settled.length, 3);
+    assert.equal(new Set(settled.map((row) => row.payout_signature)).size, 3);
+    assert.equal(settled.some((row) => row.payout_signature?.includes(stillHeld.id)), false);
+    assert.equal(settled.filter((row) => row.payout_signature?.includes("fee")).length, 0);
+    assert.equal(await classifyIncoming(q, "payin_tag_held"), "held");
+    assert.equal(await classifyIncoming(q, "payin_tag_done"), "settled");
+    assert.equal(await classifyIncoming(q, "payin_tag_silence"), "settled");
   });
 });
 

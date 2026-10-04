@@ -252,6 +252,9 @@ export function SolanaPayBlock(opts: {
                 {copied ? "Copied" : "Copy address"}
               </button>
             </div>
+            <p className="mt-5 text-body text-muted">
+              You pay the full price now. We hold it. The worker is paid, and we keep 10%, only when you mark the job done. Full refund if nobody answers by the deadline.
+            </p>
             <a
               href={row.pay_url}
               onClick={onPay}

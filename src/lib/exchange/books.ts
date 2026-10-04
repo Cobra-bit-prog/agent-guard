@@ -4,6 +4,7 @@ import {
   feeUsdc,
   fullAmountUsdc,
   normalizeUsdc,
+  sumUsdc,
   usdcEqual,
   workerShareUsdc,
 } from "./money.ts";
@@ -49,7 +50,7 @@ export type OpenJobCard = {
   created_at: string;
 };
 
-/** One simulated outgoing transfer. Never signed and never broadcast. */
+/** One simulated outgoing transfer. Never signed and never sent. */
 export type SimulatedOutgoing = {
   job_id: string;
   signature: string;
@@ -61,6 +62,30 @@ export type SimulatedOutgoing = {
 export type ExchangeBalances = {
   held_usdc: number;
   earned_fee_usdc: string;
+};
+
+export type WalletMoneyTag = "held" | "earned";
+
+/** Money still held. This tag is never profit. */
+export type HeldMoneyTag = {
+  tag: "held";
+  usdc: string;
+  profit: false;
+};
+
+/** The 10% books label after the buyer says the job is done. Not a second transfer. */
+export type EarnedMoneyTag = {
+  tag: "earned";
+  usdc: string;
+};
+
+export type SameWalletTags = {
+  held: HeldMoneyTag;
+  earned: EarnedMoneyTag;
+  /** Full prices still held, plus the 10% label kept on done jobs. Not profit. */
+  wallet_balance_usdc: string;
+  /** Only the earned tag. Held cash is never included. */
+  profit_usdc: string;
 };
 
 export interface ExchangeQuery {
@@ -539,5 +564,17 @@ export async function exchangeBalances(db: ExchangeQuery): Promise<ExchangeBalan
   return {
     held_usdc: Number(row.held_usdc),
     earned_fee_usdc: normalizeUsdc(row.earned_fee_usdc),
+  };
+}
+
+/** Tag cash still held apart from the 10% earned label. Same books, no new wallet. */
+export function tagHeldApartFromEarned(balances: ExchangeBalances): SameWalletTags {
+  const held = normalizeUsdc(balances.held_usdc);
+  const earned = normalizeUsdc(balances.earned_fee_usdc);
+  return {
+    held: { tag: "held", usdc: held, profit: false },
+    earned: { tag: "earned", usdc: earned },
+    wallet_balance_usdc: sumUsdc([held, earned]),
+    profit_usdc: earned,
   };
 }

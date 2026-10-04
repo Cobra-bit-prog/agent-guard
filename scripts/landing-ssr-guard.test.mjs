@@ -56,9 +56,10 @@ test("homepage copy ships three product tabs and 24-hour trial truth", () => {
   const src = `${home}\n${modules}\n${preview}\n${verdict}\n${catchDemo}\n${gate}`;
   assert.match(src, /External audit for your agents — Agent Control/);
   assert.match(src, /External audit for your agents/);
-  assert.match(src, /Not a package scanner — this is spend control for agent wallets\./);
+  assert.match(src, /Hire an agent\. Pay only when the job is done\./);
+  assert.match(src, /List the job for free\. If nobody takes it by the deadline, you get every dollar back\./);
+  assert.match(src, /The worker is paid when you say the work is done\./);
   assert.doesNotMatch(src, /See every send before it happens/);
-  assert.match(src, /Keep control of your agents/);
   assert.match(src, /Agent payments control/);
   assert.match(modules, /label: "Dashboard"/);
   assert.match(modules, /label: "Agent Audit"/);
@@ -475,7 +476,7 @@ test("llms.txt is the public AI-crawler brief", () => {
   assert.doesNotMatch(llms, /\bbroadcast/i);
 });
 
-test("FAQ and Compare drop competitor names; homepage H1 stays External audit for your agents", () => {
+test("FAQ and Compare drop competitor names; homepage hero uses the locked hire lines", () => {
   const faq = readFileSync(join(ROOT, "src/components/landing-faq.tsx"), "utf8");
   const home = readFileSync(join(ROOT, "src/routes/index.tsx"), "utf8");
   const docs = readFileSync(join(ROOT, "src/routes/docs.tsx"), "utf8");
@@ -492,20 +493,18 @@ test("FAQ and Compare drop competitor names; homepage H1 stays External audit fo
   assert.doesNotMatch(home, /checks before they pay/);
   assert.match(home, /They ask before they pay/);
   assert.match(home, /Do you host this, or do I run it myself\?/);
-  assert.match(home, /<h1[^>]*>\s*External audit for your agents\s*<\/h1>/);
+  assert.match(home, /<h1[^>]*>\s*Hire an agent\. Pay only when the job is done\.\s*<\/h1>/);
   assert.match(
     home,
-    /<h1[^>]*>\s*External audit for your agents\s*<\/h1>\s*<p[^>]*>\s*Not a package scanner — this is spend control for agent wallets\.\s*<\/p>/,
+    /<h1[^>]*>\s*Hire an agent\. Pay only when the job is done\.\s*<\/h1>\s*<p[^>]*>\s*List the job for free\. If nobody takes it by the deadline, you get every dollar back\.\s*<\/p>/,
   );
   assert.match(home, /text-display font-semibold text-balance text-fg/);
   assert.match(
     home,
-    /<p className="landing-rise mt-3 max-w-\[44ch\] text-body leading-snug text-muted">\s*Not a package scanner — this is spend control for agent wallets\.\s*<\/p>\s*<p className="landing-rise mt-3 max-w-\[44ch\] text-body leading-snug text-muted">\s*Keep control of your agents/,
+    /<p className="landing-rise mt-3 max-w-\[44ch\] text-body leading-snug text-muted">\s*List the job for free\. If nobody takes it by the deadline, you get every dollar back\.\s*<\/p>\s*<p className="landing-rise mt-3 max-w-\[44ch\] text-body leading-snug text-muted">\s*The worker is paid when you say the work is done\./,
   );
-  assert.match(
-    home,
-    /<p className="landing-rise mt-2\.5 max-w-\[44ch\] text-body leading-snug text-muted">\s*Agent payments control/,
-  );
+  const hero = home.split('className="landing-hero')[1]?.split("</section>")[0] ?? "";
+  assert.doesNotMatch(hero, /we hold it|pay the full price|keep 10%/i);
   assert.doesNotMatch(home, /text-body font-medium leading-snug text-navy/);
   assert.doesNotMatch(home, /text-card leading-snug text-muted/);
   assert.match(

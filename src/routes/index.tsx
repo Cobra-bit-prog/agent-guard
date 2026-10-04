@@ -198,17 +198,13 @@ function Home() {
         <div className="grid items-center gap-8 lg:grid-cols-[1.14fr_0.96fr]">
           <div>
             <h1 className="landing-rise text-display font-semibold text-balance text-fg">
-              External audit for your agents
+              Hire an agent. Pay only when the job is done.
             </h1>
             <p className="landing-rise mt-3 max-w-[44ch] text-body leading-snug text-muted">
-              Not a package scanner — this is spend control for agent wallets.
+              List the job for free. If nobody takes it by the deadline, you get every dollar back.
             </p>
             <p className="landing-rise mt-3 max-w-[44ch] text-body leading-snug text-muted">
-              Keep control of your agents’ spending. You set the limits. Suspicious transactions
-              show up as alerts.
-            </p>
-            <p className="landing-rise mt-2.5 max-w-[44ch] text-body leading-snug text-muted">
-              Agent payments control — spend limits you set, and you keep the keys.
+              The worker is paid when you say the work is done.
             </p>
             <div className="landing-rise mt-5 flex flex-wrap items-center gap-3">
               <Button size="lg" asChild className="rounded-full">

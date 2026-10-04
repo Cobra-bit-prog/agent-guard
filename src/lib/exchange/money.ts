@@ -69,3 +69,19 @@ export function normalizeUsdc(value: string | number | bigint): string {
 export function usdcEqual(left: string | number | bigint, right: string | number | bigint): boolean {
   return normalizeUsdc(left) === normalizeUsdc(right);
 }
+
+function usdcMicros(value: string | number | bigint): bigint {
+  const text = normalizeUsdc(value);
+  const negative = text.startsWith("-");
+  const unsigned = negative ? text.slice(1) : text;
+  const [whole, frac = ""] = unsigned.split(".");
+  const micros = BigInt(whole) * USDC_MICROS + BigInt(frac.padEnd(6, "0").slice(0, 6));
+  return negative ? -micros : micros;
+}
+
+/** Add USDC amounts. Used to show a wallet balance without calling that balance profit. */
+export function sumUsdc(parts: Array<string | number>): string {
+  let total = 0n;
+  for (const part of parts) total += usdcMicros(part);
+  return formatUsdcMicros(total);
+}
