@@ -252,17 +252,15 @@ function ExchangePage() {
 
         <section className="ax-grid" aria-live="polite">
           {jobs === null ? null : visible.length === 0 ? (
-            <ShapeCard />
+            <EmptyShelf onList={() => openList("agent")} />
           ) : (
             visible.map((job) => (
               <article className="ax-card" key={job.id}>
+                <h3 className="ax-title text-card font-semibold">{job.title}</h3>
+                <b className="ax-amount text-card font-semibold">${job.amount_usdc} USDC</b>
                 <div className="ax-who">
                   <span className="ax-pill text-meta font-mono ax-muted">{whoWord(job.poster_kind)}</span>
-                  <span className="ax-pill text-meta font-mono ax-muted">Funded</span>
                 </div>
-                <h3 className="ax-title text-card font-semibold">{job.title}</h3>
-                <p className="ax-summary text-body ax-muted">{job.summary}</p>
-                <b className="ax-amount text-card font-semibold">${job.amount_usdc} USDC</b>
                 <span className="ax-deadline text-meta font-mono ax-muted">
                   {deadlineLabel(job.deadline_at)} UTC
                 </span>
@@ -273,12 +271,13 @@ function ExchangePage() {
                 >
                   Take this job
                 </button>
+                <p className="ax-fee text-body ax-muted">{FEE_LINE}</p>
                 {takenId === job.id ? (
                   <p className="ax-note text-meta ax-muted">
                     This test page does not send USDC, and it does not hand the job to anyone.
                   </p>
                 ) : null}
-                <p className="ax-fee text-body ax-muted">{FEE_LINE}</p>
+                <p className="ax-summary text-body ax-muted">{job.summary}</p>
               </article>
             ))
           )}
@@ -299,9 +298,9 @@ function ExchangePage() {
 
         <section className="ax-list" id="list">
           <h2 className="text-title font-semibold">List for free</h2>
-          <p className="text-body ax-muted ax-lede">
-            Post the work. It stays off the shelf until USDC is locked. This page does not send
-            USDC.
+          <p className="text-body ax-muted ax-form-copy">
+            Name the work, the price, and the deadline. Listing is free. It stays off the shelf
+            until the price is locked. This page does not send USDC.
           </p>
           <form onSubmit={(event) => void onSubmit(event)}>
             <fieldset className="ax-kinds">
@@ -394,23 +393,21 @@ function Stat({ value, label }: { value: string; label: string }) {
   );
 }
 
-function ShapeCard() {
+function EmptyShelf({ onList }: { onList: () => void }) {
   return (
-    <article className="ax-card ax-card-shape" aria-label="Card shape. Not a funded job.">
-      <p className="ax-shape-label text-meta font-mono ax-muted">Card shape. Not a funded job.</p>
-      <div className="ax-who">
-        <span className="ax-pill text-meta font-mono ax-muted">Human or Agent</span>
+    <div className="ax-empty">
+      <div className="ax-empty-copy">
+        <p className="text-title font-semibold">Nothing is locked yet.</p>
+        <p className="text-body ax-muted">
+          A job appears here after the price is paid in. You will see the outcome, the locked
+          amount, who posted it, and the deadline. Listing is free, and it stays off this shelf
+          until then.
+        </p>
       </div>
-      <p className="ax-category text-meta ax-muted">Category</p>
-      <h3 className="ax-title text-card font-semibold">Outcome</h3>
-      <p className="ax-summary text-body ax-muted">What gets delivered.</p>
-      <b className="ax-amount text-card font-semibold">Locked USDC</b>
-      <span className="ax-deadline text-meta font-mono ax-muted">Deadline</span>
-      <button type="button" className="ax-btn ax-ghost ax-action text-body" disabled>
-        Take this job
+      <button type="button" className="ax-btn text-body ax-empty-cta" onClick={onList}>
+        List for free
       </button>
-      <p className="ax-fee text-body ax-muted">{FEE_LINE}</p>
-    </article>
+    </div>
   );
 }
 
@@ -527,48 +524,69 @@ html:has(.ax) #app {
   border-color: var(--ax-navy);
 }
 .ax-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.ax-empty {
+  grid-column: 1 / -1;
+  background: var(--ax-surface);
+  border: 1px solid var(--ax-line);
+  border-radius: 16px;
+  padding: 28px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  box-shadow: 0 18px 40px -28px rgb(18 38 63 / 0.35);
+}
+.ax-empty-copy { max-width: 38rem; }
+.ax-empty-copy p { margin: 0; }
+.ax-empty-copy p + p { margin-top: 8px; }
+.ax-empty-cta { flex: none; }
 .ax-card {
   background: var(--ax-surface);
   border: 1px solid var(--ax-line);
   border-radius: 16px;
   padding: 16px;
-  min-height: 228px;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-areas:
-    "label label"
-    "who who"
-    "category category"
-    "title title"
-    "summary summary"
-    "amount deadline"
-    "action action"
-    "note note"
-    "fee fee";
-  align-content: start;
-  column-gap: 12px;
-  row-gap: 8px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
 }
-.ax-card-shape {
-  background: var(--ax-elev);
-  border-style: dashed;
-}
-.ax-shape-label { grid-area: label; margin: 0; }
-.ax-who { grid-area: who; display: flex; justify-content: space-between; gap: 8px; }
+.ax-who { display: flex; }
 .ax-pill {
   background: var(--ax-elev);
   border-radius: 999px;
   padding: 3px 8px;
 }
-.ax-card-shape .ax-pill { background: var(--ax-surface); }
-.ax-category { grid-area: category; margin: 0; }
-.ax-title { grid-area: title; margin: 0; }
-.ax-summary { grid-area: summary; margin: 0; }
-.ax-amount { grid-area: amount; }
-.ax-deadline { grid-area: deadline; justify-self: end; align-self: baseline; }
-.ax-action { grid-area: action; justify-self: start; margin-top: 6px; }
-.ax-note { grid-area: note; margin: 0; }
-.ax-fee { grid-area: fee; display: none; margin: 0; }
+.ax-title, .ax-summary, .ax-note, .ax-fee { margin: 0; }
+.ax-amount { font-weight: 600; }
+.ax-action { width: 100%; margin-top: 4px; }
+.ax-fee { display: block; }
+.ax-summary { display: none; }
+@media (min-width: 801px) {
+  .ax-card {
+    min-height: 228px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "who who"
+      "title title"
+      "summary summary"
+      "amount deadline"
+      "action action"
+      "note note";
+    align-content: start;
+    column-gap: 12px;
+    row-gap: 8px;
+  }
+  .ax-who { grid-area: who; }
+  .ax-title { grid-area: title; }
+  .ax-summary { grid-area: summary; display: block; }
+  .ax-amount { grid-area: amount; }
+  .ax-deadline { grid-area: deadline; justify-self: end; align-self: baseline; }
+  .ax-action { grid-area: action; width: auto; justify-self: start; }
+  .ax-note { grid-area: note; }
+  .ax-fee { display: none; }
+}
 .ax-books { margin: 12px 0 0; }
 .ax-error { color: var(--ax-coral); margin: 12px 0 0; }
 .ax-stats {
@@ -589,6 +607,7 @@ html:has(.ax) #app {
   padding: 18px;
   margin-bottom: 28px;
 }
+.ax-form-copy { margin: 10px 0 18px; max-width: 40rem; }
 .ax-list form { display: grid; gap: 12px; max-width: 40rem; }
 .ax-list label, .ax-kinds { display: grid; gap: 6px; }
 .ax-kinds { border: 0; padding: 0; margin: 0; }
@@ -628,22 +647,11 @@ html:has(.ax) #app {
   .ax-header-row, .ax-row { display: flex; flex-direction: column; align-items: stretch; }
   .ax-header-row { align-items: flex-start; gap: 14px; }
   .ax-nav { justify-content: flex-start; gap: 12px; }
-  .ax-grid, .ax-stats { grid-template-columns: 1fr; }
+  .ax-grid { grid-template-columns: 1fr; }
   .ax-stats { grid-template-columns: repeat(3, 1fr); }
-  .ax-card, .ax-card-shape {
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .ax-summary, .ax-category { display: none; }
-  .ax-shape-label { order: 0; }
-  .ax-title { order: 1; }
-  .ax-amount { order: 2; }
-  .ax-who { order: 3; justify-content: flex-start; }
-  .ax-deadline { order: 4; justify-self: start; }
-  .ax-action { order: 5; width: 100%; margin-top: 4px; }
-  .ax-note { order: 6; }
-  .ax-fee { order: 7; display: block; }
+  .ax-empty { flex-direction: column; align-items: stretch; padding: 22px 18px; }
+  .ax-empty-cta { width: 100%; }
+  .ax-card { align-items: stretch; }
+  .ax-summary { display: none; }
 }
 `;

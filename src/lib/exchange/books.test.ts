@@ -119,7 +119,8 @@ describe("exchange books on a throwaway database", () => {
     assert.doesNotMatch(page, /Turn a call into tasks|Summarize a public report|Answer one support thread/);
     assert.doesNotMatch(page, /\$40|\$25|\$60|\$18|\$20|\$15/);
     assert.match(page, /0 funded jobs/);
-    assert.match(page, /Card shape\. Not a funded job\./);
+    assert.match(page, /Nothing is locked yet/);
+    assert.doesNotMatch(page, /Card shape/);
     assert.match(
       page,
       /Free to list\. We hold USDC on Solana\. 10% only when the hirer says the work is done\./,
