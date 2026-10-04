@@ -208,16 +208,13 @@ function Home() {
               The worker is paid when you say the work is done.
             </p>
             <div className="landing-rise mt-8 flex flex-wrap items-center gap-3">
-              <Button size="lg" asChild className="rounded-full">
-                <a href="/signup">
-                  Start free trial
-                  <span aria-hidden>→</span>
-                </a>
+              <Button size="lg" asChild className="rounded-full text-body">
+                <a href="/signup">Post a job</a>
+              </Button>
+              <Button size="lg" variant="outline" asChild className="rounded-full text-body">
+                <a href="/docs">Browse jobs</a>
               </Button>
             </div>
-            <p className="landing-rise mt-3 text-meta font-medium leading-snug text-muted">
-              1-day (24 hour) trial, then pay on-chain. No card. No KYC.
-            </p>
           </div>
         </div>
         <div className="mx-auto w-full max-w-[1140px] px-5 pb-16 md:px-6">

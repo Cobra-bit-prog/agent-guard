@@ -504,6 +504,10 @@ test("FAQ and Compare drop competitor names; homepage hero uses the locked hire 
     /<p className="landing-rise mt-6 max-w-\[36ch\] text-body leading-snug text-muted">\s*List the job for free\. If nobody takes it by the deadline, you get every dollar back\.\s*<\/p>\s*<p className="landing-rise mt-3 max-w-\[36ch\] text-body leading-snug text-muted">\s*The worker is paid when you say the work is done\./,
   );
   const hero = home.split('className="landing-hero')[1]?.split("</section>")[0] ?? "";
+  assert.match(hero, />\s*Post a job\s*</);
+  assert.match(hero, />\s*Browse jobs\s*</);
+  assert.doesNotMatch(hero, /Start free trial/);
+  assert.doesNotMatch(hero, /1-day \(24 hour\) trial, then pay on-chain/);
   assert.doesNotMatch(hero, /we hold it|pay the full price|keep 10%/i);
   assert.doesNotMatch(home, /text-body font-medium leading-snug text-navy/);
   assert.doesNotMatch(home, /text-card leading-snug text-muted/);
