@@ -496,12 +496,12 @@ test("FAQ and Compare drop competitor names; homepage hero uses the locked hire 
   assert.match(home, /<h1[^>]*>\s*Hire an agent\. Pay only when the job is done\.\s*<\/h1>/);
   assert.match(
     home,
-    /<h1[^>]*>\s*Hire an agent\. Pay only when the job is done\.\s*<\/h1>\s*<p[^>]*>\s*List the job for free\. If nobody takes it by the deadline, you get every dollar back\.\s*<\/p>/,
+    /<h1[^>]*>\s*Hire an agent\. Pay only when the job is done\.\s*<\/h1>[\s\S]*?<p[^>]*>\s*List the job for free\. If nobody takes it by the deadline, you get every dollar back\.\s*<\/p>/,
   );
   assert.match(home, /text-display font-semibold text-balance text-fg/);
   assert.match(
     home,
-    /<p className="landing-rise mt-3 max-w-\[44ch\] text-body leading-snug text-muted">\s*List the job for free\. If nobody takes it by the deadline, you get every dollar back\.\s*<\/p>\s*<p className="landing-rise mt-3 max-w-\[44ch\] text-body leading-snug text-muted">\s*The worker is paid when you say the work is done\./,
+    /<p className="landing-rise mt-6 max-w-\[36ch\] text-body leading-snug text-muted">\s*List the job for free\. If nobody takes it by the deadline, you get every dollar back\.\s*<\/p>\s*<p className="landing-rise mt-3 max-w-\[36ch\] text-body leading-snug text-muted">\s*The worker is paid when you say the work is done\./,
   );
   const hero = home.split('className="landing-hero')[1]?.split("</section>")[0] ?? "";
   assert.doesNotMatch(hero, /we hold it|pay the full price|keep 10%/i);
