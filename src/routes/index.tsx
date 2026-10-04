@@ -194,34 +194,31 @@ export const Route = createFileRoute("/")({
 function Home() {
   return (
     <SkyShell current="home">
-      <section className="landing-hero mx-auto max-w-[1140px] px-5 pb-7 pt-6 md:px-6">
-        <div className="grid items-center gap-8 lg:grid-cols-[1.14fr_0.96fr]">
-          <div>
+      <section className="landing-hero">
+        <div className="hero-stage mx-auto w-full max-w-[1140px] px-5 md:px-6">
+          <div className="max-w-[50rem]">
             <h1 className="landing-rise text-display font-semibold text-balance text-fg">
-              External audit for your agents
+              Hire an agent. Pay only when the job is done.
             </h1>
-            <p className="landing-rise mt-3 max-w-[44ch] text-body leading-snug text-muted">
-              Not a package scanner — this is spend control for agent wallets.
+            <div className="landing-rise mt-6 h-px w-10 bg-primary" aria-hidden="true" />
+            <p className="landing-rise mt-6 max-w-[36ch] text-body leading-snug text-muted">
+              List the job for free. If nobody takes it by the deadline, you get every dollar back.
             </p>
-            <p className="landing-rise mt-3 max-w-[44ch] text-body leading-snug text-muted">
-              Keep control of your agents’ spending. You set the limits. Suspicious transactions
-              show up as alerts.
+            <p className="landing-rise mt-3 max-w-[36ch] text-body leading-snug text-muted">
+              The worker is paid when you say the work is done.
             </p>
-            <p className="landing-rise mt-2.5 max-w-[44ch] text-body leading-snug text-muted">
-              Agent payments control — spend limits you set, and you keep the keys.
-            </p>
-            <div className="landing-rise mt-5 flex flex-wrap items-center gap-3">
-              <Button size="lg" asChild className="rounded-full">
-                <a href="/signup">
-                  Start free trial
-                  <span aria-hidden>→</span>
-                </a>
+            <div className="landing-rise mt-8 flex flex-wrap items-center gap-3">
+              <Button size="lg" asChild className="rounded-full text-body">
+                <a href="/signup">Post a job</a>
+              </Button>
+              <Button size="lg" variant="outline" asChild className="rounded-full text-body">
+                <a href="/docs">Browse jobs</a>
               </Button>
             </div>
-            <p className="landing-rise mt-2 text-meta font-medium leading-snug text-muted">
-              1-day (24 hour) trial, then pay on-chain. No card. No KYC.
-            </p>
-            <div className="landing-rise mt-4 flex flex-wrap gap-1">
+          </div>
+        </div>
+        <div className="mx-auto w-full max-w-[1140px] px-5 pb-16 md:px-6">
+            <div className="landing-rise flex flex-wrap gap-1">
               <span className="mt-1 mr-1 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-white px-2.5 py-1.5 text-meta text-fg shadow-[0_1px_0_rgb(18_38_63/0.04)]">
                 <i className="inline-grid size-5 place-items-center rounded-full bg-[#dcfce7] text-meta font-bold not-italic leading-none text-[#166534]">
                   ✓
@@ -242,10 +239,9 @@ function Home() {
               </span>
             </div>
             <SupportedChains className="landing-rise mt-5" />
-          </div>
-          <div className="min-w-0">
-            <LandingPreview />
-          </div>
+            <div className="mt-8 max-w-[28rem]">
+              <LandingPreview />
+            </div>
         </div>
       </section>
 
