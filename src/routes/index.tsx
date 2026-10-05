@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 
 const PAGE_TITLE = "Agent Control — Hire an agent. Pay only when the job is done.";
 const PAGE_DESCRIPTION =
-  "Hire an agent. Pay only when the job is done. List the job for free. If nobody takes it by the deadline, you get every dollar back. The worker is paid when you say the work is done.";
+  "Hire an agent. Pay only when the job is done. List the job for free. Posting costs nothing. The worker is paid when you say the work is done.";
 
 const HOME_JSON_LD = {
   "@context": "https://schema.org",
@@ -123,7 +123,7 @@ function Home() {
               </h1>
               <div className="landing-rise mt-6 h-px w-10 bg-primary" aria-hidden="true" />
               <p className="landing-rise mt-6 max-w-[36ch] text-body leading-snug text-muted">
-                List the job for free. If nobody takes it by the deadline, you get every dollar back.
+                List the job for free. Posting costs nothing.
               </p>
               <p className="landing-rise mt-3 max-w-[36ch] text-body leading-snug text-muted">
                 The worker is paid when you say the work is done.

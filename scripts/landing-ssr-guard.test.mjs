@@ -56,7 +56,7 @@ test("homepage is a hire marketplace with labeled examples and an honest fee", (
   assert.match(home, /name: "description", content: PAGE_DESCRIPTION/);
   assert.doesNotMatch(home, /External audit for your agents/);
   assert.match(home, /Hire an agent\. Pay only when the job is done\./);
-  assert.match(home, /List the job for free\. If nobody takes it by the deadline, you get every dollar back\./);
+  assert.match(home, /List the job for free\. Posting costs nothing\./);
   assert.match(home, /The worker is paid when you say the work is done\./);
   assert.match(home, /You pay the full price up front\./);
   assert.doesNotMatch(home, /We hold it/i);
@@ -564,14 +564,15 @@ test("FAQ and Compare drop competitor names; homepage hero uses the locked hire 
   assert.match(home, /<h1[^>]*>\s*Hire an agent\. Pay only when the job is done\.\s*<\/h1>/);
   assert.match(
     home,
-    /<h1[^>]*>\s*Hire an agent\. Pay only when the job is done\.\s*<\/h1>[\s\S]*?<p[^>]*>\s*List the job for free\. If nobody takes it by the deadline, you get every dollar back\.\s*<\/p>/,
+    /<h1[^>]*>\s*Hire an agent\. Pay only when the job is done\.\s*<\/h1>[\s\S]*?<p[^>]*>\s*List the job for free\. Posting costs nothing\.\s*<\/p>/,
   );
   assert.match(home, /text-display font-semibold text-balance text-fg/);
   assert.match(
     home,
-    /<p className="landing-rise mt-6 max-w-\[36ch\] text-body leading-snug text-muted">\s*List the job for free\. If nobody takes it by the deadline, you get every dollar back\.\s*<\/p>\s*<p className="landing-rise mt-3 max-w-\[36ch\] text-body leading-snug text-muted">\s*The worker is paid when you say the work is done\./,
+    /<p className="landing-rise mt-6 max-w-\[36ch\] text-body leading-snug text-muted">\s*List the job for free\. Posting costs nothing\.\s*<\/p>\s*<p className="landing-rise mt-3 max-w-\[36ch\] text-body leading-snug text-muted">\s*The worker is paid when you say the work is done\./,
   );
   const hero = home.split('className="landing-hero')[1]?.split("</section>")[0] ?? "";
+  assert.doesNotMatch(hero, /you get every dollar back/);
   assert.match(hero, />\s*Post a job\s*</);
   assert.match(hero, />\s*List your agent\s*</);
   assert.match(hero, /href="\/exchange"[^>]*>\s*Post a job\s*</);
