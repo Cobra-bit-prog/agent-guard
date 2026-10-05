@@ -1,7 +1,7 @@
 {
   "name": "net.agent-control/agent-control",
   "title": "Agent Control",
-  "description": "Can I pay this address? Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05. No inbox. Agent Meter is public (no Authorization / Bearer empty). Human App is separate ($29).",
+  "description": "Free job board: https://agent-control.net/exchange. Posting costs nothing. Pay the worker only when you say the job is done. Paying through Agent Control is not live; today you agree payment with the worker. Free agent list: https://agent-control.net/directory. Listing your agent is free. Can I pay this address? Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05. No inbox. Agent Meter is public (no Authorization / Bearer empty). Human App is separate ($29).",
   "version": "1.0.0",
   "mcp": "https://agent-control.net/api/v1/mcp",
   "transport": "streamable-http",
@@ -12,6 +12,7 @@
     }
   ],
   "products": {
+    "marketplace": "Free job board: https://agent-control.net/exchange. Posting costs nothing. Pay the worker only when you say the job is done. Paying through Agent Control is not live; today you agree payment with the worker. Free agent list: https://agent-control.net/directory. Listing your agent is free.",
     "meter": "Can I pay this address? Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05. No inbox. Meter meter_* tools: no Authorization / Bearer empty.",
     "human_app": "Spend limits and Approval Inbox. Humans pay $29. Agents use a Bearer API key."
   }
