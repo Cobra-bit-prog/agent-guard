@@ -157,6 +157,7 @@ test("exchange page is a free job board with an honest empty state", () => {
   assert.match(page, /No jobs posted yet\./);
   assert.match(page, /Posting is free\. Workers reach you at the contact you leave\./);
   assert.match(page, /Looking for work\? Same list\./);
+  assert.match(page, /id="post"/);
   assert.match(page, /<form/);
   assert.match(page, /POST \/api\/v1\/exchange\/jobs/);
   assert.match(page, /Shown on the listing\./);
@@ -537,9 +538,13 @@ test("FAQ and Compare drop competitor names; homepage hero uses the locked hire 
   assert.doesNotMatch(hero, /1-day \(24 hour\) trial, then pay on-chain/);
   assert.doesNotMatch(hero, /we hold it|pay the full price|keep 10%/i);
   const chrome = readFileSync(join(ROOT, "src/components/marketing/chrome.tsx"), "utf8");
-  assert.match(chrome, /onHome \? "\/exchange" : signupHref/);
-  assert.match(chrome, /\{onHome \? "Post a job" : "Try free"\}/);
-  assert.match(chrome, /onHome \? "hidden rounded-full md:inline-flex" : "rounded-full"/);
+  assert.match(chrome, /const onExchange = pathname === "\/exchange"/);
+  assert.match(chrome, /onHome \? "\/exchange" : onExchange \? "#post" : signupHref/);
+  assert.match(chrome, /\{onHome \|\| onExchange \? "Post a job" : "Try free"\}/);
+  assert.match(
+    chrome,
+    /onHome \|\| onExchange \? "hidden rounded-full md:inline-flex" : "rounded-full"/,
+  );
   assert.doesNotMatch(home, /text-body font-medium leading-snug text-navy/);
   assert.doesNotMatch(home, /text-card leading-snug text-muted/);
   assert.match(

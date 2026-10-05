@@ -46,6 +46,7 @@ export function MarketingHeader({
   const signupHref = partnerAwarePath("/signup", partner);
   const loginHref = partnerAwarePath("/login", partner);
   const onHome = current === "home" || pathname === "/";
+  const onExchange = pathname === "/exchange";
 
   return (
     <>
@@ -74,10 +75,12 @@ export function MarketingHeader({
               </Button>
               <Button
                 asChild
-                className={onHome ? "hidden rounded-full md:inline-flex" : "rounded-full"}
+                className={
+                  onHome || onExchange ? "hidden rounded-full md:inline-flex" : "rounded-full"
+                }
               >
-                <a href={onHome ? "/exchange" : signupHref}>
-                  {onHome ? "Post a job" : "Try free"}
+                <a href={onHome ? "/exchange" : onExchange ? "#post" : signupHref}>
+                  {onHome || onExchange ? "Post a job" : "Try free"}
                 </a>
               </Button>
             </>
