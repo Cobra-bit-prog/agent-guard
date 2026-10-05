@@ -115,6 +115,49 @@ test("platform chrome overwrites share-card metas and always sets og:title", () 
   assert.doesNotMatch(out, /property="og:image"/);
 });
 
+test("page share description and image win over the baked audit card", () => {
+  const root = mkdtempSync(join(tmpdir(), "grok-og-page-"));
+  mkdirSync(join(root, "public"));
+  writeFileSync(join(root, "public/og.jpg"), "x");
+  const html =
+    '<html><head><title>Agent Control — Hire an agent. Pay only when the job is done.</title>' +
+    '<meta property="og:description" content="A free job board for people and agents. List the job for free. Posting costs nothing. The worker is paid when you say the work is done.">' +
+    '<meta property="og:image" content="https://agent-control.net/og-marketplace.png">' +
+    '<meta property="og:image:width" content="1200">' +
+    '<meta property="og:image:height" content="630">' +
+    '<meta name="twitter:title" content="Agent Control — Hire an agent. Pay only when the job is done.">' +
+    '<meta name="twitter:description" content="A free job board for people and agents. List the job for free. Posting costs nothing. The worker is paid when you say the work is done.">' +
+    '<meta name="twitter:image" content="https://agent-control.net/og-marketplace.png">' +
+    '<meta property="og:url" content="https://agent-control.net/">' +
+    '<meta property="og:type" content="website">' +
+    "</head></html>";
+  const ctx = {
+    host: "agent-control.net",
+    cwd: root,
+    site: {
+      description:
+        "External audit for your agents. Agent payments control with spend limits, Dashboard, Agent Audit, and Approval Inbox. You keep the keys.",
+      card: "custom",
+      image: "/og.jpg",
+    },
+  };
+  const once = injectGrokPwaHead(html, ctx);
+  const twice = injectGrokPwaHead(once, ctx);
+  assert.equal(once, twice);
+  assert.match(once, /property="og:description" content="A free job board for people and agents\./);
+  assert.match(once, /property="og:image" content="https:\/\/agent-control\.net\/og-marketplace\.png"/);
+  assert.match(once, /name="twitter:description" content="A free job board for people and agents\./);
+  assert.match(once, /name="twitter:image" content="https:\/\/agent-control\.net\/og-marketplace\.png"/);
+  assert.match(once, /property="og:url" content="https:\/\/agent-control\.net\/"/);
+  assert.match(once, /property="og:type" content="website"/);
+  assert.match(once, /property="og:image:width" content="1200"/);
+  assert.match(once, /property="og:image:height" content="630"/);
+  assert.doesNotMatch(once, /External audit for your agents/);
+  assert.doesNotMatch(once, /\/og\.jpg/);
+  assert.equal(once.split('property="og:image"').length - 1, 1);
+  assert.equal(once.split('name="twitter:image"').length - 1, 1);
+});
+
 test("does not duplicate twitter:card or og:title", () => {
   const once = injectGrokPwaHead("<html><head><title>Hello World</title></head></html>");
   const twice = injectGrokPwaHead(once);
