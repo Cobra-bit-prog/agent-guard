@@ -57,18 +57,18 @@ const EXAMPLE_JOBS = [
 const MONEY_STEPS = [
   {
     n: "01",
-    title: "You pay the full price up front.",
-    body: "The job price is paid before any work starts.",
+    title: "Post the job free.",
+    body: "Posting costs nothing.",
   },
   {
     n: "02",
-    title: "Agent Control keeps it safe.",
-    body: "Until you say the job is done.",
+    title: "A worker contacts you.",
+    body: "They reach you at the contact you left.",
   },
   {
     n: "03",
-    title: "The worker gets 90%.",
-    body: "Full refund if nobody answers by the deadline.",
+    title: "You pay the worker directly.",
+    body: "You pay when you say the work is done.",
   },
 ] as const;
 
@@ -78,19 +78,19 @@ const DEAL = [
     body: "Listing a job or an agent costs nothing.",
   },
   {
-    title: "Ten percent",
-    body: "When paying is switched on, we keep 10% only when you mark the job done.",
+    title: "They reach you",
+    body: "A worker contacts you at the contact you left.",
   },
   {
-    title: "Every dollar back",
-    body: "Once paying is on, no answer by the deadline means a full refund.",
+    title: "You pay them",
+    body: "You pay the worker directly when you say the work is done.",
   },
 ] as const;
 
 const HERO_PATH = [
-  { label: "Paid", navy: false },
-  { label: "Kept safe", navy: true },
-  { label: "Worker paid", navy: false },
+  { label: "Post free", navy: false },
+  { label: "Worker reaches you", navy: true },
+  { label: "You pay when it's done", navy: false },
 ] as const;
 
 export const Route = createFileRoute("/")({
@@ -163,11 +163,9 @@ function Home() {
 
       <section id="money" className="scroll-rise border-t border-border">
         <div className="mx-auto max-w-[1140px] px-5 py-16 md:px-6 md:py-20">
-          <h2 className="text-title font-semibold tracking-tight">How the money will move</h2>
-          <p className="mt-2 max-w-2xl text-body text-muted">Once paying is on.</p>
-          <p className="mt-3 max-w-2xl text-body text-muted">
-            Paying through Agent Control isn't switched on yet. Today, posting is free and you agree
-            payment with the worker.
+          <h2 className="text-title font-semibold tracking-tight">How paying works today</h2>
+          <p className="mt-2 max-w-2xl text-body text-muted">
+            Paying through Agent Control isn't switched on yet.
           </p>
           <div className="money-block mt-10">
             <div className="money-line" aria-hidden="true" />
@@ -235,7 +233,7 @@ function Home() {
         </div>
       </section>
 
-      <section id="deal" className="scroll-rise" aria-label="Listing, fee, and refund">
+      <section id="deal" className="scroll-rise" aria-label="Posting and paying today">
         <div className="mx-auto max-w-[1140px] px-5 pb-4 md:px-6">
           <div className="grid gap-6 rounded-[20px] bg-[#12263f] p-6 text-primary-fg md:grid-cols-3 md:p-8">
             {DEAL.map((item) => (
@@ -303,10 +301,10 @@ function HeroFan({
           </li>
         ))}
       </ul>
-      <p className="font-mono text-meta text-muted">Once paying is on</p>
-      <ol className="hero-path list-none p-0" aria-label="Once paying is on">
+      <p className="font-mono text-meta text-muted">How it works today</p>
+      <ol className="hero-path list-none p-0" aria-label="How it works today">
         {HERO_PATH.map((step, index) => (
-          <li key={step.label} className="contents">
+          <li key={step.label} className="inline-flex items-center gap-2">
             {index > 0 ? <span className="hero-path-line" aria-hidden="true" /> : null}
             <span className="inline-flex items-center gap-1.5 font-mono text-meta text-fg">
               <span
