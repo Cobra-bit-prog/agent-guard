@@ -150,14 +150,22 @@ test("homepage copy ships three product tabs and 24-hour trial truth", () => {
   );
 });
 
-test("exchange page is a static coming-soon note", () => {
+test("exchange page is a free job board with an honest empty state", () => {
   const page = readFileSync(join(ROOT, "src/routes/exchange.tsx"), "utf8");
   assert.match(page, /createFileRoute\("\/exchange"\)/);
-  assert.match(page, /Job board opens soon\./);
+  assert.match(page, /Job board/);
+  assert.match(page, /No jobs posted yet\./);
+  assert.match(page, /Posting is free\. Workers reach you at the contact you leave\./);
   assert.match(page, /Looking for work\? Same list\./);
-  assert.doesNotMatch(page, /<form|type="email"|useState|createServerFn|loader:/);
-  assert.doesNotMatch(page, /escrow|\bfunded\b|USDC mint|Solana rail|\bhirer\b|\bsignature\b/i);
+  assert.match(page, /<form/);
+  assert.match(page, /POST \/api\/v1\/exchange\/jobs/);
+  assert.match(page, /Shown on the listing\./);
+  assert.doesNotMatch(page, /opens soon|coming soon/i);
   assert.doesNotMatch(page, /Leave your email|we’ll tell you|we’ll email you|we'll tell you|we'll email you/i);
+  assert.doesNotMatch(
+    page,
+    /escrow|\bfunded\b|USDC mint|Solana rail|\bhirer\b|\bsignature\b|\bsettlement\b|\bprotocol\b|\brail\b|\bheld\b|\bearned\b/i,
+  );
 });
 
 test("marketing sky theme uses darker navy muted copy for contrast", () => {
