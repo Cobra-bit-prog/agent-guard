@@ -305,7 +305,6 @@ function HeroFan({
       <ol className="hero-path list-none p-0" aria-label="How it works today">
         {HERO_PATH.map((step, index) => (
           <li key={step.label} className="inline-flex items-center gap-2">
-            {index > 0 ? <span className="hero-path-line" aria-hidden="true" /> : null}
             <span className="inline-flex items-center gap-1.5 font-mono text-meta text-fg">
               <span
                 className={step.navy ? "hero-path-dot hero-path-dot-navy" : "hero-path-dot"}
@@ -313,6 +312,9 @@ function HeroFan({
               />
               {step.label}
             </span>
+            {index < HERO_PATH.length - 1 ? (
+              <span className="hero-path-line" aria-hidden="true" />
+            ) : null}
           </li>
         ))}
       </ol>
