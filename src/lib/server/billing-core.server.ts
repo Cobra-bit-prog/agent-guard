@@ -15,6 +15,12 @@ import {
   type PaidPlanId,
 } from "@/lib/pay-invoice";
 import { sendInvoiceEmail, sendNewSubscriberNotifyEmail } from "@/lib/auth/send-email.server";
+import {
+  claimedPaidPlanName,
+  nonInboxPaidPlanName,
+  notifyPaidSubscriber,
+  shouldNotifyClaimedInvoice,
+} from "@/lib/paid-subscriber-notify";
 import { heliusConfigured } from "@/lib/server/helius.server";
 import { ensureSchema } from "@/lib/server/guard";
 import { PAY_ASSET_DECIMALS, PAY_ASSET_LABEL, asPayAsset, formatExactAmount } from "@/lib/pay-asset";
@@ -211,6 +217,16 @@ export async function markInvoicePaid(
       });
     }
     if (isActionGatePlan(row.plan)) await applyActionEntitlement(userId);
+    const paidProduct = nonInboxPaidPlanName(row.plan);
+    if (paidProduct) {
+      await notifyPaidSubscriber({
+        planName: paidProduct,
+        at: paidAt,
+        userEmail: (await lookupUserEmail(userId)) || row.guest_email,
+        payRequestId: row.id,
+        chain: CHAIN_LABEL[chain],
+      });
+    }
     await sendInvoiceIfNeeded(userId, row);
   }
   return row;
@@ -394,12 +410,23 @@ export async function claimPaidInvoicesForUser(userId: string, email: string | n
     [parsed, userId],
   );
   for (const row of rows) {
+    const previousUserId = row.user_id;
     await sql`update pay_requests set user_id = ${userId} where id = ${row.id}`;
     row.user_id = userId;
     const inbox = humanInboxPlan(row.plan);
     if (inbox) await applyPaidPlan(userId, inbox, asPayChain(row.chain));
     if (isActionGatePlan(row.plan)) await applyActionEntitlement(userId);
     await sendInvoiceIfNeeded(userId, row);
+    if (shouldNotifyClaimedInvoice(previousUserId)) {
+      const chain = asPayChain(row.chain);
+      await notifyPaidSubscriber({
+        planName: claimedPaidPlanName(row.plan),
+        at: row.paid_at || new Date().toISOString(),
+        userEmail: parsed,
+        payRequestId: row.id,
+        chain: CHAIN_LABEL[chain],
+      });
+    }
   }
 }
 

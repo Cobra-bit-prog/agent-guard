@@ -40,6 +40,7 @@ import {
   quoteSolEthUsd,
 } from "@/lib/native-pay.server";
 import { sendNewSubscriberNotifyEmail } from "@/lib/auth/send-email.server";
+import { nonInboxPaidPlanName, notifyPaidSubscriber } from "@/lib/paid-subscriber-notify";
 import { ensureSchema } from "@/lib/server/guard";
 import { rpc, solanaRpcUrls } from "@/lib/onchain";
 import {
@@ -367,6 +368,16 @@ export const watchPayRequest = createServerFn({ method: "POST" })
         });
       }
       if (isActionGatePlan(row.plan)) await applyActionEntitlement(context.userId);
+      const paidProduct = nonInboxPaidPlanName(row.plan);
+      if (paidProduct) {
+        await notifyPaidSubscriber({
+          planName: paidProduct,
+          at: paidAt,
+          userEmail: await lookupUserEmail(context.userId),
+          payRequestId: row.id,
+          chain: CHAIN_LABEL[chain],
+        });
+      }
       row.status = "paid";
       row.signature = match.signature;
       row.paid_amount_usdc = match.amountUsdc;

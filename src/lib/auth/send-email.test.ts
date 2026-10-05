@@ -54,6 +54,27 @@ describe("new subscriber admin notify", () => {
     assert.match(paid, /Pay request: pay_1/);
     assert.match(paid, /Network: Solana/);
     assert.doesNotMatch(paid, /Free trial start/);
+    assert.doesNotMatch(paid, /Amount:/);
+  });
+
+  it("includes amount, sku, and invoice id for a meter pay", () => {
+    const at = "2026-09-11T00:00:00.000Z";
+    assert.equal(
+      newSubscriberNotifySubject({ kind: "paid", planName: "Meter looks_20" }),
+      "New subscriber — Paid Meter looks_20",
+    );
+    const text = newSubscriberNotifyText({
+      kind: "paid",
+      planName: "Meter looks_20",
+      at,
+      payRequestId: "inv_abc",
+      chain: "Solana",
+      amount: "0.2 USDC",
+    });
+    assert.match(text, /Plan: Meter looks_20/);
+    assert.match(text, /Amount: 0\.2 USDC/);
+    assert.match(text, /Pay request: inv_abc/);
+    assert.match(text, /Network: Solana/);
   });
 });
 
@@ -64,7 +85,10 @@ describe("trial ending hour-20 copy", () => {
     assert.equal(copy.subject, "Your day is almost up");
     assert.equal(copy.ctaLabel, "Pay $29");
     assert.equal(copy.ctaPath, "/billing/pay?plan=starter");
-    assert.equal(TRIAL_ENDING_BODY, "Your day is almost up. Pay $29 USDC on Solana to keep the console.");
+    assert.equal(
+      TRIAL_ENDING_BODY,
+      "Your day is almost up. Pay $29 USDC on Solana to keep the console.",
+    );
     assert.match(copy.bodyLines.join("\n"), /Pay \$29 USDC on Solana/);
     assert.doesNotMatch(copy.bodyLines.join("\n"), /\bwatcher\b/i);
     assert.doesNotMatch(copy.bodyLines.join("\n"), /unique amount/i);
