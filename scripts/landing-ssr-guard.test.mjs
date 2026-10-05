@@ -47,21 +47,72 @@ test("marketing landing never imports pay-extension (SSR-unsafe wallet send)", (
   }
 });
 
-test("homepage copy ships three product tabs and 24-hour trial truth", () => {
+test("homepage is a hire marketplace with labeled examples and an honest fee", () => {
   const home = readFileSync(join(ROOT, "src/routes/index.tsx"), "utf8");
+  const css = readFileSync(join(ROOT, "src/styles.css"), "utf8");
+  assert.match(home, /Agent Control — Hire an agent\. Pay only when the job is done\./);
+  assert.match(home, /property: "og:title", content: PAGE_TITLE/);
+  assert.match(home, /property: "og:description", content: PAGE_DESCRIPTION/);
+  assert.match(home, /name: "description", content: PAGE_DESCRIPTION/);
+  assert.doesNotMatch(home, /External audit for your agents/);
+  assert.match(home, /Hire an agent\. Pay only when the job is done\./);
+  assert.match(home, /List the job for free\. If nobody takes it by the deadline, you get every dollar back\./);
+  assert.match(home, /The worker is paid when you say the work is done\./);
+  assert.match(home, /You pay the full price up front\./);
+  assert.match(home, /We hold it\./);
+  assert.match(home, /The worker gets 90%\./);
+  assert.match(home, /we keep 10%/);
+  assert.match(home, /We keep 10% only when you mark the job done\./);
+  assert.match(home, /you get every dollar back and we keep nothing/);
+  assert.match(home, /href="\/billing\/pay\?plan=action"/);
+  assert.match(home, /Already running agents\?/);
+  assert.match(home, /send email, post to Slack, write to your CRM,\s+or deploy\. \$49 a month\./);
+  assert.match(home, /id="money"[\s\S]*id="examples"[\s\S]*id="deal"[\s\S]*id="pricing"/);
+  assert.doesNotMatch(home, /LandingVerdict|LandingProductTabs|LandingCatch|LandingGate|LandingFaq/);
+  assert.doesNotMatch(home, /Start free trial|1-day trial|Within policy|SupportedChains/);
+  assert.doesNotMatch(home, /\bescrow\b|\bfunded\b|\bhirer\b|\bsignatures?\b|\bsettlement\b|\bprotocol\b|USDC mint|\brail\b/i);
+  assert.doesNotMatch(home, />\s*Held\s*</);
+  assert.doesNotMatch(home, />\s*Earned\s*</);
+  assert.doesNotMatch(home, /jobs posted|testimonials?|\bratings?\b|\breviews?\b/i);
+  assert.doesNotMatch(home, /See every send before it happens/);
+  assert.doesNotMatch(home, /Checks before they pay/);
+  assert.doesNotMatch(home, /checked before they pay/);
+  assert.doesNotMatch(home, /\/api\/v1\/verify/);
+  assert.doesNotMatch(home, /\bbroadcast\b/i);
+  assert.doesNotMatch(home, /\bmagnet\b/i);
+  assert.doesNotMatch(home, /\bwired\b/i);
+  assert.match(css, /prefers-reduced-motion:\s*reduce/);
+  assert.match(css, /@media \(prefers-reduced-motion: no-preference\)/);
+  assert.match(css, /money-line-in/);
+  assert.match(home, /money-line/);
+  assert.match(home, /scroll-rise/);
+
+  assert.doesNotMatch(home, /opens soon|coming soon/i);
+  assert.match(
+    home,
+    /Paying through Agent Control isn't switched on yet\. Today, posting is free and you agree\s+payment with the worker\./,
+  );
+  assert.doesNotMatch(home, /checkout/i);
+  assert.doesNotMatch(home, />\s*(Pay|Checkout)\b/);
+  const money = home.split('id="money"')[1]?.split('id="examples"')[0] ?? "";
+  assert.match(money, /Paying through Agent Control isn't switched on yet/);
+  const examples = home.split('id="examples"')[1]?.split('id="deal"')[0] ?? "";
+  assert.match(examples, /Examples of jobs people can post\./);
+  assert.match(examples, /href="\/exchange"[^>]*>\s*See real posts on the board\./);
+  assert.match(examples, /EXAMPLE_JOBS\.map/);
+  assert.match(examples, /<a\s+href="\/exchange"[^>]*>[\s\S]*Example/);
+  assert.match(examples, />\s*Example\s*</, "each example card needs an Example label");
+  assert.match(examples, /example price/);
+  assert.equal((home.match(/kind: "/g) ?? []).length, 6);
+});
+
+test("spend-control marketing modules keep their copy off the homepage", () => {
   const modules = readFileSync(join(ROOT, "src/components/marketing/landing-modules.tsx"), "utf8");
   const preview = readFileSync(join(ROOT, "src/components/marketing/landing-preview.tsx"), "utf8");
   const verdict = readFileSync(join(ROOT, "src/components/marketing/landing-verdict.tsx"), "utf8");
   const catchDemo = readFileSync(join(ROOT, "src/components/marketing/landing-catch.tsx"), "utf8");
   const gate = readFileSync(join(ROOT, "src/components/marketing/landing-gate.tsx"), "utf8");
-  const src = `${home}\n${modules}\n${preview}\n${verdict}\n${catchDemo}\n${gate}`;
-  assert.match(src, /External audit for your agents — Agent Control/);
-  assert.match(src, /External audit for your agents/);
-  assert.match(src, /Hire an agent\. Pay only when the job is done\./);
-  assert.match(src, /List the job for free\. If nobody takes it by the deadline, you get every dollar back\./);
-  assert.match(src, /The worker is paid when you say the work is done\./);
-  assert.doesNotMatch(src, /See every send before it happens/);
-  assert.match(src, /Agent payments control/);
+  const src = `${modules}\n${preview}\n${verdict}\n${catchDemo}\n${gate}`;
   assert.match(modules, /label: "Dashboard"/);
   assert.match(modules, /label: "Agent Audit"/);
   assert.match(modules, /label: "Approval Inbox"/);
@@ -82,26 +133,15 @@ test("homepage copy ships three product tabs and 24-hour trial truth", () => {
   assert.match(src, /Download PDF/);
   assert.match(src, /Download CSV/);
   assert.match(src, /on-demand/);
-  assert.match(src, /External audit for your agents — you keep the keys\./);
-  assert.match(src, /Connect your agent/);
-  assert.match(
-    src,
-    /Give it an API key\. They ask before they pay\. You keep the keys\./,
-  );
   assert.doesNotMatch(src, /Before it sends money/);
   assert.doesNotMatch(src, /If the answer is no, it must not send/);
   assert.match(src, /Held by you · They ask before they pay/);
   assert.doesNotMatch(src, /Checks before they pay/);
   assert.doesNotMatch(src, /checked before they pay/);
   assert.doesNotMatch(src, /Check before every send/);
-  assert.match(src, /Outside policy = stop/);
   assert.match(src, /Warning alerts are optional/);
   assert.match(src, /suspicious or\s+over-limit\s+activity/);
   assert.match(src, /Monitoring and spend overview/);
-  assert.match(src, /\$\{p\.historyDays\}-day history/);
-  assert.match(src, /1-day \(24 hour\)/);
-  assert.match(src, /No card\. No KYC/);
-  assert.match(src, /SupportedChains/);
   assert.doesNotMatch(src, /Wire the hook/);
   assert.doesNotMatch(src, /It MUST POST \/api\/v1\/check/);
   assert.doesNotMatch(src, /Sky Ledger\s*[×xX]\s*Operator/);
@@ -141,13 +181,8 @@ test("homepage copy ships three product tabs and 24-hour trial truth", () => {
     src,
     /Pays only if the agent is capped\. You keep the keys\. Agent Control checks the cap before\s+we take USDC\./,
   );
-  assert.match(home, /limit how fast they can spend/);
-  assert.doesNotMatch(home, /hourly velocity/);
   assert.doesNotMatch(src, /\/api\/v1\/verify/);
-  assert.match(
-    home,
-    /LandingVerdict[\s\S]*LandingProductTabs[\s\S]*LandingCatch[\s\S]*id="how"[\s\S]*id="connect"[\s\S]*id="pricing"[\s\S]*LandingGate[\s\S]*LandingFaq/,
-  );
+  assert.doesNotMatch(src, /See every send before it happens/);
 });
 
 test("exchange page is a static coming-soon note", () => {
@@ -502,8 +537,8 @@ test("FAQ and Compare drop competitor names; homepage hero uses the locked hire 
   assert.doesNotMatch(home, /Checks before they pay/);
   assert.doesNotMatch(home, /checked before they pay/);
   assert.doesNotMatch(home, /checks before they pay/);
-  assert.match(home, /They ask before they pay/);
-  assert.match(home, /Do you host this, or do I run it myself\?/);
+  assert.doesNotMatch(home, /Start free trial/);
+  assert.doesNotMatch(home, /1-day trial/);
   assert.match(home, /<h1[^>]*>\s*Hire an agent\. Pay only when the job is done\.\s*<\/h1>/);
   assert.match(
     home,
@@ -516,9 +551,9 @@ test("FAQ and Compare drop competitor names; homepage hero uses the locked hire 
   );
   const hero = home.split('className="landing-hero')[1]?.split("</section>")[0] ?? "";
   assert.match(hero, />\s*Post a job\s*</);
-  assert.match(hero, />\s*Browse jobs\s*</);
+  assert.match(hero, />\s*List your agent\s*</);
   assert.match(hero, /href="\/exchange"[^>]*>\s*Post a job\s*</);
-  assert.match(hero, /href="\/exchange"[^>]*>\s*Browse jobs\s*</);
+  assert.match(hero, /href="\/exchange"[^>]*>\s*List your agent\s*</);
   assert.doesNotMatch(hero, /href="\/signup"/);
   assert.doesNotMatch(hero, /href="\/docs"/);
   assert.doesNotMatch(hero, /Within policy = auto/);
@@ -534,10 +569,7 @@ test("FAQ and Compare drop competitor names; homepage hero uses the locked hire 
   assert.match(chrome, /onHome \? "hidden rounded-full md:inline-flex" : "rounded-full"/);
   assert.doesNotMatch(home, /text-body font-medium leading-snug text-navy/);
   assert.doesNotMatch(home, /text-card leading-snug text-muted/);
-  assert.match(
-    home,
-    /text-body text-muted">\{CONNECT_LEDE\}<\/p>\s*<p className="mt-2 max-w-2xl text-body text-muted">\{CONNECT_STARTER_LINE\}/,
-  );
+  assert.doesNotMatch(home, /CONNECT_LEDE|CONNECT_STARTER_LINE|ConnectCtas|ConnectSteps/);
   assert.doesNotMatch(surfaces, /agentaudit/i);
   assert.doesNotMatch(surfaces, /spendguard/i);
   assert.doesNotMatch(surfaces, /agentspay/i);
@@ -643,8 +675,9 @@ test("Connect your agent path is trial then Pay $29 on the same check", () => {
   const copy = readFileSync(join(ROOT, "src/lib/connect-path.ts"), "utf8");
   const sitemap = readFileSync(join(ROOT, "public/sitemap.xml"), "utf8");
   const src = `${home}\n${connect}\n${docs}\n${ctas}\n${copy}`;
-  assert.match(home, /id=["']connect["']/);
-  assert.match(home, /href=["']\/connect["']/);
+  assert.doesNotMatch(home, /id=["']connect["']/);
+  assert.doesNotMatch(home, /href=["']\/connect["']/);
+  assert.match(connect, /href=["']\/connect["']|CONNECT_|ConnectCtas/);
   assert.match(connect, /createFileRoute\("\/connect"\)/);
   assert.match(docs, /id=["']connect-agentkit["']/);
   assert.match(copy, /CONNECT_TRIAL_HREF = "\/signup"/);

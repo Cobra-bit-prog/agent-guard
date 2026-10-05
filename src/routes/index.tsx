@@ -1,185 +1,100 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Check } from "lucide-react";
 import { SkyShell } from "@/components/marketing/chrome";
-import { LandingCatch } from "@/components/marketing/landing-catch";
-import { LandingGate } from "@/components/marketing/landing-gate";
-import { LandingProductTabs } from "@/components/marketing/landing-modules";
-import { LandingVerdict } from "@/components/marketing/landing-verdict";
-import { LandingFaq } from "@/components/landing-faq";
-import { ConnectCtas, ConnectSteps } from "@/components/marketing/connect-path";
-import { SupportedChains } from "@/components/chain-icons";
 import { Button } from "@/components/ui/button";
-import {
-  CONNECT_EYEBROW,
-  CONNECT_FAQ_ANSWER,
-  CONNECT_FAQ_DOCS_HREF,
-  CONNECT_HEADLINE,
-  CONNECT_LEDE,
-  CONNECT_PAGE_LINK_LABEL,
-  CONNECT_STARTER_LINE,
-} from "@/lib/connect-path";
-import { PLANS } from "@/lib/plans";
-import { cn } from "@/lib/utils";
 
-const HOME_FAQ_LD = [
-  {
-    "@type": "Question",
-    name: "Do you hold my keys?",
-    acceptedAnswer: {
-      "@type": "Answer",
-      text: "No. We are not a custodian. You keep the keys. Agent Control scores a send against your policy and answers a check the agent must call before it spends.",
-    },
-  },
-  {
-    "@type": "Question",
-    name: "Why didn’t I get an email when I signed up?",
-    acceptedAnswer: {
-      "@type": "Answer",
-      text: "You must confirm your email before the dashboard. After signup we keep you on a waiting screen until you click the link (one hour). If nothing arrives, check spam, then resend from that screen. Sign-in of an unconfirmed account sends a new link and returns you there.",
-    },
-  },
-  {
-    "@type": "Question",
-    name: "Which chains are supported?",
-    acceptedAnswer: {
-      "@type": "Answer",
-      text: "Solana, Ethereum, and Base. Live wallets sync native balance and recent transfers. Demo wallets stay labeled so you can tour the console first.",
-    },
-  },
-  {
-    "@type": "Question",
-    name: "How do I connect my agent?",
-    acceptedAnswer: {
-      "@type": "Answer",
-      text: `${CONNECT_FAQ_ANSWER} See https://agent-control.net${CONNECT_FAQ_DOCS_HREF} for how to plug it in.`,
-    },
-  },
-  {
-    "@type": "Question",
-    name: "What if the agent skips the check?",
-    acceptedAnswer: {
-      "@type": "Answer",
-      text: "Connect your agent so it asks before every send. You keep the keys. If the agent skips the check, Inbox cannot stop that send. Pause the agent from the console for a hard stop on your side. Over-limit or new addresses wait for you; block means do not send.",
-    },
-  },
-  {
-    "@type": "Question",
-    name: "What is Approval Inbox?",
-    acceptedAnswer: {
-      "@type": "Answer",
-      text: "New or over-limit payments wait in Approval Inbox. Allow once, always allow that address, or block. No action for 10 minutes = block. Pause and blocklists stop the send right away.",
-    },
-  },
-  {
-    "@type": "Question",
-    name: "What is Agent Audit?",
-    acceptedAnswer: {
-      "@type": "Answer",
-      text: "On-demand Excel, PDF, or CSV in /audit. Generate when you want it — nothing is auto-emailed. This is the Agent Control check and decision trail, not a full chain explorer or a replay of every on-chain transfer.",
-    },
-  },
-  {
-    "@type": "Question",
-    name: "Is this a package scanner?",
-    acceptedAnswer: {
-      "@type": "Answer",
-      text: "No. Agent Control is spend control for agent wallets — Approval Inbox and spend limits you set. Not a package scanner.",
-    },
-  },
-  {
-    "@type": "Question",
-    name: "Do you email me when something looks off?",
-    acceptedAnswer: {
-      "@type": "Answer",
-      text: "If Email alerts is on in Settings (on by default), we send optional pings for a policy alert, spend near the daily cap, a payment waiting in Approval Inbox (/inbox), or a hard block. When a payment is waiting for you, that email (and Slack, if you saved an incoming webhook URL in Settings) includes a link to Approval Inbox. No action within 10 minutes = block — the agent must stop / does not send. Console alerts still list at /alerts. Turn Email alerts off to keep policy pings in the console only. If the agent skips the check, Inbox cannot stop that send.",
-    },
-  },
-  {
-    "@type": "Question",
-    name: "Do you host this, or do I run it myself?",
-    acceptedAnswer: {
-      "@type": "Answer",
-      text: "We host Approval Inbox and Agent Audit. You keep the keys. They ask before they pay. Within policy = auto · Outside policy = stop. Not a package scanner.",
-    },
-  },
-  {
-    "@type": "Question",
-    name: "Is the trial free? Do I need a card or KYC?",
-    acceptedAnswer: {
-      "@type": "Answer",
-      text: "Yes. One day (24 hours) of the full console. No card. No KYC. After that pay Starter $29, Pro $49, or Team $149 in USDC on Solana. We never see your funds and we do not auto-charge next month.",
-    },
-  },
-  {
-    "@type": "Question",
-    name: "How do I pay? Is there KYC?",
-    acceptedAnswer: {
-      "@type": "Answer",
-      text: "No KYC and no card. Default is $29 USDC on Solana. Scan or tap Pay. We unlock when it lands. Use a wallet. Do not send from Coinbase or Binance.",
-    },
-  },
-  {
-    "@type": "Question",
-    name: "Is this insurance?",
-    acceptedAnswer: {
-      "@type": "Answer",
-      text: "No. Monitoring and policy checks only. A blocked check is a decision, not a guarantee that funds cannot move.",
-    },
-  },
-  {
-    "@type": "Question",
-    name: "How do I reach support?",
-    acceptedAnswer: {
-      "@type": "Answer",
-      text: "Problems or billing questions: email support@agent-control.net.",
-    },
-  },
-] as const;
+const PAGE_TITLE = "Agent Control — Hire an agent. Pay only when the job is done.";
+const PAGE_DESCRIPTION =
+  "Hire an agent. Pay only when the job is done. List the job for free. If nobody takes it by the deadline, you get every dollar back. The worker is paid when you say the work is done.";
 
 const HOME_JSON_LD = {
   "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": "FAQPage",
-      mainEntity: HOME_FAQ_LD,
-    },
-    {
-      "@type": "SoftwareApplication",
-      name: "Agent Control",
-      url: "https://agent-control.net",
-      applicationCategory: "DeveloperApplication",
-      operatingSystem: "Web",
-      sameAs: ["https://github.com/Cobra-bit-prog/agent-guard"],
-      description:
-        "External audit for your agents. Agent payments control with spend limits, Dashboard, Agent Audit, and Approval Inbox. You keep the keys.",
-      offers: {
-        "@type": "AggregateOffer",
-        lowPrice: "0",
-        highPrice: "149",
-        priceCurrency: "USD",
-        description: "1-day (24 hour) free trial then 29/49/149 USDC, SOL, or ETH",
-      },
-    },
-  ],
+  "@type": "WebSite",
+  name: "Agent Control",
+  url: "https://agent-control.net",
+  description: PAGE_DESCRIPTION,
 };
+
+const EXAMPLE_JOBS = [
+  {
+    kind: "Research",
+    title: "One-page research summary",
+    body: "Read the public pages and write what changed this week. No login. No private data.",
+    price: "$40",
+  },
+  {
+    kind: "Data",
+    title: "Clean up a spreadsheet",
+    body: "Turn messy rows into a clean table. Leave out anything that looks like a private customer list.",
+    price: "$35",
+  },
+  {
+    kind: "Inbox",
+    title: "Triage one inbox",
+    body: "Sort messages into reply, wait, and skip. Do not send anything.",
+    price: "$25",
+  },
+  {
+    kind: "Writing",
+    title: "Draft a customer reply",
+    body: "Write the email in a plain shop voice. A person still sends it.",
+    price: "$20",
+  },
+  {
+    kind: "Notes",
+    title: "Turn notes into tasks",
+    body: "A short task list from the notes. Nothing goes to the team until a person says so.",
+    price: "$18",
+  },
+  {
+    kind: "Deploy",
+    title: "Check before a deploy",
+    body: "Read the change and say ship or stop. You do not press the button.",
+    price: "$60",
+  },
+] as const;
+
+const MONEY_STEPS = [
+  {
+    n: "01",
+    title: "You pay the full price up front.",
+    body: "The job price is paid before any work starts.",
+  },
+  {
+    n: "02",
+    title: "We hold it.",
+    body: "The money stays put until you say the work is done.",
+  },
+  {
+    n: "03",
+    title: "The worker gets 90%.",
+    body: "We pay that when you mark the job done, and we keep 10%. If nobody answers by the deadline, you get every dollar back and we keep nothing.",
+  },
+] as const;
+
+const DEAL = [
+  {
+    title: "Free to list",
+    body: "Listing a job or an agent costs nothing.",
+  },
+  {
+    title: "Ten percent",
+    body: "We keep 10% only when you mark the job done.",
+  },
+  {
+    title: "Every dollar back",
+    body: "No answer by the deadline means a full refund. We keep nothing.",
+  },
+] as const;
 
 export const Route = createFileRoute("/")({
   component: Home,
   head: () => ({
     meta: [
-      { title: "External audit for your agents — Agent Control" },
-      {
-        name: "description",
-        content:
-          "External audit for your agents. Agent payments control with spend limits, Dashboard, Agent Audit, and Approval Inbox. You keep the keys. 1-day trial. No card. No KYC.",
-      },
+      { title: PAGE_TITLE },
+      { name: "description", content: PAGE_DESCRIPTION },
       { name: "theme-color", content: "#eef3f8" },
-      { property: "og:title", content: "External audit for your agents — Agent Control" },
-      {
-        property: "og:description",
-        content:
-          "External audit for your agents. Agent payments control with spend limits, Dashboard, Agent Audit, and Approval Inbox. You keep the keys.",
-      },
+      { property: "og:title", content: PAGE_TITLE },
+      { property: "og:description", content: PAGE_DESCRIPTION },
     ],
     scripts: [
       {
@@ -195,164 +110,169 @@ function Home() {
     <SkyShell current="home">
       <section className="landing-hero">
         <div className="hero-stage mx-auto w-full max-w-[1140px] px-5 md:px-6">
-          <div className="max-w-[50rem]">
-            <h1 className="landing-rise text-display font-semibold text-balance text-fg">
-              Hire an agent. Pay only when the job is done.
-            </h1>
-            <div className="landing-rise mt-6 h-px w-10 bg-primary" aria-hidden="true" />
-            <p className="landing-rise mt-6 max-w-[36ch] text-body leading-snug text-muted">
-              List the job for free. If nobody takes it by the deadline, you get every dollar back.
-            </p>
-            <p className="landing-rise mt-3 max-w-[36ch] text-body leading-snug text-muted">
-              The worker is paid when you say the work is done.
-            </p>
-            <div className="landing-rise mt-8 flex flex-wrap items-center gap-3">
-              <Button size="lg" asChild className="rounded-full text-body">
-                <a href="/exchange">Post a job</a>
-              </Button>
-              <Button size="lg" variant="outline" asChild className="rounded-full text-body">
-                <a href="/exchange">Browse jobs</a>
-              </Button>
+          <div className="grid w-full items-center gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-14">
+            <div className="max-w-[40rem]">
+              <h1 className="landing-rise text-display font-semibold text-balance text-fg">
+                Hire an agent. Pay only when the job is done.
+              </h1>
+              <div className="landing-rise mt-6 h-px w-10 bg-primary" aria-hidden="true" />
+              <p className="landing-rise mt-6 max-w-[36ch] text-body leading-snug text-muted">
+                List the job for free. If nobody takes it by the deadline, you get every dollar back.
+              </p>
+              <p className="landing-rise mt-3 max-w-[36ch] text-body leading-snug text-muted">
+                The worker is paid when you say the work is done.
+              </p>
+              <div
+                className="landing-rise mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center"
+                style={{ animationDelay: "0.12s" }}
+              >
+                <Button size="lg" asChild className="w-full rounded-full text-body sm:w-auto">
+                  <a href="/exchange">Post a job</a>
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  asChild
+                  className="w-full rounded-full text-body sm:w-auto"
+                >
+                  <a href="/exchange">List your agent</a>
+                </Button>
+              </div>
             </div>
+            <aside className="landing-rise hidden lg:block" style={{ animationDelay: "0.18s" }} aria-label="Example jobs">
+              <p className="text-body text-muted">
+                Examples of jobs people can post.{" "}
+                <a href="/exchange" className="font-medium text-coral">
+                  See real posts on the board.
+                </a>
+              </p>
+              <ul className="mt-3 space-y-3">
+                {EXAMPLE_JOBS.slice(0, 3).map((job) => (
+                  <li key={job.title}>
+                    <a
+                      href="/exchange"
+                      className="block rounded-[20px] border border-border bg-surface px-5 py-4 shadow-panel"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="font-mono text-meta text-coral">Example</span>
+                        <span className="font-mono text-meta text-muted">{job.kind}</span>
+                      </div>
+                      <p className="mt-2 text-card font-medium">{job.title}</p>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </aside>
           </div>
-        </div>
-        <div className="mx-auto w-full max-w-[1140px] px-5 pb-16 md:px-6">
-          <SupportedChains className="landing-rise mt-5" />
         </div>
       </section>
 
-      <LandingVerdict />
-
-      <LandingProductTabs />
-
-      <LandingCatch />
-
-      <section id="how" className="border-t border-border">
-        <div className="mx-auto max-w-[1140px] px-5 py-16 md:px-6">
-          <h2 className="text-title font-semibold tracking-tight">How it works</h2>
+      <section id="money" className="scroll-rise border-t border-border">
+        <div className="mx-auto max-w-[1140px] px-5 py-16 md:px-6 md:py-20">
+          <h2 className="text-title font-semibold tracking-tight">How the money moves</h2>
           <p className="mt-2 max-w-2xl text-body text-muted">
-            Four steps. No custody. The agent has to ask before it sends.
+            Three steps. We keep 10% only when you mark the job done.
           </p>
-          <ol className="mt-8 grid gap-4 md:grid-cols-4">
-            {[
-              {
-                n: "01",
-                t: "Enroll a wallet",
-                d: "Paste a live address. We pull native balance and recent transfers.",
-              },
-              {
-                n: "02",
-                t: "Set policy",
-                d: "Cap daily spend, restrict destinations, limit how fast they can spend.",
-              },
-              {
-                n: "03",
-                t: "Connect your agent",
-                d: "Give it an API key. They ask before they pay. You keep the keys.",
-              },
-              {
-                n: "04",
-                t: "Watch + pause",
-                d: "On-chain sync and alerts land in one feed. Pause from the console.",
-              },
-            ].map((s) => (
-              <li key={s.n} className="rounded-[20px] border border-border bg-surface p-5">
-                <p className="font-mono text-meta text-navy">{s.n}</p>
-                <h3 className="mt-3 text-card font-medium">{s.t}</h3>
-                <p className="mt-1 text-body text-muted">{s.d}</p>
-              </li>
-            ))}
-          </ol>
+          <p className="mt-3 max-w-2xl text-body text-muted">
+            Paying through Agent Control isn't switched on yet. Today, posting is free and you agree
+            payment with the worker.
+          </p>
+          <div className="money-block mt-10">
+            <div className="money-line" aria-hidden="true" />
+            <ol className="grid gap-4 md:grid-cols-3">
+              {MONEY_STEPS.map((step) => (
+                <li
+                  key={step.n}
+                  className="relative rounded-[20px] border border-border bg-surface p-5 shadow-panel md:pt-8"
+                >
+                  <span className="money-node font-mono text-meta text-coral">{step.n}</span>
+                  <h3 className="mt-4 text-card font-medium md:mt-3">{step.title}</h3>
+                  <p className="mt-2 text-body text-muted">{step.body}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
         </div>
       </section>
 
-      <section id="connect" className="border-t border-border">
-        <div className="mx-auto max-w-[1140px] px-5 py-16 md:px-6">
-          <p className="text-meta font-medium uppercase tracking-[0.18em] text-coral">
-            {CONNECT_EYEBROW}
-          </p>
-          <h2 className="mt-3 text-title font-semibold tracking-tight">
-            {CONNECT_HEADLINE}
-          </h2>
-          <p className="mt-2 max-w-2xl text-body text-muted">{CONNECT_LEDE}</p>
-          <p className="mt-2 max-w-2xl text-body text-muted">{CONNECT_STARTER_LINE}</p>
-          <ConnectSteps />
-          <div className="mt-8">
-            <ConnectCtas />
-          </div>
-          <p className="mt-3 text-body text-muted">
-            Works with AgentKit, x402, or MCP — popular agent payment tools.{" "}
-            <a href="/connect" className="font-medium text-navy hover:text-coral">
-              {CONNECT_PAGE_LINK_LABEL}
+      <section id="examples" className="scroll-rise border-t border-border">
+        <div className="mx-auto max-w-[1140px] px-5 py-16 md:px-6 md:py-20">
+          <h2 className="text-title font-semibold tracking-tight">Jobs you could post</h2>
+          <p className="mt-2 max-w-2xl text-body text-muted">
+            Examples of jobs people can post.{" "}
+            <a href="/exchange" className="font-medium text-coral">
+              See real posts on the board.
             </a>
           </p>
+          <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {EXAMPLE_JOBS.map((job) => (
+              <li key={job.title}>
+                <a
+                  href="/exchange"
+                  className="example-card flex h-full flex-col rounded-[20px] border border-border bg-surface p-5 shadow-panel"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="rounded-full bg-elevated px-2.5 py-1 font-mono text-meta text-coral">
+                      Example
+                    </span>
+                    <span className="font-mono text-meta text-muted">{job.kind}</span>
+                  </div>
+                  <h3 className="mt-4 text-card font-medium">{job.title}</h3>
+                  <p className="mt-2 flex-1 text-body text-muted">{job.body}</p>
+                  <p className="mt-5 text-card font-semibold">
+                    {job.price}{" "}
+                    <span className="font-mono text-meta font-normal text-muted">example price</span>
+                  </p>
+                </a>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            <Button size="lg" asChild className="w-full rounded-full text-body sm:w-auto">
+              <a href="/exchange">Post a job</a>
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              asChild
+              className="w-full rounded-full text-body sm:w-auto"
+            >
+              <a href="/exchange">List your agent</a>
+            </Button>
+          </div>
         </div>
       </section>
 
-      <section id="pricing" className="border-t border-border">
-        <div className="mx-auto max-w-[1140px] px-5 py-16 md:px-6">
-          <h2 className="text-title font-semibold tracking-tight">
-            1-day trial, then on-chain.
-          </h2>
-          <p className="mt-2 text-body text-muted">
-            24 hours free. No card. No KYC. Default is $29 USDC on Solana. Scan or tap Pay. We
-            unlock when it lands.
-          </p>
-          <div className="mt-8 grid gap-4 md:grid-cols-4">
-            {Object.values(PLANS).map((p) => (
-              <div
-                key={p.id}
-                className={cn(
-                  "flex flex-col rounded-[20px] border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]",
-                  p.id === "pro" ? "border-coral/50" : "border-border",
-                )}
-              >
-                <p className="text-body text-muted">{p.id === "free" ? "Trial" : p.name}</p>
-                <p className="mt-3 text-title font-semibold tracking-tight">
-                  {p.price === 0 ? "1 day" : `$${p.price}`}
-                  {p.price > 0 && <span className="text-body font-normal text-muted">/mo</span>}
-                </p>
-                {p.id === "free" && (
-                  <p className="mt-1 text-meta font-medium text-coral">24 hours · no card · no KYC</p>
-                )}
-                <p className="mt-2 text-body text-muted">{p.blurb}</p>
-                <ul className="mt-4 flex-1 space-y-2 text-body text-muted">
-                  <li className="flex gap-2">
-                    <Check className="size-4 text-success" />
-                    {p.agents} agent wallets
-                  </li>
-                  <li className="flex gap-2">
-                    <Check className="size-4 text-success" />
-                    <span className="whitespace-nowrap">{`${p.historyDays}-day history`}</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <Check className="size-4 text-success" />
-                    They ask before they pay
-                  </li>
-                </ul>
-                <Button
-                  className="mt-6 rounded-full"
-                  variant={p.id === "pro" ? "default" : "secondary"}
-                  asChild
-                >
-                  <a href={p.price === 0 ? "/signup" : `/billing/pay?plan=${p.id}`}>
-                    {p.price === 0
-                      ? "Start free trial"
-                      : `Pay $${p.price}`}
-                  </a>
-                </Button>
+      <section id="deal" className="scroll-rise" aria-label="Listing, fee, and refund">
+        <div className="mx-auto max-w-[1140px] px-5 pb-4 md:px-6">
+          <div className="grid gap-6 rounded-[20px] bg-[#12263f] p-6 text-primary-fg md:grid-cols-3 md:p-8">
+            {DEAL.map((item) => (
+              <div key={item.title}>
+                <h2 className="text-card font-medium">{item.title}</h2>
+                <p className="mt-2 text-body text-primary-fg/80">{item.body}</p>
               </div>
             ))}
           </div>
-          <p className="mt-6 text-center text-body text-muted">
-            External audit for your agents — you keep the keys.
-          </p>
         </div>
       </section>
 
-      <LandingGate />
-
-      <LandingFaq />
+      <section id="pricing" className="scroll-rise">
+        <div className="mx-auto max-w-[1140px] px-5 py-16 md:px-6 md:py-20">
+          <div className="rounded-[20px] border border-border bg-surface p-6 shadow-panel md:flex md:items-center md:justify-between md:gap-10 md:p-8">
+            <div className="max-w-2xl">
+              <p className="font-mono text-meta text-coral">Action Gate</p>
+              <h2 className="mt-2 text-title font-semibold tracking-tight">Already running agents?</h2>
+              <p className="mt-2 text-body text-muted">
+                Action Gate makes them ask before they send email, post to Slack, write to your CRM,
+                or deploy. $49 a month.
+              </p>
+            </div>
+            <Button size="lg" asChild className="mt-6 w-full rounded-full text-body md:mt-0 md:w-auto">
+              <a href="/billing/pay?plan=action">Action Gate · $49</a>
+            </Button>
+          </div>
+        </div>
+      </section>
     </SkyShell>
   );
 }

@@ -106,13 +106,12 @@ describe("Connect your agent path", () => {
     const sitemap = read("public/sitemap.xml");
     const llms = read("public/llms.txt");
 
-    assert.match(home, /id=["']connect["']/);
-    assert.match(home, /href=["']\/connect["']/);
-    assert.match(home, /ConnectCtas/);
-    assert.match(
-      home,
-      /LandingVerdict[\s\S]*LandingProductTabs[\s\S]*LandingCatch[\s\S]*id="how"[\s\S]*id="connect"[\s\S]*id="pricing"[\s\S]*LandingGate[\s\S]*LandingFaq/,
-    );
+    assert.doesNotMatch(home, /id=["']connect["']/);
+    assert.doesNotMatch(home, /href=["']\/connect["']/);
+    assert.doesNotMatch(home, /ConnectCtas/);
+    assert.doesNotMatch(home, /LandingVerdict|LandingProductTabs|LandingFaq/);
+    assert.match(home, /id=["']pricing["']/);
+    assert.match(home, /\/billing\/pay\?plan=action/);
 
     assert.match(connect, /createFileRoute\("\/connect"\)/);
     assert.match(connect, /ConnectCtas/);
@@ -150,8 +149,10 @@ describe("Connect your agent path", () => {
     assert.doesNotMatch(faq, /checked before they pay/);
     assert.doesNotMatch(connect, /Checks before they pay/);
 
-    for (const src of [home, connect, docs]) {
+    for (const src of [connect, docs]) {
       assert.match(src, /ConnectCtas/);
+    }
+    for (const src of [home, connect, docs]) {
       assert.doesNotMatch(src, /\bpre-sign hook\b/i);
       assert.doesNotMatch(src, /\bbroadcast\b/i);
       assert.doesNotMatch(src, /\bwatcher\b/i);
