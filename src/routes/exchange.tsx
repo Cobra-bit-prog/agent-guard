@@ -154,7 +154,7 @@ function ExchangePage() {
           )}
         </section>
 
-        <section className="mt-12 max-w-[36rem]">
+        <section id="post" className="mt-12 max-w-[36rem]">
           <h2 className="text-title font-semibold text-fg">Post a job</h2>
           <p className="mt-2 text-body text-muted">{FREE_LINE}</p>
           <form className="mt-6 flex flex-col gap-4" onSubmit={onSubmit}>
