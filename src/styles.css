@@ -285,57 +285,60 @@
 
 .hero-fan-cards {
   position: relative;
-  height: 26rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.35rem;
+  height: auto;
   margin: 0;
-  padding: 0;
+  padding: 0.85rem 0 0.35rem;
   list-style: none;
 }
 
 .hero-fan-cards > li {
-  position: absolute;
-  width: min(100%, 23rem);
+  position: relative;
+  width: min(100%, 22rem);
 }
 
 .hero-fan:not(.hero-fan-compact) .hero-fan-cards > li:nth-child(1) {
-  top: 0.4rem;
-  left: 0.15rem;
   z-index: 1;
-  transform: rotate(-8deg);
+  transform: rotate(-6deg);
+  transform-origin: left center;
 }
 
 .hero-fan:not(.hero-fan-compact) .hero-fan-cards > li:nth-child(2) {
-  top: 7.15rem;
-  left: 1.6rem;
   z-index: 2;
-  transform: rotate(3deg);
+  margin-left: 1.65rem;
+  transform: rotate(3.5deg);
+  transform-origin: right center;
 }
 
 .hero-fan:not(.hero-fan-compact) .hero-fan-cards > li:nth-child(3) {
-  top: 13.8rem;
-  left: 0.45rem;
   z-index: 3;
-  transform: rotate(-3.5deg);
+  margin-left: 0.35rem;
+  transform: rotate(-2.5deg);
+  transform-origin: left center;
 }
 
 .hero-fan-compact .hero-fan-cards {
-  height: 12.75rem;
+  gap: 1.15rem;
+  height: auto;
+  padding-top: 0.65rem;
 }
 
 .hero-fan-compact .hero-fan-cards > li {
-  width: min(92%, 18.5rem);
+  width: min(100%, 19.5rem);
 }
 
 .hero-fan-compact .hero-fan-cards > li:nth-child(1) {
-  top: 0.2rem;
-  left: 0.35rem;
-  transform: rotate(-6deg);
+  transform: rotate(-4.5deg);
+  transform-origin: left center;
 }
 
 .hero-fan-compact .hero-fan-cards > li:nth-child(2) {
-  top: 4.35rem;
-  left: 1.15rem;
   z-index: 2;
-  transform: rotate(4deg);
+  margin-left: 1.15rem;
+  transform: rotate(3.5deg);
+  transform-origin: right center;
 }
 
 .hero-path {
