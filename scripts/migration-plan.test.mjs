@@ -10,7 +10,14 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { isMigrationFile, migrationName, pendingMigrations } from "./migration-plan.mjs";
+import {
+  EXCHANGE_JOBS_MIGRATION,
+  exchangeJobsHoldNotice,
+  exchangeJobsMigrationHeld,
+  isMigrationFile,
+  migrationName,
+  pendingMigrations,
+} from "./migration-plan.mjs";
 import { projectRoot } from "./with-app-env.mjs";
 
 const AUTH_MIGRATION = "0001_auth.sql";
@@ -58,7 +65,9 @@ test("non-.sql entries are dropped (readdir also yields the auth/ directory)", (
 
 test("the auth schema ships outside the globbed directory", () => {
   const migrationsDir = join(projectRoot(), "migrations");
-  assert.deepEqual(pendingMigrations(readdirSync(migrationsDir), []), []);
+  const names = pendingMigrations(readdirSync(migrationsDir), [], {}).map((entry) => entry.name);
+  assert.ok(names.includes("0024_write_gate.sql"));
+  assert.equal(names.some((name) => name.includes("auth/")), false);
   assert.ok(readdirSync(join(migrationsDir, "auth")).includes("0001_auth.sql"));
 });
 
@@ -87,4 +96,58 @@ test("the copy check reads both files and catches an edit", () => {
   writeFileSync(join(root, "migrations", AUTH_MIGRATION), "create table t (x int);\n");
   const drifted = authSchemaCopy(root);
   assert.notEqual(drifted.copy, drifted.source);
+});
+
+test("exchange jobs migration applies in production and is skipped on preview", () => {
+  const name = EXCHANGE_JOBS_MIGRATION;
+  const sql = readFileSync(join(projectRoot(), "migrations", name), "utf8");
+  assert.equal(existsSync(join(projectRoot(), "migrations", name)), true);
+  assert.match(sql, /create table if not exists exchange_jobs/i);
+  assert.match(sql, /contact text not null/);
+  assert.match(sql, /hidden_at timestamptz/);
+  assert.match(sql, /poster_ip_hash text/);
+  assert.doesNotMatch(sql, /\b(alter|drop|insert|update|delete)\b/i);
+  assert.doesNotMatch(sql, /pay_requests|meter_invoices|spend_audit_invoices/);
+  assert.doesNotMatch(sql, /create trigger|create function|create or replace function/i);
+
+  assert.equal(exchangeJobsMigrationHeld({}), false);
+  assert.equal(exchangeJobsMigrationHeld({ VERCEL_ENV: "production" }), false);
+  assert.equal(exchangeJobsMigrationHeld({ VERCEL_ENV: "preview" }), true);
+  assert.equal(exchangeJobsHoldNotice({}), null);
+  const notice = exchangeJobsHoldNotice({ VERCEL_ENV: "preview" });
+  assert.match(notice ?? "", /production DATABASE_URL/);
+  assert.match(notice ?? "", /not applied/);
+
+  assert.deepEqual(pendingMigrations([name], [], { VERCEL_ENV: "production" }), [
+    { name, path: name },
+  ]);
+  assert.deepEqual(pendingMigrations([name], [], {}), [{ name, path: name }]);
+  assert.deepEqual(pendingMigrations([name], [], { VERCEL_ENV: "preview" }), []);
+
+  const listed = readdirSync(join(projectRoot(), "migrations")).filter((entry) =>
+    entry.endsWith(".sql"),
+  );
+  const preview = pendingMigrations(listed, [], { VERCEL_ENV: "preview" });
+  assert.equal(
+    preview.some((entry) => entry.name === name),
+    false,
+  );
+  assert.equal(
+    preview.some((entry) => entry.name === "0024_write_gate.sql"),
+    true,
+  );
+  const production = pendingMigrations(listed, [], { VERCEL_ENV: "production" });
+  assert.equal(
+    production.some((entry) => entry.name === name),
+    true,
+  );
+
+  const migrate = readFileSync(join(projectRoot(), "scripts/migrate.mjs"), "utf8");
+  const db = readFileSync(join(projectRoot(), "src/lib/db.ts"), "utf8");
+  assert.match(migrate, /pendingMigrations/);
+  assert.match(migrate, /exchangeJobsHoldNotice/);
+  assert.match(db, /pendingMigrations/);
+  assert.match(db, /exchangeJobsHoldNotice/);
+  assert.doesNotMatch(migrate, /EXCHANGE_JOBS_APPLY_MIGRATION/);
+  assert.doesNotMatch(db, /EXCHANGE_JOBS_APPLY_MIGRATION/);
 });
