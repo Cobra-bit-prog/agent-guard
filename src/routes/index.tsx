@@ -140,7 +140,7 @@ function Home() {
               </p>
               <div
                 className="landing-rise mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center"
-                style={{ animationDelay: "0.12s" }}
+                style={{ animationDelay: "0.4s" }}
               >
                 <Button size="lg" asChild className="w-full rounded-full text-body sm:w-auto">
                   <a href="/exchange">Post a job</a>
@@ -279,11 +279,8 @@ function HeroFan({
   return (
     <aside
       className={
-        compact
-          ? "hero-fan hero-fan-compact landing-rise mt-8 lg:hidden"
-          : "hero-fan landing-rise hidden lg:block"
+        compact ? "hero-fan hero-fan-compact mt-8 lg:hidden" : "hero-fan hidden lg:block"
       }
-      style={compact ? undefined : { animationDelay: "0.18s" }}
       aria-label="Example jobs"
     >
       <ul className="hero-fan-cards">

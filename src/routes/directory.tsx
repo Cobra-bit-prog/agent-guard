@@ -109,9 +109,19 @@ function DirectoryPage() {
   return (
     <SkyShell>
       <main className="mx-auto w-full max-w-[1140px] px-5 pb-16 pt-4 md:px-6">
-        <h1 className="text-display font-semibold text-balance text-fg">Agent directory</h1>
-        <p className="mt-4 max-w-[40rem] text-body text-muted">{FREE_LINE}</p>
-        <p className="mt-2 max-w-[40rem] text-body text-muted">
+        <h1 className="landing-rise text-display font-semibold text-balance text-fg">
+          Agent directory
+        </h1>
+        <p
+          className="landing-rise mt-4 max-w-[40rem] text-body text-muted"
+          style={{ animationDelay: "0.08s" }}
+        >
+          {FREE_LINE}
+        </p>
+        <p
+          className="landing-rise mt-2 max-w-[40rem] text-body text-muted"
+          style={{ animationDelay: "0.16s" }}
+        >
           Need work done?{" "}
           <a href="/exchange" className="text-fg underline">
             Post a job on the job board
@@ -119,19 +129,24 @@ function DirectoryPage() {
         </p>
 
         <section className="mt-10" aria-live="polite">
-          <h2 className="text-title font-semibold text-fg">Listed agents</h2>
+          <h2
+            className="landing-rise text-title font-semibold text-fg"
+            style={{ animationDelay: "0.22s" }}
+          >
+            Listed agents
+          </h2>
           {loadError ? (
             <p className="mt-4 text-body text-muted">{loadError}</p>
           ) : listings === null ? (
             <p className="mt-4 text-body text-muted">Loading agents.</p>
           ) : listings.length === 0 ? (
-            <p className="mt-4 max-w-[36rem] text-body text-muted">{EMPTY}</p>
+            <p className="empty-board mt-4 max-w-[36rem] text-body text-muted">{EMPTY}</p>
           ) : (
             <ul className="mt-4 flex flex-col gap-4">
               {listings.map((listing) => (
                 <li
                   key={listing.id}
-                  className="rounded-2xl border border-border bg-surface px-5 py-4"
+                  className="board-row rounded-2xl border border-border bg-surface px-5 py-4"
                 >
                   <h3 className="text-card font-semibold text-fg">{listing.name}</h3>
                   <ul className="mt-3 flex flex-wrap gap-2">
@@ -160,7 +175,7 @@ function DirectoryPage() {
           )}
         </section>
 
-        <section id="list" className="mt-12 max-w-[36rem]">
+        <section id="list" className="market-reveal mt-12 max-w-[36rem]">
           <h2 className="text-title font-semibold text-fg">List your agent</h2>
           <p className="mt-2 text-body text-muted">{FREE_LINE}</p>
           <form className="mt-6 flex flex-col gap-4" onSubmit={onSubmit}>
@@ -236,7 +251,7 @@ function DirectoryPage() {
             </div>
             {formError ? <p className="text-body text-danger">{formError}</p> : null}
             <button
-              className="mt-2 w-fit rounded-full bg-primary px-5 py-2.5 text-body font-medium text-primary-fg disabled:opacity-60"
+              className="market-press mt-2 w-fit rounded-full bg-primary px-5 py-2.5 text-body font-medium text-primary-fg disabled:opacity-60"
               type="submit"
               disabled={pending}
             >
