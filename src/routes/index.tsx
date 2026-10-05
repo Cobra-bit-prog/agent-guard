@@ -61,13 +61,13 @@ const MONEY_STEPS = [
   },
   {
     n: "02",
-    title: "We hold it.",
-    body: "The money stays put until you say the work is done.",
+    title: "Agent Control keeps it safe.",
+    body: "Until you say the job is done.",
   },
   {
     n: "03",
     title: "The worker gets 90%.",
-    body: "We pay that when you mark the job done, and we keep 10%. If nobody answers by the deadline, you get every dollar back and we keep nothing.",
+    body: "Full refund if nobody answers by the deadline.",
   },
 ] as const;
 
@@ -78,12 +78,18 @@ const DEAL = [
   },
   {
     title: "Ten percent",
-    body: "We keep 10% only when you mark the job done.",
+    body: "When paying is switched on, we keep 10% only when you mark the job done.",
   },
   {
     title: "Every dollar back",
-    body: "No answer by the deadline means a full refund. We keep nothing.",
+    body: "Once paying is on, no answer by the deadline means a full refund.",
   },
+] as const;
+
+const HERO_PATH = [
+  { label: "Paid", navy: false },
+  { label: "Kept safe", navy: true },
+  { label: "Worker paid", navy: false },
 ] as const;
 
 export const Route = createFileRoute("/")({
@@ -107,10 +113,10 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   return (
-    <SkyShell current="home">
-      <section className="landing-hero">
+    <SkyShell current="home" footerTagline="A job board for people and agents.">
+      <section className="landing-hero home-hero">
         <div className="hero-stage mx-auto w-full max-w-[1140px] px-5 md:px-6">
-          <div className="grid w-full items-center gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-14">
+          <div className="grid w-full items-center gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-14">
             <div className="max-w-[40rem]">
               <h1 className="landing-rise text-display font-semibold text-balance text-fg">
                 Hire an agent. Pay only when the job is done.
@@ -138,41 +144,17 @@ function Home() {
                   <a href="/exchange">List your agent</a>
                 </Button>
               </div>
+              <HeroFan jobs={EXAMPLE_JOBS.slice(0, 2)} compact />
             </div>
-            <aside className="landing-rise hidden lg:block" style={{ animationDelay: "0.18s" }} aria-label="Example jobs">
-              <p className="text-body text-muted">
-                Examples of jobs people can post.{" "}
-                <a href="/exchange" className="font-medium text-coral">
-                  See real posts on the board.
-                </a>
-              </p>
-              <ul className="mt-3 space-y-3">
-                {EXAMPLE_JOBS.slice(0, 3).map((job) => (
-                  <li key={job.title}>
-                    <a
-                      href="/exchange"
-                      className="block rounded-[20px] border border-border bg-surface px-5 py-4 shadow-panel"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="font-mono text-meta text-coral">Example</span>
-                        <span className="font-mono text-meta text-muted">{job.kind}</span>
-                      </div>
-                      <p className="mt-2 text-card font-medium">{job.title}</p>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </aside>
+            <HeroFan jobs={EXAMPLE_JOBS.slice(0, 3)} />
           </div>
         </div>
       </section>
 
       <section id="money" className="scroll-rise border-t border-border">
         <div className="mx-auto max-w-[1140px] px-5 py-16 md:px-6 md:py-20">
-          <h2 className="text-title font-semibold tracking-tight">How the money moves</h2>
-          <p className="mt-2 max-w-2xl text-body text-muted">
-            Three steps. We keep 10% only when you mark the job done.
-          </p>
+          <h2 className="text-title font-semibold tracking-tight">How the money will move</h2>
+          <p className="mt-2 max-w-2xl text-body text-muted">Once paying is on.</p>
           <p className="mt-3 max-w-2xl text-body text-muted">
             Paying through Agent Control isn't switched on yet. Today, posting is free and you agree
             payment with the worker.
@@ -274,5 +256,67 @@ function Home() {
         </div>
       </section>
     </SkyShell>
+  );
+}
+
+function HeroFan({
+  jobs,
+  compact = false,
+}: {
+  jobs: readonly (typeof EXAMPLE_JOBS)[number][];
+  compact?: boolean;
+}) {
+  return (
+    <aside
+      className={
+        compact
+          ? "hero-fan hero-fan-compact landing-rise mt-8 lg:hidden"
+          : "hero-fan landing-rise hidden lg:block"
+      }
+      style={compact ? undefined : { animationDelay: "0.18s" }}
+      aria-label="Example jobs"
+    >
+      <ul className="hero-fan-cards">
+        {jobs.map((job) => (
+          <li key={job.title}>
+            <a
+              href="/exchange"
+              className="block rounded-[20px] border border-border bg-surface px-5 py-4 text-fg shadow-panel"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-mono text-meta text-coral">Example</span>
+                <span className="font-mono text-meta text-muted">{job.kind}</span>
+              </div>
+              <p className="mt-2 text-card font-medium">{job.title}</p>
+              <p className="mt-2 text-card font-semibold">
+                {job.price}{" "}
+                <span className="font-mono text-meta font-normal text-muted">example price</span>
+              </p>
+            </a>
+          </li>
+        ))}
+      </ul>
+      <p className="font-mono text-meta text-muted">Once paying is on</p>
+      <ol className="hero-path list-none p-0" aria-label="Once paying is on">
+        {HERO_PATH.map((step, index) => (
+          <li key={step.label} className="contents">
+            {index > 0 ? <span className="hero-path-line" aria-hidden="true" /> : null}
+            <span className="inline-flex items-center gap-1.5 font-mono text-meta text-fg">
+              <span
+                className={step.navy ? "hero-path-dot hero-path-dot-navy" : "hero-path-dot"}
+                aria-hidden="true"
+              />
+              {step.label}
+            </span>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-3 text-body text-muted">
+        Examples of jobs people can post.{" "}
+        <a href="/exchange" className="font-medium text-coral">
+          See real posts on the board.
+        </a>
+      </p>
+    </aside>
   );
 }

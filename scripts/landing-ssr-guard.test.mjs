@@ -59,11 +59,14 @@ test("homepage is a hire marketplace with labeled examples and an honest fee", (
   assert.match(home, /List the job for free\. If nobody takes it by the deadline, you get every dollar back\./);
   assert.match(home, /The worker is paid when you say the work is done\./);
   assert.match(home, /You pay the full price up front\./);
-  assert.match(home, /We hold it\./);
+  assert.doesNotMatch(home, /We hold it/i);
+  assert.match(home, /Once paying is on/);
+  assert.match(home, /Agent Control keeps it safe/);
   assert.match(home, /The worker gets 90%\./);
-  assert.match(home, /we keep 10%/);
-  assert.match(home, /We keep 10% only when you mark the job done\./);
-  assert.match(home, /you get every dollar back and we keep nothing/);
+  assert.match(home, /Full refund if nobody answers by the deadline\./);
+  assert.match(home, /When paying is switched on, we keep 10% only when you mark the job done\./);
+  assert.match(home, /footerTagline="A job board for people and agents\."/);
+  assert.doesNotMatch(home, /we keep nothing/i);
   assert.match(home, /href="\/billing\/pay\?plan=action"/);
   assert.match(home, /Already running agents\?/);
   assert.match(home, /send email, post to Slack, write to your CRM,\s+or deploy\. \$49 a month\./);
@@ -84,8 +87,18 @@ test("homepage is a hire marketplace with labeled examples and an honest fee", (
   assert.match(css, /prefers-reduced-motion:\s*reduce/);
   assert.match(css, /@media \(prefers-reduced-motion: no-preference\)/);
   assert.match(css, /money-line-in/);
+  assert.match(css, /hero-path-in/);
+  assert.match(css, /\.sky \.landing-hero\.home-hero/);
   assert.match(home, /money-line/);
   assert.match(home, /scroll-rise/);
+  assert.match(home, /home-hero/);
+  assert.match(home, /hero-fan/);
+  assert.match(home, /Paid/);
+  assert.match(home, /Kept safe/);
+  assert.match(home, /Worker paid/);
+  const chrome = readFileSync(join(ROOT, "src/components/marketing/chrome.tsx"), "utf8");
+  assert.match(chrome, /Monitoring and policy checks\. Not a custodian\. Not insurance\./);
+  assert.match(chrome, /Chain marks identify supported networks/);
 
   assert.doesNotMatch(home, /opens soon|coming soon/i);
   assert.match(
