@@ -92,7 +92,8 @@ function migrationHeldOnPreview(name, env) {
  * Migrations in `paths` that are not yet in `applied`, in apply order.
  * Non-`.sql` entries (a `readdir` also yields `migrations/auth/`) are dropped.
  * `0025_exchange_jobs.sql` and `0027_agent_listings.sql` are omitted on
- * preview builds only. `0026_hide_exchange_smoke_jobs.sql` still applies.
+ * preview builds only. `0026_hide_exchange_smoke_jobs.sql` and
+ * `0028_hide_directory_smoke_listing.sql` still apply.
  * @param {Iterable<string>} paths
  * @param {Iterable<string>} applied
  * @param {Record<string, string | undefined>} [env]

@@ -201,6 +201,10 @@ test("agent listings migration applies in production and is skipped on preview",
     preview.some((entry) => entry.name === "0026_hide_exchange_smoke_jobs.sql"),
     true,
   );
+  assert.equal(
+    preview.some((entry) => entry.name === "0028_hide_directory_smoke_listing.sql"),
+    true,
+  );
   const production = pendingMigrations(listed, [], { VERCEL_ENV: "production" });
   assert.equal(
     production.some((entry) => entry.name === name),
