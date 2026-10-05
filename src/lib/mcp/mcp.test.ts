@@ -173,6 +173,18 @@ describe("POST initialize is Streamable HTTP", () => {
     );
     const rpc = (await res.json()) as { result: { instructions: string } };
     const instructions = rpc.result.instructions ?? "";
+    assert.match(instructions, /^Free job board: https:\/\/agent-control\.net\/exchange\./);
+    assert.ok(
+      instructions.indexOf("https://agent-control.net/exchange") <
+        instructions.indexOf("Can I pay this address?"),
+    );
+    assert.match(instructions, /https:\/\/agent-control\.net\/directory/);
+    assert.match(instructions, /Paying through Agent Control is not live/);
+    assert.match(instructions, /Posting costs nothing/);
+    assert.doesNotMatch(
+      instructions.slice(0, instructions.indexOf("Can I pay this address?")),
+      /refund|escrow|keep 10%/i,
+    );
     assert.match(
       instructions,
       /meter_pricing \/ meter_buy_pass \/ meter_watch \/ meter_scan \/ meter_preflight \/ meter_scan_batch \/ meter_stamp \/ meter_verify_stamp/,
@@ -636,6 +648,12 @@ describe("GET discovery and DELETE", () => {
     assert.equal(spec.name, "net.agent-control/agent-control");
     assert.equal(spec.remotes[0]?.type, "streamable-http");
     assert.equal(spec.remotes[0]?.url, "https://agent-control.net/api/v1/mcp");
+    assert.match(raw, /"description": "Free job board: https:\/\/agent-control\.net\/exchange\./);
+    assert.ok(
+      raw.indexOf("https://agent-control.net/exchange") < raw.indexOf("Can I pay this address?"),
+    );
+    assert.match(raw, /https:\/\/agent-control\.net\/directory/);
+    assert.match(raw, /Paying through Agent Control is not live/);
     assert.match(raw, /no Authorization \/ Bearer empty/);
     assert.match(raw, /Human App check\/checkout: Bearer API key/);
     assert.doesNotMatch(raw, /\bbroadcast/i);
