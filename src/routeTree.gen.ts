@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as ConnectRouteImport } from './routes/connect'
+import { Route as DirectoryRouteImport } from './routes/directory'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as ExchangeRouteImport } from './routes/exchange'
 import { Route as LoginRouteImport } from './routes/login'
@@ -52,6 +53,7 @@ import { Route as ApiV1BillingHeliusRouteImport } from './routes/api/v1/billing.
 import { Route as ApiV1BillingHeliusSetupRouteImport } from './routes/api/v1/billing.helius-setup'
 import { Route as ApiV1BillingInvoiceRouteImport } from './routes/api/v1/billing.invoice'
 import { Route as ApiV1BillingWatchRouteImport } from './routes/api/v1/billing.watch'
+import { Route as ApiV1AgentsListingsRouteImport } from './routes/api/v1/agents.listings'
 import { Route as ApiV1ExchangeJobsRouteImport } from './routes/api/v1/exchange.jobs'
 import { Route as ApiV1GateDemoRouteImport } from './routes/api/v1/gate.demo'
 import { Route as ApiV1InternalAccountsRouteImport } from './routes/api/v1/internal/accounts'
@@ -84,6 +86,11 @@ const ConnectRoute = ConnectRouteImport.update({
 const DocsRoute = DocsRouteImport.update({
   id: '/docs',
   path: '/docs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DirectoryRoute = DirectoryRouteImport.update({
+  id: '/directory',
+  path: '/directory',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExchangeRoute = ExchangeRouteImport.update({
@@ -281,6 +288,11 @@ const ApiV1BillingWatchRoute = ApiV1BillingWatchRouteImport.update({
   path: '/api/v1/billing/watch',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1AgentsListingsRoute = ApiV1AgentsListingsRouteImport.update({
+  id: '/api/v1/agents/listings',
+  path: '/api/v1/agents/listings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1ExchangeJobsRoute = ApiV1ExchangeJobsRouteImport.update({
   id: '/api/v1/exchange/jobs',
   path: '/api/v1/exchange/jobs',
@@ -357,6 +369,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/connect': typeof ConnectRoute
   '/docs': typeof DocsRoute
+  '/directory': typeof DirectoryRoute
   '/exchange': typeof ExchangeRoute
   '/login': typeof LoginRoute
   '/logos': typeof LogosRoute
@@ -396,6 +409,7 @@ export interface FileRoutesByFullPath {
   '/api/v1/billing/helius-setup': typeof ApiV1BillingHeliusSetupRoute
   '/api/v1/billing/invoice': typeof ApiV1BillingInvoiceRoute
   '/api/v1/billing/watch': typeof ApiV1BillingWatchRoute
+  '/api/v1/agents/listings': typeof ApiV1AgentsListingsRoute
   '/api/v1/exchange/jobs': typeof ApiV1ExchangeJobsRoute
   '/api/v1/gate/demo': typeof ApiV1GateDemoRoute
   '/api/v1/internal/accounts': typeof ApiV1InternalAccountsRoute
@@ -415,6 +429,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/connect': typeof ConnectRoute
   '/docs': typeof DocsRoute
+  '/directory': typeof DirectoryRoute
   '/exchange': typeof ExchangeRoute
   '/login': typeof LoginRoute
   '/logos': typeof LogosRoute
@@ -451,6 +466,7 @@ export interface FileRoutesByTo {
   '/api/v1/billing/helius-setup': typeof ApiV1BillingHeliusSetupRoute
   '/api/v1/billing/invoice': typeof ApiV1BillingInvoiceRoute
   '/api/v1/billing/watch': typeof ApiV1BillingWatchRoute
+  '/api/v1/agents/listings': typeof ApiV1AgentsListingsRoute
   '/api/v1/exchange/jobs': typeof ApiV1ExchangeJobsRoute
   '/api/v1/gate/demo': typeof ApiV1GateDemoRoute
   '/api/v1/internal/accounts': typeof ApiV1InternalAccountsRoute
@@ -472,6 +488,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/connect': typeof ConnectRoute
   '/docs': typeof DocsRoute
+  '/directory': typeof DirectoryRoute
   '/exchange': typeof ExchangeRoute
   '/login': typeof LoginRoute
   '/logos': typeof LogosRoute
@@ -511,6 +528,7 @@ export interface FileRoutesById {
   '/api/v1/billing/helius-setup': typeof ApiV1BillingHeliusSetupRoute
   '/api/v1/billing/invoice': typeof ApiV1BillingInvoiceRoute
   '/api/v1/billing/watch': typeof ApiV1BillingWatchRoute
+  '/api/v1/agents/listings': typeof ApiV1AgentsListingsRoute
   '/api/v1/exchange/jobs': typeof ApiV1ExchangeJobsRoute
   '/api/v1/gate/demo': typeof ApiV1GateDemoRoute
   '/api/v1/internal/accounts': typeof ApiV1InternalAccountsRoute
@@ -532,6 +550,7 @@ export interface FileRouteTypes {
     | '/'
     | '/connect'
     | '/docs'
+    | '/directory'
     | '/exchange'
     | '/login'
     | '/logos'
@@ -571,6 +590,7 @@ export interface FileRouteTypes {
     | '/api/v1/billing/helius-setup'
     | '/api/v1/billing/invoice'
     | '/api/v1/billing/watch'
+    | '/api/v1/agents/listings'
     | '/api/v1/exchange/jobs'
     | '/api/v1/gate/demo'
     | '/api/v1/internal/accounts'
@@ -590,6 +610,7 @@ export interface FileRouteTypes {
     | '/'
     | '/connect'
     | '/docs'
+    | '/directory'
     | '/exchange'
     | '/login'
     | '/logos'
@@ -626,6 +647,7 @@ export interface FileRouteTypes {
     | '/api/v1/billing/helius-setup'
     | '/api/v1/billing/invoice'
     | '/api/v1/billing/watch'
+    | '/api/v1/agents/listings'
     | '/api/v1/exchange/jobs'
     | '/api/v1/gate/demo'
     | '/api/v1/internal/accounts'
@@ -646,6 +668,7 @@ export interface FileRouteTypes {
     | '/_app'
     | '/connect'
     | '/docs'
+    | '/directory'
     | '/exchange'
     | '/login'
     | '/logos'
@@ -685,6 +708,7 @@ export interface FileRouteTypes {
     | '/api/v1/billing/helius-setup'
     | '/api/v1/billing/invoice'
     | '/api/v1/billing/watch'
+    | '/api/v1/agents/listings'
     | '/api/v1/exchange/jobs'
     | '/api/v1/gate/demo'
     | '/api/v1/internal/accounts'
@@ -706,6 +730,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   ConnectRoute: typeof ConnectRoute
   DocsRoute: typeof DocsRoute
+  DirectoryRoute: typeof DirectoryRoute
   ExchangeRoute: typeof ExchangeRoute
   LoginRoute: typeof LoginRoute
   LogosRoute: typeof LogosRoute
@@ -731,6 +756,7 @@ export interface RootRouteChildren {
   ApiV1BillingHeliusSetupRoute: typeof ApiV1BillingHeliusSetupRoute
   ApiV1BillingInvoiceRoute: typeof ApiV1BillingInvoiceRoute
   ApiV1BillingWatchRoute: typeof ApiV1BillingWatchRoute
+  ApiV1AgentsListingsRoute: typeof ApiV1AgentsListingsRoute
   ApiV1ExchangeJobsRoute: typeof ApiV1ExchangeJobsRoute
   ApiV1GateDemoRoute: typeof ApiV1GateDemoRoute
   ApiV1InternalAccountsRoute: typeof ApiV1InternalAccountsRoute
@@ -774,6 +800,13 @@ declare module '@tanstack/react-router' {
       path: '/docs'
       fullPath: '/docs'
       preLoaderRoute: typeof DocsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/directory': {
+      id: '/directory'
+      path: '/directory'
+      fullPath: '/directory'
+      preLoaderRoute: typeof DirectoryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/exchange': {
@@ -1049,6 +1082,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1BillingWatchRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/agents/listings': {
+      id: '/api/v1/agents/listings'
+      path: '/api/v1/agents/listings'
+      fullPath: '/api/v1/agents/listings'
+      preLoaderRoute: typeof ApiV1AgentsListingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/exchange/jobs': {
       id: '/api/v1/exchange/jobs'
       path: '/api/v1/exchange/jobs'
@@ -1232,6 +1272,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   ConnectRoute: ConnectRoute,
   DocsRoute: DocsRoute,
+  DirectoryRoute: DirectoryRoute,
   ExchangeRoute: ExchangeRoute,
   LoginRoute: LoginRoute,
   LogosRoute: LogosRoute,
@@ -1257,6 +1298,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiV1BillingHeliusSetupRoute: ApiV1BillingHeliusSetupRoute,
   ApiV1BillingInvoiceRoute: ApiV1BillingInvoiceRoute,
   ApiV1BillingWatchRoute: ApiV1BillingWatchRoute,
+  ApiV1AgentsListingsRoute: ApiV1AgentsListingsRoute,
   ApiV1ExchangeJobsRoute: ApiV1ExchangeJobsRoute,
   ApiV1GateDemoRoute: ApiV1GateDemoRoute,
   ApiV1InternalAccountsRoute: ApiV1InternalAccountsRoute,

@@ -1,5 +1,7 @@
 import {
+  AGENT_LISTINGS_MIGRATION,
   EXCHANGE_JOBS_MIGRATION,
+  agentListingsHoldNotice,
   exchangeJobsHoldNotice,
   pendingMigrations,
 } from "../../scripts/migration-plan.mjs";
@@ -89,11 +91,16 @@ function toSql(run: Run): Sql {
   return sql;
 }
 
-function logHeldExchangeMigration(paths: Iterable<string>): void {
-  const held = [...paths].some((path) => path.endsWith(EXCHANGE_JOBS_MIGRATION));
-  if (!held) return;
-  const notice = exchangeJobsHoldNotice();
-  if (notice) console.log(notice);
+function logHeldSchemaMigrations(paths: Iterable<string>): void {
+  const names = [...paths];
+  if (names.some((path) => path.endsWith(EXCHANGE_JOBS_MIGRATION))) {
+    const notice = exchangeJobsHoldNotice();
+    if (notice) console.log(notice);
+  }
+  if (names.some((path) => path.endsWith(AGENT_LISTINGS_MIGRATION))) {
+    const notice = agentListingsHoldNotice();
+    if (notice) console.log(notice);
+  }
 }
 
 function migrationSources(): Record<string, string> {
@@ -118,7 +125,7 @@ async function applyNeonMigrations(pool: import("pg").Pool): Promise<void> {
     const doneRows = await client.query<{ name: string }>("select name from _migrations");
     const done = doneRows.rows.map((row) => row.name);
     const migrations = migrationSources();
-    logHeldExchangeMigration(Object.keys(migrations));
+    logHeldSchemaMigrations(Object.keys(migrations));
     for (const { name, path } of pendingMigrations(Object.keys(migrations), done)) {
       const text = migrations[path];
       try {
@@ -195,7 +202,7 @@ async function createPgliteSql(): Promise<Sql> {
   // double-apply.
   const migrate = async (): Promise<void> => {
     const migrations = migrationSources();
-    logHeldExchangeMigration(Object.keys(migrations));
+    logHeldSchemaMigrations(Object.keys(migrations));
     const doneRows = await pg.query<{ name: string }>(
       "select name from _migrations",
     );
