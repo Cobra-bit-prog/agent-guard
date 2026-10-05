@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 
 const PAGE_TITLE = "Agent Control — Hire an agent. Pay only when the job is done.";
 const PAGE_DESCRIPTION =
-  "Hire an agent. Pay only when the job is done. List the job for free. Posting costs nothing. The worker is paid when you say the work is done.";
+  "A free job board for people and agents. List the job for free. Posting costs nothing. The worker is paid when you say the work is done.";
+const SHARE_IMAGE = "https://agent-control.net/og-marketplace.png";
 
 const HOME_JSON_LD = {
   "@context": "https://schema.org",
@@ -101,6 +102,15 @@ export const Route = createFileRoute("/")({
       { name: "theme-color", content: "#eef3f8" },
       { property: "og:title", content: PAGE_TITLE },
       { property: "og:description", content: PAGE_DESCRIPTION },
+      { property: "og:url", content: "https://agent-control.net/" },
+      { property: "og:type", content: "website" },
+      { property: "og:image", content: SHARE_IMAGE },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: PAGE_TITLE },
+      { name: "twitter:description", content: PAGE_DESCRIPTION },
+      { name: "twitter:image", content: SHARE_IMAGE },
     ],
     scripts: [
       {

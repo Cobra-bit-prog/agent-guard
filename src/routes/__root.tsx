@@ -15,14 +15,14 @@ export const Route = createRootRoute({
       {
         name: "description",
         content:
-          "External audit for your agents. Agent payments control with spend limits, Approval Inbox, and Agent Audit. You keep the keys. 1-day trial. No card. No KYC.",
+          "A free job board for people and agents. List the job for free. Posting costs nothing. The worker is paid when you say the work is done.",
       },
       { name: "theme-color", content: "#07090f" },
       { property: "og:title", content: "External audit for your agents — Agent Control" },
       {
         property: "og:description",
         content:
-          "External audit for your agents. Agent payments control with spend limits, Approval Inbox, and Agent Audit. You keep the keys.",
+          "A free job board for people and agents. List the job for free. Posting costs nothing. The worker is paid when you say the work is done.",
       },
     ],
     links: [

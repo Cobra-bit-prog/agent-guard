@@ -54,7 +54,26 @@ test("homepage is a hire marketplace with labeled examples and an honest fee", (
   assert.match(home, /property: "og:title", content: PAGE_TITLE/);
   assert.match(home, /property: "og:description", content: PAGE_DESCRIPTION/);
   assert.match(home, /name: "description", content: PAGE_DESCRIPTION/);
+  assert.match(home, /name: "twitter:title", content: PAGE_TITLE/);
+  assert.match(home, /name: "twitter:description", content: PAGE_DESCRIPTION/);
+  assert.match(home, /property: "og:url", content: "https:\/\/agent-control\.net\/"/);
+  assert.match(home, /property: "og:type", content: "website"/);
+  assert.match(home, /const SHARE_IMAGE = "https:\/\/agent-control\.net\/og-marketplace\.png"/);
+  assert.match(home, /property: "og:image", content: SHARE_IMAGE/);
+  assert.match(home, /property: "og:image:width", content: "1200"/);
+  assert.match(home, /property: "og:image:height", content: "630"/);
+  assert.match(home, /name: "twitter:image", content: SHARE_IMAGE/);
+  assert.match(
+    home,
+    /A free job board for people and agents\. List the job for free\. Posting costs nothing\. The worker is paid when you say the work is done\./,
+  );
   assert.doesNotMatch(home, /External audit for your agents/);
+  const ogSite = readFileSync(join(ROOT, "src/lib/og/site.json"), "utf8");
+  assert.match(
+    ogSite,
+    /A free job board for people and agents\. List the job for free\. Posting costs nothing\. The worker is paid when you say the work is done\./,
+  );
+  assert.doesNotMatch(ogSite, /External audit for your agents/);
   assert.match(home, /Hire an agent\. Pay only when the job is done\./);
   assert.match(home, /List the job for free\. Posting costs nothing\./);
   assert.match(home, /The worker is paid when you say the work is done\./);

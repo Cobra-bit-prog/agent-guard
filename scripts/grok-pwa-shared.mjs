@@ -425,6 +425,36 @@ export function normalizeHeadContext(ctx = {}) {
   };
 }
 
+/** Document title, card type, and the X game banner stay platform-owned. */
+const PLATFORM_OWNED_SHARE_KEYS = new Set([
+  "og:title",
+  "twitter:card",
+  "x:game:image",
+  "x:game:image:width",
+  "x:game:image:height",
+]);
+
+function shareMetaKeyFromTag(tag) {
+  const attrs = [...String(tag).matchAll(/\b(?:property|name)\s*=\s*["']([^"']+)["']/gi)];
+  for (const match of attrs) {
+    const key = String(match[1]).toLowerCase();
+    if (SHARE_META_KEYS.has(key)) return key;
+  }
+  return "";
+}
+
+/** Last tag wins, matching route-head dedupe (child overrides the root default). */
+function pageShareMetaTags(html) {
+  const found = new Map();
+  String(html).replace(/<meta\b[^>]*>/gi, (tag) => {
+    const key = shareMetaKeyFromTag(tag);
+    if (!key || PLATFORM_OWNED_SHARE_KEYS.has(key)) return tag;
+    found.set(key, tag);
+    return tag;
+  });
+  return found;
+}
+
 export function injectGrokPwaHead(html, ctx = {}) {
   if (typeof html !== "string") return html;
   const { site, projectId, creator, creatorId, host, cwd } = normalizeHeadContext(ctx);
@@ -435,6 +465,7 @@ export function injectGrokPwaHead(html, ctx = {}) {
     host,
     documentTitle,
   );
+  const pageShare = pageShareMetaTags(html);
   let next = stripShareMetaTags(html);
 
   const missing = grokPwaHeadTags(appName)
@@ -445,10 +476,11 @@ export function injectGrokPwaHead(html, ctx = {}) {
     })
     .map(([, tag]) => tag);
 
-  next = insertAfterHeadOpen(
-    next,
-    grokOgHeadTags({ host, appName, site, documentTitle, cwd }).join(""),
-  );
+  const generated = grokOgHeadTags({ host, appName, site, documentTitle, cwd }).filter((tag) => {
+    const key = shareMetaKeyFromTag(tag);
+    return !key || !pageShare.has(key);
+  });
+  next = insertAfterHeadOpen(next, generated.join("") + [...pageShare.values()].join(""));
 
   if (!next.includes("/grok-app-builder/extensions.js")) {
     missing.push(...grokExtensionsHeadTags(projectId));
