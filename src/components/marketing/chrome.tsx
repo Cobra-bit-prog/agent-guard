@@ -19,15 +19,17 @@ const NAV = [
 export function SkyShell({
   children,
   current,
+  footerTagline,
 }: {
   children: ReactNode;
   current?: "home" | "docs" | "partners" | "connect";
+  footerTagline?: string;
 }) {
   return (
     <div className="sky min-h-screen bg-bg text-fg">
       <MarketingHeader current={current} />
       {children}
-      <MarketingFooter />
+      <MarketingFooter tagline={footerTagline} />
     </div>
   );
 }
@@ -130,12 +132,12 @@ function navHref(
   return href;
 }
 
-export function MarketingFooter() {
+export function MarketingFooter({ tagline }: { tagline?: string }) {
   return (
     <footer className="border-t border-border">
       <div className="mx-auto flex max-w-[1140px] flex-col gap-3 px-5 py-8 text-body text-subtle md:flex-row md:items-center md:justify-between md:px-6">
         <Logo size="lg" href="/" markClassName="text-navy" />
-        <p>Monitoring and policy checks. Not a custodian. Not insurance.</p>
+        <p>{tagline ?? "Monitoring and policy checks. Not a custodian. Not insurance."}</p>
         <p className="flex flex-col gap-1 text-meta md:items-end">
           <a href="/connect" className="text-muted hover:text-fg">
             Connect

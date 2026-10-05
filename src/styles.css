@@ -115,6 +115,24 @@
       radial-gradient(520px 240px at 0% 0%, rgb(232 93 76 / 0.07), transparent 70%);
   }
 
+  .sky .landing-hero.home-hero {
+    background-color: #eef3f8;
+    background-image:
+      radial-gradient(560px 380px at 92% 8%, rgb(232 93 76 / 0.18), transparent 68%),
+      radial-gradient(420px 320px at 72% 92%, rgb(18 38 63 / 0.08), transparent 70%),
+      linear-gradient(rgb(18 38 63 / 0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(18 38 63 / 0.045) 1px, transparent 1px);
+    background-size: auto, auto, 32px 32px, 32px 32px;
+  }
+
+  @media (max-width: 1023px) {
+    .sky .home-hero .hero-stage {
+      justify-content: flex-start;
+      padding-top: 0.25rem;
+      padding-bottom: 1.75rem;
+    }
+  }
+
   .sky .hero-stage {
     min-height: calc(100svh - 4.75rem);
     display: flex;
@@ -184,6 +202,193 @@
 
 .landing-rise {
   animation: landing-fade-up 0.75s ease-out both;
+}
+
+/* Below-the-fold rise. Visible with no motion; scroll-linked when the browser can. */
+@media (prefers-reduced-motion: no-preference) {
+  .scroll-rise {
+    animation: landing-fade-up 0.8s ease-out both;
+  }
+
+  @supports (animation-timeline: view()) {
+    .scroll-rise {
+      animation-name: landing-fade-up;
+      animation-duration: auto;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: entry 8% entry 36%;
+    }
+  }
+}
+
+.money-block {
+  position: relative;
+}
+
+.money-node {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  border: 2px solid #e85d4c;
+  background: #ffffff;
+}
+
+.money-line {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .money-block {
+    padding-top: 1.125rem;
+  }
+
+  .money-line {
+    display: block;
+    position: absolute;
+    z-index: 0;
+    top: 1.125rem;
+    left: calc((100% - 2rem) / 6);
+    right: calc((100% - 2rem) / 6);
+    height: 2px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #e85d4c 0%, #12263f 100%);
+    transform: translateY(-50%);
+  }
+
+  .money-node {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    transform: translate(-50%, -50%);
+  }
+}
+
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  .money-line {
+    transform: translateY(-50%) scaleX(0);
+    transform-origin: left center;
+    animation: money-line-in 1.5s ease-out 0.15s forwards;
+  }
+}
+
+@keyframes money-line-in {
+  to {
+    transform: translateY(-50%) scaleX(1);
+  }
+}
+
+.hero-fan-cards {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1.35rem;
+  height: auto;
+  margin: 0;
+  padding: 0.85rem 0 0.35rem;
+  list-style: none;
+}
+
+.hero-fan-cards > li {
+  position: relative;
+  width: min(100%, 22rem);
+}
+
+.hero-fan:not(.hero-fan-compact) .hero-fan-cards > li:nth-child(1) {
+  z-index: 1;
+  transform: rotate(-6deg);
+  transform-origin: left center;
+}
+
+.hero-fan:not(.hero-fan-compact) .hero-fan-cards > li:nth-child(2) {
+  z-index: 2;
+  margin-left: 1.65rem;
+  transform: rotate(3.5deg);
+  transform-origin: right center;
+}
+
+.hero-fan:not(.hero-fan-compact) .hero-fan-cards > li:nth-child(3) {
+  z-index: 3;
+  margin-left: 0.35rem;
+  transform: rotate(-2.5deg);
+  transform-origin: left center;
+}
+
+.hero-fan-compact .hero-fan-cards {
+  gap: 1.15rem;
+  height: auto;
+  padding-top: 0.65rem;
+}
+
+.hero-fan-compact .hero-fan-cards > li {
+  width: min(100%, 19.5rem);
+}
+
+.hero-fan-compact .hero-fan-cards > li:nth-child(1) {
+  transform: rotate(-4.5deg);
+  transform-origin: left center;
+}
+
+.hero-fan-compact .hero-fan-cards > li:nth-child(2) {
+  z-index: 2;
+  margin-left: 1.15rem;
+  transform: rotate(3.5deg);
+  transform-origin: right center;
+}
+
+.hero-path {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-top: 0.35rem;
+}
+
+.hero-path-line {
+  flex: 1;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #e85d4c, #12263f);
+  transform-origin: left center;
+}
+
+.hero-path-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: #e85d4c;
+}
+
+.hero-path-dot-navy {
+  background: #12263f;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero-path-line {
+    transform: scaleX(0);
+    animation: hero-path-in 1.25s ease-out 0.2s forwards;
+  }
+}
+
+@keyframes hero-path-in {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.example-card {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .example-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 40px -24px rgb(18 38 63 / 0.28);
+  }
 }
 
 .landing-check-pending {
