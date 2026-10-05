@@ -21,6 +21,7 @@ import {
   METER_LOOK_SKU,
   type MeterSku,
 } from "./pricing.ts";
+import { notifyMeterInvoicePaid, type MeterPaidNotifier } from "./paid-notify.ts";
 import { splitPaidMeterRows } from "./owner-test.ts";
 import { utcDayKey } from "./preflight.ts";
 import { summarizeStampFetches } from "./stamp-fetch.ts";
@@ -320,7 +321,8 @@ export function allowDevGrant(env = process.env): boolean {
   return env.METER_DEV_GRANT === "1";
 }
 
-export function createMeterStore(): MeterStore {
+export function createMeterStore(hooks?: { notifyPaid?: MeterPaidNotifier }): MeterStore {
+  const notifyPaid = hooks?.notifyPaid ?? notifyMeterInvoicePaid;
   const passes = new Map<string, MeterPass>();
   const byHash = new Map<string, string>();
   const invoices = new Map<string, MeterInvoice>();
@@ -389,11 +391,18 @@ export function createMeterStore(): MeterStore {
       invoices.set(invoiceId, next);
       return next;
     },
-    fulfillInvoice(invoiceId, match) {
+    async fulfillInvoice(invoiceId, match) {
       const row = invoices.get(invoiceId);
+      const previousStatus = row?.status ?? null;
       const sku = meterSkuOrDefault(row?.sku);
       const extendToken = typeof match.extend_token === "string" ? match.extend_token.trim() : "";
-      const existingPass = extendToken ? (store.findPassByToken(extendToken) as MeterPass | null) : null;
+      const existingPass = extendToken
+        ? (store.findPassByToken(extendToken) as MeterPass | null)
+        : null;
+      const finish = async (result: { invoice: MeterInvoice; pass: MeterPass; token: string }) => {
+        await notifyPaid(result.invoice, previousStatus);
+        return result;
+      };
 
       if (!row) {
         if (existingPass && extendToken && canStackMeterCredits(existingPass.sku, sku.id)) {
@@ -405,7 +414,7 @@ export function createMeterStore(): MeterStore {
           };
           passes.set(nextPass.id, nextPass);
           const paidAt = new Date().toISOString();
-          return {
+          return finish({
             invoice: {
               invoice_id: invoiceId,
               reference: "",
@@ -427,7 +436,7 @@ export function createMeterStore(): MeterStore {
             },
             pass: nextPass,
             token: extendToken,
-          };
+          });
         }
         const issued = store.issuePass({
           sku: METER_LOOK_SKU,
@@ -435,7 +444,7 @@ export function createMeterStore(): MeterStore {
           signature: match.signature,
           paid_amount_usd: match.amountUsdc,
         }) as { pass: MeterPass; token: string };
-        return {
+        return finish({
           invoice: {
             invoice_id: invoiceId,
             reference: "",
@@ -457,7 +466,7 @@ export function createMeterStore(): MeterStore {
           },
           pass: issued.pass,
           token: issued.token,
-        };
+        });
       }
       const existingToken = tokensByInvoice.get(invoiceId);
       if (row.status === "paid" && row.pass_id && existingToken) {
@@ -504,7 +513,7 @@ export function createMeterStore(): MeterStore {
         payer_address: next.payer_address,
         paid_at: paidAt,
       });
-      return { invoice: next, pass: issued.pass, token: issued.token };
+      return finish({ invoice: next, pass: issued.pass, token: issued.token });
     },
     issuePass(input = {}) {
       const token = `acp_${randomBytes(18).toString("base64url")}`;
