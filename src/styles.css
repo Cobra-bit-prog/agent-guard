@@ -200,8 +200,28 @@
   }
 }
 
-.landing-rise {
-  animation: landing-fade-up 0.75s ease-out both;
+/* Resting state stays visible. The rise runs only when motion is allowed,
+   and fill is backwards so a failed or skipped animation cannot stick at opacity 0. */
+@media (prefers-reduced-motion: no-preference) {
+  .landing-rise {
+    animation: landing-fade-up 0.72s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  }
+
+  .home-hero h1.landing-rise {
+    animation-delay: 0.05s;
+  }
+
+  .home-hero .landing-rise.bg-primary {
+    animation-delay: 0.14s;
+  }
+
+  .home-hero p.landing-rise:nth-of-type(1) {
+    animation-delay: 0.22s;
+  }
+
+  .home-hero p.landing-rise:nth-of-type(2) {
+    animation-delay: 0.3s;
+  }
 }
 
 /* Below-the-fold rise. Visible with no motion; scroll-linked when the browser can. */
@@ -219,6 +239,13 @@
       animation-timeline: view();
       animation-range: entry 8% entry 36%;
     }
+  }
+
+  /* Dark "once paying is on" band stays still. */
+  #deal.scroll-rise {
+    animation: none;
+    animation-timeline: auto;
+    animation-range: normal;
   }
 }
 
@@ -271,15 +298,38 @@
 
 @media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
   .money-line {
-    transform: translateY(-50%) scaleX(0);
     transform-origin: left center;
-    animation: money-line-in 1.5s ease-out 0.15s forwards;
+    animation: money-line-in 1.5s ease-out 0.15s backwards;
+  }
+
+  .money-block li:nth-child(1) .money-node {
+    animation: money-node-in 0.45s ease 0.28s backwards;
+  }
+
+  .money-block li:nth-child(2) .money-node {
+    animation: money-node-in 0.45s ease 0.72s backwards;
+  }
+
+  .money-block li:nth-child(3) .money-node {
+    animation: money-node-in 0.45s ease 1.16s backwards;
   }
 }
 
 @keyframes money-line-in {
+  from {
+    transform: translateY(-50%) scaleX(0);
+  }
   to {
     transform: translateY(-50%) scaleX(1);
+  }
+}
+
+@keyframes money-node-in {
+  from {
+    transform: translate(-50%, -50%) scale(0.86);
+  }
+  to {
+    transform: translate(-50%, -50%) scale(1);
   }
 }
 
@@ -301,21 +351,24 @@
 
 .hero-fan:not(.hero-fan-compact) .hero-fan-cards > li:nth-child(1) {
   z-index: 1;
-  transform: rotate(-6deg);
+  --fan-rot: -6deg;
+  transform: rotate(var(--fan-rot));
   transform-origin: left center;
 }
 
 .hero-fan:not(.hero-fan-compact) .hero-fan-cards > li:nth-child(2) {
   z-index: 2;
+  --fan-rot: 3.5deg;
   margin-left: 1.65rem;
-  transform: rotate(3.5deg);
+  transform: rotate(var(--fan-rot));
   transform-origin: right center;
 }
 
 .hero-fan:not(.hero-fan-compact) .hero-fan-cards > li:nth-child(3) {
   z-index: 3;
+  --fan-rot: -2.5deg;
   margin-left: 0.35rem;
-  transform: rotate(-2.5deg);
+  transform: rotate(var(--fan-rot));
   transform-origin: left center;
 }
 
@@ -330,14 +383,16 @@
 }
 
 .hero-fan-compact .hero-fan-cards > li:nth-child(1) {
-  transform: rotate(-4.5deg);
+  --fan-rot: -4.5deg;
+  transform: rotate(var(--fan-rot));
   transform-origin: left center;
 }
 
 .hero-fan-compact .hero-fan-cards > li:nth-child(2) {
   z-index: 2;
+  --fan-rot: 3.5deg;
   margin-left: 1.15rem;
-  transform: rotate(3.5deg);
+  transform: rotate(var(--fan-rot));
   transform-origin: right center;
 }
 
@@ -369,25 +424,257 @@
 
 @media (prefers-reduced-motion: no-preference) {
   .hero-path-line {
-    transform: scaleX(0);
-    animation: hero-path-in 1.25s ease-out 0.2s forwards;
+    transform-origin: left center;
+    animation: hero-path-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  }
+
+  .hero-path > li:nth-child(2) .hero-path-line {
+    animation-delay: 0.95s;
+  }
+
+  .hero-path > li:nth-child(3) .hero-path-line {
+    animation-delay: 1.5s;
+  }
+
+  .hero-path-dot {
+    animation: path-dot 0.55s ease backwards;
+  }
+
+  .hero-path > li:nth-child(1) .hero-path-dot {
+    animation-delay: 0.78s;
+  }
+
+  .hero-path > li:nth-child(2) .hero-path-dot {
+    animation-delay: 1.32s;
+  }
+
+  .hero-path > li:nth-child(3) .hero-path-dot {
+    animation-delay: 1.88s;
+  }
+
+  .hero-fan-cards > li {
+    animation: fan-settle 0.86s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  }
+
+  .hero-fan:not(.hero-fan-compact) .hero-fan-cards > li:nth-child(1) {
+    animation-delay: 0.28s;
+  }
+
+  .hero-fan:not(.hero-fan-compact) .hero-fan-cards > li:nth-child(2) {
+    animation-delay: 0.42s;
+  }
+
+  .hero-fan:not(.hero-fan-compact) .hero-fan-cards > li:nth-child(3) {
+    animation-delay: 0.56s;
+  }
+
+  .hero-fan-compact .hero-fan-cards > li:nth-child(1) {
+    animation-delay: 0.46s;
+  }
+
+  .hero-fan-compact .hero-fan-cards > li:nth-child(2) {
+    animation-delay: 0.6s;
+  }
+
+  .hero-fan-cards > li > a {
+    transition:
+      transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 0.28s ease;
+  }
+
+  .hero-fan:not(.hero-fan-compact) .hero-fan-cards > li:hover,
+  .hero-fan:not(.hero-fan-compact) .hero-fan-cards > li:focus-within,
+  .hero-fan-compact .hero-fan-cards > li:hover,
+  .hero-fan-compact .hero-fan-cards > li:focus-within {
+    z-index: 6;
+  }
+
+  .hero-fan-cards > li:hover > a,
+  .hero-fan-cards > li > a:focus-visible {
+    transform: translateY(-5px);
+    box-shadow: 0 22px 40px -20px rgb(18 38 63 / 0.3);
+  }
+
+  .home-hero a.rounded-full {
+    transition:
+      transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 0.18s ease,
+      background-color 0.18s ease,
+      opacity 0.18s ease;
+  }
+
+  .home-hero a.rounded-full:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 24px -16px rgb(18 38 63 / 0.45);
+  }
+
+  .home-hero a.rounded-full:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: none;
   }
 }
 
 @keyframes hero-path-in {
+  from {
+    transform: scaleX(0);
+  }
   to {
     transform: scaleX(1);
   }
 }
 
+@keyframes path-dot {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgb(232 93 76 / 0);
+  }
+  45% {
+    transform: scale(1.4);
+    box-shadow: 0 0 0 5px rgb(232 93 76 / 0.16);
+  }
+}
+
+@keyframes fan-settle {
+  from {
+    opacity: 0;
+    transform: translateY(18px) rotate(calc(var(--fan-rot, 0deg) * 0.2));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(var(--fan-rot, 0deg));
+  }
+}
+
 .example-card {
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  transition:
+    transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.28s ease;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .example-card:hover {
+  .example-card:hover,
+  .example-card:focus-visible {
     transform: translateY(-3px);
     box-shadow: 0 18px 40px -24px rgb(18 38 63 / 0.28);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .market-reveal {
+    animation: market-reveal-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  }
+
+  @supports (animation-timeline: view()) {
+    .market-reveal {
+      animation-name: market-reveal-in;
+      animation-duration: auto;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 24%;
+    }
+  }
+}
+
+@keyframes market-reveal-in {
+  from {
+    transform: translateY(16px);
+  }
+  to {
+    transform: none;
+  }
+}
+
+.board-row {
+  transition:
+    transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.28s ease,
+    border-color 0.28s ease;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .board-row:hover,
+  .board-row:focus-within {
+    transform: translateY(-2px);
+    border-color: #c5d0de;
+    box-shadow: 0 16px 36px -24px rgb(18 38 63 / 0.28);
+  }
+}
+
+.market-press {
+  transition:
+    transform 0.16s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.16s ease,
+    background-color 0.16s ease;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .market-press:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+
+  .market-press:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
+  }
+}
+
+/* Empty board / directory. The card is a painted layer only — it does not change flow. */
+.empty-board {
+  position: relative;
+  z-index: 0;
+}
+
+.empty-board::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -0.7rem -0.85rem;
+  border-radius: 1rem;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  box-shadow: 0 16px 40px -28px rgb(18 38 63 / 0.22);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .empty-board::before {
+    animation: empty-glow 3.8s ease-in-out infinite;
+  }
+
+  .empty-board::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: -0.7rem -0.85rem;
+    border-radius: 1rem;
+    pointer-events: none;
+    background: linear-gradient(
+      105deg,
+      transparent 34%,
+      rgb(232 93 76 / 0.1) 50%,
+      transparent 66%
+    );
+    background-size: 220% 100%;
+    animation: empty-shimmer 3.8s ease-in-out infinite;
+  }
+}
+
+@keyframes empty-glow {
+  0%,
+  100% {
+    box-shadow: 0 16px 40px -28px rgb(18 38 63 / 0.2);
+  }
+  50% {
+    box-shadow: 0 18px 42px -18px rgb(232 93 76 / 0.32);
+  }
+}
+
+@keyframes empty-shimmer {
+  0% {
+    background-position: 130% 0;
+  }
+  100% {
+    background-position: -50% 0;
   }
 }
 
@@ -467,5 +754,26 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .landing-rise,
+  .scroll-rise,
+  .market-reveal,
+  .hero-fan-cards > li,
+  .hero-path-line,
+  .hero-path-dot,
+  .money-line,
+  .money-node,
+  .empty-board,
+  .empty-board::before,
+  .empty-board::after,
+  .example-card,
+  .board-row,
+  .market-press,
+  .home-hero a.rounded-full {
+    animation: none !important;
+    opacity: 1 !important;
+    transition: none !important;
   }
 }

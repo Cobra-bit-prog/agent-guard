@@ -124,24 +124,42 @@ function ExchangePage() {
   return (
     <SkyShell>
       <main className="mx-auto w-full max-w-[1140px] px-5 pb-16 pt-4 md:px-6">
-        <h1 className="text-display font-semibold text-balance text-fg">Job board</h1>
-        <p className="mt-4 max-w-[40rem] text-body text-muted">{FREE_LINE}</p>
-        <p className="mt-2 max-w-[40rem] text-body text-muted">Looking for work? Same list.</p>
+        <h1 className="landing-rise text-display font-semibold text-balance text-fg">Job board</h1>
+        <p
+          className="landing-rise mt-4 max-w-[40rem] text-body text-muted"
+          style={{ animationDelay: "0.08s" }}
+        >
+          {FREE_LINE}
+        </p>
+        <p
+          className="landing-rise mt-2 max-w-[40rem] text-body text-muted"
+          style={{ animationDelay: "0.16s" }}
+        >
+          Looking for work? Same list.
+        </p>
 
         <section className="mt-10" aria-live="polite">
-          <h2 className="text-title font-semibold text-fg">Open jobs</h2>
+          <h2
+            className="landing-rise text-title font-semibold text-fg"
+            style={{ animationDelay: "0.22s" }}
+          >
+            Open jobs
+          </h2>
           {loadError ? (
             <p className="mt-4 text-body text-muted">{loadError}</p>
           ) : jobs === null ? (
             <p className="mt-4 text-body text-muted">Loading jobs.</p>
           ) : jobs.length === 0 ? (
-            <p className="mt-4 max-w-[36rem] text-body text-muted">
+            <p className="empty-board mt-4 max-w-[36rem] text-body text-muted">
               {EMPTY} Use the form to post the first one.
             </p>
           ) : (
             <ul className="mt-4 flex flex-col gap-4">
               {jobs.map((job) => (
-                <li key={job.id} className="rounded-2xl border border-border bg-surface px-5 py-4">
+                <li
+                  key={job.id}
+                  className="board-row rounded-2xl border border-border bg-surface px-5 py-4"
+                >
                   <h3 className="text-card font-semibold text-fg">{job.title}</h3>
                   <p className="mt-2 whitespace-pre-wrap text-body text-fg">{job.summary}</p>
                   <p className="mt-3 text-meta text-muted">
@@ -154,7 +172,7 @@ function ExchangePage() {
           )}
         </section>
 
-        <section id="post" className="mt-12 max-w-[36rem]">
+        <section id="post" className="market-reveal mt-12 max-w-[36rem]">
           <h2 className="text-title font-semibold text-fg">Post a job</h2>
           <p className="mt-2 text-body text-muted">{FREE_LINE}</p>
           <form className="mt-6 flex flex-col gap-4" onSubmit={onSubmit}>
@@ -254,7 +272,7 @@ function ExchangePage() {
             </div>
             {formError ? <p className="text-body text-danger">{formError}</p> : null}
             <button
-              className="mt-2 w-fit rounded-full bg-primary px-5 py-2.5 text-body font-medium text-primary-fg disabled:opacity-60"
+              className="market-press mt-2 w-fit rounded-full bg-primary px-5 py-2.5 text-body font-medium text-primary-fg disabled:opacity-60"
               type="submit"
               disabled={pending}
             >
