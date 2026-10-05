@@ -198,14 +198,23 @@ test("spend-control marketing modules keep their copy off the homepage", () => {
   assert.doesNotMatch(src, /See every send before it happens/);
 });
 
-test("exchange page is a static coming-soon note", () => {
+test("exchange page is a free job board with an honest empty state", () => {
   const page = readFileSync(join(ROOT, "src/routes/exchange.tsx"), "utf8");
   assert.match(page, /createFileRoute\("\/exchange"\)/);
-  assert.match(page, /Job board opens soon\./);
+  assert.match(page, /Job board/);
+  assert.match(page, /No jobs posted yet\./);
+  assert.match(page, /Posting is free\. Workers reach you at the contact you leave\./);
   assert.match(page, /Looking for work\? Same list\./);
-  assert.doesNotMatch(page, /<form|type="email"|useState|createServerFn|loader:/);
-  assert.doesNotMatch(page, /escrow|\bfunded\b|USDC mint|Solana rail|\bhirer\b|\bsignature\b/i);
+  assert.match(page, /id="post"/);
+  assert.match(page, /<form/);
+  assert.match(page, /POST \/api\/v1\/exchange\/jobs/);
+  assert.match(page, /Shown on the listing\./);
+  assert.doesNotMatch(page, /opens soon|coming soon/i);
   assert.doesNotMatch(page, /Leave your email|we’ll tell you|we’ll email you|we'll tell you|we'll email you/i);
+  assert.doesNotMatch(
+    page,
+    /escrow|\bfunded\b|USDC mint|Solana rail|\bhirer\b|\bsignature\b|\bsettlement\b|\bprotocol\b|\brail\b|\bheld\b|\bearned\b/i,
+  );
 });
 
 test("marketing sky theme uses darker navy muted copy for contrast", () => {
@@ -577,9 +586,13 @@ test("FAQ and Compare drop competitor names; homepage hero uses the locked hire 
   assert.doesNotMatch(hero, /1-day \(24 hour\) trial, then pay on-chain/);
   assert.doesNotMatch(hero, /we hold it|pay the full price|keep 10%/i);
   const chrome = readFileSync(join(ROOT, "src/components/marketing/chrome.tsx"), "utf8");
-  assert.match(chrome, /onHome \? "\/exchange" : signupHref/);
-  assert.match(chrome, /\{onHome \? "Post a job" : "Try free"\}/);
-  assert.match(chrome, /onHome \? "hidden rounded-full md:inline-flex" : "rounded-full"/);
+  assert.match(chrome, /const onExchange = pathname === "\/exchange"/);
+  assert.match(chrome, /onHome \? "\/exchange" : onExchange \? "#post" : signupHref/);
+  assert.match(chrome, /\{onHome \|\| onExchange \? "Post a job" : "Try free"\}/);
+  assert.match(
+    chrome,
+    /onHome \|\| onExchange \? "hidden rounded-full md:inline-flex" : "rounded-full"/,
+  );
   assert.doesNotMatch(home, /text-body font-medium leading-snug text-navy/);
   assert.doesNotMatch(home, /text-card leading-snug text-muted/);
   assert.doesNotMatch(home, /CONNECT_LEDE|CONNECT_STARTER_LINE|ConnectCtas|ConnectSteps/);

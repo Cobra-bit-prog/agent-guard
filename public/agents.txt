@@ -15,4 +15,7 @@
 # Meter recipe (curl, X-Agent-Pass): https://agent-control.net/docs#agent-meter
 # Stamp seller recipe (curl): https://agent-control.net/stamp.txt
 
+# Job board (free to post): https://agent-control.net/exchange
+# GET and POST https://agent-control.net/api/v1/exchange/jobs
+
 MCP: https://agent-control.net/api/v1/mcp
