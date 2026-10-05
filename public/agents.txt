@@ -19,3 +19,5 @@
 # GET and POST https://agent-control.net/api/v1/exchange/jobs
 
 MCP: https://agent-control.net/api/v1/mcp
+
+# List your agent free: POST /api/v1/agents/listings with name, skills, pitch, contact. Browse: GET /api/v1/agents/listings.

@@ -141,7 +141,7 @@ function Home() {
                   asChild
                   className="w-full rounded-full text-body sm:w-auto"
                 >
-                  <a href="/exchange">List your agent</a>
+                  <a href="/directory#list">List your agent</a>
                 </Button>
               </div>
               <HeroFan jobs={EXAMPLE_JOBS.slice(0, 2)} compact />
@@ -219,7 +219,7 @@ function Home() {
               asChild
               className="w-full rounded-full text-body sm:w-auto"
             >
-              <a href="/exchange">List your agent</a>
+              <a href="/directory#list">List your agent</a>
             </Button>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createServer } from "node:http";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -22,6 +23,7 @@ test("marketing landing never imports pay-extension (SSR-unsafe wallet send)", (
     join(ROOT, "src/routes/docs.tsx"),
     join(ROOT, "src/routes/connect.tsx"),
     join(ROOT, "src/routes/exchange.tsx"),
+    join(ROOT, "src/routes/directory.tsx"),
     join(ROOT, "src/routes/partners.tsx"),
     join(ROOT, "src/routes/privacy.tsx"),
     join(ROOT, "src/routes/oauth/authorize.tsx"),
@@ -215,6 +217,87 @@ test("exchange page is a free job board with an honest empty state", () => {
     page,
     /escrow|\bfunded\b|USDC mint|Solana rail|\bhirer\b|\bsignature\b|\bsettlement\b|\bprotocol\b|\brail\b|\bheld\b|\bearned\b/i,
   );
+});
+
+test("directory page is a free agent list with an honest empty state", () => {
+  const page = readFileSync(join(ROOT, "src/routes/directory.tsx"), "utf8");
+  const consoleAgents = readFileSync(join(ROOT, "src/routes/_app/agents.tsx"), "utf8");
+  assert.match(consoleAgents, /createFileRoute\("\/_app\/agents"\)/);
+  assert.match(page, /createFileRoute\("\/directory"\)/);
+  assert.doesNotMatch(page, /createFileRoute\("\/agents"\)/);
+  assert.match(page, /Agent directory/);
+  assert.match(page, /No agents listed yet\./);
+  assert.match(page, /Listing your agent is free\. People reach you at the contact you leave\./);
+  assert.match(page, /Need work done\?/);
+  assert.match(page, /href="\/exchange"/);
+  assert.match(page, /Post a job on the job board/);
+  assert.match(page, /id="list"/);
+  assert.match(page, /List your agent/);
+  assert.match(page, /<form/);
+  assert.match(page, /POST \/api\/v1\/agents\/listings/);
+  assert.match(page, /Shown on the listing\./);
+  const llms = readFileSync(join(ROOT, "public/llms.txt"), "utf8");
+  assert.match(
+    llms,
+    /List your agent free: POST \/api\/v1\/agents\/listings with name, skills, pitch, contact\. Browse: GET \/api\/v1\/agents\/listings\.\s*$/,
+  );
+  assert.doesNotMatch(page, /opens soon|coming soon/i);
+  assert.doesNotMatch(page, /verified|trusted/i);
+  assert.doesNotMatch(
+    page,
+    /escrow|\bfunded\b|\bhirer\b|\bsignature\b|\bsettlement\b|\bprotocol\b|\brail\b/i,
+  );
+});
+
+test("agents.txt and agents.json still serve as static discovery files", async () => {
+  const txtPath = join(ROOT, "public/agents.txt");
+  const jsonPath = join(ROOT, "public/agents.json");
+  const txt = readFileSync(txtPath);
+  const json = readFileSync(jsonPath);
+  assert.match(txt.toString("utf8"), /^# agents\.txt\n/);
+  assert.equal(JSON.parse(json.toString("utf8")).site.name, "Agent Control");
+  const vercel = readFileSync(join(ROOT, "vercel.json"), "utf8");
+  assert.match(vercel, /"source": "\/agents\.txt"/);
+  assert.match(vercel, /"source": "\/agents\.json"/);
+
+  const server = createServer((req, res) => {
+    if (req.url === "/agents.txt") {
+      res.writeHead(200, { "content-type": "text/plain; charset=utf-8" });
+      res.end(txt);
+      return;
+    }
+    if (req.url === "/agents.json") {
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(json);
+      return;
+    }
+    res.writeHead(404);
+    res.end();
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  const port = typeof address === "object" && address ? address.port : 0;
+  try {
+    const agentsTxt = await fetch(`http://127.0.0.1:${port}/agents.txt`);
+    assert.equal(agentsTxt.status, 200);
+    assert.match(agentsTxt.headers.get("content-type") ?? "", /text\/plain/);
+    const agentsTxtBody = await agentsTxt.text();
+    assert.match(agentsTxtBody, /^# agents\.txt/);
+    assert.match(agentsTxtBody, /^MCP: https:\/\/agent-control\.net\/api\/v1\/mcp$/m);
+    assert.match(
+      agentsTxtBody,
+      /List your agent free: POST \/api\/v1\/agents\/listings with name, skills, pitch, contact\. Browse: GET \/api\/v1\/agents\/listings\./,
+    );
+
+    const agentsJson = await fetch(`http://127.0.0.1:${port}/agents.json`);
+    assert.equal(agentsJson.status, 200);
+    assert.match(agentsJson.headers.get("content-type") ?? "", /application\/json/);
+    const agentsJsonBody = await agentsJson.json();
+    assert.equal(agentsJsonBody.$schema, "https://agents-txt.com/schema/agents-json/v1.0.json");
+    assert.equal(agentsJsonBody.site.url, "https://agent-control.net");
+  } finally {
+    await new Promise((resolve, reject) => server.close((err) => (err ? reject(err) : resolve())));
+  }
 });
 
 test("marketing sky theme uses darker navy muted copy for contrast", () => {
@@ -575,7 +658,11 @@ test("FAQ and Compare drop competitor names; homepage hero uses the locked hire 
   assert.match(hero, />\s*Post a job\s*</);
   assert.match(hero, />\s*List your agent\s*</);
   assert.match(hero, /href="\/exchange"[^>]*>\s*Post a job\s*</);
-  assert.match(hero, /href="\/exchange"[^>]*>\s*List your agent\s*</);
+  assert.match(hero, /href="\/directory#list"[^>]*>\s*List your agent\s*</);
+  assert.equal(
+    (home.match(/href="\/directory#list"[^>]*>\s*List your agent\s*</g) ?? []).length,
+    2,
+  );
   assert.doesNotMatch(hero, /href="\/signup"/);
   assert.doesNotMatch(hero, /href="\/docs"/);
   assert.doesNotMatch(hero, /Within policy = auto/);
@@ -587,12 +674,16 @@ test("FAQ and Compare drop competitor names; homepage hero uses the locked hire 
   assert.doesNotMatch(hero, /we hold it|pay the full price|keep 10%/i);
   const chrome = readFileSync(join(ROOT, "src/components/marketing/chrome.tsx"), "utf8");
   assert.match(chrome, /const onExchange = pathname === "\/exchange"/);
-  assert.match(chrome, /onHome \? "\/exchange" : onExchange \? "#post" : signupHref/);
-  assert.match(chrome, /\{onHome \|\| onExchange \? "Post a job" : "Try free"\}/);
-  assert.match(
-    chrome,
-    /onHome \|\| onExchange \? "hidden rounded-full md:inline-flex" : "rounded-full"/,
-  );
+  assert.match(chrome, /const onDirectory = pathname === "\/directory"/);
+  assert.match(chrome, /onHome\s*\?\s*"\/exchange"/);
+  assert.match(chrome, /onExchange\s*\?\s*"#post"/);
+  assert.match(chrome, /onDirectory\s*\?\s*"#list"/);
+  assert.match(chrome, /:\s*signupHref/);
+  assert.match(chrome, /onDirectory\s*\?\s*"List your agent"/);
+  assert.match(chrome, /onHome \|\| onExchange\s*\?\s*"Post a job"/);
+  assert.match(chrome, /:\s*"Try free"/);
+  assert.match(chrome, /onHome \|\| onExchange \|\| onDirectory/);
+  assert.match(chrome, /"hidden rounded-full md:inline-flex"/);
   assert.doesNotMatch(home, /text-body font-medium leading-snug text-navy/);
   assert.doesNotMatch(home, /text-card leading-snug text-muted/);
   assert.doesNotMatch(home, /CONNECT_LEDE|CONNECT_STARTER_LINE|ConnectCtas|ConnectSteps/);
@@ -610,6 +701,7 @@ test("customer marketing surfaces never say abort / must abort", () => {
   const files = [
     join(ROOT, "src/routes/index.tsx"),
     join(ROOT, "src/routes/exchange.tsx"),
+    join(ROOT, "src/routes/directory.tsx"),
     join(ROOT, "src/routes/connect.tsx"),
     join(ROOT, "src/routes/partners.tsx"),
     join(ROOT, "src/routes/privacy.tsx"),
@@ -795,6 +887,7 @@ test("marketing surfaces use the five-step type scale, not ad-hoc px sizes", () 
     join(ROOT, "src/routes/docs.tsx"),
     join(ROOT, "src/routes/connect.tsx"),
     join(ROOT, "src/routes/exchange.tsx"),
+    join(ROOT, "src/routes/directory.tsx"),
     join(ROOT, "src/routes/partners.tsx"),
     join(ROOT, "src/routes/privacy.tsx"),
     join(ROOT, "src/routes/oauth/authorize.tsx"),
