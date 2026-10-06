@@ -164,6 +164,10 @@ describe("exchange page empty state", () => {
   it("invites the first post and does not pretend jobs already exist", () => {
     const page = readFileSync(join(ROOT, "src/routes/exchange.tsx"), "utf8");
     assert.match(page, /No jobs posted yet\./);
+    assert.match(page, /Be the first outside post — it's free\./);
+    assert.match(page, /Early jobs from our team — your post can sit beside them today\./);
+    assert.match(page, /From the Agent Control team/);
+    assert.match(page, /isSeedJob/);
     assert.match(page, /Posting is free\. Workers reach you at the contact you leave\./);
     assert.match(page, /<form/);
     assert.doesNotMatch(page, /opens soon|coming soon/i);
