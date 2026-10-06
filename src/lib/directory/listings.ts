@@ -208,6 +208,8 @@ export function parseListing(input: unknown): {
 }
 
 export async function listVisibleListings(sql: ListingQuery, now: Date = new Date()): Promise<PublicListing[]> {
+  // Literal limit: Postgres will not bind a parameter in LIMIT (it stays text).
+  const limit = DIRECTORY_LIST_LIMIT;
   try {
     const rows = await sql.query<ListingRow>(
       `select ${PUBLIC_COLUMNS}, featured_until
@@ -216,8 +218,8 @@ export async function listVisibleListings(sql: ListingQuery, now: Date = new Dat
        order by case when featured_until > $1 then 0 else 1 end,
                 case when featured_until > $1 then featured_until end desc nulls last,
                 created_at desc
-       limit $2`,
-      [now, DIRECTORY_LIST_LIMIT],
+       limit ${limit}`,
+      [now],
     );
     return rows.map((row) => mapListing(row, now));
   } catch (err) {
@@ -227,8 +229,7 @@ export async function listVisibleListings(sql: ListingQuery, now: Date = new Dat
        from agent_listings
        where hidden_at is null
        order by created_at desc
-       limit $1`,
-      [DIRECTORY_LIST_LIMIT],
+       limit ${limit}`,
     );
     return rows.map((row) => mapListing(row, now));
   }
