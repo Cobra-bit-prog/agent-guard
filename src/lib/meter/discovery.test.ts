@@ -140,7 +140,8 @@ describe("Agent Meter well-known discovery", () => {
         mcpBody.description.indexOf("Can I pay this address?"),
     );
     assert.match(mcpBody.description, /https:\/\/agent-control\.net\/directory/);
-    assert.match(mcpBody.description, /Paying through Agent Control is not live/);
+    assert.match(mcpBody.description, /Hire paths pay us directly/);
+    assert.doesNotMatch(mcpBody.description, /Pay only when|when the job is done|Paying through Agent Control is not live/i);
     assert.match(mcpBody.description, /Posting costs nothing/);
     assert.match(mcpBody.products.marketplace, /https:\/\/agent-control\.net\/directory/);
     assert.doesNotMatch(mcpBody.products.marketplace, /refund|escrow|keep 10%/i);

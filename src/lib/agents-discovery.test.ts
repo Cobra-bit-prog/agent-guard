@@ -48,7 +48,10 @@ describe("agents.txt Layer 4 discovery", () => {
         json.site.description.indexOf("Can I pay this address?"),
     );
     assert.match(json.site.description, /GET and POST https:\/\/agent-control\.net\/api\/v1\/agents\/listings/);
-    assert.doesNotMatch(MARKETPLACE_AGENT_LEAD, /refund|escrow|keep 10%/i);
+    assert.doesNotMatch(
+      MARKETPLACE_AGENT_LEAD,
+      /refund|escrow|keep 10%|pay only when|when the job is done|hold funds/i,
+    );
     assert.equal(read("public/.well-known/agents.json"), jsonRaw);
   });
 

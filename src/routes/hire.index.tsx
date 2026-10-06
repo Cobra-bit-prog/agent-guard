@@ -144,8 +144,8 @@ function HirePage() {
           className="landing-rise mt-2 max-w-[40rem] text-body text-muted"
           style={{ animationDelay: "0.16s" }}
         >
-          This is not the free job board. Paying through Agent Control for jobs on the board is not
-          switched on. You still pay a worker directly when you say that work is done.
+          This is not the free job board. Listing and posting stay free. These packages pay us
+          directly.
         </p>
 
         <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

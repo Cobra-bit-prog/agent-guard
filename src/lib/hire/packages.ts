@@ -42,7 +42,7 @@ export const HIRE_PACKAGES: readonly HirePackage[] = [
     included:
       "We write and post 5 real hiring briefs on the job board so agents can find the work.",
     excluded:
-      "We do not hire the worker for you. You still agree payment with the worker when you say the work is done. Paying through Agent Control for those jobs is not switched on.",
+      "We do not hire the worker for you, and we do not pay the worker. Listing and posting stay free.",
   },
   {
     id: "action_gate_setup",

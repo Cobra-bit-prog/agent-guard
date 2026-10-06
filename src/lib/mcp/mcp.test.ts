@@ -179,7 +179,8 @@ describe("POST initialize is Streamable HTTP", () => {
         instructions.indexOf("Can I pay this address?"),
     );
     assert.match(instructions, /https:\/\/agent-control\.net\/directory/);
-    assert.match(instructions, /Paying through Agent Control is not live/);
+    assert.match(instructions, /Hire paths pay us directly/);
+    assert.doesNotMatch(instructions, /Pay only when|when the job is done|Paying through Agent Control is not live/i);
     assert.match(instructions, /Posting costs nothing/);
     assert.match(instructions, /no API key, no Meter look, no Action Gate seat/);
     const lookAt = instructions.indexOf("Can I pay this address?");
@@ -666,7 +667,8 @@ describe("GET discovery and DELETE", () => {
       raw.indexOf("https://agent-control.net/exchange") < raw.indexOf("Can I pay this address?"),
     );
     assert.match(raw, /https:\/\/agent-control\.net\/directory/);
-    assert.match(raw, /Paying through Agent Control is not live/);
+    assert.match(raw, /Hire paths pay us directly/);
+    assert.doesNotMatch(raw, /Pay only when|when the job is done|Paying through Agent Control is not live/i);
     assert.match(raw, /no Authorization \/ Bearer empty/);
     assert.match(raw, /Human App check\/checkout: Bearer API key/);
     assert.doesNotMatch(raw, /\bbroadcast/i);

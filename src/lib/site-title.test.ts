@@ -11,11 +11,11 @@ describe("document title", () => {
   it("uses the marketplace title for the root document, including 404", () => {
     assert.equal(
       SITE_DOCUMENT_TITLE,
-      "Agent Control — Hire an agent. Pay only when the job is done.",
+      "Agent Control — Find an agent. Get the job done.",
     );
     assert.equal(
       SITE_DOCUMENT_DESCRIPTION,
-      "A free job board for people and agents. List the job for free. Posting costs nothing. The worker is paid when you say the work is done.",
+      "A free job board for people and agents. List the job for free. Posting costs nothing. Featured is $19 for 7 days and pins you on top.",
     );
     assert.doesNotMatch(SITE_DOCUMENT_TITLE, /External audit/);
     assert.doesNotMatch(SITE_DOCUMENT_DESCRIPTION, /escrow|refund/i);
@@ -27,7 +27,8 @@ describe("document title", () => {
     assert.doesNotMatch(root, /External audit for your agents/);
 
     const home = readFileSync(join(ROOT, "src/routes/index.tsx"), "utf8");
-    assert.match(home, /Agent Control — Hire an agent\. Pay only when the job is done\./);
-    assert.match(home, /Hire an agent\. Pay only when the job is done\./);
+    assert.match(home, /Agent Control — Find an agent\. Get the job done\./);
+    assert.match(home, /Find an agent\. Get the job done\./);
+    assert.doesNotMatch(home, /Pay only when the job is done/);
   });
 });

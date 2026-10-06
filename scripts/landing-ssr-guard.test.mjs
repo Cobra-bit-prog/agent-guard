@@ -52,7 +52,9 @@ test("marketing landing never imports pay-extension (SSR-unsafe wallet send)", (
 test("homepage is a hire marketplace with labeled examples and honest paying", () => {
   const home = readFileSync(join(ROOT, "src/routes/index.tsx"), "utf8");
   const css = readFileSync(join(ROOT, "src/styles.css"), "utf8");
-  assert.match(home, /Agent Control — Hire an agent\. Pay only when the job is done\./);
+  assert.match(home, /Agent Control — Find an agent\. Get the job done\./);
+  assert.doesNotMatch(home, /Pay only when the job is done/);
+  assert.doesNotMatch(home, /when the job is done/);
   assert.match(home, /property: "og:title", content: PAGE_TITLE/);
   assert.match(home, /property: "og:description", content: PAGE_DESCRIPTION/);
   assert.match(home, /name: "description", content: PAGE_DESCRIPTION/);
@@ -67,24 +69,24 @@ test("homepage is a hire marketplace with labeled examples and honest paying", (
   assert.match(home, /name: "twitter:image", content: SHARE_IMAGE/);
   assert.match(
     home,
-    /A free job board for people and agents\. List the job for free\. Posting costs nothing\. The worker is paid when you say the work is done\./,
+    /A free job board for people and agents\. List the job for free\. Posting costs nothing\. Featured is \$19 for 7 days and pins you on top\./,
   );
   assert.doesNotMatch(home, /External audit for your agents/);
   const ogSite = readFileSync(join(ROOT, "src/lib/og/site.json"), "utf8");
   assert.match(
     ogSite,
-    /A free job board for people and agents\. List the job for free\. Posting costs nothing\. The worker is paid when you say the work is done\./,
+    /A free job board for people and agents\. List the job for free\. Posting costs nothing\. Featured is \$19 for 7 days and pins you on top\./,
   );
   assert.doesNotMatch(ogSite, /External audit for your agents/);
-  assert.match(home, /Hire an agent\. Pay only when the job is done\./);
+  assert.match(home, /Find an agent\. Get the job done\./);
   assert.match(home, /List the job for free\. Posting costs nothing\./);
-  assert.match(home, /The worker is paid when you say the work is done\./);
+  assert.match(home, /Featured is \$19 for 7 days and pins you on top\./);
   assert.match(home, /How paying works today/);
   assert.match(home, /Post free\./);
   assert.match(home, /They reach you\./);
   assert.match(home, /They reach you at the contact you left\./);
-  assert.match(home, /You pay them when you say done\./);
-  assert.match(home, /You pay the worker directly when you say the work is done\./);
+  assert.match(home, /Hire paths pay us\./);
+  assert.match(home, /Featured is \$19 for 7 days\. Action Gate is \$49 a month\. Hire us is request only\./);
   assert.doesNotMatch(home, /We hold it/i);
   assert.doesNotMatch(home, /Once paying is on/i);
   assert.doesNotMatch(home, /Agent Control keeps it safe/);
@@ -119,7 +121,7 @@ test("homepage is a hire marketplace with labeled examples and honest paying", (
   assert.doesNotMatch(home, /Start free trial|1-day trial|Within policy|SupportedChains/);
   assert.doesNotMatch(
     home,
-    /\bescrow\b|\bfunded\b|\bhirer\b|\bsignatures?\b|\bsettlement\b|\bprotocol\b|USDC mint|\brail\b/i,
+    /\bescrow\b|\bfunded\b|\bhirer\b|\bsignatures?\b|\bsettlement\b|\bprotocol\b|USDC mint|(?<!offer-)\brail\b/i,
   );
   assert.doesNotMatch(home, />\s*Held\s*</);
   assert.doesNotMatch(home, />\s*Earned\s*</);
@@ -143,7 +145,7 @@ test("homepage is a hire marketplace with labeled examples and honest paying", (
   assert.doesNotMatch(home, /How it works today/);
   assert.match(home, /Post free/);
   assert.match(home, /They reach you/);
-  assert.match(home, /You pay them when you say done/);
+  assert.match(home, /Hire paths pay us/);
   assert.match(home, /Feature a listing \(\$19 \/ 7 days\)/);
   assert.match(home, /href="\/directory#featured"/);
   assert.match(home, /From the Agent Control team/);
@@ -188,12 +190,14 @@ test("homepage is a hire marketplace with labeled examples and honest paying", (
   );
 
   assert.doesNotMatch(home, /opens soon|coming soon/i);
-  assert.match(home, /Paying through Agent Control isn't switched on yet\./);
+  assert.match(home, /Listing and posting stay free\. Featured, Action Gate, and Hire us pay us directly\./);
   assert.doesNotMatch(home, /you agree\s+payment with the worker/);
+  assert.doesNotMatch(home, /isn't switched on yet/);
   assert.doesNotMatch(home, /checkout/i);
-  assert.doesNotMatch(home, />\s*(Pay|Checkout)\b/);
+  assert.doesNotMatch(home, />\s*Pay\s*</);
+  assert.doesNotMatch(home, />\s*Checkout\b/i);
   const money = home.split('id="money"')[1]?.split('id="examples"')[0] ?? "";
-  assert.match(money, /Paying through Agent Control isn't switched on yet/);
+  assert.match(money, /Listing and posting stay free\. Featured, Action Gate, and Hire us pay us directly/);
   const examples = home.split('id="examples"')[1]?.split('id="pricing"')[0] ?? "";
   assert.match(examples, /Examples of jobs people can post\./);
   assert.match(examples, /href="\/exchange"[^>]*>\s*See real posts on the board\./);
@@ -619,7 +623,7 @@ test("llms.txt is the public AI-crawler brief", () => {
   assert.match(llms, /^# Agent Control\n/);
   assert.match(
     llms,
-    /^# Agent Control\n\n> Free job board: https:\/\/agent-control\.net\/exchange\. Posting costs nothing\. Pay the worker only when you say the job is done\. Paying through Agent Control is not live; today you agree payment with the worker\. Free agent list: https:\/\/agent-control\.net\/directory\. Listing your agent is free\.\n/,
+    /^# Agent Control\n\n> Free job board: https:\/\/agent-control\.net\/exchange\. Posting costs nothing\. Featured is \$19 for 7 days and pins a listing on top\. Hire paths pay us directly\. Free agent list: https:\/\/agent-control\.net\/directory\. Listing your agent is free\.\n/,
   );
   const marketplaceAt = llms.indexOf("## Free marketplace");
   const whatAt = llms.indexOf("## What it is");
@@ -630,8 +634,9 @@ test("llms.txt is the public AI-crawler brief", () => {
   assert.match(opening, /GET \/api\/v1\/exchange\/jobs/);
   assert.match(opening, /POST \/api\/v1\/agents\/listings/);
   assert.match(opening, /Posting costs nothing/);
-  assert.match(opening, /Pay the worker only when you say the job is done/);
-  assert.match(opening, /Paying through Agent Control is not live/);
+  assert.match(opening, /Featured is \$19 for 7 days and pins a listing on top/);
+  assert.match(opening, /Hire paths pay us directly/);
+  assert.doesNotMatch(opening, /Pay only when|when the job is done|Paying through Agent Control is not live/i);
   assert.doesNotMatch(opening, /full refund|escrow|keep 10%/i);
   assert.match(llms, /External audit for your agents/);
   assert.match(llms, /agent payments control/);
@@ -763,15 +768,15 @@ test("FAQ and Compare drop competitor names; homepage hero uses the locked hire 
   assert.doesNotMatch(home, /checks before they pay/);
   assert.doesNotMatch(home, /Start free trial/);
   assert.doesNotMatch(home, /1-day trial/);
-  assert.match(home, /<h1[^>]*>\s*Hire an agent\. Pay only when the job is done\.\s*<\/h1>/);
+  assert.match(home, /<h1[^>]*>\s*Find an agent\. Get the job done\.\s*<\/h1>/);
   assert.match(
     home,
-    /<h1[^>]*>\s*Hire an agent\. Pay only when the job is done\.\s*<\/h1>[\s\S]*?<p[^>]*>\s*List the job for free\. Posting costs nothing\.\s*<\/p>/,
+    /<h1[^>]*>\s*Find an agent\. Get the job done\.\s*<\/h1>[\s\S]*?<p[^>]*>\s*List the job for free\. Posting costs nothing\.\s*<\/p>/,
   );
   assert.match(home, /text-display font-semibold text-balance text-fg/);
   assert.match(
     home,
-    /<p className="landing-rise mt-6 max-w-\[36ch\] text-body leading-snug text-muted">\s*List the job for free\. Posting costs nothing\.\s*<\/p>\s*<p className="landing-rise mt-3 max-w-\[36ch\] text-body leading-snug text-muted">\s*The worker is paid when you say the work is done\./,
+    /<p className="landing-rise mt-6 max-w-\[36ch\] text-body leading-snug text-muted">\s*List the job for free\. Posting costs nothing\.\s*<\/p>\s*<p className="landing-rise mt-3 max-w-\[36ch\] text-body leading-snug text-muted">\s*Featured is \$19 for 7 days and pins you on top\./,
   );
   const hero = home.split('className="landing-hero')[1]?.split("</section>")[0] ?? "";
   assert.doesNotMatch(hero, /you get every dollar back/);

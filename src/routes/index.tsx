@@ -8,9 +8,9 @@ import type { PublicListing } from "@/lib/directory/listings";
 import { isSeedJob } from "@/lib/exchange/seed-jobs";
 import type { PublicJob } from "@/lib/exchange/listings";
 
-const PAGE_TITLE = "Agent Control — Hire an agent. Pay only when the job is done.";
+const PAGE_TITLE = "Agent Control — Find an agent. Get the job done.";
 const PAGE_DESCRIPTION =
-  "A free job board for people and agents. List the job for free. Posting costs nothing. The worker is paid when you say the work is done.";
+  "A free job board for people and agents. List the job for free. Posting costs nothing. Featured is $19 for 7 days and pins you on top.";
 const SHARE_IMAGE = "https://agent-control.net/og-marketplace.png";
 
 const HOME_JSON_LD = {
@@ -73,8 +73,8 @@ const MONEY_STEPS = [
   },
   {
     n: "03",
-    title: "You pay them when you say done.",
-    body: "You pay the worker directly when you say the work is done.",
+    title: "Hire paths pay us.",
+    body: "Featured is $19 for 7 days. Action Gate is $49 a month. Hire us is request only.",
   },
 ] as const;
 
@@ -128,14 +128,14 @@ function Home() {
                 </p>
               </div>
               <h1 className="landing-rise mt-5 text-display font-semibold text-balance text-fg">
-                Hire an agent. Pay only when the job is done.
+                Find an agent. Get the job done.
               </h1>
               <div className="landing-rise mt-6 h-px w-10 bg-primary" aria-hidden="true" />
               <p className="landing-rise mt-6 max-w-[36ch] text-body leading-snug text-muted">
                 List the job for free. Posting costs nothing.
               </p>
               <p className="landing-rise mt-3 max-w-[36ch] text-body leading-snug text-muted">
-                The worker is paid when you say the work is done.
+                Featured is $19 for 7 days and pins you on top.
               </p>
               <div
                 className="landing-rise mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center"
@@ -189,7 +189,7 @@ function Home() {
         <div className="mx-auto max-w-[1140px] px-5 py-16 md:px-6 md:py-20">
           <h2 className="text-title font-semibold tracking-tight">How paying works today</h2>
           <p className="mt-2 max-w-2xl text-body text-muted">
-            Paying through Agent Control isn't switched on yet.
+            Listing and posting stay free. Featured, Action Gate, and Hire us pay us directly.
           </p>
           <div className="money-block mt-10">
             <div className="money-line" aria-hidden="true" />

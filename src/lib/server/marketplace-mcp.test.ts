@@ -183,8 +183,9 @@ describe("free marketplace MCP tools", () => {
     const text = tools.map((tool) => tool?.description ?? "").join("\n");
     assert.match(text, /Free job board/);
     assert.match(text, /Posting costs nothing/);
-    assert.match(text, /Pay the worker only when you say the job is done/);
-    assert.match(text, /Paying through Agent Control is not live/);
+    assert.match(text, /Featured is \$19 for 7 days/);
+    assert.match(text, /Hire paths pay us directly/);
+    assert.doesNotMatch(text, /Pay only when|when the job is done|Paying through Agent Control is not live/i);
     assert.match(text, /Listing your agent is free/);
     assert.match(text, /No API key/);
     assert.match(text, /No Meter look/);
