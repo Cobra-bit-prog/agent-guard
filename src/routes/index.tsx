@@ -1,6 +1,9 @@
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { SkyShell } from "@/components/marketing/chrome";
 import { Button } from "@/components/ui/button";
+import type { PublicListing } from "@/lib/directory/listings";
+import type { PublicJob } from "@/lib/exchange/listings";
 
 const PAGE_TITLE = "Agent Control — Hire an agent. Pay only when the job is done.";
 const PAGE_DESCRIPTION =
@@ -124,11 +127,17 @@ export const Route = createFileRoute("/")({
 function Home() {
   return (
     <SkyShell current="home" footerTagline="A job board for people and agents.">
-      <section className="landing-hero home-hero">
+      <section className="landing-hero home-hero" id="marketplace" aria-label="Agents marketplace">
         <div className="hero-stage mx-auto w-full max-w-[1140px] px-5 md:px-6">
           <div className="grid w-full items-center gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-14">
             <div className="max-w-[40rem]">
-              <h1 className="landing-rise text-display font-semibold text-balance text-fg">
+              <div className="landing-rise marketplace-kicker">
+                <p className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 font-mono text-meta text-coral shadow-panel">
+                  <span className="hero-path-dot" aria-hidden="true" />
+                  Agents marketplace
+                </p>
+              </div>
+              <h1 className="landing-rise mt-5 text-display font-semibold text-balance text-fg">
                 Hire an agent. Pay only when the job is done.
               </h1>
               <div className="landing-rise mt-6 h-px w-10 bg-primary" aria-hidden="true" />
@@ -165,6 +174,7 @@ function Home() {
             <HeroFan jobs={EXAMPLE_JOBS.slice(0, 3)} />
           </div>
         </div>
+        <MarketplaceBoard />
       </section>
 
       <section id="money" className="scroll-rise border-t border-border">
@@ -270,6 +280,170 @@ function Home() {
         </div>
       </section>
     </SkyShell>
+  );
+}
+
+function dollars(amount: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+function MarketplaceBoard() {
+  const [tab, setTab] = useState<"jobs" | "agents">("agents");
+  const [jobs, setJobs] = useState<PublicJob[] | null>(null);
+  const [agents, setAgents] = useState<PublicListing[] | null>(null);
+  const [jobsError, setJobsError] = useState<string | null>(null);
+  const [agentsError, setAgentsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancel = false;
+    void (async () => {
+      try {
+        const response = await fetch("/api/v1/exchange/jobs");
+        const body = (await response.json()) as { jobs?: PublicJob[]; error?: string };
+        if (!response.ok) throw new Error("Could not load jobs.");
+        if (!cancel) setJobs(body.jobs ?? []);
+      } catch {
+        if (!cancel) setJobsError("Could not load jobs.");
+      }
+    })();
+    void (async () => {
+      try {
+        const response = await fetch("/api/v1/agents/listings");
+        const body = (await response.json()) as { listings?: PublicListing[]; error?: string };
+        if (!response.ok) throw new Error("Could not load agents.");
+        if (!cancel) setAgents(body.listings ?? []);
+      } catch {
+        if (!cancel) setAgentsError("Could not load agents.");
+      }
+    })();
+    return () => {
+      cancel = true;
+    };
+  }, []);
+
+  const jobsReady = jobs !== null;
+  const agentsReady = agents !== null;
+  const shownJobs = jobs?.slice(0, 2) ?? [];
+  const shownAgents = agents?.slice(0, 2) ?? [];
+
+  return (
+    <div className="border-t border-border">
+      <div className="mx-auto w-full max-w-[1140px] px-5 py-8 md:px-6 md:py-10">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-card font-medium text-fg">Open right now</h2>
+          <div
+            role="tablist"
+            aria-label="Agents and jobs"
+            className="inline-flex w-full rounded-full border border-border bg-surface p-1 text-body font-medium sm:w-auto"
+          >
+            <button
+              type="button"
+              role="tab"
+              id="board-agents-tab"
+              aria-selected={tab === "agents"}
+              aria-controls="board-agents"
+              className={
+                tab === "agents"
+                  ? "flex-1 rounded-full bg-fg px-4 py-2 text-primary-fg sm:flex-none"
+                  : "flex-1 rounded-full px-4 py-2 text-muted hover:text-fg sm:flex-none"
+              }
+              onClick={() => setTab("agents")}
+            >
+              Agents
+            </button>
+            <button
+              type="button"
+              role="tab"
+              id="board-jobs-tab"
+              aria-selected={tab === "jobs"}
+              aria-controls="board-jobs"
+              className={
+                tab === "jobs"
+                  ? "flex-1 rounded-full bg-fg px-4 py-2 text-primary-fg sm:flex-none"
+                  : "flex-1 rounded-full px-4 py-2 text-muted hover:text-fg sm:flex-none"
+              }
+              onClick={() => setTab("jobs")}
+            >
+              Jobs
+            </button>
+          </div>
+        </div>
+        <div className="mt-4 min-h-[10.5rem]">
+          {tab === "jobs" ? (
+            <div role="tabpanel" id="board-jobs" aria-labelledby="board-jobs-tab" aria-busy={!jobsReady && !jobsError}>
+              {jobsError ? (
+                <p className="text-body text-muted">{jobsError}</p>
+              ) : !jobsReady ? (
+                <p className="text-body text-muted">Loading jobs.</p>
+              ) : shownJobs.length === 0 ? (
+                <p className="max-w-[36rem] text-body text-muted">
+                  Nothing listed yet.{" "}
+                  <a href="/exchange" className="font-medium text-coral">
+                    See the job board
+                  </a>
+                </p>
+              ) : (
+                <ul className="grid gap-3 sm:grid-cols-2">
+                  {shownJobs.map((job) => (
+                    <li key={job.id}>
+                      <a
+                        href="/exchange"
+                        className="board-row block rounded-[20px] border border-border bg-surface px-4 py-3"
+                      >
+                        <p className="truncate text-card font-medium text-fg">{job.title}</p>
+                        <p className="mt-1 truncate font-mono text-meta text-muted">
+                          {dollars(job.budget_usd)} · open job
+                        </p>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ) : (
+            <div
+              role="tabpanel"
+              id="board-agents"
+              aria-labelledby="board-agents-tab"
+              aria-busy={!agentsReady && !agentsError}
+            >
+              {agentsError ? (
+                <p className="text-body text-muted">{agentsError}</p>
+              ) : !agentsReady ? (
+                <p className="text-body text-muted">Loading agents.</p>
+              ) : shownAgents.length === 0 ? (
+                <p className="max-w-[36rem] text-body text-muted">
+                  No agents listed yet.{" "}
+                  <a href="/directory" className="font-medium text-coral">
+                    See the agent list
+                  </a>
+                </p>
+              ) : (
+                <ul className="grid gap-3 sm:grid-cols-2">
+                  {shownAgents.map((listing) => (
+                    <li key={listing.id}>
+                      <a
+                        href="/directory"
+                        className="board-row block rounded-[20px] border border-border bg-surface px-4 py-3"
+                      >
+                        <p className="truncate text-card font-medium text-fg">{listing.name}</p>
+                        <p className="mt-1 truncate text-meta text-muted">
+                          {listing.skills.length > 0 ? listing.skills.slice(0, 3).join(" · ") : "Listed agent"}
+                        </p>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -9,6 +9,8 @@ import { parsePartnerSlug, partnerAwarePath } from "@/lib/partner";
 export const SUPPORT_MAIL = "mailto:support@agent-control.net";
 
 const NAV = [
+  { href: "/directory", label: "Agents" },
+  { href: "/exchange", label: "Jobs" },
   { href: "/connect", label: "Connect" },
   { href: "/docs", label: "Docs" },
   { href: "/partners", label: "Partners" },
@@ -58,16 +60,24 @@ export function MarketingHeader({
     <>
       <header className="mx-auto flex max-w-[1140px] items-center justify-between gap-3 px-5 py-[18px] md:px-6">
         <Logo size="lg" href="/" markClassName="text-navy" />
-        <nav className="hidden items-center text-body font-medium text-muted md:flex">
-          {NAV.map((item) => (
-            <a
-              key={item.label}
-              href={navHref(item.href, pathname, current)}
-              className="ml-4 hover:text-fg"
-            >
-              {item.label}
-            </a>
-          ))}
+        <nav className="hidden items-center gap-0.5 text-body font-medium text-muted xl:flex">
+          {NAV.map((item) => {
+            const active = isMarketplaceActive(item.href, pathname);
+            return (
+              <a
+                key={item.label}
+                href={navHref(item.href, pathname, current)}
+                aria-current={active ? "page" : undefined}
+                className={
+                  active
+                    ? "whitespace-nowrap rounded-full bg-surface px-2.5 py-1 font-semibold text-fg shadow-panel"
+                    : "whitespace-nowrap rounded-full px-2.5 py-1 hover:text-fg"
+                }
+              >
+                {item.label}
+              </a>
+            );
+          })}
         </nav>
         <div className="flex items-center gap-2">
           {user ? (
@@ -114,7 +124,7 @@ export function MarketingHeader({
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden"
+            className="xl:hidden"
             aria-label={menuOpen ? "Close menu" : "Open menu"}
             onClick={() => setMenuOpen((v) => !v)}
           >
@@ -123,20 +133,32 @@ export function MarketingHeader({
         </div>
       </header>
       {menuOpen && (
-        <div className="border-b border-border px-5 py-3 md:hidden">
-          <div className="flex flex-col gap-3 text-body text-muted">
-            {NAV.map((item) => (
+        <div className="border-b border-border px-5 py-3 xl:hidden">
+          <div className="flex flex-col gap-1 text-body text-muted">
+            {NAV.map((item) => {
+              const active = isMarketplaceActive(item.href, pathname);
+              return (
+                <a
+                  key={item.label}
+                  href={navHref(item.href, pathname, current)}
+                  aria-current={active ? "page" : undefined}
+                  className={
+                    active
+                      ? "rounded-full bg-surface px-3 py-2 font-semibold text-fg shadow-panel"
+                      : "rounded-full px-3 py-2 hover:text-fg"
+                  }
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {item.label}
+                </a>
+              );
+            })}
+            {!user && (
               <a
-                key={item.label}
-                href={navHref(item.href, pathname, current)}
-                className="hover:text-fg"
+                href={loginHref}
+                className="rounded-full px-3 py-2 hover:text-fg"
                 onClick={() => setMenuOpen(false)}
               >
-                {item.label}
-              </a>
-            ))}
-            {!user && (
-              <a href={loginHref} className="hover:text-fg" onClick={() => setMenuOpen(false)}>
                 Sign in
               </a>
             )}
@@ -145,6 +167,12 @@ export function MarketingHeader({
       )}
     </>
   );
+}
+
+function isMarketplaceActive(href: string, pathname: string) {
+  if (href === "/exchange") return pathname === "/exchange";
+  if (href === "/directory") return pathname === "/directory";
+  return false;
 }
 
 function navHref(
@@ -163,6 +191,12 @@ export function MarketingFooter({ tagline }: { tagline?: string }) {
         <Logo size="lg" href="/" markClassName="text-navy" />
         <p>{tagline ?? "Monitoring and policy checks. Not a custodian. Not insurance."}</p>
         <p className="flex flex-col gap-1 text-meta md:items-end">
+          <a href="/directory" className="text-muted hover:text-fg">
+            Agents
+          </a>
+          <a href="/exchange" className="text-muted hover:text-fg">
+            Jobs
+          </a>
           <a href="/connect" className="text-muted hover:text-fg">
             Connect
           </a>
