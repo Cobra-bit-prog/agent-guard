@@ -18,6 +18,12 @@ export const HONEYPOT_FIELD = "company_website";
  */
 export const POSTS_PER_HOUR = 20;
 export const RATE_WINDOW_MS = 60 * 60 * 1000;
+/**
+ * Visible rows returned by the public directory.
+ * Seed waves 0031 (55) and 0034 (254) are 309 names, plus live posts.
+ * 1000 covers that board. Featured rows still sort first inside the window.
+ */
+export const DIRECTORY_LIST_LIMIT = 1000;
 
 const NAME_MAX = 80;
 const SKILL_MAX = 32;
@@ -210,8 +216,8 @@ export async function listVisibleListings(sql: ListingQuery, now: Date = new Dat
        order by case when featured_until > $1 then 0 else 1 end,
                 case when featured_until > $1 then featured_until end desc nulls last,
                 created_at desc
-       limit 100`,
-      [now],
+       limit $2`,
+      [now, DIRECTORY_LIST_LIMIT],
     );
     return rows.map((row) => mapListing(row, now));
   } catch (err) {
@@ -221,7 +227,8 @@ export async function listVisibleListings(sql: ListingQuery, now: Date = new Dat
        from agent_listings
        where hidden_at is null
        order by created_at desc
-       limit 100`,
+       limit $1`,
+      [DIRECTORY_LIST_LIMIT],
     );
     return rows.map((row) => mapListing(row, now));
   }

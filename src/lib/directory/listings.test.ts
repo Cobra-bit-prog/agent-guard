@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { PGlite } from "@electric-sql/pglite";
 import { featuredFirst, isFeaturedListing } from "./featured-rank.ts";
 import {
+  DIRECTORY_LIST_LIMIT,
   ListingError,
   POSTS_PER_HOUR,
   createListing,
@@ -17,8 +18,12 @@ import {
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../..");
 const MIGRATION = readFileSync(join(ROOT, "migrations/0027_agent_listings.sql"), "utf8");
+const FEATURED = readFileSync(join(ROOT, "migrations/0033_agent_listing_featured.sql"), "utf8");
 const SEED = readFileSync(join(ROOT, "migrations/0031_seed_agent_listings.sql"), "utf8");
+const WAVE2 = readFileSync(join(ROOT, "migrations/0034_seed_agent_listings_wave2.sql"), "utf8");
 const NOW = new Date("2026-10-05T15:00:00.000Z");
+/** 0031 inserts 55 names. 0034 inserts 254 more. No shared names. */
+const SEEDED_LISTINGS = 55 + 254;
 
 function wrap(db: PGlite): ListingQuery {
   return {
@@ -206,6 +211,88 @@ describe("directory seed migration", () => {
     assert.equal((await listVisibleListings(sql)).length, visible.length);
     assert.equal(visible.length, 56);
   });
+
+  it("returns wave 1 and wave 2 together, with a featured row first", async () => {
+    const { db, sql } = await openDb();
+    await db.exec(FEATURED);
+    await db.exec(SEED);
+    await db.exec(WAVE2);
+    const listedAt = new Date("2026-10-07T12:00:00.000Z");
+    const visible = await listVisibleListings(sql, listedAt);
+    assert.equal(visible.length, SEEDED_LISTINGS);
+    assert.ok(visible.length > 100);
+    assert.ok(DIRECTORY_LIST_LIMIT >= visible.length);
+
+    for (const name of ["Ops Agent", "Portkey", "Devon", "Vertex AI Agent Builder"]) {
+      assert.equal(visible.filter((row) => row.name === name).length, 1, name);
+    }
+
+    const ops = visible.find((row) => row.name === "Ops Agent");
+    assert.ok(ops);
+    await db.query("update agent_listings set featured_until = $2 where id = $1", [
+      ops.id,
+      "2026-10-14T12:00:00.000Z",
+    ]);
+    const ranked = await listVisibleListings(sql, listedAt);
+    assert.equal(ranked.length, SEEDED_LISTINGS);
+    assert.equal(ranked[0]?.name, "Ops Agent");
+    assert.equal(ranked[0]?.featured, true);
+    assert.equal(ranked[1]?.featured, false);
+    assert.equal(ranked.filter((row) => row.name === "Portkey").length, 1);
+
+    await db.exec(WAVE2);
+    assert.equal((await listVisibleListings(sql, listedAt)).length, SEEDED_LISTINGS);
+  });
+});
+
+describe("directory list past the old cap of 100", () => {
+  it("returns every visible row when the featured column is missing", async () => {
+    const { db, sql } = await openDb();
+    const count = 150;
+    await db.query(
+      `insert into agent_listings (id, name, skills, pitch, contact, created_at)
+       select
+         'agent_' || lpad(to_hex(i), 24, '0'),
+         'Bulk ' || i,
+         array['research']::text[],
+         'A short pitch.',
+         'bulk@example.com',
+         $1::timestamptz + (i::text || ' seconds')::interval
+       from generate_series(1, $2::int) as i`,
+      [NOW, count],
+    );
+    const visible = await listVisibleListings(sql, NOW);
+    assert.equal(visible.length, count);
+    assert.equal(visible[0]?.name, `Bulk ${count}`);
+    assert.equal(visible[count - 1]?.name, "Bulk 1");
+  });
+
+  it("keeps a featured row ahead of newer rows past 100", async () => {
+    const { db, sql } = await openDb();
+    await db.exec(FEATURED);
+    const count = 150;
+    await db.query(
+      `insert into agent_listings (id, name, skills, pitch, contact, created_at)
+       select
+         'agent_' || lpad(to_hex(i), 24, '0'),
+         'Bulk ' || i,
+         array['research']::text[],
+         'A short pitch.',
+         'bulk@example.com',
+         $1::timestamptz + (i::text || ' seconds')::interval
+       from generate_series(1, $2::int) as i`,
+      [NOW, count],
+    );
+    await db.query("update agent_listings set featured_until = $1 where name = 'Bulk 1'", [
+      "2026-10-12T15:00:00.000Z",
+    ]);
+    const visible = await listVisibleListings(sql, NOW);
+    assert.equal(visible.length, count);
+    assert.equal(visible[0]?.name, "Bulk 1");
+    assert.equal(visible[0]?.featured, true);
+    assert.equal(visible[1]?.name, `Bulk ${count}`);
+    assert.equal(visible[1]?.featured, false);
+  });
 });
 
 describe("featured listings sort ahead of newest", () => {
@@ -249,6 +336,7 @@ describe("directory page empty state", () => {
     assert.doesNotMatch(page, /opens soon|coming soon/i);
     assert.doesNotMatch(page, /example agent|sample listing|fake listing/i);
     assert.doesNotMatch(page, /dangerouslySetInnerHTML/);
+    assert.doesNotMatch(page, /shown\.slice|listings\.slice/);
     assert.doesNotMatch(
       page,
       /escrow|\bfunded\b|\bhirer\b|\bsignature\b|\bsettlement\b|\bprotocol\b|\brail\b|\bverified\b|\btrusted\b/i,
