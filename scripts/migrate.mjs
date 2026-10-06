@@ -13,11 +13,12 @@
  * the same files at startup instead (see src/lib/db.ts).
  *
  * `0025_exchange_jobs.sql`, `0027_agent_listings.sql`,
- * `0029_hire_orders.sql`, `0031_seed_agent_listings.sql`, and
- * `0033_agent_listing_featured.sql` are skipped when
+ * `0029_hire_orders.sql`, `0031_seed_agent_listings.sql`,
+ * `0033_agent_listing_featured.sql`, and
+ * `0034_seed_agent_listings_wave2.sql` are skipped when
  * VERCEL_ENV=preview because preview builds use the production DATABASE_URL.
  * Production applies them with no extra environment variable. The directory
- * seed must not insert rows into production from a preview build.
+ * seeds must not insert rows into production from a preview build.
  */
 import { readdir, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -26,6 +27,7 @@ import pg from "pg";
 import {
   agentListingsHoldNotice,
   directorySeedHoldNotice,
+  directorySeedWave2HoldNotice,
   exchangeJobsHoldNotice,
   featuredListingsHoldNotice,
   hireOrdersHoldNotice,
@@ -56,6 +58,7 @@ async function main() {
     hireOrdersHoldNotice(),
     directorySeedHoldNotice(),
     featuredListingsHoldNotice(),
+    directorySeedWave2HoldNotice(),
   ]) {
     if (heldNotice) console.log(heldNotice);
   }

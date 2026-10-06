@@ -13,6 +13,7 @@ import { test } from "node:test";
 import {
   AGENT_LISTINGS_MIGRATION,
   DIRECTORY_SEED_MIGRATION,
+  DIRECTORY_SEED_WAVE2_MIGRATION,
   EXCHANGE_JOBS_MIGRATION,
   FEATURED_LISTINGS_MIGRATION,
   HIRE_ORDERS_MIGRATION,
@@ -20,6 +21,8 @@ import {
   agentListingsMigrationHeld,
   directorySeedHoldNotice,
   directorySeedMigrationHeld,
+  directorySeedWave2HoldNotice,
+  directorySeedWave2MigrationHeld,
   exchangeJobsHoldNotice,
   featuredListingsHoldNotice,
   featuredListingsMigrationHeld,
@@ -367,4 +370,53 @@ test("featured listings migration applies in production and is skipped on previe
   const db = readFileSync(join(projectRoot(), "src/lib/db.ts"), "utf8");
   assert.match(migrate, /featuredListingsHoldNotice/);
   assert.match(db, /featuredListingsHoldNotice/);
+});
+
+test("directory seed wave 2 migration applies in production and is skipped on preview", () => {
+  const name = DIRECTORY_SEED_WAVE2_MIGRATION;
+  assert.equal(name, "0034_seed_agent_listings_wave2.sql");
+  const sql = readFileSync(join(projectRoot(), "migrations", name), "utf8");
+  assert.match(sql, /insert into agent_listings/i);
+  assert.match(sql, /where not exists/i);
+  assert.match(sql, /e\.id = v\.id or lower\(e\.name\) = lower\(v\.name\)/);
+  assert.match(sql, /directory-seed-wave2-reviewed-2026-10-07\.json/);
+  assert.doesNotMatch(sql, /\/workspace/);
+  assert.doesNotMatch(sql, /\b(drop|delete)\b/i);
+  assert.doesNotMatch(sql, /^\s*update\b/im);
+  assert.equal(sql.match(/^\s+\('agent_[0-9a-f]+'/gm)?.length, 254);
+
+  assert.equal(directorySeedWave2MigrationHeld({}), false);
+  assert.equal(directorySeedWave2MigrationHeld({ VERCEL_ENV: "production" }), false);
+  assert.equal(directorySeedWave2MigrationHeld({ VERCEL_ENV: "preview" }), true);
+  assert.equal(directorySeedWave2HoldNotice({}), null);
+  assert.match(directorySeedWave2HoldNotice({ VERCEL_ENV: "preview" }) ?? "", /not applied/);
+
+  assert.deepEqual(pendingMigrations([name], [], { VERCEL_ENV: "preview" }), []);
+  assert.deepEqual(pendingMigrations([name], [], { VERCEL_ENV: "production" }), [
+    { name, path: name },
+  ]);
+
+  const listed = readdirSync(join(projectRoot(), "migrations")).filter((entry) =>
+    entry.endsWith(".sql"),
+  );
+  const preview = pendingMigrations(listed, [], { VERCEL_ENV: "preview" });
+  assert.equal(
+    preview.some((entry) => entry.name === name),
+    false,
+  );
+  assert.equal(
+    preview.some((entry) => entry.name === "0030_hide_junk_listing.sql"),
+    true,
+  );
+  const production = pendingMigrations(listed, [], { VERCEL_ENV: "production" });
+  assert.equal(
+    production.some((entry) => entry.name === name),
+    true,
+  );
+
+  const migrate = readFileSync(join(projectRoot(), "scripts/migrate.mjs"), "utf8");
+  const db = readFileSync(join(projectRoot(), "src/lib/db.ts"), "utf8");
+  assert.match(migrate, /directorySeedWave2HoldNotice/);
+  assert.match(db, /directorySeedWave2HoldNotice/);
+  assert.match(migrate, /0034_seed_agent_listings_wave2\.sql/);
 });

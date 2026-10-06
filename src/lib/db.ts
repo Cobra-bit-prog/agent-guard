@@ -1,11 +1,13 @@
 import {
   AGENT_LISTINGS_MIGRATION,
   DIRECTORY_SEED_MIGRATION,
+  DIRECTORY_SEED_WAVE2_MIGRATION,
   EXCHANGE_JOBS_MIGRATION,
   FEATURED_LISTINGS_MIGRATION,
   HIRE_ORDERS_MIGRATION,
   agentListingsHoldNotice,
   directorySeedHoldNotice,
+  directorySeedWave2HoldNotice,
   exchangeJobsHoldNotice,
   featuredListingsHoldNotice,
   hireOrdersHoldNotice,
@@ -117,6 +119,10 @@ function logHeldSchemaMigrations(paths: Iterable<string>): void {
   }
   if (names.some((path) => path.endsWith(FEATURED_LISTINGS_MIGRATION))) {
     const notice = featuredListingsHoldNotice();
+    if (notice) console.log(notice);
+  }
+  if (names.some((path) => path.endsWith(DIRECTORY_SEED_WAVE2_MIGRATION))) {
+    const notice = directorySeedWave2HoldNotice();
     if (notice) console.log(notice);
   }
 }

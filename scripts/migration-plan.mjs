@@ -66,6 +66,14 @@ export const DIRECTORY_SEED_MIGRATION = "0031_seed_agent_listings.sql";
 export const FEATURED_LISTINGS_MIGRATION = "0033_agent_listing_featured.sql";
 
 /**
+ * Directory seed wave 2. Preview builds use the production DATABASE_URL, so
+ * this file is skipped when VERCEL_ENV=preview. A preview build must not insert
+ * listings into production. Production, local, and tests apply it with no
+ * extra environment variable.
+ */
+export const DIRECTORY_SEED_WAVE2_MIGRATION = "0034_seed_agent_listings_wave2.sql";
+
+/**
  * @param {Record<string, string | undefined>} [env]
  * @returns {boolean}
  */
@@ -102,6 +110,14 @@ export function directorySeedMigrationHeld(env = process.env) {
  * @returns {boolean}
  */
 export function featuredListingsMigrationHeld(env = process.env) {
+  return env.VERCEL_ENV === "preview";
+}
+
+/**
+ * @param {Record<string, string | undefined>} [env]
+ * @returns {boolean}
+ */
+export function directorySeedWave2MigrationHeld(env = process.env) {
   return env.VERCEL_ENV === "preview";
 }
 
@@ -151,6 +167,15 @@ export function featuredListingsHoldNotice(env = process.env) {
 }
 
 /**
+ * @param {Record<string, string | undefined>} [env]
+ * @returns {string | null}
+ */
+export function directorySeedWave2HoldNotice(env = process.env) {
+  if (!directorySeedWave2MigrationHeld(env)) return null;
+  return `[directory] holding ${DIRECTORY_SEED_WAVE2_MIGRATION}: VERCEL_ENV=preview uses the production DATABASE_URL, so this migration is not applied.`;
+}
+
+/**
  * @param {string} name
  * @param {Record<string, string | undefined>} env
  * @returns {boolean}
@@ -161,6 +186,7 @@ function migrationHeldOnPreview(name, env) {
   if (name === HIRE_ORDERS_MIGRATION) return hireOrdersMigrationHeld(env);
   if (name === DIRECTORY_SEED_MIGRATION) return directorySeedMigrationHeld(env);
   if (name === FEATURED_LISTINGS_MIGRATION) return featuredListingsMigrationHeld(env);
+  if (name === DIRECTORY_SEED_WAVE2_MIGRATION) return directorySeedWave2MigrationHeld(env);
   return false;
 }
 
@@ -168,8 +194,9 @@ function migrationHeldOnPreview(name, env) {
  * Migrations in `paths` that are not yet in `applied`, in apply order.
  * Non-`.sql` entries (a `readdir` also yields `migrations/auth/`) are dropped.
  * `0025_exchange_jobs.sql`, `0027_agent_listings.sql`,
- * `0029_hire_orders.sql`, `0031_seed_agent_listings.sql`, and
- * `0033_agent_listing_featured.sql` are omitted on
+ * `0029_hire_orders.sql`, `0031_seed_agent_listings.sql`,
+ * `0033_agent_listing_featured.sql`, and
+ * `0034_seed_agent_listings_wave2.sql` are omitted on
  * preview builds only.
  * `0026_hide_exchange_smoke_jobs.sql`,
  * `0028_hide_directory_smoke_listing.sql`, and
