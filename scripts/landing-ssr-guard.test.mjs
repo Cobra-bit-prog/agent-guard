@@ -49,7 +49,7 @@ test("marketing landing never imports pay-extension (SSR-unsafe wallet send)", (
   }
 });
 
-test("homepage is a hire marketplace with labeled examples and an honest fee", () => {
+test("homepage is a hire marketplace with labeled examples and honest paying", () => {
   const home = readFileSync(join(ROOT, "src/routes/index.tsx"), "utf8");
   const css = readFileSync(join(ROOT, "src/styles.css"), "utf8");
   assert.match(home, /Agent Control — Hire an agent\. Pay only when the job is done\./);
@@ -79,13 +79,27 @@ test("homepage is a hire marketplace with labeled examples and an honest fee", (
   assert.match(home, /Hire an agent\. Pay only when the job is done\./);
   assert.match(home, /List the job for free\. Posting costs nothing\./);
   assert.match(home, /The worker is paid when you say the work is done\./);
-  assert.match(home, /You pay the full price up front\./);
+  assert.match(home, /How paying works today/);
+  assert.match(home, /Post the job free\./);
+  assert.match(home, /A worker contacts you\./);
+  assert.match(home, /They reach you at the contact you left\./);
+  assert.match(home, /You pay the worker directly\./);
+  assert.match(home, /You pay when you say the work is done\./);
+  assert.match(home, /You pay the worker directly when you say the work is done\./);
   assert.doesNotMatch(home, /We hold it/i);
-  assert.match(home, /Once paying is on/);
-  assert.match(home, /Agent Control keeps it safe/);
-  assert.match(home, /The worker gets 90%\./);
-  assert.match(home, /Full refund if nobody answers by the deadline\./);
-  assert.match(home, /When paying is switched on, we keep 10% only when you mark the job done\./);
+  assert.doesNotMatch(home, /Once paying is on/i);
+  assert.doesNotMatch(home, /Agent Control keeps it safe/);
+  assert.doesNotMatch(home, /The worker gets 90%\./);
+  assert.doesNotMatch(home, /Full refund if nobody answers by the deadline\./);
+  assert.doesNotMatch(home, /When paying is switched on, we keep 10% only when you mark the job done\./);
+  assert.doesNotMatch(home, /You pay the full price up front\./);
+  assert.doesNotMatch(home, /refund/i);
+  assert.doesNotMatch(home, /kept safe/i);
+  assert.doesNotMatch(home, /dollar back/i);
+  assert.doesNotMatch(home, /paid before/i);
+  assert.doesNotMatch(home, /\bhold\b/i);
+  assert.doesNotMatch(home, /10%/);
+  assert.doesNotMatch(home, /Ten percent/);
   assert.match(home, /footerTagline="A job board for people and agents\."/);
   assert.doesNotMatch(home, /we keep nothing/i);
   assert.match(home, /href="\/billing\/pay\?plan=action"/);
@@ -114,18 +128,19 @@ test("homepage is a hire marketplace with labeled examples and an honest fee", (
   assert.match(home, /scroll-rise/);
   assert.match(home, /home-hero/);
   assert.match(home, /hero-fan/);
-  assert.match(home, /Paid/);
-  assert.match(home, /Kept safe/);
-  assert.match(home, /Worker paid/);
+  assert.match(home, /How it works today/);
+  assert.match(home, /Post free/);
+  assert.match(home, /Worker reaches you/);
+  assert.match(home, /You pay when it's done/);
+  assert.doesNotMatch(home, /Kept safe/);
+  assert.doesNotMatch(home, /Worker paid/);
   const chrome = readFileSync(join(ROOT, "src/components/marketing/chrome.tsx"), "utf8");
   assert.match(chrome, /Monitoring and policy checks\. Not a custodian\. Not insurance\./);
   assert.match(chrome, /Chain marks identify supported networks/);
 
   assert.doesNotMatch(home, /opens soon|coming soon/i);
-  assert.match(
-    home,
-    /Paying through Agent Control isn't switched on yet\. Today, posting is free and you agree\s+payment with the worker\./,
-  );
+  assert.match(home, /Paying through Agent Control isn't switched on yet\./);
+  assert.doesNotMatch(home, /you agree\s+payment with the worker/);
   assert.doesNotMatch(home, /checkout/i);
   assert.doesNotMatch(home, />\s*(Pay|Checkout)\b/);
   const money = home.split('id="money"')[1]?.split('id="examples"')[0] ?? "";
