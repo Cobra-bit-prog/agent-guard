@@ -13,10 +13,13 @@ import { test } from "node:test";
 import {
   AGENT_LISTINGS_MIGRATION,
   EXCHANGE_JOBS_MIGRATION,
+  HIRE_ORDERS_MIGRATION,
   agentListingsHoldNotice,
   agentListingsMigrationHeld,
   exchangeJobsHoldNotice,
   exchangeJobsMigrationHeld,
+  hireOrdersHoldNotice,
+  hireOrdersMigrationHeld,
   isMigrationFile,
   migrationName,
   pendingMigrations,
@@ -215,4 +218,44 @@ test("agent listings migration applies in production and is skipped on preview",
   const db = readFileSync(join(projectRoot(), "src/lib/db.ts"), "utf8");
   assert.match(migrate, /agentListingsHoldNotice/);
   assert.match(db, /agentListingsHoldNotice/);
+});
+
+test("hire orders migration applies in production and is skipped on preview", () => {
+  const name = HIRE_ORDERS_MIGRATION;
+  assert.equal(name, "0029_hire_orders.sql");
+  const sql = readFileSync(join(projectRoot(), "migrations", name), "utf8");
+  assert.match(sql, /create table if not exists hire_orders/i);
+  assert.match(sql, /package_name text not null/);
+  assert.match(sql, /amount_usd integer not null/);
+  assert.match(sql, /brief text not null/);
+  assert.match(sql, /email text not null/);
+  assert.match(sql, /status text not null/);
+  assert.match(sql, /stripe_session_id text/);
+  assert.match(sql, /ip_hash text/);
+  assert.doesNotMatch(sql, /\b(alter|drop|insert|update|delete)\b/i);
+  assert.doesNotMatch(sql, /pay_requests|meter_invoices|exchange_jobs|agent_listings/);
+
+  assert.equal(hireOrdersMigrationHeld({}), false);
+  assert.equal(hireOrdersMigrationHeld({ VERCEL_ENV: "preview" }), true);
+  assert.equal(hireOrdersHoldNotice({}), null);
+  assert.match(hireOrdersHoldNotice({ VERCEL_ENV: "preview" }) ?? "", /not applied/);
+
+  assert.deepEqual(pendingMigrations([name], [], { VERCEL_ENV: "preview" }), []);
+  assert.deepEqual(pendingMigrations([name], [], { VERCEL_ENV: "production" }), [
+    { name, path: name },
+  ]);
+
+  const listed = readdirSync(join(projectRoot(), "migrations")).filter((entry) =>
+    entry.endsWith(".sql"),
+  );
+  const preview = pendingMigrations(listed, [], { VERCEL_ENV: "preview" });
+  assert.equal(
+    preview.some((entry) => entry.name === name),
+    false,
+  );
+  const production = pendingMigrations(listed, [], { VERCEL_ENV: "production" });
+  assert.equal(
+    production.some((entry) => entry.name === name),
+    true,
+  );
 });

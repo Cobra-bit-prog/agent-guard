@@ -1,8 +1,10 @@
 import {
   AGENT_LISTINGS_MIGRATION,
   EXCHANGE_JOBS_MIGRATION,
+  HIRE_ORDERS_MIGRATION,
   agentListingsHoldNotice,
   exchangeJobsHoldNotice,
+  hireOrdersHoldNotice,
   pendingMigrations,
 } from "../../scripts/migration-plan.mjs";
 
@@ -99,6 +101,10 @@ function logHeldSchemaMigrations(paths: Iterable<string>): void {
   }
   if (names.some((path) => path.endsWith(AGENT_LISTINGS_MIGRATION))) {
     const notice = agentListingsHoldNotice();
+    if (notice) console.log(notice);
+  }
+  if (names.some((path) => path.endsWith(HIRE_ORDERS_MIGRATION))) {
+    const notice = hireOrdersHoldNotice();
     if (notice) console.log(notice);
   }
 }

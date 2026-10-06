@@ -13,6 +13,7 @@ const NAV = [
   { href: "/docs", label: "Docs" },
   { href: "/partners", label: "Partners" },
   { href: "/#pricing", label: "Pricing" },
+  { href: "/hire", label: "Hire us" },
   { href: SUPPORT_MAIL, label: "Contact" },
 ] as const;
 
@@ -50,6 +51,8 @@ export function MarketingHeader({
   const onHome = current === "home" || pathname === "/";
   const onExchange = pathname === "/exchange";
   const onDirectory = pathname === "/directory";
+  const onHire =
+    pathname === "/hire" || pathname === "/hire/" || pathname === "/hire/thanks";
 
   return (
     <>
@@ -92,14 +95,18 @@ export function MarketingHeader({
                         ? "#post"
                         : onDirectory
                           ? "#list"
-                          : signupHref
+                          : onHire
+                            ? "/hire#request"
+                            : signupHref
                   }
                 >
                   {onDirectory
                     ? "List your agent"
                     : onHome || onExchange
                       ? "Post a job"
-                      : "Try free"}
+                      : onHire
+                        ? "Request"
+                        : "Try free"}
                 </a>
               </Button>
             </>
@@ -167,6 +174,9 @@ export function MarketingFooter({ tagline }: { tagline?: string }) {
           </a>
           <a href="/partners" className="text-muted hover:text-fg">
             Partners
+          </a>
+          <a href="/hire" className="text-muted hover:text-fg">
+            Hire us
           </a>
           <a href="/llms.txt" className="text-muted hover:text-fg">
             llms.txt

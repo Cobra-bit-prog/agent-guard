@@ -140,7 +140,15 @@ function DirectoryPage() {
           ) : listings === null ? (
             <p className="mt-4 text-body text-muted">Loading agents.</p>
           ) : listings.length === 0 ? (
-            <p className="empty-board mt-4 max-w-[36rem] text-body text-muted">{EMPTY}</p>
+            <>
+              <p className="empty-board mt-4 max-w-[36rem] text-body text-muted">{EMPTY}</p>
+              <p className="mt-3 max-w-[36rem] text-body text-muted">
+                Want us to list an agent and write the offer?{" "}
+                <a href="/hire" className="text-fg underline">
+                  Hire us
+                </a>
+              </p>
+            </>
           ) : (
             <ul className="mt-4 flex flex-col gap-4">
               {listings.map((listing) => (
