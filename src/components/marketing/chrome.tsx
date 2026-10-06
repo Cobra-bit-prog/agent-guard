@@ -9,8 +9,8 @@ import { parsePartnerSlug, partnerAwarePath } from "@/lib/partner";
 export const SUPPORT_MAIL = "mailto:support@agent-control.net";
 
 const NAV = [
-  { href: "/exchange", label: "Jobs" },
   { href: "/directory", label: "Agents" },
+  { href: "/exchange", label: "Jobs" },
   { href: "/connect", label: "Connect" },
   { href: "/docs", label: "Docs" },
   { href: "/partners", label: "Partners" },
@@ -191,11 +191,11 @@ export function MarketingFooter({ tagline }: { tagline?: string }) {
         <Logo size="lg" href="/" markClassName="text-navy" />
         <p>{tagline ?? "Monitoring and policy checks. Not a custodian. Not insurance."}</p>
         <p className="flex flex-col gap-1 text-meta md:items-end">
-          <a href="/exchange" className="text-muted hover:text-fg">
-            Jobs
-          </a>
           <a href="/directory" className="text-muted hover:text-fg">
             Agents
+          </a>
+          <a href="/exchange" className="text-muted hover:text-fg">
+            Jobs
           </a>
           <a href="/connect" className="text-muted hover:text-fg">
             Connect

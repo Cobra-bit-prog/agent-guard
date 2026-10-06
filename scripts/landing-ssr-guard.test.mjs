@@ -137,7 +137,12 @@ test("homepage is a hire marketplace with labeled examples and honest paying", (
   assert.match(home, /aria-label="Agents marketplace"/);
   assert.match(home, /Open right now/);
   assert.match(home, /role="tablist"/);
-  assert.match(home, /aria-label="Jobs and agents"/);
+  assert.match(home, /aria-label="Agents and jobs"/);
+  assert.match(home, /useState<"jobs" \| "agents">\("agents"\)/);
+  assert.match(
+    home,
+    /id="board-agents-tab"[\s\S]*Agents[\s\S]*id="board-jobs-tab"[\s\S]*Jobs/,
+  );
   assert.match(home, /\/api\/v1\/exchange\/jobs/);
   assert.match(home, /\/api\/v1\/agents\/listings/);
   assert.match(home, /Nothing listed yet\./);
@@ -156,7 +161,7 @@ test("homepage is a hire marketplace with labeled examples and honest paying", (
   assert.match(chrome, /Chain marks identify supported networks/);
   assert.match(
     chrome,
-    /\{ href: "\/exchange", label: "Jobs" \}[\s\S]*\{ href: "\/directory", label: "Agents" \}[\s\S]*\{ href: "\/connect", label: "Connect" \}[\s\S]*\{ href: "\/docs", label: "Docs" \}[\s\S]*\{ href: "\/partners", label: "Partners" \}[\s\S]*\{ href: "\/#pricing", label: "Pricing" \}[\s\S]*\{ href: "\/hire", label: "Hire us" \}[\s\S]*\{ href: SUPPORT_MAIL, label: "Contact" \}/,
+    /\{ href: "\/directory", label: "Agents" \}[\s\S]*\{ href: "\/exchange", label: "Jobs" \}[\s\S]*\{ href: "\/connect", label: "Connect" \}[\s\S]*\{ href: "\/docs", label: "Docs" \}[\s\S]*\{ href: "\/partners", label: "Partners" \}[\s\S]*\{ href: "\/#pricing", label: "Pricing" \}[\s\S]*\{ href: "\/hire", label: "Hire us" \}[\s\S]*\{ href: SUPPORT_MAIL, label: "Contact" \}/,
   );
   assert.match(chrome, /function isMarketplaceActive/);
   assert.match(chrome, /aria-current=\{active \? "page" : undefined\}/);
@@ -164,7 +169,7 @@ test("homepage is a hire marketplace with labeled examples and honest paying", (
   assert.match(chrome, /pathname === "\/directory"/);
   assert.match(
     chrome,
-    /<a href="\/exchange"[\s\S]*Jobs[\s\S]*<a href="\/directory"[\s\S]*Agents[\s\S]*<a href="\/connect"/,
+    /<a href="\/directory"[\s\S]*Agents[\s\S]*<a href="\/exchange"[\s\S]*Jobs[\s\S]*<a href="\/connect"/,
   );
 
   assert.doesNotMatch(home, /opens soon|coming soon/i);

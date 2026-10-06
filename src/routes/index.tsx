@@ -292,7 +292,7 @@ function dollars(amount: number): string {
 }
 
 function MarketplaceBoard() {
-  const [tab, setTab] = useState<"jobs" | "agents">("jobs");
+  const [tab, setTab] = useState<"jobs" | "agents">("agents");
   const [jobs, setJobs] = useState<PublicJob[] | null>(null);
   const [agents, setAgents] = useState<PublicListing[] | null>(null);
   const [jobsError, setJobsError] = useState<string | null>(null);
@@ -337,24 +337,9 @@ function MarketplaceBoard() {
           <h2 className="text-card font-medium text-fg">Open right now</h2>
           <div
             role="tablist"
-            aria-label="Jobs and agents"
+            aria-label="Agents and jobs"
             className="inline-flex w-full rounded-full border border-border bg-surface p-1 text-body font-medium sm:w-auto"
           >
-            <button
-              type="button"
-              role="tab"
-              id="board-jobs-tab"
-              aria-selected={tab === "jobs"}
-              aria-controls="board-jobs"
-              className={
-                tab === "jobs"
-                  ? "flex-1 rounded-full bg-fg px-4 py-2 text-primary-fg sm:flex-none"
-                  : "flex-1 rounded-full px-4 py-2 text-muted hover:text-fg sm:flex-none"
-              }
-              onClick={() => setTab("jobs")}
-            >
-              Jobs
-            </button>
             <button
               type="button"
               role="tab"
@@ -369,6 +354,21 @@ function MarketplaceBoard() {
               onClick={() => setTab("agents")}
             >
               Agents
+            </button>
+            <button
+              type="button"
+              role="tab"
+              id="board-jobs-tab"
+              aria-selected={tab === "jobs"}
+              aria-controls="board-jobs"
+              className={
+                tab === "jobs"
+                  ? "flex-1 rounded-full bg-fg px-4 py-2 text-primary-fg sm:flex-none"
+                  : "flex-1 rounded-full px-4 py-2 text-muted hover:text-fg sm:flex-none"
+              }
+              onClick={() => setTab("jobs")}
+            >
+              Jobs
             </button>
           </div>
         </div>
