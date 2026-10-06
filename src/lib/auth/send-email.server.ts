@@ -163,6 +163,8 @@ export type NewSubscriberNotifyOpts = {
   userEmail?: string | null;
   payRequestId?: string | null;
   chain?: string | null;
+  /** Display amount such as "0.20 USDC". Omitted from the email when empty. */
+  amount?: string | null;
 };
 
 export function newSubscriberNotifySubject(opts: {
@@ -180,8 +182,10 @@ export function newSubscriberNotifyText(opts: NewSubscriberNotifyOpts): string {
     "",
     `Kind: ${kindLabel}`,
     `Plan: ${opts.planName}`,
-    `When: ${opts.at}`,
   ];
+  const amount = opts.amount?.trim();
+  if (amount) lines.push(`Amount: ${amount}`);
+  lines.push(`When: ${opts.at}`);
   const email = opts.userEmail?.trim();
   if (email) lines.push(`User: ${email}`);
   const payRequestId = opts.payRequestId?.trim();
@@ -218,11 +222,19 @@ export async function sendNewSubscriberNotifyEmail(
     const email = opts.userEmail?.trim();
     const payRequestId = opts.payRequestId?.trim();
     const chain = opts.chain?.trim();
+    const amount = opts.amount?.trim();
     const rows = [
       `<tr><td style="padding:8px 0;color:#666;border-top:1px solid #eee">Kind</td><td style="padding:8px 0;text-align:right;border-top:1px solid #eee">${escapeHtml(kindLabel)}</td></tr>`,
       `<tr><td style="padding:8px 0;color:#666;border-top:1px solid #eee">Plan</td><td style="padding:8px 0;text-align:right;border-top:1px solid #eee">${planName}</td></tr>`,
       `<tr><td style="padding:8px 0;color:#666;border-top:1px solid #eee">When</td><td style="padding:8px 0;text-align:right;border-top:1px solid #eee;font-family:ui-monospace,monospace;font-size:12px">${at}</td></tr>`,
     ];
+    if (amount) {
+      rows.splice(
+        2,
+        0,
+        `<tr><td style="padding:8px 0;color:#666;border-top:1px solid #eee">Amount</td><td style="padding:8px 0;text-align:right;border-top:1px solid #eee">${escapeHtml(amount)}</td></tr>`,
+      );
+    }
     if (email) {
       rows.push(
         `<tr><td style="padding:8px 0;color:#666;border-top:1px solid #eee">User</td><td style="padding:8px 0;text-align:right;border-top:1px solid #eee">${escapeHtml(email)}</td></tr>`,

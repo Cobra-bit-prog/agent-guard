@@ -1,12 +1,14 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import type { Sql } from "../db.ts";
+import { SEED_JOB_CONTACT, SEED_JOB_IDS } from "../exchange/seed-jobs.ts";
 import {
   ACTIVE_PAID_SEAT_SQL,
   authorizeInternalStats,
   CASH_RECEIVED_SQL,
   collectAccountLeads,
   collectAccountStats,
+  collectJobBoardStats,
   formatAccountStatsReport,
   FREE_OR_TRIAL_SQL,
 } from "./stats.server.ts";
@@ -69,7 +71,8 @@ describe("collectAccountLeads", () => {
     };
     const { sql, texts } = mockSql((text) => {
       if (text.includes("count(*)::int as signed_up")) return [{ signed_up: 2, unverified: 1 }];
-      if (text.includes("count(*)::int as n") && text.includes(FREE_OR_TRIAL_SQL)) return [{ n: 1 }];
+      if (text.includes("count(*)::int as n") && text.includes(FREE_OR_TRIAL_SQL))
+        return [{ n: 1 }];
       if (text.includes("group by s.plan")) return [];
       if (text.includes("user_partner_source")) return [];
       if (text.includes("from pay_requests p")) {
@@ -83,7 +86,10 @@ describe("collectAccountLeads", () => {
           },
         ];
       }
-      if (text.includes(ACCOUNT_LEAD_EMAIL_VERIFIED) && text.includes('"emailVerified" is not true')) {
+      if (
+        text.includes(ACCOUNT_LEAD_EMAIL_VERIFIED) &&
+        text.includes('"emailVerified" is not true')
+      ) {
         return [lead];
       }
       if (text.includes(ACCOUNT_LEAD_EMAIL_VERIFIED) && text.includes(FREE_OR_TRIAL_SQL)) {
@@ -120,9 +126,12 @@ describe("collectAccountLeads", () => {
       },
     ]);
     assert.match(leads.generatedAt, /^\d{4}-\d{2}-\d{2}T/);
-    const freeCountSql = texts.find((text) => text.includes("count(*)::int as n") && text.includes(FREE_OR_TRIAL_SQL));
+    const freeCountSql = texts.find(
+      (text) => text.includes("count(*)::int as n") && text.includes(FREE_OR_TRIAL_SQL),
+    );
     const freeListSql = texts.find(
-      (text) => text.includes("u.email") && text.includes(FREE_OR_TRIAL_SQL) && !text.includes("count(*)"),
+      (text) =>
+        text.includes("u.email") && text.includes(FREE_OR_TRIAL_SQL) && !text.includes("count(*)"),
     );
     assert.ok(freeCountSql, "count query uses FREE_OR_TRIAL_SQL");
     assert.ok(freeListSql, "list query uses FREE_OR_TRIAL_SQL");
@@ -149,7 +158,8 @@ describe("expired Starter is not an active seat", () => {
     const { sql, texts } = mockSql((text) => {
       if (text.includes("count(*)::int as signed_up")) return [{ signed_up: 1, unverified: 0 }];
       if (text.includes("group by s.plan")) {
-        const periodGate = text.includes(ACTIVE_PAID_SEAT_SQL) && /period_ends_at > now\(\)/.test(text);
+        const periodGate =
+          text.includes(ACTIVE_PAID_SEAT_SQL) && /period_ends_at > now\(\)/.test(text);
         if (!periodGate) return [{ plan: "starter", n: 1 }];
         return [];
       }
@@ -162,7 +172,8 @@ describe("expired Starter is not an active seat", () => {
         if (!ledger) return [{ ever_paid: 0, cash_usdc: 0 }];
         return [{ ever_paid: 1, cash_usdc: "29.000000" }];
       }
-      if (text.includes("count(*)::int as n") && text.includes(FREE_OR_TRIAL_SQL)) return [{ n: 1 }];
+      if (text.includes("count(*)::int as n") && text.includes(FREE_OR_TRIAL_SQL))
+        return [{ n: 1 }];
       if (text.includes("user_partner_source")) return [];
       if (text.includes(ACCOUNT_LEAD_EMAIL_VERIFIED) && text.includes(FREE_OR_TRIAL_SQL)) {
         return [expiredLead];
@@ -207,7 +218,8 @@ describe("expired Starter is not an active seat", () => {
         return [{ plan: "starter", n: 1 }];
       }
       if (text.includes("cash_usdc")) return [{ ever_paid: 1, cash_usdc: 29 }];
-      if (text.includes("count(*)::int as n") && text.includes(FREE_OR_TRIAL_SQL)) return [{ n: 0 }];
+      if (text.includes("count(*)::int as n") && text.includes(FREE_OR_TRIAL_SQL))
+        return [{ n: 0 }];
       return [];
     });
 
@@ -218,5 +230,52 @@ describe("expired Starter is not an active seat", () => {
     const report = formatAccountStatsReport(stats);
     assert.match(report, /Paid Starter: 1\n/);
     assert.match(report, /Cash received \/ ever paid: 29 USDC \(1\)\n/);
+    assert.match(
+      report,
+      /Job board open: 0\nJob board outside posts: 0\nJob board seed posts: 0\n/,
+    );
+  });
+});
+
+describe("job board scoreboard", () => {
+  function accountSql(handler: (text: string) => unknown[]) {
+    return mockSql((text) => {
+      if (text.includes("exchange_jobs")) return handler(text);
+      if (text.includes("count(*)::int as signed_up")) return [{ signed_up: 0, unverified: 0 }];
+      if (text.includes("group by s.plan")) return [];
+      if (text.includes("cash_usdc")) return [{ ever_paid: 0, cash_usdc: 0 }];
+      if (text.includes("count(*)::int as n") && text.includes(FREE_OR_TRIAL_SQL))
+        return [{ n: 0 }];
+      return [];
+    });
+  }
+
+  it("counts a seed id and a support@ post apart from an outside job", async () => {
+    const { sql } = accountSql(() => [
+      { id: SEED_JOB_IDS[0], contact: "ada@example.com" },
+      { id: "job_from_outside", contact: "ada@example.com" },
+      { id: "job_ours_by_contact", contact: SEED_JOB_CONTACT },
+    ]);
+    const board = await collectJobBoardStats(sql);
+    assert.deepEqual(board, { open: 3, outside: 1, seed: 2 });
+    const stats = await collectAccountStats(sql);
+    assert.deepEqual(stats.jobBoard, board);
+    const report = formatAccountStatsReport(stats);
+    assert.match(
+      report,
+      /Job board open: 3\nJob board outside posts: 1\nJob board seed posts: 2\n/,
+    );
+  });
+
+  it("reports zeros when the job board table is not on this database yet", async () => {
+    const { sql } = accountSql(() => {
+      const err = new Error('relation "exchange_jobs" does not exist');
+      Object.assign(err, { code: "42P01" });
+      throw err;
+    });
+    assert.deepEqual(await collectJobBoardStats(sql), { open: 0, outside: 0, seed: 0 });
+    const stats = await collectAccountStats(sql);
+    assert.equal(stats.signedUp, 0);
+    assert.deepEqual(stats.jobBoard, { open: 0, outside: 0, seed: 0 });
   });
 });

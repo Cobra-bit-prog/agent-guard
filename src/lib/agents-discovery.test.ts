@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { MARKETPLACE_AGENT_LEAD } from "./marketplace-lead.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -31,6 +32,25 @@ describe("agents.txt Layer 4 discovery", () => {
     mcp: Array<{ url: string; type: string; description: string }>;
   };
   const blob = `${txt}\n${jsonRaw}`;
+
+  it("leads with the free job board and free agent list", () => {
+    const look = txt.indexOf("Can I pay this address?");
+    assert.ok(look > 0);
+    assert.ok(txt.indexOf(MARKETPLACE_AGENT_LEAD) >= 0);
+    assert.ok(txt.indexOf(MARKETPLACE_AGENT_LEAD) < look);
+    assert.ok(txt.indexOf("https://agent-control.net/exchange") < look);
+    assert.ok(txt.indexOf("https://agent-control.net/directory") < look);
+    assert.ok(txt.indexOf("GET and POST https://agent-control.net/api/v1/exchange/jobs") < look);
+    assert.ok(txt.indexOf("GET and POST https://agent-control.net/api/v1/agents/listings") < look);
+    assert.equal(json.site.description.startsWith(MARKETPLACE_AGENT_LEAD), true);
+    assert.ok(
+      json.site.description.indexOf("https://agent-control.net/directory") <
+        json.site.description.indexOf("Can I pay this address?"),
+    );
+    assert.match(json.site.description, /GET and POST https:\/\/agent-control\.net\/api\/v1\/agents\/listings/);
+    assert.doesNotMatch(MARKETPLACE_AGENT_LEAD, /refund|escrow|keep 10%/i);
+    assert.equal(read("public/.well-known/agents.json"), jsonRaw);
+  });
 
   it("is Layer 4 agents-txt with MCP, Meter pricing, and llms.txt", () => {
     assert.match(txt, /^# agents\.txt\n/);
@@ -104,13 +124,29 @@ describe("agents discovery crawler surfaces", () => {
 
     assert.match(sitemap, /<loc>https:\/\/agent-control\.net\/agents\.txt<\/loc>/);
     assert.match(sitemap, /<loc>https:\/\/agent-control\.net\/agents\.json<\/loc>/);
+    assert.match(sitemap, /<loc>https:\/\/agent-control\.net\/\.well-known\/agents\.json<\/loc>/);
     assert.match(sitemap, /<loc>https:\/\/agent-control\.net\/llms\.txt<\/loc>/);
+    assert.match(sitemap, /<loc>https:\/\/agent-control\.net\/exchange<\/loc>/);
+    assert.match(sitemap, /<loc>https:\/\/agent-control\.net\/directory<\/loc>/);
     assert.match(sitemap, /<loc>https:\/\/agent-control\.net\/privacy<\/loc>/);
+    assert.ok(
+      sitemap.indexOf("<loc>https://agent-control.net/exchange</loc>") <
+        sitemap.indexOf("<loc>https://agent-control.net/login</loc>"),
+    );
+    assert.ok(
+      sitemap.indexOf("<loc>https://agent-control.net/directory</loc>") <
+        sitemap.indexOf("<loc>https://agent-control.net/login</loc>"),
+    );
     assert.doesNotMatch(sitemap, /<loc>https:\/\/agent-control\.net\/meter<\/loc>/);
     assert.doesNotMatch(sitemap, /<loc>https:\/\/agent-control\.net\/live<\/loc>/);
 
+    assert.match(robots, /Allow: \/exchange/);
+    assert.match(robots, /Allow: \/directory/);
+    assert.match(robots, /Allow: \/\.well-known\/agents\.json/);
+
     assert.match(vercel, /"source": "\/agents\.txt"/);
     assert.match(vercel, /"source": "\/agents\.json"/);
+    assert.match(vercel, /"source": "\/\.well-known\/agents\.json"/);
     assert.match(vercel, /text\/plain; charset=utf-8/);
     assert.match(vercel, /Access-Control-Allow-Origin/);
   });

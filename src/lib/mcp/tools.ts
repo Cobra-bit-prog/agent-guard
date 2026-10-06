@@ -1,9 +1,81 @@
+import { MARKETPLACE_AGENT_LEAD } from "../marketplace-lead.ts";
 import { METER_AGENT_LEAD, STAMP_TICKET_COPY } from "../meter/pricing.ts";
 
 const readOnly = { readOnlyHint: true, destructiveHint: false } as const;
 const writes = { readOnlyHint: false, destructiveHint: false } as const;
 
+/** Free board tools. No API key, no Meter look, no Action Gate seat. */
+export const MCP_MARKETPLACE_TOOLS = [
+  "list_open_jobs",
+  "post_job",
+  "list_your_agent",
+  "browse_agents",
+] as const;
+
+export const MCP_MARKETPLACE_INSTRUCTION =
+  `Free MCP tools (no API key, no Meter look, no Action Gate seat): ${MCP_MARKETPLACE_TOOLS.join(", ")}.`;
+
+const freeBoard =
+  `${MARKETPLACE_AGENT_LEAD} No API key. No Meter look. No Action Gate seat.`;
+
 export const MCP_TOOLS = [
+  {
+    name: "list_open_jobs",
+    title: "List open jobs",
+    description:
+      `${freeBoard} Returns open jobs on the free job board, newest first. Same list as GET /api/v1/exchange/jobs.`,
+    annotations: readOnly,
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "post_job",
+    title: "Post a job",
+    description:
+      `${freeBoard} Post one job. Posting costs nothing. Pay the worker only when you say the job is done. Same fields as POST /api/v1/exchange/jobs.`,
+    annotations: writes,
+    inputSchema: {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "140 characters or less" },
+        summary: { type: "string", description: "What you need done" },
+        budget_usd: { type: "number", description: "Whole dollars, from 1 to 1000000" },
+        deadline: { type: "string", description: "YYYY-MM-DD or a future time, within 90 days" },
+        poster_kind: { type: "string", description: "human or agent" },
+        contact: { type: "string", description: "Shown on the listing. Workers reach you here." },
+      },
+      required: ["title", "summary", "budget_usd", "deadline", "poster_kind", "contact"],
+    },
+  },
+  {
+    name: "list_your_agent",
+    title: "List your agent",
+    description:
+      `${freeBoard} Add your agent to the free directory. Listing your agent is free. People reach you at the contact you leave. Same fields as POST /api/v1/agents/listings.`,
+    annotations: writes,
+    inputSchema: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        skills: {
+          type: "array",
+          items: { type: "string" },
+          description: "1 to 8 skills. A comma-separated string is also accepted.",
+        },
+        pitch: { type: "string", description: "280 characters or less" },
+        contact: { type: "string", description: "Email or https link shown on the listing" },
+        link: { type: "string", description: "Optional https link" },
+      },
+      required: ["name", "skills", "pitch", "contact"],
+    },
+  },
+  {
+    name: "browse_agents",
+    title: "Browse listed agents",
+    description:
+      `${freeBoard} Lists agents on the free directory, newest first. Same list as GET /api/v1/agents/listings.`,
+    annotations: readOnly,
+    inputSchema: { type: "object", properties: {} },
+  },
   {
     name: "meter_pricing",
     title: "Agent Meter pricing",
@@ -356,11 +428,12 @@ export const MCP_STOREFRONT_TOOLS = [
 export function mcpDiscovery() {
   return {
     name: "Agent Control",
-    description: `${METER_AGENT_LEAD} Agent Meter is public. Human App is separate.`,
+    description: `${MARKETPLACE_AGENT_LEAD} ${MCP_MARKETPLACE_INSTRUCTION} ${METER_AGENT_LEAD} Agent Meter is public. Human App is separate.`,
     protocol: "mcp",
     tools: MCP_TOOLS,
-    auth: "Meter meter_* tools: no Authorization / Bearer empty. Human App: Bearer agent API key or Claude Connector OAuth (required for check, approval, checkout, and status; get_pricing is public)",
+    auth: "Marketplace list_open_jobs, post_job, list_your_agent, and browse_agents: no API key, no Meter look, no Action Gate seat. Meter meter_* tools: no Authorization / Bearer empty. Human App: Bearer agent API key or Claude Connector OAuth (required for check, approval, checkout, and status; get_pricing is public)",
     storefront: MCP_STOREFRONT_TOOLS,
+    marketplace: MCP_MARKETPLACE_TOOLS,
     meter: [
       "meter_pricing",
       "meter_buy_pass",

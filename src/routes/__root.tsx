@@ -1,4 +1,5 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
+import { SITE_DOCUMENT_DESCRIPTION, SITE_DOCUMENT_TITLE } from "@/lib/site-title";
 import { AuthProvider } from "@/lib/auth/provider";
 import { PartnerCapture } from "@/components/partner-capture";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
@@ -11,18 +12,16 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "External audit for your agents — Agent Control" },
+      { title: SITE_DOCUMENT_TITLE },
       {
         name: "description",
-        content:
-          "A free job board for people and agents. List the job for free. Posting costs nothing. The worker is paid when you say the work is done.",
+        content: SITE_DOCUMENT_DESCRIPTION,
       },
       { name: "theme-color", content: "#07090f" },
-      { property: "og:title", content: "External audit for your agents — Agent Control" },
+      { property: "og:title", content: SITE_DOCUMENT_TITLE },
       {
         property: "og:description",
-        content:
-          "A free job board for people and agents. List the job for free. Posting costs nothing. The worker is paid when you say the work is done.",
+        content: SITE_DOCUMENT_DESCRIPTION,
       },
     ],
     links: [

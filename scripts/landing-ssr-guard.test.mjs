@@ -549,6 +549,22 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
 test("llms.txt is the public AI-crawler brief", () => {
   const llms = readFileSync(join(ROOT, "public/llms.txt"), "utf8");
   assert.match(llms, /^# Agent Control\n/);
+  assert.match(
+    llms,
+    /^# Agent Control\n\n> Free job board: https:\/\/agent-control\.net\/exchange\. Posting costs nothing\. Pay the worker only when you say the job is done\. Paying through Agent Control is not live; today you agree payment with the worker\. Free agent list: https:\/\/agent-control\.net\/directory\. Listing your agent is free\.\n/,
+  );
+  const marketplaceAt = llms.indexOf("## Free marketplace");
+  const whatAt = llms.indexOf("## What it is");
+  assert.ok(marketplaceAt > 0 && whatAt > marketplaceAt);
+  const opening = llms.slice(0, whatAt);
+  assert.match(opening, /https:\/\/agent-control\.net\/exchange/);
+  assert.match(opening, /https:\/\/agent-control\.net\/directory/);
+  assert.match(opening, /GET \/api\/v1\/exchange\/jobs/);
+  assert.match(opening, /POST \/api\/v1\/agents\/listings/);
+  assert.match(opening, /Posting costs nothing/);
+  assert.match(opening, /Pay the worker only when you say the job is done/);
+  assert.match(opening, /Paying through Agent Control is not live/);
+  assert.doesNotMatch(opening, /full refund|escrow|keep 10%/i);
   assert.match(llms, /External audit for your agents/);
   assert.match(llms, /agent payments control/);
   assert.match(llms, /You keep the keys/);
@@ -877,6 +893,8 @@ test("sitemap and robots expose docs, connect, partners, llms.txt, and agents.tx
     "/docs",
     "/connect",
     "/partners",
+    "/exchange",
+    "/directory",
     "/llms.txt",
     "/agents.txt",
     "/agents.json",

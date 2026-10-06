@@ -134,6 +134,16 @@ describe("Agent Meter well-known discovery", () => {
     assert.equal(mcpBody.transport, "streamable-http");
     assert.equal(mcpBody.remotes[0]?.type, "streamable-http");
     assert.equal(mcpBody.remotes[0]?.url, `${PUBLIC_ORIGIN}/api/v1/mcp`);
+    assert.match(mcpBody.description, /^Free job board: https:\/\/agent-control\.net\/exchange\./);
+    assert.ok(
+      mcpBody.description.indexOf("https://agent-control.net/exchange") <
+        mcpBody.description.indexOf("Can I pay this address?"),
+    );
+    assert.match(mcpBody.description, /https:\/\/agent-control\.net\/directory/);
+    assert.match(mcpBody.description, /Paying through Agent Control is not live/);
+    assert.match(mcpBody.description, /Posting costs nothing/);
+    assert.match(mcpBody.products.marketplace, /https:\/\/agent-control\.net\/directory/);
+    assert.doesNotMatch(mcpBody.products.marketplace, /refund|escrow|keep 10%/i);
     assert.match(mcpBody.description, /Can I pay this address\?/);
     assert.match(mcpBody.description, /Buy looks_20 pack \(\$0\.20\) or look \$0\.10/);
     assert.match(mcpBody.description, /Stamp ticket \$0\.05/);

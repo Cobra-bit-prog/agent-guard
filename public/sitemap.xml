@@ -5,6 +5,14 @@
     <changefreq>weekly</changefreq>
   </url>
   <url>
+    <loc>https://agent-control.net/exchange</loc>
+    <changefreq>daily</changefreq>
+  </url>
+  <url>
+    <loc>https://agent-control.net/directory</loc>
+    <changefreq>daily</changefreq>
+  </url>
+  <url>
     <loc>https://agent-control.net/login</loc>
     <changefreq>monthly</changefreq>
   </url>
@@ -38,6 +46,10 @@
   </url>
   <url>
     <loc>https://agent-control.net/agents.json</loc>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
+    <loc>https://agent-control.net/.well-known/agents.json</loc>
     <changefreq>weekly</changefreq>
   </url>
   <url>

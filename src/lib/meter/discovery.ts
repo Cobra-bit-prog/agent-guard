@@ -12,6 +12,7 @@ import {
   METER_BAZAAR_MIME,
   meterBazaarExtensions,
 } from "./bazaar.ts";
+import { MARKETPLACE_AGENT_LEAD } from "../marketplace-lead.ts";
 import {
   LOOK_QUESTION,
   LOOK_RISKS,
@@ -89,7 +90,7 @@ export function mcpWellKnown() {
   return {
     name: "net.agent-control/agent-control",
     title: "Agent Control",
-    description: `${METER_AGENT_LEAD} Agent Meter is public (no Authorization / Bearer empty). Human App is separate ($29).`,
+    description: `${MARKETPLACE_AGENT_LEAD} ${METER_AGENT_LEAD} Agent Meter is public (no Authorization / Bearer empty). Human App is separate ($29).`,
     version: "1.0.0",
     mcp: MCP_URL,
     transport: "streamable-http" as const,
@@ -100,6 +101,7 @@ export function mcpWellKnown() {
       },
     ],
     products: {
+      marketplace: MARKETPLACE_AGENT_LEAD,
       meter: `${METER_AGENT_LEAD} Meter meter_* tools: no Authorization / Bearer empty.`,
       human_app:
         "Spend limits and Approval Inbox. Humans pay $29. Agents use a Bearer API key.",
