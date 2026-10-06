@@ -1,8 +1,10 @@
+import { getSql } from "@/lib/db";
 import { agentStatusForKey, checkTransferIntent, pollApprovalIntent } from "@/lib/server/intent";
 import { checkActionIntent } from "@/lib/server/action-gate";
 import { executeWriteTool } from "@/lib/server/write-gate";
 import { isWriteGateTool } from "@/lib/write-gate";
 import { dispatchStorefrontTool } from "@/lib/server/storefront";
+import { isMarketplaceMcpTool, runMarketplaceTool } from "@/lib/server/marketplace-mcp";
 import type { McpToolCallResult } from "@/lib/mcp/handle.ts";
 import { meterMcpToolResult, rejectMeterKeyUpload } from "@/lib/mcp/meter-result.ts";
 import { handleMeterRequest } from "@/lib/meter/http";
@@ -62,6 +64,16 @@ export async function dispatchMcpTool(
   originRequest?: Request,
   store?: MeterStore,
 ): Promise<McpToolCallResult> {
+  if (isMarketplaceMcpTool(name)) {
+    const sql = await getSql();
+    const marketplace = await runMarketplaceTool(name, args, {
+      sql,
+      headers: originRequest?.headers,
+    });
+    if (marketplace) return marketplace;
+    return { ok: false, status: 500, code: 500, message: "Could not run this marketplace tool." };
+  }
+
   const source = meterInvoiceSourceForMcpTool(name);
   if (name === "meter_pricing") return meterTool("/api/v1/meter/pricing", "GET", args, originRequest, store);
   if (name === "meter_buy_pass") {

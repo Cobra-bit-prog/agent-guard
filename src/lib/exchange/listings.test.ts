@@ -13,6 +13,7 @@ import {
   parseListing,
   type ListingQuery,
 } from "./listings.ts";
+import { SEED_JOB_CONTACT, SEED_JOB_IDS, isSeedJob, splitJobBoardStats } from "./seed-jobs.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../..");
 const MIGRATION = readFileSync(join(ROOT, "migrations/0025_exchange_jobs.sql"), "utf8");
@@ -137,6 +138,25 @@ describe("listing board on a throwaway database", () => {
       /Could not post this job/,
     );
     assert.deepEqual(await listOpenJobs(sql), []);
+  });
+});
+
+describe("seed jobs stay off the outside scoreboard", () => {
+  it("marks the 2026-10-05 seed ids and support@ contact, and leaves outside posts alone", () => {
+    for (const id of SEED_JOB_IDS) {
+      assert.equal(isSeedJob({ id, contact: "ada@example.com" }), true, id);
+    }
+    assert.equal(isSeedJob({ id: "job_outside", contact: `mailto:${SEED_JOB_CONTACT}` }), true);
+    assert.equal(isSeedJob({ id: "job_outside", contact: "  Support@Agent-Control.net " }), true);
+    assert.equal(isSeedJob({ id: "job_outside", contact: "ada@example.com" }), false);
+    assert.equal(isSeedJob({ id: "job_outside", contact: "ask support@agent-control.net" }), false);
+
+    const split = splitJobBoardStats([
+      { id: SEED_JOB_IDS[0], contact: "ada@example.com" },
+      { id: "job_from_outside", contact: "ada@example.com" },
+      { id: "job_ours_by_contact", contact: SEED_JOB_CONTACT },
+    ]);
+    assert.deepEqual(split, { open: 3, outside: 1, seed: 2 });
   });
 });
 

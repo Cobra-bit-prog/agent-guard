@@ -1,5 +1,11 @@
 import { timingSafeEqual } from "node:crypto";
 import type { Sql } from "@/lib/db";
+import { isUndefinedTable } from "../exchange/listings.ts";
+import {
+  EMPTY_JOB_BOARD_STATS,
+  splitJobBoardStats,
+  type JobBoardStats,
+} from "../exchange/seed-jobs.ts";
 
 /** Cash already received for human inbox plans. Not an active seat. */
 export type CashReceived = {
@@ -15,6 +21,8 @@ export type AccountStats = {
   paid: { starter: number; pro: number; team: number };
   cashReceived: CashReceived;
   partners: Record<string, number>;
+  /** Open job-board posts, split so seed jobs are not read as outside demand. */
+  jobBoard: JobBoardStats;
   generatedAt: string;
 };
 
@@ -166,6 +174,20 @@ export async function collectCashReceived(sql: Sql): Promise<CashReceived> {
   }
 }
 
+export async function collectJobBoardStats(sql: Sql): Promise<JobBoardStats> {
+  try {
+    const rows = await sql.query<{ id: string; contact: string | null }>(
+      `select id, contact
+       from exchange_jobs
+       where status = 'open' and hidden_at is null`,
+    );
+    return splitJobBoardStats(rows);
+  } catch (err) {
+    if (!isUndefinedTable(err)) console.error("[stats] job board query failed");
+    return EMPTY_JOB_BOARD_STATS;
+  }
+}
+
 export async function collectAccountStats(sql: Sql): Promise<AccountStats> {
   const users = await sql.query<{ signed_up: number; unverified: number }>(
     `select count(*)::int as signed_up,
@@ -214,6 +236,7 @@ export async function collectAccountStats(sql: Sql): Promise<AccountStats> {
     paid,
     cashReceived,
     partners,
+    jobBoard: await collectJobBoardStats(sql),
     generatedAt: new Date().toISOString(),
   };
 }
@@ -287,6 +310,9 @@ export function formatAccountStatsReport(stats: AccountStats): string {
     `Paid Pro: ${stats.paid.pro}\n` +
     `Paid Team: ${stats.paid.team}\n` +
     `Cash received / ever paid: ${formatUsdcAmount(stats.cashReceived.usdc)} USDC (${stats.cashReceived.everPaid})\n` +
+    `Job board open: ${stats.jobBoard.open}\n` +
+    `Job board outside posts: ${stats.jobBoard.outside}\n` +
+    `Job board seed posts: ${stats.jobBoard.seed}\n` +
     (partnerLines ? `\n${partnerLines}\n` : "")
   );
 }
