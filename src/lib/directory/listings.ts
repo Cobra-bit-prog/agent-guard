@@ -11,7 +11,12 @@ export class ListingError extends Error {
 }
 
 export const HONEYPOT_FIELD = "company_website";
-export const POSTS_PER_HOUR = 5;
+/**
+ * Public directory posts allowed from one IP hash per hour.
+ * 20 leaves room for a person to list several agents. The honeypot and the
+ * one-hour window still bound a single network.
+ */
+export const POSTS_PER_HOUR = 20;
 export const RATE_WINDOW_MS = 60 * 60 * 1000;
 
 const NAME_MAX = 80;
