@@ -10,7 +10,7 @@ import {
   handleMcpPost,
   type McpCallTool,
 } from "./handle.ts";
-import { MCP_TOOLS, mcpDiscovery } from "./tools.ts";
+import { MCP_MARKETPLACE_TOOLS, MCP_TOOLS, mcpDiscovery } from "./tools.ts";
 import { meterMcpToolResult, rejectMeterKeyUpload, reshapeMeter402Invoice } from "./meter-result.ts";
 import { handleMeterRequest } from "../meter/http.ts";
 import { createMeterStore } from "../meter/store.ts";
@@ -181,6 +181,12 @@ describe("POST initialize is Streamable HTTP", () => {
     assert.match(instructions, /https:\/\/agent-control\.net\/directory/);
     assert.match(instructions, /Paying through Agent Control is not live/);
     assert.match(instructions, /Posting costs nothing/);
+    assert.match(instructions, /no API key, no Meter look, no Action Gate seat/);
+    const lookAt = instructions.indexOf("Can I pay this address?");
+    for (const name of MCP_MARKETPLACE_TOOLS) {
+      assert.match(instructions, new RegExp(`\\b${name}\\b`));
+      assert.ok(instructions.indexOf(name) < lookAt, `${name} belongs in the free-board instructions`);
+    }
     assert.doesNotMatch(
       instructions.slice(0, instructions.indexOf("Can I pay this address?")),
       /refund|escrow|keep 10%/i,
@@ -257,6 +263,10 @@ describe("initialized notification and session reuse", () => {
     assert.deepEqual(names, MCP_TOOLS.map((tool) => tool.name));
     assert.ok(names.includes("check_transfer"));
     assert.ok(names.includes("get_pricing"));
+    for (const name of MCP_MARKETPLACE_TOOLS) {
+      assert.ok(names.includes(name), name);
+    }
+    assert.deepEqual(names.slice(0, MCP_MARKETPLACE_TOOLS.length), [...MCP_MARKETPLACE_TOOLS]);
     for (const tool of MCP_TOOLS) {
       assert.ok(tool.title, `${tool.name} needs a human title`);
       assert.equal(typeof tool.annotations.readOnlyHint, "boolean");
@@ -606,6 +616,9 @@ describe("GET discovery and DELETE", () => {
       "create_checkout",
       "get_status",
     ]);
+    assert.deepEqual(discovery.marketplace, [...MCP_MARKETPLACE_TOOLS]);
+    assert.match(discovery.auth, /no API key, no Meter look, no Action Gate seat/);
+    assert.match(discovery.description, /^Free job board: https:\/\/agent-control\.net\/exchange\./);
     const res = handleMcpGet(new Request("https://agent-control.net/api/v1/mcp"));
     assert.equal(res.status, 200);
     assert.deepEqual(await res.json(), discovery);
