@@ -1,8 +1,10 @@
 import {
   AGENT_LISTINGS_MIGRATION,
+  DIRECTORY_SEED_MIGRATION,
   EXCHANGE_JOBS_MIGRATION,
   HIRE_ORDERS_MIGRATION,
   agentListingsHoldNotice,
+  directorySeedHoldNotice,
   exchangeJobsHoldNotice,
   hireOrdersHoldNotice,
   pendingMigrations,
@@ -105,6 +107,10 @@ function logHeldSchemaMigrations(paths: Iterable<string>): void {
   }
   if (names.some((path) => path.endsWith(HIRE_ORDERS_MIGRATION))) {
     const notice = hireOrdersHoldNotice();
+    if (notice) console.log(notice);
+  }
+  if (names.some((path) => path.endsWith(DIRECTORY_SEED_MIGRATION))) {
+    const notice = directorySeedHoldNotice();
     if (notice) console.log(notice);
   }
 }

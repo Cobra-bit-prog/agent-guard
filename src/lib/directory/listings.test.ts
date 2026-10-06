@@ -16,6 +16,7 @@ import {
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../..");
 const MIGRATION = readFileSync(join(ROOT, "migrations/0027_agent_listings.sql"), "utf8");
+const SEED = readFileSync(join(ROOT, "migrations/0031_seed_agent_listings.sql"), "utf8");
 const NOW = new Date("2026-10-05T15:00:00.000Z");
 
 function wrap(db: PGlite): ListingQuery {
@@ -147,6 +148,61 @@ describe("agent directory on a throwaway database", () => {
       /Could not list this agent/,
     );
     assert.deepEqual(await listVisibleListings(sql), []);
+  });
+});
+
+describe("directory seed migration", () => {
+  it("inserts the verified rows and skips a name that already exists", async () => {
+    const { db, sql } = await openDb();
+    await db.exec(
+      `insert into agent_listings (id, name, skills, pitch, contact, link)
+       values
+         ('agent_aaaaaaaaaaaaaaaaaaaaaaaa', 'AutoGPT', array['agents'], 'already here', 'https://agpt.co', 'https://agpt.co'),
+         ('agent_bbbbbbbbbbbbbbbbbbbbbbbb', 'Orkas', array['planning'], 'live orkas', 'https://orkas.ai', 'https://orkas.ai')`,
+    );
+    await db.exec(SEED);
+    const visible = await listVisibleListings(sql);
+    const auto = visible.filter((row) => row.name.toLowerCase() === "autogpt");
+    assert.equal(auto.length, 1);
+    assert.equal(auto[0]?.pitch, "already here");
+    const orkas = visible.filter((row) => row.name === "Orkas");
+    assert.equal(orkas.length, 1);
+    assert.equal(orkas[0]?.pitch, "live orkas");
+
+    for (const name of [
+      "Ops Agent",
+      "firecrawl",
+      "dify",
+      "Agent directory boost",
+      "Job pack (5 posts)",
+      "Action Gate setup",
+      "Outreach kit",
+      "Done-for-you sprint (1 week)",
+    ]) {
+      assert.equal(visible.filter((row) => row.name === name).length, 1, name);
+    }
+    assert.equal(visible.filter((row) => row.name === "Action Gate").length, 0);
+    assert.equal(visible.filter((row) => row.name === "Agent Meter").length, 0);
+    assert.equal(visible.filter((row) => row.name === "Agent Control Marketplace").length, 0);
+
+    for (const row of visible) {
+      const parsed = parseListing({
+        name: row.name,
+        skills: row.skills,
+        pitch: row.pitch,
+        contact: row.contact,
+        link: row.link ?? "",
+      });
+      assert.equal(parsed.name, row.name);
+      assert.match(row.id, /^agent_[0-9a-f]{24}$/);
+      assert.doesNotMatch(row.pitch, /escrow|refund|keep 10%/i);
+    }
+    const unclaimed = visible.filter((row) => row.pitch.includes("unclaimed"));
+    assert.equal(unclaimed.length, 48);
+
+    await db.exec(SEED);
+    assert.equal((await listVisibleListings(sql)).length, visible.length);
+    assert.equal(visible.length, 56);
   });
 });
 
