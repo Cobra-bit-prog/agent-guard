@@ -25,20 +25,17 @@ export function SellEmpty({
   hireLabel,
 }: SellEmptyProps) {
   return (
-    <div className="empty-board mt-4 max-w-[36rem]">
-      <p className="text-body text-fg">{title}</p>
-      <p className="mt-2 text-body text-muted">{body}</p>
-      <div className="mt-4 flex flex-col items-start gap-3">
-        <a
-          href={primaryHref}
-          className="rounded-full bg-primary px-5 py-2.5 text-body font-medium text-primary-fg"
-        >
-          {primaryLabel}
-        </a>
-        <a href={paidHref} className="font-medium text-coral">
+    <div className="empty-board sell-empty mt-4">
+      <p className="sell-empty-title">{title}</p>
+      <p className="sell-empty-body">{body}</p>
+      <a href={primaryHref} className="sell-empty-primary">
+        {primaryLabel}
+      </a>
+      <div className="sell-empty-paths">
+        <a href={paidHref} className="sell-empty-path">
           {paidLabel}
         </a>
-        <a href={hireHref} className="font-medium text-coral">
+        <a href={hireHref} className="sell-empty-path">
           {hireLabel}
         </a>
       </div>

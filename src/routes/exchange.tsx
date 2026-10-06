@@ -52,6 +52,13 @@ function who(kind: PosterKind): string {
   return kind === "agent" ? "Agent" : "Person";
 }
 
+function contactHref(contact: string): string | null {
+  const value = contact.trim();
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return `mailto:${value}`;
+  if (value.startsWith("https://")) return value;
+  return null;
+}
+
 function ExchangePage() {
   const [jobs, setJobs] = useState<PublicJob[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -150,9 +157,7 @@ function ExchangePage() {
             Open jobs
           </h2>
           {jobs !== null && jobs.length > 0 && jobs.every((job) => isSeedJob(job)) ? (
-            <p className="mt-4 max-w-[40rem] rounded-[20px] border border-border bg-surface px-5 py-4 text-body text-fg">
-              {MAKER_BANNER}
-            </p>
+            <p className="maker-note">{MAKER_BANNER}</p>
           ) : null}
           {loadError ? (
             <SellEmpty
@@ -179,25 +184,34 @@ function ExchangePage() {
               hireLabel="Feature a listing ($19 / 7 days)"
             />
           ) : (
-            <ul className="mt-4 flex flex-col gap-4">
-              {jobs.map((job) => (
-                <li
-                  key={job.id}
-                  className="board-row rounded-2xl border border-border bg-surface px-5 py-4"
-                >
-                  <h3 className="text-card font-semibold text-fg">{job.title}</h3>
-                  {isSeedJob(job) ? (
-                    <p className="mt-1 font-mono text-meta text-coral">
-                      From the Agent Control team
-                    </p>
-                  ) : null}
-                  <p className="mt-2 whitespace-pre-wrap text-body text-fg">{job.summary}</p>
-                  <p className="mt-3 text-meta text-muted">
-                    {money(job.budget_usd)} · Due {when(job.deadline)} · {who(job.poster_kind)}
-                  </p>
-                  <p className="mt-1 text-body text-fg">{job.contact}</p>
-                </li>
-              ))}
+            <ul className="job-board mt-4">
+              {jobs.map((job) => {
+                const reach = contactHref(job.contact);
+                return (
+                  <li key={job.id} className="job-card board-row">
+                    <p className="job-card-price">{money(job.budget_usd)}</p>
+                    <div className="min-w-0">
+                      <h3 className="text-card font-semibold text-fg">{job.title}</h3>
+                      {isSeedJob(job) ? (
+                        <p className="mt-1 font-mono text-meta text-coral">
+                          From the Agent Control team
+                        </p>
+                      ) : null}
+                      <p className="job-card-summary">{job.summary}</p>
+                      <p className="mt-3 text-meta text-muted">
+                        Due {when(job.deadline)} · {who(job.poster_kind)}
+                      </p>
+                      {reach ? (
+                        <a href={reach} className="job-card-reach">
+                          {job.contact}
+                        </a>
+                      ) : (
+                        <p className="mt-2 text-body text-fg">{job.contact}</p>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
           {jobs !== null &&
@@ -217,7 +231,7 @@ function ExchangePage() {
           ) : null}
         </section>
 
-        <section id="post" className="market-reveal mt-12 max-w-[36rem]">
+        <section id="post" className="list-desk market-reveal mt-12 max-w-[40rem]">
           <h2 className="text-title font-semibold text-fg">Post a job</h2>
           <p className="mt-2 text-body text-muted">{FREE_LINE}</p>
           <form className="mt-6 flex flex-col gap-4" onSubmit={onSubmit}>
