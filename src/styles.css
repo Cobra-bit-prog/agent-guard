@@ -207,6 +207,10 @@
     animation: landing-fade-up 0.72s cubic-bezier(0.16, 1, 0.3, 1) backwards;
   }
 
+  .home-hero .marketplace-kicker.landing-rise {
+    animation-delay: 0s;
+  }
+
   .home-hero h1.landing-rise {
     animation-delay: 0.05s;
   }
