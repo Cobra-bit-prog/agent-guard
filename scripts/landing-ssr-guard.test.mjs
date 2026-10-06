@@ -80,18 +80,20 @@ test("homepage is a hire marketplace with labeled examples and honest paying", (
   assert.match(home, /List the job for free\. Posting costs nothing\./);
   assert.match(home, /The worker is paid when you say the work is done\./);
   assert.match(home, /How paying works today/);
-  assert.match(home, /Post the job free\./);
-  assert.match(home, /A worker contacts you\./);
+  assert.match(home, /Post free\./);
+  assert.match(home, /They reach you\./);
   assert.match(home, /They reach you at the contact you left\./);
-  assert.match(home, /You pay the worker directly\./);
-  assert.match(home, /You pay when you say the work is done\./);
+  assert.match(home, /You pay them when you say done\./);
   assert.match(home, /You pay the worker directly when you say the work is done\./);
   assert.doesNotMatch(home, /We hold it/i);
   assert.doesNotMatch(home, /Once paying is on/i);
   assert.doesNotMatch(home, /Agent Control keeps it safe/);
   assert.doesNotMatch(home, /The worker gets 90%\./);
   assert.doesNotMatch(home, /Full refund if nobody answers by the deadline\./);
-  assert.doesNotMatch(home, /When paying is switched on, we keep 10% only when you mark the job done\./);
+  assert.doesNotMatch(
+    home,
+    /When paying is switched on, we keep 10% only when you mark the job done\./,
+  );
   assert.doesNotMatch(home, /You pay the full price up front\./);
   assert.doesNotMatch(home, /refund/i);
   assert.doesNotMatch(home, /kept safe/i);
@@ -104,11 +106,21 @@ test("homepage is a hire marketplace with labeled examples and honest paying", (
   assert.doesNotMatch(home, /we keep nothing/i);
   assert.match(home, /href="\/billing\/pay\?plan=action"/);
   assert.match(home, /Already running agents\?/);
-  assert.match(home, /send email, post to Slack, write to your CRM,\s+or deploy\. \$49 a month\./);
-  assert.match(home, /id="money"[\s\S]*id="examples"[\s\S]*id="deal"[\s\S]*id="pricing"/);
-  assert.doesNotMatch(home, /LandingVerdict|LandingProductTabs|LandingCatch|LandingGate|LandingFaq/);
+  assert.match(
+    home,
+    /send email, post to Slack, write to your\s+CRM,\s+or deploy\. \$49 a month\./,
+  );
+  assert.match(home, /id="money"[\s\S]*id="examples"[\s\S]*id="pricing"/);
+  assert.doesNotMatch(home, /id="deal"/);
+  assert.doesNotMatch(
+    home,
+    /LandingVerdict|LandingProductTabs|LandingCatch|LandingGate|LandingFaq/,
+  );
   assert.doesNotMatch(home, /Start free trial|1-day trial|Within policy|SupportedChains/);
-  assert.doesNotMatch(home, /\bescrow\b|\bfunded\b|\bhirer\b|\bsignatures?\b|\bsettlement\b|\bprotocol\b|USDC mint|\brail\b/i);
+  assert.doesNotMatch(
+    home,
+    /\bescrow\b|\bfunded\b|\bhirer\b|\bsignatures?\b|\bsettlement\b|\bprotocol\b|USDC mint|\brail\b/i,
+  );
   assert.doesNotMatch(home, />\s*Held\s*</);
   assert.doesNotMatch(home, />\s*Earned\s*</);
   assert.doesNotMatch(home, /jobs posted|testimonials?|\bratings?\b|\breviews?\b/i);
@@ -127,11 +139,20 @@ test("homepage is a hire marketplace with labeled examples and honest paying", (
   assert.match(home, /money-line/);
   assert.match(home, /scroll-rise/);
   assert.match(home, /home-hero/);
-  assert.match(home, /hero-fan/);
-  assert.match(home, /How it works today/);
+  assert.doesNotMatch(home, /hero-fan/);
+  assert.doesNotMatch(home, /How it works today/);
   assert.match(home, /Post free/);
-  assert.match(home, /Worker reaches you/);
-  assert.match(home, /You pay when it's done/);
+  assert.match(home, /They reach you/);
+  assert.match(home, /You pay them when you say done/);
+  assert.match(home, /Feature a listing \(\$19 \/ 7 days\)/);
+  assert.match(home, /href="\/directory#featured"/);
+  assert.match(home, /From the Agent Control team/);
+  assert.match(home, /featuredFirst/);
+  assert.match(home, /isSeedJob/);
+  assert.match(home, /Ideas to post/);
+  assert.match(home, /Or we do the work\./);
+  assert.match(home, /Sit on top for a week\./);
+  assert.match(home, /\$19 for 7 days\. Listing your agent stays free\./);
   assert.match(home, /Agents marketplace/);
   assert.match(home, /id="marketplace"/);
   assert.match(home, /aria-label="Agents marketplace"/);
@@ -139,10 +160,7 @@ test("homepage is a hire marketplace with labeled examples and honest paying", (
   assert.match(home, /role="tablist"/);
   assert.match(home, /aria-label="Agents and jobs"/);
   assert.match(home, /useState<"jobs" \| "agents">\("agents"\)/);
-  assert.match(
-    home,
-    /id="board-agents-tab"[\s\S]*Agents[\s\S]*id="board-jobs-tab"[\s\S]*Jobs/,
-  );
+  assert.match(home, /id="board-agents-tab"[\s\S]*Agents[\s\S]*id="board-jobs-tab"[\s\S]*Jobs/);
   assert.match(home, /\/api\/v1\/exchange\/jobs/);
   assert.match(home, /\/api\/v1\/agents\/listings/);
   assert.match(home, /Nothing listed yet\./);
@@ -150,10 +168,7 @@ test("homepage is a hire marketplace with labeled examples and honest paying", (
   assert.match(home, /See the job board/);
   assert.match(home, /See the agent list/);
   assert.doesNotMatch(home, /Agent Exchange/);
-  assert.match(
-    home,
-    /id="marketplace"[\s\S]*id="money"[\s\S]*id="examples"[\s\S]*id="deal"[\s\S]*id="pricing"/,
-  );
+  assert.match(home, /id="marketplace"[\s\S]*id="money"[\s\S]*id="examples"[\s\S]*id="pricing"/);
   assert.doesNotMatch(home, /Kept safe/);
   assert.doesNotMatch(home, /Worker paid/);
   const chrome = readFileSync(join(ROOT, "src/components/marketing/chrome.tsx"), "utf8");
@@ -179,7 +194,7 @@ test("homepage is a hire marketplace with labeled examples and honest paying", (
   assert.doesNotMatch(home, />\s*(Pay|Checkout)\b/);
   const money = home.split('id="money"')[1]?.split('id="examples"')[0] ?? "";
   assert.match(money, /Paying through Agent Control isn't switched on yet/);
-  const examples = home.split('id="examples"')[1]?.split('id="deal"')[0] ?? "";
+  const examples = home.split('id="examples"')[1]?.split('id="pricing"')[0] ?? "";
   assert.match(examples, /Examples of jobs people can post\./);
   assert.match(examples, /href="\/exchange"[^>]*>\s*See real posts on the board\./);
   assert.match(examples, /EXAMPLE_JOBS\.map/);
@@ -243,7 +258,10 @@ test("spend-control marketing modules keep their copy off the homepage", () => {
   assert.doesNotMatch(src, /locked sample/i);
   assert.doesNotMatch(src, /sandbox JSON/i);
   assert.match(src, /Paste the wallet\. See what would not have left\./);
-  assert.match(src, /Example week from a research agent — or paste yours\. Read-only\. We never hold the keys\./);
+  assert.match(
+    src,
+    /Example week from a research agent — or paste yours\. Read-only\. We never hold the keys\./,
+  );
   assert.match(src, /Open an example/);
   assert.match(src, /2 fine, 1 would wait, 1 would stop\. \$9,100 would not have left\./);
   assert.match(src, /Example week · research agent/);
@@ -273,6 +291,11 @@ test("exchange page is a free job board with an honest empty state", () => {
   assert.match(page, /createFileRoute\("\/exchange"\)/);
   assert.match(page, /Job board/);
   assert.match(page, /No jobs posted yet\./);
+  assert.match(page, /Be the first outside post — it's free\./);
+  assert.match(page, /Early jobs from our team — your post can sit beside them today\./);
+  assert.match(page, /From the Agent Control team/);
+  assert.match(page, /Feature a listing \(\$19 \/ 7 days\)/);
+  assert.match(page, /Job pack \(5 posts\) · \$79/);
   assert.match(page, /Posting is free\. Workers reach you at the contact you leave\./);
   assert.match(page, /Looking for work\? Same list\./);
   assert.match(page, /id="post"/);
@@ -280,7 +303,10 @@ test("exchange page is a free job board with an honest empty state", () => {
   assert.match(page, /POST \/api\/v1\/exchange\/jobs/);
   assert.match(page, /Shown on the listing\./);
   assert.doesNotMatch(page, /opens soon|coming soon/i);
-  assert.doesNotMatch(page, /Leave your email|we’ll tell you|we’ll email you|we'll tell you|we'll email you/i);
+  assert.doesNotMatch(
+    page,
+    /Leave your email|we’ll tell you|we’ll email you|we'll tell you|we'll email you/i,
+  );
   assert.doesNotMatch(
     page,
     /escrow|\bfunded\b|USDC mint|Solana rail|\bhirer\b|\bsignature\b|\bsettlement\b|\bprotocol\b|\brail\b|\bheld\b|\bearned\b/i,
@@ -295,6 +321,14 @@ test("directory page is a free agent list with an honest empty state", () => {
   assert.doesNotMatch(page, /createFileRoute\("\/agents"\)/);
   assert.match(page, /Agent directory/);
   assert.match(page, /No agents listed yet\./);
+  assert.match(page, /href="#featured"/);
+  assert.match(page, /Feature a listing \(\$19 \/ 7 days\)/);
+  const featuredCheckout = readFileSync(
+    join(ROOT, "src/components/directory-featured.tsx"),
+    "utf8",
+  );
+  assert.match(featuredCheckout, /id="featured"/);
+  assert.match(page, /Hire us · directory boost is \$49/);
   assert.match(page, /Listing your agent is free\. People reach you at the contact you leave\./);
   assert.match(page, /Need work done\?/);
   assert.match(page, /href="\/exchange"/);
@@ -438,10 +472,7 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
   assert.match(docs, /Add an agent wallet/);
   assert.match(docs, /Set spend rules/);
   assert.match(docs, /Connect your agent/);
-  assert.match(
-    docs,
-    /Give it an API key\. They ask before they pay\. You keep the keys\./,
-  );
+  assert.match(docs, /Give it an API key\. They ask before they pay\. You keep the keys\./);
   assert.doesNotMatch(docs, /Before it sends money/);
   assert.doesNotMatch(docs, /If the answer is no, it must not send/);
   assert.match(docs, /Watch the console/);
@@ -476,7 +507,10 @@ test("docs is an operator quick start; API is collapsed and secondary", () => {
   assert.match(docs, /METER_LEDE/);
   assert.match(docs, /METER_SEPARATE/);
   assert.match(meterRecipe, /Agents pay themselves/);
-  assert.match(meterPricing, /Buy looks_20 pack \(\$0\.20\) or look \$0\.10\. Stamp ticket \$0\.05\./);
+  assert.match(
+    meterPricing,
+    /Buy looks_20 pack \(\$0\.20\) or look \$0\.10\. Stamp ticket \$0\.05\./,
+  );
   assert.match(meterRecipe, /METER_PACKS_FIRST/);
   assert.match(meterRecipe, /export const METER_LEDE = METER_PACKS_FIRST/);
   assert.doesNotMatch(meterRecipe, /First 5 free/);
@@ -661,7 +695,8 @@ test("llms.txt is the public AI-crawler brief", () => {
     /A human principal signs up and owns billing and Approval Inbox; agents connect under that account\./,
   );
   assert.match(llms, /## Agent Meter \(no human on the site\)/);
-  const meterBlock = llms.match(/## Agent Meter \(no human on the site\)\n([\s\S]*?)\n## /)?.[1] ?? "";
+  const meterBlock =
+    llms.match(/## Agent Meter \(no human on the site\)\n([\s\S]*?)\n## /)?.[1] ?? "";
   assert.match(meterBlock, /Agents pay themselves/);
   assert.match(meterBlock, /\$0\.10/);
   assert.match(meterBlock, /Buy looks_20 pack \(\$0\.20\) or look \$0\.10/);
@@ -808,8 +843,7 @@ test("customer marketing surfaces never say abort / must abort", () => {
 
   const docs = readFileSync(join(ROOT, "src/routes/docs.tsx"), "utf8");
   const beforeDetails = docs.split("<details")[0] ?? docs;
-  const holdNotes =
-    docs.split('id="hold-notifications"')[1]?.split('id="skill-mcp"')[0] ?? "";
+  const holdNotes = docs.split('id="hold-notifications"')[1]?.split('id="skill-mcp"')[0] ?? "";
   assert.doesNotMatch(beforeDetails, /must abort/i);
   assert.doesNotMatch(beforeDetails, /\babort\b/i);
   assert.doesNotMatch(holdNotes, /must abort/i);

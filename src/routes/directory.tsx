@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { DirectoryFeatured } from "@/components/directory-featured";
 import { SkyShell } from "@/components/marketing/chrome";
+import { SellEmpty } from "@/components/marketing/sell-empty";
 import {
   DIRECTORY_CATEGORIES,
   listingCategory,
@@ -11,7 +12,12 @@ import {
   listingSkillChips,
   type DirectoryCategory,
 } from "@/lib/directory/cards";
-import { FEATURED_CTA, FEATURED_HONESTY, FEATURED_LINE, FEATURED_UPSELL } from "@/lib/directory/featured-copy";
+import {
+  FEATURED_CTA,
+  FEATURED_HONESTY,
+  FEATURED_LINE,
+  FEATURED_UPSELL,
+} from "@/lib/directory/featured-copy";
 import type { PublicListing } from "@/lib/directory/listings";
 
 export const Route = createFileRoute("/directory")({
@@ -35,6 +41,7 @@ export const Route = createFileRoute("/directory")({
 
 const EMPTY = "No agents listed yet.";
 const FREE_LINE = "Listing your agent is free. People reach you at the contact you leave.";
+const THIN_LIST = 3;
 
 function when(iso: string): string {
   const date = new Date(iso);
@@ -161,13 +168,19 @@ function DirectoryPage() {
           className="landing-rise mt-2 max-w-[40rem] text-body text-muted"
           style={{ animationDelay: "0.24s" }}
         >
-          {FEATURED_HONESTY}
+          {FEATURED_HONESTY}{" "}
+          <a href="#featured" className="font-medium text-coral">
+            Feature a listing ($19 / 7 days)
+          </a>
         </p>
 
         {justListed ? (
           <div className="mt-6 max-w-[36rem]">
             <p className="text-body text-fg">Your agent is listed.</p>
-            <a href="#featured" className="mt-2 inline-block text-body font-medium text-fg underline">
+            <a
+              href="#featured"
+              className="mt-2 inline-block text-body font-medium text-fg underline"
+            >
               {FEATURED_UPSELL}
             </a>
             <p className="mt-2 text-body text-muted">{FEATURED_CTA}</p>
@@ -194,7 +207,16 @@ function DirectoryPage() {
             Listed agents
           </h2>
           {loadError ? (
-            <p className="mt-4 text-body text-muted">{loadError}</p>
+            <SellEmpty
+              title={loadError}
+              body="The list did not load. You can still list your agent free."
+              primaryHref="#list"
+              primaryLabel="List your agent"
+              paidHref="#featured"
+              paidLabel="Feature a listing ($19 / 7 days)"
+              hireHref="/hire"
+              hireLabel="Hire us · directory boost is $49"
+            />
           ) : listings === null ? (
             <p className="mt-4 text-body text-muted">Loading agents.</p>
           ) : (
@@ -205,7 +227,9 @@ function DirectoryPage() {
               onFeature={(listing) => {
                 setFeatureListingId(listing.id);
                 setFeatureContact(listing.contact);
-                document.getElementById("featured")?.scrollIntoView({ behavior: "auto", block: "start" });
+                document
+                  .getElementById("featured")
+                  ?.scrollIntoView({ behavior: "auto", block: "start" });
               }}
             />
           )}
@@ -259,7 +283,9 @@ function DirectoryPage() {
                 name="contact"
                 autoComplete="email"
               />
-              <span className="text-meta text-muted">Shown on the listing. Email or https link.</span>
+              <span className="text-meta text-muted">
+                Shown on the listing. Email or https link.
+              </span>
             </label>
             <label className="flex flex-col gap-1 text-meta text-muted">
               Website or repo link
@@ -273,7 +299,10 @@ function DirectoryPage() {
               />
               <span className="text-meta text-muted">Optional. https only.</span>
             </label>
-            <div className="absolute left-0 top-0 -z-10 h-px w-px overflow-hidden" aria-hidden="true">
+            <div
+              className="absolute left-0 top-0 -z-10 h-px w-px overflow-hidden"
+              aria-hidden="true"
+            >
               <label>
                 Company website
                 <input
@@ -318,7 +347,9 @@ function DirectoryBoard({
   onFeature: (listing: PublicListing) => void;
 }) {
   const shown =
-    category === "All" ? listings : listings.filter((listing) => listingCategory(listing) === category);
+    category === "All"
+      ? listings
+      : listings.filter((listing) => listingCategory(listing) === category);
 
   return (
     <>
@@ -333,35 +364,51 @@ function DirectoryBoard({
         ))}
       </div>
       {listings.length === 0 ? (
-        <>
-          <p className="empty-board mt-4 max-w-[36rem] text-body text-muted">{EMPTY}</p>
-          <p className="mt-3 max-w-[36rem] text-body text-muted">
-            Want us to list an agent and write the offer?{" "}
-            <a href="/hire" className="text-fg underline">
-              Hire us
-            </a>
-          </p>
-        </>
+        <SellEmpty
+          title={EMPTY}
+          body="List yours free. People reach you at the contact you leave."
+          primaryHref="#list"
+          primaryLabel="List your agent"
+          paidHref="#featured"
+          paidLabel="Feature a listing ($19 / 7 days)"
+          hireHref="/hire"
+          hireLabel="Hire us · directory boost is $49"
+        />
       ) : shown.length === 0 ? (
-        <div className="mt-4 max-w-[36rem]">
-          <p className="text-body text-fg">Nothing in {category} yet.</p>
-          <p className="mt-2 text-body text-muted">
-            <a href="#list" className="text-fg underline">
-              List your agent
-            </a>{" "}
-            for free, or{" "}
-            <a href="#featured" className="text-fg underline">
-              {FEATURED_CTA}
-            </a>
-            .
-          </p>
-        </div>
+        <SellEmpty
+          title={`Nothing in ${category} yet.`}
+          body="List yours free, or feature a listing so it sits on top for a week."
+          primaryHref="#list"
+          primaryLabel="List your agent"
+          paidHref="#featured"
+          paidLabel="Feature a listing ($19 / 7 days)"
+          hireHref="/hire"
+          hireLabel="Hire us · directory boost is $49"
+        />
       ) : (
-        <ul className="mt-4 flex flex-col gap-4">
-          {shown.map((listing) => (
-            <ListingCard key={listing.id} listing={listing} onFeature={() => onFeature(listing)} />
-          ))}
-        </ul>
+        <>
+          <ul className="mt-4 flex flex-col gap-4">
+            {shown.map((listing) => (
+              <ListingCard
+                key={listing.id}
+                listing={listing}
+                onFeature={() => onFeature(listing)}
+              />
+            ))}
+          </ul>
+          {shown.length < THIN_LIST ? (
+            <SellEmpty
+              title="Few agents in this view."
+              body="List yours free, or feature a listing so it sits on top for a week."
+              primaryHref="#list"
+              primaryLabel="List your agent"
+              paidHref="#featured"
+              paidLabel="Feature a listing ($19 / 7 days)"
+              hireHref="/hire"
+              hireLabel="Hire us · directory boost is $49"
+            />
+          ) : null}
+        </>
       )}
     </>
   );
@@ -412,13 +459,21 @@ function ListingCard({ listing, onFeature }: { listing: PublicListing; onFeature
       {actions.length > 0 ? (
         <div className="mt-3 flex flex-wrap gap-3">
           {actions.map((action) => (
-            <a key={action.label} href={action.href} className="text-body font-medium text-fg underline">
+            <a
+              key={action.label}
+              href={action.href}
+              className="text-body font-medium text-fg underline"
+            >
               {action.label}
             </a>
           ))}
         </div>
       ) : null}
-      <button type="button" className="mt-3 text-left text-body font-medium text-fg underline" onClick={onFeature}>
+      <button
+        type="button"
+        className="mt-3 text-left text-body font-medium text-fg underline"
+        onClick={onFeature}
+      >
         {FEATURED_CTA}
       </button>
     </li>

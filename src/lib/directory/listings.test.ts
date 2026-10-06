@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { PGlite } from "@electric-sql/pglite";
+import { featuredFirst, isFeaturedListing } from "./featured-rank.ts";
 import {
   ListingError,
   POSTS_PER_HOUR,
@@ -55,9 +56,7 @@ describe("agent listing validation", () => {
   });
 
   it("accepts an https contact and an omitted link", () => {
-    const parsed = parseListing(
-      listing({ contact: "https://example.com/hello", link: "  " }),
-    );
+    const parsed = parseListing(listing({ contact: "https://example.com/hello", link: "  " }));
     assert.equal(parsed.contact, "https://example.com/hello");
     assert.equal(parsed.link, null);
   });
@@ -71,7 +70,10 @@ describe("agent listing validation", () => {
     assert.throws(() => parseListing(listing({ pitch: "" })), /Pitch is required/);
     assert.throws(() => parseListing(listing({ pitch: "x".repeat(281) })), /280/);
     assert.throws(() => parseListing(listing({ contact: "" })), /Contact is required/);
-    assert.throws(() => parseListing(listing({ contact: "not-an-email" })), /email or an https link/);
+    assert.throws(
+      () => parseListing(listing({ contact: "not-an-email" })),
+      /email or an https link/,
+    );
     assert.throws(() => parseListing(listing({ contact: "http://example.com" })), /https link/);
     assert.throws(() => parseListing(listing({ link: "http://example.com" })), /https link/);
     assert.throws(
@@ -206,10 +208,42 @@ describe("directory seed migration", () => {
   });
 });
 
+describe("featured listings sort ahead of newest", () => {
+  const now = Date.parse("2026-10-06T00:00:00.000Z");
+  type Row = { id: string; featured?: boolean; featured_until?: string | null };
+
+  it("keeps newest order when the API has no featured field", () => {
+    const rows: Row[] = [{ id: "new" }, { id: "older" }];
+    assert.deepEqual(
+      featuredFirst(rows, now).map((row) => row.id),
+      ["new", "older"],
+    );
+    assert.equal(isFeaturedListing({}, now), false);
+  });
+
+  it("puts live featured rows first and drops an expired pin", () => {
+    const rows: Row[] = [
+      { id: "newest" },
+      { id: "pinned", featured: true },
+      { id: "until", featured_until: "2026-10-13T00:00:00.000Z" },
+      { id: "expired", featured: true, featured_until: "2026-10-01T00:00:00.000Z" },
+    ];
+    assert.deepEqual(
+      featuredFirst(rows, now).map((row) => row.id),
+      ["pinned", "until", "newest", "expired"],
+    );
+  });
+});
+
 describe("directory page empty state", () => {
   it("says the list is empty and does not pretend agents are already listed", () => {
     const page = readFileSync(join(ROOT, "src/routes/directory.tsx"), "utf8");
     assert.match(page, /No agents listed yet\./);
+    assert.match(page, /href="#featured"/);
+    assert.match(page, /Feature a listing \(\$19 \/ 7 days\)/);
+    const checkout = readFileSync(join(ROOT, "src/components/directory-featured.tsx"), "utf8");
+    assert.match(checkout, /id="featured"/);
+    assert.match(page, /Hire us · directory boost is \$49/);
     assert.match(page, /Listing your agent is free\. People reach you at the contact you leave\./);
     assert.match(page, /<form/);
     assert.doesNotMatch(page, /opens soon|coming soon/i);

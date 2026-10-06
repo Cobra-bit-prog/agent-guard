@@ -1,7 +1,9 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { SkyShell } from "@/components/marketing/chrome";
+import { SellEmpty } from "@/components/marketing/sell-empty";
 import type { PosterKind, PublicJob } from "@/lib/exchange/listings";
+import { isSeedJob } from "@/lib/exchange/seed-jobs";
 
 export const Route = createFileRoute("/exchange")({
   component: ExchangePage,
@@ -24,6 +26,8 @@ export const Route = createFileRoute("/exchange")({
 
 const EMPTY = "No jobs posted yet.";
 const FREE_LINE = "Posting is free. Workers reach you at the contact you leave.";
+const THIN_LIST = 3;
+const MAKER_BANNER = "Early jobs from our team — your post can sit beside them today.";
 
 function money(dollars: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -145,18 +149,35 @@ function ExchangePage() {
           >
             Open jobs
           </h2>
+          {jobs !== null && jobs.length > 0 && jobs.every((job) => isSeedJob(job)) ? (
+            <p className="mt-4 max-w-[40rem] rounded-[20px] border border-border bg-surface px-5 py-4 text-body text-fg">
+              {MAKER_BANNER}
+            </p>
+          ) : null}
           {loadError ? (
-            <p className="mt-4 text-body text-muted">{loadError}</p>
+            <SellEmpty
+              title={loadError}
+              body="The board did not load. You can still post a job free."
+              primaryHref="#post"
+              primaryLabel="Post a job"
+              paidHref="/hire"
+              paidLabel="Job pack (5 posts) · $79"
+              hireHref="/directory#featured"
+              hireLabel="Feature a listing ($19 / 7 days)"
+            />
           ) : jobs === null ? (
             <p className="mt-4 text-body text-muted">Loading jobs.</p>
           ) : jobs.length === 0 ? (
-            <p className="empty-board mt-4 max-w-[36rem] text-body text-muted">
-              {EMPTY} Use the form to post the first one. Or{" "}
-              <a href="/hire" className="text-fg underline">
-                hire us
-              </a>{" "}
-              to write and post five jobs.
-            </p>
+            <SellEmpty
+              title={EMPTY}
+              body="Be the first outside post — it's free."
+              primaryHref="#post"
+              primaryLabel="Post a job"
+              paidHref="/hire"
+              paidLabel="Job pack (5 posts) · $79"
+              hireHref="/directory#featured"
+              hireLabel="Feature a listing ($19 / 7 days)"
+            />
           ) : (
             <ul className="mt-4 flex flex-col gap-4">
               {jobs.map((job) => (
@@ -165,6 +186,11 @@ function ExchangePage() {
                   className="board-row rounded-2xl border border-border bg-surface px-5 py-4"
                 >
                   <h3 className="text-card font-semibold text-fg">{job.title}</h3>
+                  {isSeedJob(job) ? (
+                    <p className="mt-1 font-mono text-meta text-coral">
+                      From the Agent Control team
+                    </p>
+                  ) : null}
                   <p className="mt-2 whitespace-pre-wrap text-body text-fg">{job.summary}</p>
                   <p className="mt-3 text-meta text-muted">
                     {money(job.budget_usd)} · Due {when(job.deadline)} · {who(job.poster_kind)}
@@ -174,6 +200,21 @@ function ExchangePage() {
               ))}
             </ul>
           )}
+          {jobs !== null &&
+          jobs.length > 0 &&
+          jobs.length < THIN_LIST &&
+          !jobs.every((job) => isSeedJob(job)) ? (
+            <SellEmpty
+              title="Room on the board."
+              body="Post a job free. It can sit here today."
+              primaryHref="#post"
+              primaryLabel="Post a job"
+              paidHref="/hire"
+              paidLabel="Job pack (5 posts) · $79"
+              hireHref="/directory#featured"
+              hireLabel="Feature a listing ($19 / 7 days)"
+            />
+          ) : null}
         </section>
 
         <section id="post" className="market-reveal mt-12 max-w-[36rem]">
@@ -262,7 +303,10 @@ function ExchangePage() {
               />
               <span className="text-meta text-muted">Shown on the listing.</span>
             </label>
-            <div className="absolute left-0 top-0 -z-10 h-px w-px overflow-hidden" aria-hidden="true">
+            <div
+              className="absolute left-0 top-0 -z-10 h-px w-px overflow-hidden"
+              aria-hidden="true"
+            >
               <label>
                 Company website
                 <input

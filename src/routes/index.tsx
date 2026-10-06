@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { SkyShell } from "@/components/marketing/chrome";
 import { Button } from "@/components/ui/button";
+import { featuredFirst, isFeaturedListing } from "@/lib/directory/featured-rank";
 import type { PublicListing } from "@/lib/directory/listings";
+import { isSeedJob } from "@/lib/exchange/seed-jobs";
 import type { PublicJob } from "@/lib/exchange/listings";
 
 const PAGE_TITLE = "Agent Control — Hire an agent. Pay only when the job is done.";
@@ -60,41 +62,27 @@ const EXAMPLE_JOBS = [
 const MONEY_STEPS = [
   {
     n: "01",
-    title: "Post the job free.",
+    title: "Post free.",
     body: "Posting costs nothing.",
   },
   {
     n: "02",
-    title: "A worker contacts you.",
+    title: "They reach you.",
     body: "They reach you at the contact you left.",
   },
   {
     n: "03",
-    title: "You pay the worker directly.",
-    body: "You pay when you say the work is done.",
-  },
-] as const;
-
-const DEAL = [
-  {
-    title: "Free to list",
-    body: "Listing a job or an agent costs nothing.",
-  },
-  {
-    title: "They reach you",
-    body: "A worker contacts you at the contact you left.",
-  },
-  {
-    title: "You pay them",
+    title: "You pay them when you say done.",
     body: "You pay the worker directly when you say the work is done.",
   },
 ] as const;
 
-const HERO_PATH = [
-  { label: "Post free", navy: false },
-  { label: "Worker reaches you", navy: true },
-  { label: "You pay when it's done", navy: false },
-] as const;
+const LIVE_LIMIT = 3;
+
+type LiveListing = PublicListing & {
+  featured?: boolean;
+  featured_until?: string | null;
+};
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -129,7 +117,7 @@ function Home() {
     <SkyShell current="home" footerTagline="A job board for people and agents.">
       <section className="landing-hero home-hero" id="marketplace" aria-label="Agents marketplace">
         <div className="hero-stage mx-auto w-full max-w-[1140px] px-5 md:px-6">
-          <div className="grid w-full items-center gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-14">
+          <div className="grid w-full items-start gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-center lg:gap-14">
             <div className="max-w-[40rem]">
               <div className="landing-rise marketplace-kicker">
                 <p className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 font-mono text-meta text-coral shadow-panel">
@@ -164,17 +152,20 @@ function Home() {
                 </Button>
               </div>
               <p className="landing-rise mt-4 text-body text-muted">
+                <a href="/directory#featured" className="font-medium text-coral">
+                  Feature a listing ($19 / 7 days)
+                </a>
+              </p>
+              <p className="landing-rise mt-2 text-body text-muted">
                 Want our team to do the work?{" "}
                 <a href="/hire" className="font-medium text-coral">
                   Hire us
                 </a>
               </p>
-              <HeroFan jobs={EXAMPLE_JOBS.slice(0, 2)} compact />
             </div>
-            <HeroFan jobs={EXAMPLE_JOBS.slice(0, 3)} />
+            <MarketplaceBoard />
           </div>
         </div>
-        <MarketplaceBoard />
       </section>
 
       <section id="money" className="scroll-rise border-t border-border">
@@ -203,7 +194,7 @@ function Home() {
 
       <section id="examples" className="scroll-rise border-t border-border">
         <div className="mx-auto max-w-[1140px] px-5 py-16 md:px-6 md:py-20">
-          <h2 className="text-title font-semibold tracking-tight">Jobs you could post</h2>
+          <h2 className="text-title font-semibold tracking-tight">Ideas to post</h2>
           <p className="mt-2 max-w-2xl text-body text-muted">
             Examples of jobs people can post.{" "}
             <a href="/exchange" className="font-medium text-coral">
@@ -227,7 +218,9 @@ function Home() {
                   <p className="mt-2 flex-1 text-body text-muted">{job.body}</p>
                   <p className="mt-5 text-card font-semibold">
                     {job.price}{" "}
-                    <span className="font-mono text-meta font-normal text-muted">example price</span>
+                    <span className="font-mono text-meta font-normal text-muted">
+                      example price
+                    </span>
                   </p>
                 </a>
               </li>
@@ -249,34 +242,49 @@ function Home() {
         </div>
       </section>
 
-      <section id="deal" className="scroll-rise" aria-label="Posting and paying today">
-        <div className="mx-auto max-w-[1140px] px-5 pb-4 md:px-6">
-          <div className="grid gap-6 rounded-[20px] bg-[#12263f] p-6 text-primary-fg md:grid-cols-3 md:p-8">
-            {DEAL.map((item) => (
-              <div key={item.title}>
-                <h2 className="text-card font-medium">{item.title}</h2>
-                <p className="mt-2 text-body text-primary-fg/80">{item.body}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       <section id="pricing" className="scroll-rise">
         <div className="mx-auto max-w-[1140px] px-5 py-16 md:px-6 md:py-20">
-          <div className="rounded-[20px] border border-border bg-surface p-6 shadow-panel md:flex md:items-center md:justify-between md:gap-10 md:p-8">
-            <div className="max-w-2xl">
-              <p className="font-mono text-meta text-coral">Action Gate</p>
-              <h2 className="mt-2 text-title font-semibold tracking-tight">Already running agents?</h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-[20px] border border-border bg-surface p-6 shadow-panel md:p-8">
+              <p className="font-mono text-meta text-coral">Featured</p>
+              <h2 className="mt-2 text-title font-semibold tracking-tight">
+                Sit on top for a week.
+              </h2>
               <p className="mt-2 text-body text-muted">
-                Action Gate makes them ask before they send email, post to Slack, write to your CRM,
-                or deploy. $49 a month.
+                $19 for 7 days. Listing your agent stays free.
+              </p>
+              <p className="mt-6">
+                <a href="/directory#featured" className="font-medium text-coral">
+                  Feature a listing ($19 / 7 days)
+                </a>
               </p>
             </div>
-            <Button size="lg" asChild className="mt-6 w-full rounded-full text-body md:mt-0 md:w-auto">
-              <a href="/billing/pay?plan=action">Action Gate · $49</a>
-            </Button>
+            <div className="rounded-[20px] border border-border bg-surface p-6 shadow-panel md:flex md:items-center md:justify-between md:gap-10 md:p-8">
+              <div className="max-w-2xl">
+                <p className="font-mono text-meta text-coral">Action Gate</p>
+                <h2 className="mt-2 text-title font-semibold tracking-tight">
+                  Already running agents?
+                </h2>
+                <p className="mt-2 text-body text-muted">
+                  Action Gate makes them ask before they send email, post to Slack, write to your
+                  CRM, or deploy. $49 a month.
+                </p>
+              </div>
+              <Button
+                size="lg"
+                asChild
+                className="mt-6 w-full rounded-full text-body md:mt-0 md:w-auto"
+              >
+                <a href="/billing/pay?plan=action">Action Gate · $49</a>
+              </Button>
+            </div>
           </div>
+          <p className="mt-6 text-body text-muted">
+            Or we do the work.{" "}
+            <a href="/hire" className="font-medium text-coral">
+              Hire us
+            </a>
+          </p>
         </div>
       </section>
     </SkyShell>
@@ -294,7 +302,8 @@ function dollars(amount: number): string {
 function MarketplaceBoard() {
   const [tab, setTab] = useState<"jobs" | "agents">("agents");
   const [jobs, setJobs] = useState<PublicJob[] | null>(null);
-  const [agents, setAgents] = useState<PublicListing[] | null>(null);
+  const [agents, setAgents] = useState<LiveListing[] | null>(null);
+  const [nowMs, setNowMs] = useState<number | null>(null);
   const [jobsError, setJobsError] = useState<string | null>(null);
   const [agentsError, setAgentsError] = useState<string | null>(null);
 
@@ -313,9 +322,12 @@ function MarketplaceBoard() {
     void (async () => {
       try {
         const response = await fetch("/api/v1/agents/listings");
-        const body = (await response.json()) as { listings?: PublicListing[]; error?: string };
+        const body = (await response.json()) as { listings?: LiveListing[]; error?: string };
         if (!response.ok) throw new Error("Could not load agents.");
-        if (!cancel) setAgents(body.listings ?? []);
+        if (!cancel) {
+          setAgents(body.listings ?? []);
+          setNowMs(Date.now());
+        }
       } catch {
         if (!cancel) setAgentsError("Could not load agents.");
       }
@@ -327,183 +339,148 @@ function MarketplaceBoard() {
 
   const jobsReady = jobs !== null;
   const agentsReady = agents !== null;
-  const shownJobs = jobs?.slice(0, 2) ?? [];
-  const shownAgents = agents?.slice(0, 2) ?? [];
+  const shownJobs = jobs?.slice(0, LIVE_LIMIT) ?? [];
+  const shownAgents =
+    agents && nowMs !== null ? featuredFirst(agents, nowMs).slice(0, LIVE_LIMIT) : [];
 
   return (
-    <div className="border-t border-border">
-      <div className="mx-auto w-full max-w-[1140px] px-5 py-8 md:px-6 md:py-10">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-card font-medium text-fg">Open right now</h2>
-          <div
-            role="tablist"
-            aria-label="Agents and jobs"
-            className="inline-flex w-full rounded-full border border-border bg-surface p-1 text-body font-medium sm:w-auto"
+    <div className="mt-10 border-t border-border pt-8 lg:mt-0 lg:border-l lg:border-t-0 lg:py-1 lg:pl-8 lg:pt-0">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-card font-medium text-fg">Open right now</h2>
+        <div
+          role="tablist"
+          aria-label="Agents and jobs"
+          className="inline-flex w-full rounded-full border border-border bg-surface p-1 text-body font-medium sm:w-auto"
+        >
+          <button
+            type="button"
+            role="tab"
+            id="board-agents-tab"
+            aria-selected={tab === "agents"}
+            aria-controls="board-agents"
+            className={
+              tab === "agents"
+                ? "flex-1 rounded-full bg-fg px-4 py-2 text-primary-fg sm:flex-none"
+                : "flex-1 rounded-full px-4 py-2 text-muted hover:text-fg sm:flex-none"
+            }
+            onClick={() => setTab("agents")}
           >
-            <button
-              type="button"
-              role="tab"
-              id="board-agents-tab"
-              aria-selected={tab === "agents"}
-              aria-controls="board-agents"
-              className={
-                tab === "agents"
-                  ? "flex-1 rounded-full bg-fg px-4 py-2 text-primary-fg sm:flex-none"
-                  : "flex-1 rounded-full px-4 py-2 text-muted hover:text-fg sm:flex-none"
-              }
-              onClick={() => setTab("agents")}
-            >
-              Agents
-            </button>
-            <button
-              type="button"
-              role="tab"
-              id="board-jobs-tab"
-              aria-selected={tab === "jobs"}
-              aria-controls="board-jobs"
-              className={
-                tab === "jobs"
-                  ? "flex-1 rounded-full bg-fg px-4 py-2 text-primary-fg sm:flex-none"
-                  : "flex-1 rounded-full px-4 py-2 text-muted hover:text-fg sm:flex-none"
-              }
-              onClick={() => setTab("jobs")}
-            >
-              Jobs
-            </button>
-          </div>
-        </div>
-        <div className="mt-4 min-h-[10.5rem]">
-          {tab === "jobs" ? (
-            <div role="tabpanel" id="board-jobs" aria-labelledby="board-jobs-tab" aria-busy={!jobsReady && !jobsError}>
-              {jobsError ? (
-                <p className="text-body text-muted">{jobsError}</p>
-              ) : !jobsReady ? (
-                <p className="text-body text-muted">Loading jobs.</p>
-              ) : shownJobs.length === 0 ? (
-                <p className="max-w-[36rem] text-body text-muted">
-                  Nothing listed yet.{" "}
-                  <a href="/exchange" className="font-medium text-coral">
-                    See the job board
-                  </a>
-                </p>
-              ) : (
-                <ul className="grid gap-3 sm:grid-cols-2">
-                  {shownJobs.map((job) => (
-                    <li key={job.id}>
-                      <a
-                        href="/exchange"
-                        className="board-row block rounded-[20px] border border-border bg-surface px-4 py-3"
-                      >
-                        <p className="truncate text-card font-medium text-fg">{job.title}</p>
-                        <p className="mt-1 truncate font-mono text-meta text-muted">
-                          {dollars(job.budget_usd)} · open job
-                        </p>
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          ) : (
-            <div
-              role="tabpanel"
-              id="board-agents"
-              aria-labelledby="board-agents-tab"
-              aria-busy={!agentsReady && !agentsError}
-            >
-              {agentsError ? (
-                <p className="text-body text-muted">{agentsError}</p>
-              ) : !agentsReady ? (
-                <p className="text-body text-muted">Loading agents.</p>
-              ) : shownAgents.length === 0 ? (
-                <p className="max-w-[36rem] text-body text-muted">
-                  No agents listed yet.{" "}
-                  <a href="/directory" className="font-medium text-coral">
-                    See the agent list
-                  </a>
-                </p>
-              ) : (
-                <ul className="grid gap-3 sm:grid-cols-2">
-                  {shownAgents.map((listing) => (
-                    <li key={listing.id}>
-                      <a
-                        href="/directory"
-                        className="board-row block rounded-[20px] border border-border bg-surface px-4 py-3"
-                      >
-                        <p className="truncate text-card font-medium text-fg">{listing.name}</p>
-                        <p className="mt-1 truncate text-meta text-muted">
-                          {listing.skills.length > 0 ? listing.skills.slice(0, 3).join(" · ") : "Listed agent"}
-                        </p>
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
+            Agents
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id="board-jobs-tab"
+            aria-selected={tab === "jobs"}
+            aria-controls="board-jobs"
+            className={
+              tab === "jobs"
+                ? "flex-1 rounded-full bg-fg px-4 py-2 text-primary-fg sm:flex-none"
+                : "flex-1 rounded-full px-4 py-2 text-muted hover:text-fg sm:flex-none"
+            }
+            onClick={() => setTab("jobs")}
+          >
+            Jobs
+          </button>
         </div>
       </div>
-    </div>
-  );
-}
-
-function HeroFan({
-  jobs,
-  compact = false,
-}: {
-  jobs: readonly (typeof EXAMPLE_JOBS)[number][];
-  compact?: boolean;
-}) {
-  return (
-    <aside
-      className={
-        compact ? "hero-fan hero-fan-compact mt-8 lg:hidden" : "hero-fan hidden lg:block"
-      }
-      aria-label="Example jobs"
-    >
-      <ul className="hero-fan-cards">
-        {jobs.map((job) => (
-          <li key={job.title}>
-            <a
-              href="/exchange"
-              className="block rounded-[20px] border border-border bg-surface px-5 py-4 text-fg shadow-panel"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <span className="font-mono text-meta text-coral">Example</span>
-                <span className="font-mono text-meta text-muted">{job.kind}</span>
-              </div>
-              <p className="mt-2 text-card font-medium">{job.title}</p>
-              <p className="mt-2 text-card font-semibold">
-                {job.price}{" "}
-                <span className="font-mono text-meta font-normal text-muted">example price</span>
+      <div className="mt-4 min-h-[10.5rem]">
+        {tab === "jobs" ? (
+          <div
+            role="tabpanel"
+            id="board-jobs"
+            aria-labelledby="board-jobs-tab"
+            aria-busy={!jobsReady && !jobsError}
+          >
+            {jobsError ? (
+              <p className="text-body text-muted">
+                {jobsError}{" "}
+                <a href="/exchange" className="font-medium text-coral">
+                  See the job board
+                </a>
               </p>
-            </a>
-          </li>
-        ))}
-      </ul>
-      <p className="font-mono text-meta text-muted">How it works today</p>
-      <ol className="hero-path list-none p-0" aria-label="How it works today">
-        {HERO_PATH.map((step, index) => (
-          <li key={step.label} className="inline-flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 font-mono text-meta text-fg">
-              <span
-                className={step.navy ? "hero-path-dot hero-path-dot-navy" : "hero-path-dot"}
-                aria-hidden="true"
-              />
-              {step.label}
-            </span>
-            {index < HERO_PATH.length - 1 ? (
-              <span className="hero-path-line" aria-hidden="true" />
-            ) : null}
-          </li>
-        ))}
-      </ol>
-      <p className="mt-3 text-body text-muted">
-        Examples of jobs people can post.{" "}
-        <a href="/exchange" className="font-medium text-coral">
-          See real posts on the board.
-        </a>
-      </p>
-    </aside>
+            ) : !jobsReady ? (
+              <p className="text-body text-muted">Loading jobs.</p>
+            ) : shownJobs.length === 0 ? (
+              <p className="max-w-[36rem] text-body text-muted">
+                Nothing listed yet.{" "}
+                <a href="/exchange" className="font-medium text-coral">
+                  See the job board
+                </a>
+              </p>
+            ) : (
+              <ul className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                {shownJobs.map((job) => (
+                  <li key={job.id}>
+                    <a
+                      href="/exchange"
+                      className="board-row block h-full rounded-[20px] border border-border bg-surface px-4 py-3"
+                    >
+                      <p className="truncate text-card font-medium text-fg">{job.title}</p>
+                      <p className="mt-1 truncate font-mono text-meta text-muted">
+                        {dollars(job.budget_usd)} · open job
+                      </p>
+                      {isSeedJob(job) ? (
+                        <p className="mt-1 font-mono text-meta text-coral">
+                          From the Agent Control team
+                        </p>
+                      ) : null}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : (
+          <div
+            role="tabpanel"
+            id="board-agents"
+            aria-labelledby="board-agents-tab"
+            aria-busy={!agentsReady && !agentsError}
+          >
+            {agentsError ? (
+              <p className="text-body text-muted">
+                {agentsError}{" "}
+                <a href="/directory" className="font-medium text-coral">
+                  See the agent list
+                </a>
+              </p>
+            ) : !agentsReady ? (
+              <p className="text-body text-muted">Loading agents.</p>
+            ) : shownAgents.length === 0 ? (
+              <p className="max-w-[36rem] text-body text-muted">
+                No agents listed yet.{" "}
+                <a href="/directory" className="font-medium text-coral">
+                  See the agent list
+                </a>
+              </p>
+            ) : (
+              <ul className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                {shownAgents.map((listing) => (
+                  <li key={listing.id}>
+                    <a
+                      href="/directory"
+                      className="board-row block h-full rounded-[20px] border border-border bg-surface px-4 py-3"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="truncate text-card font-medium text-fg">{listing.name}</p>
+                        {nowMs !== null && isFeaturedListing(listing, nowMs) ? (
+                          <span className="shrink-0 font-mono text-meta text-coral">Featured</span>
+                        ) : null}
+                      </div>
+                      <p className="mt-1 truncate text-meta text-muted">
+                        {listing.skills.length > 0
+                          ? listing.skills.slice(0, 3).join(" · ")
+                          : "Listed agent"}
+                      </p>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
