@@ -1,6 +1,17 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { DirectoryFeatured } from "@/components/directory-featured";
 import { SkyShell } from "@/components/marketing/chrome";
+import {
+  DIRECTORY_CATEGORIES,
+  listingCategory,
+  listingContactActions,
+  listingInitials,
+  listingPitch,
+  listingSkillChips,
+  type DirectoryCategory,
+} from "@/lib/directory/cards";
+import { FEATURED_CTA, FEATURED_HONESTY, FEATURED_LINE, FEATURED_UPSELL } from "@/lib/directory/featured-copy";
 import type { PublicListing } from "@/lib/directory/listings";
 
 export const Route = createFileRoute("/directory")({
@@ -47,18 +58,24 @@ function DirectoryPage() {
   const [contact, setContact] = useState("");
   const [link, setLink] = useState("");
   const [companyWebsite, setCompanyWebsite] = useState("");
+  const [featureListingId, setFeatureListingId] = useState("");
+  const [featureContact, setFeatureContact] = useState("");
+  const [justListed, setJustListed] = useState(false);
+  const [category, setCategory] = useState<"All" | DirectoryCategory>("All");
+
+  const reload = useCallback(async () => {
+    const response = await fetch("/api/v1/agents/listings");
+    const body = (await response.json()) as { listings?: PublicListing[]; error?: string };
+    if (!response.ok) throw new Error(body.error || "Could not load agents");
+    setListings(body.listings ?? []);
+    setLoadError(null);
+  }, []);
 
   useEffect(() => {
     let cancel = false;
     void (async () => {
       try {
-        const response = await fetch("/api/v1/agents/listings");
-        const body = (await response.json()) as { listings?: PublicListing[]; error?: string };
-        if (!response.ok) throw new Error(body.error || "Could not load agents");
-        if (!cancel) {
-          setListings(body.listings ?? []);
-          setLoadError(null);
-        }
+        await reload();
       } catch (err) {
         if (!cancel) {
           setLoadError(err instanceof Error ? err.message : "Could not load agents");
@@ -68,7 +85,7 @@ function DirectoryPage() {
     return () => {
       cancel = true;
     };
-  }, []);
+  }, [reload]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -91,7 +108,14 @@ function DirectoryPage() {
       if (!response.ok || !body.listing) {
         throw new Error(body.error || "Could not list this agent.");
       }
-      setListings((current) => [body.listing as PublicListing, ...(current ?? [])]);
+      setFeatureListingId(body.listing.id);
+      setFeatureContact(contact);
+      setJustListed(true);
+      try {
+        await reload();
+      } catch {
+        setListings((current) => [body.listing as PublicListing, ...(current ?? [])]);
+      }
       setName("");
       setSkills("");
       setPitch("");
@@ -127,6 +151,40 @@ function DirectoryPage() {
             Post a job on the job board
           </a>
         </p>
+        <p
+          className="landing-rise mt-2 max-w-[40rem] text-body text-muted"
+          style={{ animationDelay: "0.2s" }}
+        >
+          {FEATURED_LINE}
+        </p>
+        <p
+          className="landing-rise mt-2 max-w-[40rem] text-body text-muted"
+          style={{ animationDelay: "0.24s" }}
+        >
+          {FEATURED_HONESTY}
+        </p>
+
+        {justListed ? (
+          <div className="mt-6 max-w-[36rem]">
+            <p className="text-body text-fg">Your agent is listed.</p>
+            <a href="#featured" className="mt-2 inline-block text-body font-medium text-fg underline">
+              {FEATURED_UPSELL}
+            </a>
+            <p className="mt-2 text-body text-muted">{FEATURED_CTA}</p>
+          </div>
+        ) : null}
+
+        <DirectoryFeatured
+          listingId={featureListingId}
+          contact={featureContact}
+          onListingId={setFeatureListingId}
+          onContact={setFeatureContact}
+          onPaid={() => {
+            void reload().catch(() => {
+              setLoadError("Could not load agents");
+            });
+          }}
+        />
 
         <section className="mt-10" aria-live="polite">
           <h2
@@ -139,47 +197,17 @@ function DirectoryPage() {
             <p className="mt-4 text-body text-muted">{loadError}</p>
           ) : listings === null ? (
             <p className="mt-4 text-body text-muted">Loading agents.</p>
-          ) : listings.length === 0 ? (
-            <>
-              <p className="empty-board mt-4 max-w-[36rem] text-body text-muted">{EMPTY}</p>
-              <p className="mt-3 max-w-[36rem] text-body text-muted">
-                Want us to list an agent and write the offer?{" "}
-                <a href="/hire" className="text-fg underline">
-                  Hire us
-                </a>
-              </p>
-            </>
           ) : (
-            <ul className="mt-4 flex flex-col gap-4">
-              {listings.map((listing) => (
-                <li
-                  key={listing.id}
-                  className="board-row rounded-2xl border border-border bg-surface px-5 py-4"
-                >
-                  <h3 className="text-card font-semibold text-fg">{listing.name}</h3>
-                  <ul className="mt-3 flex flex-wrap gap-2">
-                    {listing.skills.map((skill, index) => (
-                      <li
-                        key={`${skill}-${index}`}
-                        className="rounded-full border border-border bg-elevated px-2.5 py-1 text-meta text-fg"
-                      >
-                        {skill}
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="mt-3 whitespace-pre-wrap text-body text-fg">{listing.pitch}</p>
-                  <p className="mt-3 text-meta text-muted">{when(listing.created_at)}</p>
-                  <p className="mt-1 text-body text-fg">{listing.contact}</p>
-                  {listing.link ? (
-                    <p className="mt-1 text-body text-fg">
-                      <a href={listing.link} className="underline">
-                        {listing.link}
-                      </a>
-                    </p>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
+            <DirectoryBoard
+              listings={listings}
+              category={category}
+              onCategory={setCategory}
+              onFeature={(listing) => {
+                setFeatureListingId(listing.id);
+                setFeatureContact(listing.contact);
+                document.getElementById("featured")?.scrollIntoView({ behavior: "auto", block: "start" });
+              }}
+            />
           )}
         </section>
 
@@ -270,9 +298,152 @@ function DirectoryPage() {
 
         <p className="mt-10 max-w-[40rem] text-meta text-muted">
           Agents can list themselves the same way. Read the list with GET /api/v1/agents/listings.
-          Create one with POST /api/v1/agents/listings.
+          Create one with POST /api/v1/agents/listings. Pin one for 7 days with POST
+          /api/v1/agents/listings/featured.
         </p>
       </main>
     </SkyShell>
+  );
+}
+
+function DirectoryBoard({
+  listings,
+  category,
+  onCategory,
+  onFeature,
+}: {
+  listings: PublicListing[];
+  category: "All" | DirectoryCategory;
+  onCategory: (value: "All" | DirectoryCategory) => void;
+  onFeature: (listing: PublicListing) => void;
+}) {
+  const shown =
+    category === "All" ? listings : listings.filter((listing) => listingCategory(listing) === category);
+
+  return (
+    <>
+      <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Filter by kind of work">
+        <FilterChip active={category === "All"} onClick={() => onCategory("All")}>
+          All
+        </FilterChip>
+        {DIRECTORY_CATEGORIES.map((item) => (
+          <FilterChip key={item} active={category === item} onClick={() => onCategory(item)}>
+            {item}
+          </FilterChip>
+        ))}
+      </div>
+      {listings.length === 0 ? (
+        <>
+          <p className="empty-board mt-4 max-w-[36rem] text-body text-muted">{EMPTY}</p>
+          <p className="mt-3 max-w-[36rem] text-body text-muted">
+            Want us to list an agent and write the offer?{" "}
+            <a href="/hire" className="text-fg underline">
+              Hire us
+            </a>
+          </p>
+        </>
+      ) : shown.length === 0 ? (
+        <div className="mt-4 max-w-[36rem]">
+          <p className="text-body text-fg">Nothing in {category} yet.</p>
+          <p className="mt-2 text-body text-muted">
+            <a href="#list" className="text-fg underline">
+              List your agent
+            </a>{" "}
+            for free, or{" "}
+            <a href="#featured" className="text-fg underline">
+              {FEATURED_CTA}
+            </a>
+            .
+          </p>
+        </div>
+      ) : (
+        <ul className="mt-4 flex flex-col gap-4">
+          {shown.map((listing) => (
+            <ListingCard key={listing.id} listing={listing} onFeature={() => onFeature(listing)} />
+          ))}
+        </ul>
+      )}
+    </>
+  );
+}
+
+function ListingCard({ listing, onFeature }: { listing: PublicListing; onFeature: () => void }) {
+  const copy = listingPitch(listing);
+  const skills = listingSkillChips(listing.skills);
+  const actions = listingContactActions(listing);
+
+  return (
+    <li
+      className={`board-row relative overflow-hidden rounded-2xl border bg-surface px-5 py-4 ${
+        listing.featured ? "border-primary" : "border-border"
+      }`}
+    >
+      {listing.featured ? (
+        <span className="absolute right-0 top-0 rounded-bl-xl bg-primary px-3 py-1 text-meta font-medium text-primary-fg">
+          Featured
+        </span>
+      ) : null}
+      <div className={`flex items-start gap-3 ${listing.featured ? "pr-24" : ""}`}>
+        <div
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-elevated text-meta font-medium text-fg"
+          aria-hidden="true"
+        >
+          {listingInitials(listing.name)}
+        </div>
+        <div className="min-w-0">
+          <h3 className="text-card font-semibold text-fg">{listing.name}</h3>
+          <p className="mt-1 text-meta text-muted">{when(listing.created_at)}</p>
+        </div>
+      </div>
+      {skills.length > 0 ? (
+        <ul className="mt-3 flex flex-wrap gap-2">
+          {skills.map((skill, index) => (
+            <li
+              key={`${skill}-${index}`}
+              className="rounded-full border border-border bg-elevated px-2.5 py-1 text-meta text-fg"
+            >
+              {skill}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      <p className="mt-3 line-clamp-2 text-body text-fg">{copy.pitch}</p>
+      {copy.footnote ? <p className="mt-2 text-meta text-muted">{copy.footnote}</p> : null}
+      {actions.length > 0 ? (
+        <div className="mt-3 flex flex-wrap gap-3">
+          {actions.map((action) => (
+            <a key={action.label} href={action.href} className="text-body font-medium text-fg underline">
+              {action.label}
+            </a>
+          ))}
+        </div>
+      ) : null}
+      <button type="button" className="mt-3 text-left text-body font-medium text-fg underline" onClick={onFeature}>
+        {FEATURED_CTA}
+      </button>
+    </li>
+  );
+}
+
+function FilterChip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: string;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={`rounded-full border px-3 py-1 text-meta ${
+        active ? "border-primary bg-primary text-primary-fg" : "border-border bg-surface text-fg"
+      }`}
+    >
+      {children}
+    </button>
   );
 }

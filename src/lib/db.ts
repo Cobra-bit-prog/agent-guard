@@ -2,10 +2,12 @@ import {
   AGENT_LISTINGS_MIGRATION,
   DIRECTORY_SEED_MIGRATION,
   EXCHANGE_JOBS_MIGRATION,
+  FEATURED_LISTINGS_MIGRATION,
   HIRE_ORDERS_MIGRATION,
   agentListingsHoldNotice,
   directorySeedHoldNotice,
   exchangeJobsHoldNotice,
+  featuredListingsHoldNotice,
   hireOrdersHoldNotice,
   pendingMigrations,
 } from "../../scripts/migration-plan.mjs";
@@ -111,6 +113,10 @@ function logHeldSchemaMigrations(paths: Iterable<string>): void {
   }
   if (names.some((path) => path.endsWith(DIRECTORY_SEED_MIGRATION))) {
     const notice = directorySeedHoldNotice();
+    if (notice) console.log(notice);
+  }
+  if (names.some((path) => path.endsWith(FEATURED_LISTINGS_MIGRATION))) {
+    const notice = featuredListingsHoldNotice();
     if (notice) console.log(notice);
   }
 }

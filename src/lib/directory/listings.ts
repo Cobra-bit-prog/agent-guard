@@ -34,6 +34,8 @@ export type PublicListing = {
   contact: string;
   link: string | null;
   created_at: string;
+  featured: boolean;
+  featured_until: string | null;
 };
 
 export interface ListingQuery {
@@ -48,6 +50,7 @@ type ListingRow = {
   contact: string;
   link: string | null;
   created_at: Date | string;
+  featured_until?: Date | string | null;
 };
 
 const PUBLIC_COLUMNS = `id, name, skills, pitch, contact, link, created_at`;
@@ -58,6 +61,15 @@ export function isUndefinedTable(err: unknown): boolean {
   if (code === "42P01") return true;
   const message = err instanceof Error ? err.message : "";
   return /agent_listings/i.test(message) && /does not exist/i.test(message);
+}
+
+/** Preview builds skip migration 0033, so featured_until may be absent. */
+export function isMissingFeaturedColumn(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const code = "code" in err ? String((err as { code: unknown }).code) : "";
+  const message = err instanceof Error ? err.message : "";
+  if (code === "42703" && /featured_until/i.test(message)) return true;
+  return /featured_until/i.test(message) && /does not exist/i.test(message);
 }
 
 export function hashClientIp(ip: string): string {
@@ -94,7 +106,9 @@ function asSkills(value: unknown): string[] {
   throw new ListingError("Could not read skills");
 }
 
-function mapListing(row: ListingRow): PublicListing {
+function mapListing(row: ListingRow, now: Date): PublicListing {
+  const featuredUntil = row.featured_until ? iso(row.featured_until) : null;
+  const featuredAt = featuredUntil ? new Date(featuredUntil).getTime() : Number.NaN;
   return {
     id: row.id,
     name: row.name,
@@ -103,6 +117,8 @@ function mapListing(row: ListingRow): PublicListing {
     contact: row.contact,
     link: row.link,
     created_at: iso(row.created_at),
+    featured_until: featuredUntil,
+    featured: Number.isFinite(featuredAt) && featuredAt > now.getTime(),
   };
 }
 
@@ -185,15 +201,30 @@ export function parseListing(input: unknown): {
   };
 }
 
-export async function listVisibleListings(sql: ListingQuery): Promise<PublicListing[]> {
-  const rows = await sql.query<ListingRow>(
-    `select ${PUBLIC_COLUMNS}
-     from agent_listings
-     where hidden_at is null
-     order by created_at desc
-     limit 100`,
-  );
-  return rows.map(mapListing);
+export async function listVisibleListings(sql: ListingQuery, now: Date = new Date()): Promise<PublicListing[]> {
+  try {
+    const rows = await sql.query<ListingRow>(
+      `select ${PUBLIC_COLUMNS}, featured_until
+       from agent_listings
+       where hidden_at is null
+       order by case when featured_until > $1 then 0 else 1 end,
+                case when featured_until > $1 then featured_until end desc nulls last,
+                created_at desc
+       limit 100`,
+      [now],
+    );
+    return rows.map((row) => mapListing(row, now));
+  } catch (err) {
+    if (!isMissingFeaturedColumn(err)) throw err;
+    const rows = await sql.query<ListingRow>(
+      `select ${PUBLIC_COLUMNS}
+       from agent_listings
+       where hidden_at is null
+       order by created_at desc
+       limit 100`,
+    );
+    return rows.map((row) => mapListing(row, now));
+  }
 }
 
 export async function createListing(
@@ -225,5 +256,5 @@ export async function createListing(
   );
   const row = rows[0];
   if (!row) throw new ListingError("Could not list this agent.", 500);
-  return mapListing(row);
+  return mapListing(row, now);
 }
