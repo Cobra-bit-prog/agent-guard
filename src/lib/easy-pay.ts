@@ -3,7 +3,8 @@
  * Otherwise Base USDC + Solana USDC — no homepage rewrite.
  */
 import { EVM_PAYOUT_ADDRESS } from "./evm-pay.ts";
-import { newPayReference, parsePaidPlan, type PaidPlanId } from "./pay-invoice.ts";
+import { newPayReference, parsePaidPlan, payPlanQuote, type PaidPlanId } from "./pay-invoice.ts";
+import { ACTION_GATE_PLAN } from "./shop-shield.ts";
 import { SOLANA_PAYOUT_ADDRESS, USDC_MINT, buildSolanaPayUrl } from "./solana-pay.ts";
 
 export const PLAN_USD: Record<PaidPlanId, number> = {
@@ -12,13 +13,30 @@ export const PLAN_USD: Record<PaidPlanId, number> = {
   team: 149,
 };
 
+/** Wallet console plans, plus Action Gate (`action`, any case or surrounding space). */
+export type CardPlanId = PaidPlanId | typeof ACTION_GATE_PLAN;
+
 export function cardConfigured() {
   return Boolean(process.env.STRIPE_SECRET_KEY?.trim());
 }
 
-export function humanPayOptions(planRaw?: unknown) {
+/** Non-empty JSON `plan` wins. Otherwise the `plan` query is used. */
+export function planFromCardRequest(request: Request, bodyPlan?: unknown): unknown {
+  if (typeof bodyPlan === "string" && bodyPlan.trim()) return bodyPlan;
+  return new URL(request.url).searchParams.get("plan");
+}
+
+export function resolveCardPlan(planRaw?: unknown): { plan: CardPlanId; amount_usd: number } {
+  const quote = payPlanQuote(planRaw);
+  if (quote.id === ACTION_GATE_PLAN) {
+    return { plan: ACTION_GATE_PLAN, amount_usd: quote.price };
+  }
   const plan = parsePaidPlan(planRaw);
-  const amount_usd = PLAN_USD[plan];
+  return { plan, amount_usd: PLAN_USD[plan] };
+}
+
+export function humanPayOptions(planRaw?: unknown) {
+  const { plan, amount_usd } = resolveCardPlan(planRaw);
   return {
     plan,
     amount_usd,
@@ -33,7 +51,7 @@ export function humanPayOptions(planRaw?: unknown) {
       chain: "base",
       pay_to: EVM_PAYOUT_ADDRESS,
       amount_usd,
-      note: "Same $29 on Base USDC if you already have Coinbase / MetaMask.",
+      note: `Same $${amount_usd} on Base USDC if you already have Coinbase / MetaMask.`,
     },
     solana: {
       asset: "usdc",
@@ -52,7 +70,7 @@ export function humanPayOptions(planRaw?: unknown) {
 }
 
 export async function createCardSession(planRaw?: unknown): Promise<
-  | { ok: true; url: string; plan: PaidPlanId; amount_usd: number }
+  | { ok: true; url: string; plan: CardPlanId; amount_usd: number }
   | { ok: false; error: string; http: number; pay: ReturnType<typeof humanPayOptions> }
 > {
   const pay = humanPayOptions(planRaw);
