@@ -14,12 +14,15 @@ import {
   AGENT_LISTINGS_MIGRATION,
   DIRECTORY_SEED_MIGRATION,
   EXCHANGE_JOBS_MIGRATION,
+  FEATURED_LISTINGS_MIGRATION,
   HIRE_ORDERS_MIGRATION,
   agentListingsHoldNotice,
   agentListingsMigrationHeld,
   directorySeedHoldNotice,
   directorySeedMigrationHeld,
   exchangeJobsHoldNotice,
+  featuredListingsHoldNotice,
+  featuredListingsMigrationHeld,
   exchangeJobsMigrationHeld,
   hireOrdersHoldNotice,
   hireOrdersMigrationHeld,
@@ -310,4 +313,58 @@ test("directory seed migration applies in production and is skipped on preview",
   const db = readFileSync(join(projectRoot(), "src/lib/db.ts"), "utf8");
   assert.match(migrate, /directorySeedHoldNotice/);
   assert.match(db, /directorySeedHoldNotice/);
+});
+
+test("featured listings migration applies in production and is skipped on preview", () => {
+  const name = FEATURED_LISTINGS_MIGRATION;
+  assert.equal(name, "0033_agent_listing_featured.sql");
+  const sql = readFileSync(join(projectRoot(), "migrations", name), "utf8");
+  assert.match(sql, /add column if not exists featured_until timestamptz/i);
+  assert.match(sql, /create table if not exists agent_listing_featured_orders/i);
+  assert.match(sql, /listing_id text not null references agent_listings/i);
+  assert.match(sql, /sku = 'featured_7d'/);
+  assert.match(sql, /amount_usd = 19/);
+  assert.match(sql, /tx_ref text/);
+  assert.match(sql, /paid_at timestamptz/);
+  assert.match(sql, /expires_at timestamptz/);
+  assert.doesNotMatch(sql, /\b(drop|delete)\b/i);
+  assert.doesNotMatch(sql, /escrow|refund/i);
+
+  assert.equal(featuredListingsMigrationHeld({}), false);
+  assert.equal(featuredListingsMigrationHeld({ VERCEL_ENV: "production" }), false);
+  assert.equal(featuredListingsMigrationHeld({ VERCEL_ENV: "preview" }), true);
+  assert.equal(featuredListingsHoldNotice({}), null);
+  assert.match(featuredListingsHoldNotice({ VERCEL_ENV: "preview" }) ?? "", /not applied/);
+
+  assert.deepEqual(pendingMigrations([name], [], { VERCEL_ENV: "preview" }), []);
+  assert.deepEqual(pendingMigrations([name], [], { VERCEL_ENV: "production" }), [
+    { name, path: name },
+  ]);
+
+  const listed = readdirSync(join(projectRoot(), "migrations")).filter((entry) =>
+    entry.endsWith(".sql"),
+  );
+  const preview = pendingMigrations(listed, [], { VERCEL_ENV: "preview" });
+  assert.equal(
+    preview.some((entry) => entry.name === name),
+    false,
+  );
+  assert.equal(
+    preview.some((entry) => entry.name === "0030_hide_junk_listing.sql"),
+    true,
+  );
+  assert.equal(
+    preview.some((entry) => entry.name === "0028_hide_directory_smoke_listing.sql"),
+    true,
+  );
+  const production = pendingMigrations(listed, [], { VERCEL_ENV: "production" });
+  assert.equal(
+    production.some((entry) => entry.name === name),
+    true,
+  );
+
+  const migrate = readFileSync(join(projectRoot(), "scripts/migrate.mjs"), "utf8");
+  const db = readFileSync(join(projectRoot(), "src/lib/db.ts"), "utf8");
+  assert.match(migrate, /featuredListingsHoldNotice/);
+  assert.match(db, /featuredListingsHoldNotice/);
 });

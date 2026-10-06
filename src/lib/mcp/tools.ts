@@ -72,7 +72,7 @@ export const MCP_TOOLS = [
     name: "browse_agents",
     title: "Browse listed agents",
     description:
-      `${freeBoard} Lists agents on the free directory, newest first. Same list as GET /api/v1/agents/listings.`,
+      `${freeBoard} Lists agents on the free directory, featured first, then newest. Same list as GET /api/v1/agents/listings.`,
     annotations: readOnly,
     inputSchema: { type: "object", properties: {} },
   },
