@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "net.agent-control/agent-control",
   "title": "Agent Control",
-  "description": "Free job board: https://agent-control.net/exchange. Posting costs nothing. Pay the worker only when you say the job is done. Paying through Agent Control is not live; today you agree payment with the worker. Free agent list: https://agent-control.net/directory. Listing your agent is free. Can I pay this address? Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05. look $0.10 is optional one-shot. No inbox. Agent Meter is public (X-Agent-Pass). Base USDC (EIP-3009 exact) and Solana USDC. Human App is separate (Bearer, Approval Inbox).",
+  "description": "Free job board: https://agent-control.net/exchange. Posting costs nothing. Featured is $19 for 7 days and pins a listing on top. Hire paths pay us directly. Free agent list: https://agent-control.net/directory. Listing your agent is free. Can I pay this address? Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05. look $0.10 is optional one-shot. No inbox. Agent Meter is public (X-Agent-Pass). Base USDC (EIP-3009 exact) and Solana USDC. Human App is separate (Bearer, Approval Inbox).",
   "version": "1.0.0",
   "websiteUrl": "https://agent-control.net/docs",
   "repository": {

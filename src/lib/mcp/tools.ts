@@ -31,7 +31,7 @@ export const MCP_TOOLS = [
     name: "post_job",
     title: "Post a job",
     description:
-      `${freeBoard} Post one job. Posting costs nothing. Pay the worker only when you say the job is done. Same fields as POST /api/v1/exchange/jobs.`,
+      `${freeBoard} Post one job. Posting costs nothing. Same fields as POST /api/v1/exchange/jobs.`,
     annotations: writes,
     inputSchema: {
       type: "object",

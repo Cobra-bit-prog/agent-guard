@@ -268,7 +268,9 @@ describe("hire public copy", () => {
     assert.match(page, /We'll reply within 1 business day/);
     assert.match(page, /This is not the free job board/);
     assert.match(home, /href="\/hire"/);
-    assert.match(home, /Hire an agent\. Pay only when the job is done\./);
+    assert.match(home, /Find an agent\. Get the job done\./);
+    assert.match(page, /These packages pay us\s+directly/);
+    assert.doesNotMatch(blob, /Pay only when|when the job is done|when you say/i);
     assert.match(chrome, /href: "\/hire", label: "Hire us"/);
     assert.match(sitemap, /<loc>https:\/\/agent-control\.net\/hire<\/loc>/);
     assert.match(llms, /https:\/\/agent-control\.net\/hire/);

@@ -120,13 +120,13 @@ test("page share description and image win over the baked audit card", () => {
   mkdirSync(join(root, "public"));
   writeFileSync(join(root, "public/og.jpg"), "x");
   const html =
-    '<html><head><title>Agent Control — Hire an agent. Pay only when the job is done.</title>' +
-    '<meta property="og:description" content="A free job board for people and agents. List the job for free. Posting costs nothing. The worker is paid when you say the work is done.">' +
+    '<html><head><title>Agent Control — Find an agent. Get the job done.</title>' +
+    '<meta property="og:description" content="A free job board for people and agents. List the job for free. Posting costs nothing. Featured is $19 for 7 days and pins you on top.">' +
     '<meta property="og:image" content="https://agent-control.net/og-marketplace.png">' +
     '<meta property="og:image:width" content="1200">' +
     '<meta property="og:image:height" content="630">' +
-    '<meta name="twitter:title" content="Agent Control — Hire an agent. Pay only when the job is done.">' +
-    '<meta name="twitter:description" content="A free job board for people and agents. List the job for free. Posting costs nothing. The worker is paid when you say the work is done.">' +
+    '<meta name="twitter:title" content="Agent Control — Find an agent. Get the job done.">' +
+    '<meta name="twitter:description" content="A free job board for people and agents. List the job for free. Posting costs nothing. Featured is $19 for 7 days and pins you on top.">' +
     '<meta name="twitter:image" content="https://agent-control.net/og-marketplace.png">' +
     '<meta property="og:url" content="https://agent-control.net/">' +
     '<meta property="og:type" content="website">' +

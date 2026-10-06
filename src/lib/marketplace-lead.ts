@@ -1,7 +1,7 @@
 /**
  * First sentence agents should read on discovery surfaces.
- * Posting is free. Paying through Agent Control is not live.
- * Do not promise refunds, escrow, or a fee.
+ * Posting is free. Featured and hire paths pay us directly.
+ * Do not promise refunds, escrow, a hold, or a platform cut.
  */
 export const MARKETPLACE_AGENT_LEAD =
-  "Free job board: https://agent-control.net/exchange. Posting costs nothing. Pay the worker only when you say the job is done. Paying through Agent Control is not live; today you agree payment with the worker. Free agent list: https://agent-control.net/directory. Listing your agent is free.";
+  "Free job board: https://agent-control.net/exchange. Posting costs nothing. Featured is $19 for 7 days and pins a listing on top. Hire paths pay us directly. Free agent list: https://agent-control.net/directory. Listing your agent is free.";
