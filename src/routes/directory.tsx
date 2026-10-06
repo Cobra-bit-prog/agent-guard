@@ -140,9 +140,17 @@ function DirectoryPage() {
   return (
     <SkyShell>
       <main className="mx-auto w-full max-w-[1140px] px-5 pb-16 pt-4 md:px-6">
-        <h1 className="landing-rise text-display font-semibold text-balance text-fg">
-          Agent directory
-        </h1>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <h1 className="landing-rise text-display font-semibold text-balance text-fg">
+            Agent directory
+          </h1>
+          {listings && listings.length > 0 ? (
+            <p className="directory-count">
+              <strong>{listings.length}</strong>
+              <span>{listings.length === 1 ? "agent listed" : "agents listed"}</span>
+            </p>
+          ) : null}
+        </div>
         <p
           className="landing-rise mt-4 max-w-[40rem] text-body text-muted"
           style={{ animationDelay: "0.08s" }}
@@ -173,6 +181,16 @@ function DirectoryPage() {
             Feature a listing ($19 / 7 days)
           </a>
         </p>
+        <div className="feature-banner landing-rise" style={{ animationDelay: "0.28s" }}>
+          <div>
+            <p className="feature-banner-kicker">Featured</p>
+            <p className="feature-banner-title">Sit on top for 7 days.</p>
+            <p className="feature-banner-note">$19 USDC. Your listing stays free.</p>
+          </div>
+          <a href="#featured" className="feature-banner-cta">
+            Feature a listing ($19 / 7 days)
+          </a>
+        </div>
 
         {justListed ? (
           <div className="mt-6 max-w-[36rem]">
@@ -186,18 +204,6 @@ function DirectoryPage() {
             <p className="mt-2 text-body text-muted">{FEATURED_CTA}</p>
           </div>
         ) : null}
-
-        <DirectoryFeatured
-          listingId={featureListingId}
-          contact={featureContact}
-          onListingId={setFeatureListingId}
-          onContact={setFeatureContact}
-          onPaid={() => {
-            void reload().catch(() => {
-              setLoadError("Could not load agents");
-            });
-          }}
-        />
 
         <section className="mt-10" aria-live="polite">
           <h2
@@ -235,7 +241,19 @@ function DirectoryPage() {
           )}
         </section>
 
-        <section id="list" className="market-reveal mt-12 max-w-[36rem]">
+        <DirectoryFeatured
+          listingId={featureListingId}
+          contact={featureContact}
+          onListingId={setFeatureListingId}
+          onContact={setFeatureContact}
+          onPaid={() => {
+            void reload().catch(() => {
+              setLoadError("Could not load agents");
+            });
+          }}
+        />
+
+        <section id="list" className="list-desk market-reveal mt-12 max-w-[40rem]">
           <h2 className="text-title font-semibold text-fg">List your agent</h2>
           <p className="mt-2 text-body text-muted">{FREE_LINE}</p>
           <form className="mt-6 flex flex-col gap-4" onSubmit={onSubmit}>
@@ -353,6 +371,11 @@ function DirectoryBoard({
 
   return (
     <>
+      {listings.length > 0 && category !== "All" ? (
+        <p className="mt-4 text-body text-muted">
+          {shown.length} in {category}
+        </p>
+      ) : null}
       <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Filter by kind of work">
         <FilterChip active={category === "All"} onClick={() => onCategory("All")}>
           All
@@ -387,7 +410,7 @@ function DirectoryBoard({
         />
       ) : (
         <>
-          <ul className="mt-4 flex flex-col gap-4">
+          <ul className="directory-grid mt-4">
             {shown.map((listing) => (
               <ListingCard
                 key={listing.id}
@@ -414,68 +437,57 @@ function DirectoryBoard({
   );
 }
 
+function shortSkills(skills: readonly string[]): string[] {
+  return listingSkillChips(skills).filter((skill) => skill.length <= 24);
+}
+
 function ListingCard({ listing, onFeature }: { listing: PublicListing; onFeature: () => void }) {
   const copy = listingPitch(listing);
-  const skills = listingSkillChips(listing.skills);
+  const skills = shortSkills(listing.skills);
   const actions = listingContactActions(listing);
+  const kind = listingCategory(listing);
 
   return (
-    <li
-      className={`board-row relative overflow-hidden rounded-2xl border bg-surface px-5 py-4 ${
-        listing.featured ? "border-primary" : "border-border"
-      }`}
-    >
-      {listing.featured ? (
-        <span className="absolute right-0 top-0 rounded-bl-xl bg-primary px-3 py-1 text-meta font-medium text-primary-fg">
-          Featured
-        </span>
-      ) : null}
-      <div className={`flex items-start gap-3 ${listing.featured ? "pr-24" : ""}`}>
-        <div
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-elevated text-meta font-medium text-fg"
-          aria-hidden="true"
-        >
+    <li className={`hire-card board-row ${listing.featured ? "is-featured" : ""}`}>
+      <div className="flex items-start gap-3">
+        <div className="hire-avatar" aria-hidden="true">
           {listingInitials(listing.name)}
         </div>
-        <div className="min-w-0">
-          <h3 className="text-card font-semibold text-fg">{listing.name}</h3>
-          <p className="mt-1 text-meta text-muted">{when(listing.created_at)}</p>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="text-card font-semibold text-fg">{listing.name}</h3>
+            {listing.featured ? <span className="hire-flag">Featured</span> : null}
+          </div>
+          <p className="mt-1 text-meta text-muted">
+            {kind} · {when(listing.created_at)}
+          </p>
         </div>
       </div>
+      <p className="mt-3 line-clamp-3 flex-1 text-body text-fg">{copy.pitch}</p>
+      {copy.footnote ? <p className="mt-2 text-meta text-muted">{copy.footnote}</p> : null}
       {skills.length > 0 ? (
-        <ul className="mt-3 flex flex-wrap gap-2">
+        <ul className="mt-3 flex flex-wrap gap-1.5">
           {skills.map((skill, index) => (
-            <li
-              key={`${skill}-${index}`}
-              className="rounded-full border border-border bg-elevated px-2.5 py-1 text-meta text-fg"
-            >
+            <li key={`${skill}-${index}`} className="hire-skill">
               {skill}
             </li>
           ))}
         </ul>
       ) : null}
-      <p className="mt-3 line-clamp-2 text-body text-fg">{copy.pitch}</p>
-      {copy.footnote ? <p className="mt-2 text-meta text-muted">{copy.footnote}</p> : null}
-      {actions.length > 0 ? (
-        <div className="mt-3 flex flex-wrap gap-3">
-          {actions.map((action) => (
-            <a
-              key={action.label}
-              href={action.href}
-              className="text-body font-medium text-fg underline"
-            >
-              {action.label}
-            </a>
-          ))}
-        </div>
-      ) : null}
-      <button
-        type="button"
-        className="mt-3 text-left text-body font-medium text-fg underline"
-        onClick={onFeature}
-      >
-        {FEATURED_CTA}
-      </button>
+      <div className="mt-4 flex flex-col gap-2">
+        {actions.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {actions.map((action) => (
+              <a key={action.label} href={action.href} className="hire-reach">
+                {action.label}
+              </a>
+            ))}
+          </div>
+        ) : null}
+        <button type="button" className="hire-pin-btn" onClick={onFeature}>
+          Feature · $19
+        </button>
+      </div>
     </li>
   );
 }

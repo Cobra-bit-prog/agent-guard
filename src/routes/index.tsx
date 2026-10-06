@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { SkyShell } from "@/components/marketing/chrome";
 import { Button } from "@/components/ui/button";
+import { listingInitials } from "@/lib/directory/cards";
 import { featuredFirst, isFeaturedListing } from "@/lib/directory/featured-rank";
 import type { PublicListing } from "@/lib/directory/listings";
 import { isSeedJob } from "@/lib/exchange/seed-jobs";
@@ -77,7 +78,8 @@ const MONEY_STEPS = [
   },
 ] as const;
 
-const LIVE_LIMIT = 3;
+const LIVE_LIMIT = 6;
+const TICKER_LIMIT = 18;
 
 type LiveListing = PublicListing & {
   featured?: boolean;
@@ -151,17 +153,32 @@ function Home() {
                   <a href="/directory#list">List your agent</a>
                 </Button>
               </div>
-              <p className="landing-rise mt-4 text-body text-muted">
-                <a href="/directory#featured" className="font-medium text-coral">
-                  Feature a listing ($19 / 7 days)
-                </a>
-              </p>
-              <p className="landing-rise mt-2 text-body text-muted">
-                Want our team to do the work?{" "}
-                <a href="/hire" className="font-medium text-coral">
-                  Hire us
-                </a>
-              </p>
+              <ul className="offer-rail landing-rise mt-5" style={{ animationDelay: "0.48s" }}>
+                <li>
+                  <a href="/directory#featured" className="offer-card">
+                    <span className="offer-card-price">$19</span>
+                    <span className="offer-card-meta">7 days</span>
+                    <span className="offer-card-label offer-card-label-full">
+                      Feature a listing ($19 / 7 days)
+                    </span>
+                    <span className="offer-card-label offer-card-label-short">Feature it</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="/billing/pay?plan=action" className="offer-card offer-card-navy">
+                    <span className="offer-card-price">$49</span>
+                    <span className="offer-card-meta">a month</span>
+                    <span className="offer-card-label">Action Gate</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="/hire" className="offer-card">
+                    <span className="offer-card-price">$49–$499</span>
+                    <span className="offer-card-meta">request only</span>
+                    <span className="offer-card-label">Hire us</span>
+                  </a>
+                </li>
+              </ul>
             </div>
             <MarketplaceBoard />
           </div>
@@ -244,47 +261,48 @@ function Home() {
 
       <section id="pricing" className="scroll-rise">
         <div className="mx-auto max-w-[1140px] px-5 py-16 md:px-6 md:py-20">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-[20px] border border-border bg-surface p-6 shadow-panel md:p-8">
-              <p className="font-mono text-meta text-coral">Featured</p>
-              <h2 className="mt-2 text-title font-semibold tracking-tight">
-                Sit on top for a week.
-              </h2>
-              <p className="mt-2 text-body text-muted">
+          <h2 className="text-title font-semibold tracking-tight">
+            Pay for a spot, a gate, or the work.
+          </h2>
+          <p className="mt-2 max-w-2xl text-body text-muted">
+            Listing and posting stay free. You pay us directly for these.
+          </p>
+          <div className="price-band mt-8">
+            <div className="price-card">
+              <p className="price-figure">$19</p>
+              <p className="font-mono text-meta text-coral">Featured · 7 days</p>
+              <h3 className="mt-3 text-card font-medium">Sit on top for a week.</h3>
+              <p className="mt-2 flex-1 text-body text-muted">
                 $19 for 7 days. Listing your agent stays free.
               </p>
-              <p className="mt-6">
-                <a href="/directory#featured" className="font-medium text-coral">
-                  Feature a listing ($19 / 7 days)
-                </a>
-              </p>
+              <a href="/directory#featured" className="price-card-cta">
+                Feature a listing ($19 / 7 days)
+              </a>
             </div>
-            <div className="rounded-[20px] border border-border bg-surface p-6 shadow-panel md:flex md:items-center md:justify-between md:gap-10 md:p-8">
-              <div className="max-w-2xl">
-                <p className="font-mono text-meta text-coral">Action Gate</p>
-                <h2 className="mt-2 text-title font-semibold tracking-tight">
-                  Already running agents?
-                </h2>
-                <p className="mt-2 text-body text-muted">
-                  Action Gate makes them ask before they send email, post to Slack, write to your
-                  CRM, or deploy. $49 a month.
-                </p>
-              </div>
-              <Button
-                size="lg"
-                asChild
-                className="mt-6 w-full rounded-full text-body md:mt-0 md:w-auto"
-              >
-                <a href="/billing/pay?plan=action">Action Gate · $49</a>
-              </Button>
+            <div className="price-card price-card-navy">
+              <p className="price-figure">$49</p>
+              <p className="font-mono text-meta text-coral">Action Gate · a month</p>
+              <h3 className="mt-3 text-card font-medium">Already running agents?</h3>
+              <p className="mt-2 flex-1 text-body text-muted">
+                Action Gate makes them ask before they send email, post to Slack, write to your CRM,
+                or deploy. $49 a month.
+              </p>
+              <a href="/billing/pay?plan=action" className="price-card-cta">
+                Action Gate · $49
+              </a>
+            </div>
+            <div className="price-card">
+              <p className="price-figure">$49–$499</p>
+              <p className="font-mono text-meta text-coral">Hire us · request only</p>
+              <h3 className="mt-3 text-card font-medium">Or we do the work.</h3>
+              <p className="mt-2 flex-1 text-body text-muted">
+                A directory boost, a job pack, or a one-week sprint. You tell us the outcome.
+              </p>
+              <a href="/hire" className="price-card-cta">
+                Hire us
+              </a>
             </div>
           </div>
-          <p className="mt-6 text-body text-muted">
-            Or we do the work.{" "}
-            <a href="/hire" className="font-medium text-coral">
-              Hire us
-            </a>
-          </p>
         </div>
       </section>
     </SkyShell>
@@ -340,13 +358,31 @@ function MarketplaceBoard() {
   const jobsReady = jobs !== null;
   const agentsReady = agents !== null;
   const shownJobs = jobs?.slice(0, LIVE_LIMIT) ?? [];
-  const shownAgents =
-    agents && nowMs !== null ? featuredFirst(agents, nowMs).slice(0, LIVE_LIMIT) : [];
+  const rankedAgents = agents && nowMs !== null ? featuredFirst(agents, nowMs) : [];
+  const shownAgents = rankedAgents.slice(0, LIVE_LIMIT);
+  const tickerNames =
+    agents && agents.length >= 8 ? agents.slice(0, TICKER_LIMIT).map((row) => row.name) : [];
+  const tickerLoop = tickerNames.length > 0 ? [...tickerNames, ...tickerNames] : [];
 
   return (
-    <div className="mt-10 border-t border-border pt-8 lg:mt-0 lg:border-l lg:border-t-0 lg:py-1 lg:pl-8 lg:pt-0">
+    <div className="alive-board mt-10 border-t border-border pt-8 lg:mt-0 lg:border-l lg:border-t-0 lg:py-1 lg:pl-8 lg:pt-0">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-card font-medium text-fg">Open right now</h2>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <h2 className="inline-flex items-center gap-2 text-card font-medium text-fg">
+            <span className="alive-dot" aria-hidden="true" />
+            Open right now
+          </h2>
+          {agents ? (
+            <a href="/directory" className="alive-count">
+              {agents.length} agents
+            </a>
+          ) : null}
+          {jobs ? (
+            <a href="/exchange" className="alive-count alive-count-quiet">
+              {jobs.length} jobs
+            </a>
+          ) : null}
+        </div>
         <div
           role="tablist"
           aria-label="Agents and jobs"
@@ -409,26 +445,28 @@ function MarketplaceBoard() {
                 </a>
               </p>
             ) : (
-              <ul className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-                {shownJobs.map((job) => (
-                  <li key={job.id}>
-                    <a
-                      href="/exchange"
-                      className="board-row block h-full rounded-[20px] border border-border bg-surface px-4 py-3"
-                    >
-                      <p className="truncate text-card font-medium text-fg">{job.title}</p>
-                      <p className="mt-1 truncate font-mono text-meta text-muted">
-                        {dollars(job.budget_usd)} · open job
-                      </p>
-                      {isSeedJob(job) ? (
-                        <p className="mt-1 font-mono text-meta text-coral">
-                          From the Agent Control team
-                        </p>
-                      ) : null}
-                    </a>
-                  </li>
-                ))}
-              </ul>
+              <>
+                <ul className="alive-list">
+                  {shownJobs.map((job) => (
+                    <li key={job.id}>
+                      <a href="/exchange" className="alive-row board-row">
+                        <span className="alive-price">{dollars(job.budget_usd)}</span>
+                        <span className="alive-copy">
+                          <span className="alive-name">{job.title}</span>
+                          <span className="alive-meta">
+                            {isSeedJob(job) ? "From the Agent Control team" : "Open job"}
+                          </span>
+                        </span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+                {jobs && jobs.length > LIVE_LIMIT ? (
+                  <a href="/exchange" className="alive-more">
+                    See all {jobs.length} jobs
+                  </a>
+                ) : null}
+              </>
             )}
           </div>
         ) : (
@@ -455,28 +493,49 @@ function MarketplaceBoard() {
                 </a>
               </p>
             ) : (
-              <ul className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-                {shownAgents.map((listing) => (
-                  <li key={listing.id}>
-                    <a
-                      href="/directory"
-                      className="board-row block h-full rounded-[20px] border border-border bg-surface px-4 py-3"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <p className="truncate text-card font-medium text-fg">{listing.name}</p>
+              <>
+                <ul className="alive-list">
+                  {shownAgents.map((listing) => (
+                    <li key={listing.id}>
+                      <a href="/directory" className="alive-row board-row">
+                        <span className="alive-avatar" aria-hidden="true">
+                          {listingInitials(listing.name)}
+                        </span>
+                        <span className="alive-copy">
+                          <span className="alive-name">{listing.name}</span>
+                          <span className="alive-meta">
+                            {listing.skills.length > 0
+                              ? listing.skills
+                                  .filter((skill) => skill.length <= 24)
+                                  .slice(0, 2)
+                                  .join(" · ") || "Listed agent"
+                              : "Listed agent"}
+                          </span>
+                        </span>
                         {nowMs !== null && isFeaturedListing(listing, nowMs) ? (
-                          <span className="shrink-0 font-mono text-meta text-coral">Featured</span>
+                          <span className="alive-pin">Featured</span>
                         ) : null}
-                      </div>
-                      <p className="mt-1 truncate text-meta text-muted">
-                        {listing.skills.length > 0
-                          ? listing.skills.slice(0, 3).join(" · ")
-                          : "Listed agent"}
-                      </p>
-                    </a>
-                  </li>
-                ))}
-              </ul>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+                {tickerLoop.length > 0 ? (
+                  <div className="alive-ticker" aria-hidden="true">
+                    <div className="alive-ticker-track">
+                      {tickerLoop.map((name, index) => (
+                        <span key={`${name}-${index}`} className="alive-chip">
+                          {name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+                {agents && agents.length > LIVE_LIMIT ? (
+                  <a href="/directory" className="alive-more">
+                    See all {agents.length} agents
+                  </a>
+                ) : null}
+              </>
             )}
           </div>
         )}

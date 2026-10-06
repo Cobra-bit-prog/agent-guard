@@ -63,9 +63,15 @@ describe("featured price lock", () => {
     assert.equal(FEATURED_SKU, "featured_7d");
     assert.equal(FEATURED_PRICE_USD, 19);
     assert.equal(FEATURED_DAYS, 7);
-    assert.equal(FEATURED_LINE, "Listing is free. Pay $19 to pin your agent at the top for 7 days.");
+    assert.equal(
+      FEATURED_LINE,
+      "Listing is free. Pay $19 to pin your agent at the top for 7 days.",
+    );
     assert.equal(FEATURED_HONESTY, "We keep the fee. You pay us directly in USDC.");
-    assert.doesNotMatch(`${FEATURED_LINE} ${FEATURED_HONESTY}`, /escrow|refund|\bhold\b|kept safe|\$49|\/month/i);
+    assert.doesNotMatch(
+      `${FEATURED_LINE} ${FEATURED_HONESTY}`,
+      /escrow|refund|\bhold\b|kept safe|\$49|\/month/i,
+    );
   });
 });
 
@@ -110,7 +116,12 @@ describe("featured payment on a throwaway database", () => {
       NOW,
     );
     assert.equal(paid.status, 200);
-    const body = (await paid.json()) as { status: string; featured: boolean; featured_until: string; tx_ref: string };
+    const body = (await paid.json()) as {
+      status: string;
+      featured: boolean;
+      featured_until: string;
+      tx_ref: string;
+    };
     assert.equal(body.status, "paid");
     assert.equal(body.featured, true);
     assert.equal(body.tx_ref, "tx-sol");
@@ -136,14 +147,28 @@ describe("featured payment on a throwaway database", () => {
   it("adds 7 days after the current pin, and starts from now when the pin has ended", async () => {
     const { db, sql } = await openDb();
     const row = await createListing(sql, listing(), NOW, "ip");
-    const first = await startFeaturedPay(sql, { listing_id: row.id, contact: row.contact }, NOW, "ip");
+    const first = await startFeaturedPay(
+      sql,
+      { listing_id: row.id, contact: row.contact },
+      NOW,
+      "ip",
+    );
     const granted = await grantFeatured(sql, first.id, { chain: "solana", txRef: "tx1", now: NOW });
     assert.equal(granted?.featured_until, new Date(NOW.getTime() + 7 * DAY).toISOString());
 
     const later = new Date(NOW.getTime() + DAY);
-    const second = await startFeaturedPay(sql, { listing_id: row.id, contact: row.contact }, later, "ip");
+    const second = await startFeaturedPay(
+      sql,
+      { listing_id: row.id, contact: row.contact },
+      later,
+      "ip",
+    );
     assert.notEqual(second.id, first.id);
-    const extended = await grantFeatured(sql, second.id, { chain: "base", txRef: "0xbase", now: later });
+    const extended = await grantFeatured(sql, second.id, {
+      chain: "base",
+      txRef: "0xbase",
+      now: later,
+    });
     assert.equal(extended?.order.chain, "base");
     assert.equal(new Date(extended?.featured_until ?? 0).getTime(), NOW.getTime() + 14 * DAY);
 
@@ -155,7 +180,11 @@ describe("featured payment on a throwaway database", () => {
       NOW,
       "other-ip",
     );
-    const restarted = await grantFeatured(sql, third.id, { chain: "solana", txRef: "tx3", now: NOW });
+    const restarted = await grantFeatured(sql, third.id, {
+      chain: "solana",
+      txRef: "tx3",
+      now: NOW,
+    });
     assert.equal(new Date(restarted?.featured_until ?? 0).getTime(), NOW.getTime() + 7 * DAY);
   });
 
@@ -234,7 +263,12 @@ describe("featured payment on a throwaway database", () => {
       new Date(NOW.getTime() + 1000),
       "ip",
     );
-    const order = await startFeaturedPay(sql, { listing_id: older.id, contact: older.contact }, NOW, "ip");
+    const order = await startFeaturedPay(
+      sql,
+      { listing_id: older.id, contact: older.contact },
+      NOW,
+      "ip",
+    );
     await grantFeatured(sql, order.id, { chain: "solana", txRef: "tx", now: NOW });
     const visible = await listVisibleListings(sql, NOW);
     assert.deepEqual(
@@ -282,7 +316,12 @@ describe("directory featured copy", () => {
     assert.match(panel, /Get featured/);
     assert.match(panel, /SOLANA_PAYOUT_ADDRESS/);
     assert.match(panel, /EVM_PAYOUT_ADDRESS/);
-    assert.doesNotMatch(combined, /featured_7d|\$49|\/month|escrow|refund|\bhold\b|kept safe/i);
+    assert.doesNotMatch(panel, /featured_7d|\$49|\/month|escrow|refund|\bhold\b|kept safe/i);
+    assert.doesNotMatch(page, /featured_7d|\/month|escrow|refund|\bhold\b|kept safe/i);
+    const priced = page.match(/\$49/g) ?? [];
+    const hireLine = page.match(/Hire us · directory boost is \$49/g) ?? [];
+    assert.ok(hireLine.length >= 1);
+    assert.equal(priced.length, hireLine.length);
     assert.doesNotMatch(
       combined,
       /escrow|\bfunded\b|\bhirer\b|\bsignature\b|\bsettlement\b|\bprotocol\b|\brail\b/i,

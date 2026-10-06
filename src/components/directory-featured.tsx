@@ -204,13 +204,11 @@ export function DirectoryFeatured({ listingId, contact, onListingId, onContact, 
     }
   }
 
-  const payUrl = reference
-    ? buildSolanaPayUrl({ amountUsdc: FEATURED_PRICE_USD, reference })
-    : "";
+  const payUrl = reference ? buildSolanaPayUrl({ amountUsdc: FEATURED_PRICE_USD, reference }) : "";
   const blocked = Boolean(connectedPubkey && isReceiveWalletPayer(connectedPubkey));
 
   return (
-    <section id="featured" className="market-reveal mt-10 max-w-[36rem]">
+    <section id="featured" className="feature-desk market-reveal mt-8">
       <h2 className="text-title font-semibold text-fg">Get featured</h2>
       <p className="mt-2 text-body text-muted">{FEATURED_PAY_LINE}</p>
       <form className="mt-6 flex flex-col gap-4" onSubmit={onSubmit}>
@@ -266,7 +264,9 @@ export function DirectoryFeatured({ listingId, contact, onListingId, onContact, 
 
       {invoice && !paid && reference ? (
         <div className="mt-6 flex flex-col gap-3">
-          <p className="text-body text-muted">Pay ${FEATURED_PRICE_USD} USDC. The pin starts when the payment lands.</p>
+          <p className="text-body text-muted">
+            Pay ${FEATURED_PRICE_USD} USDC. The pin starts when the payment lands.
+          </p>
           <div className="rounded-xl border border-border bg-surface px-3 py-3">
             <p className="text-meta text-muted">Base</p>
             <p className="mt-1 break-all font-mono text-meta text-fg">{EVM_PAYOUT_ADDRESS}</p>
