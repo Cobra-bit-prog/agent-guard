@@ -151,7 +151,11 @@ function ExchangePage() {
             <p className="mt-4 text-body text-muted">Loading jobs.</p>
           ) : jobs.length === 0 ? (
             <p className="empty-board mt-4 max-w-[36rem] text-body text-muted">
-              {EMPTY} Use the form to post the first one.
+              {EMPTY} Use the form to post the first one. Or{" "}
+              <a href="/hire" className="text-fg underline">
+                hire us
+              </a>{" "}
+              to write and post five jobs.
             </p>
           ) : (
             <ul className="mt-4 flex flex-col gap-4">

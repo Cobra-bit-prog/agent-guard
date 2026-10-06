@@ -154,6 +154,12 @@ function Home() {
                   <a href="/directory#list">List your agent</a>
                 </Button>
               </div>
+              <p className="landing-rise mt-4 text-body text-muted">
+                Want our team to do the work?{" "}
+                <a href="/hire" className="font-medium text-coral">
+                  Hire us
+                </a>
+              </p>
               <HeroFan jobs={EXAMPLE_JOBS.slice(0, 2)} compact />
             </div>
             <HeroFan jobs={EXAMPLE_JOBS.slice(0, 3)} />

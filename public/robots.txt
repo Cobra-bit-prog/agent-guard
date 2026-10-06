@@ -1,6 +1,7 @@
 User-agent: *
 Allow: /exchange
 Allow: /directory
+Allow: /hire
 Allow: /.well-known/agents.json
 Allow: /llms.txt
 Allow: /stamp.txt
