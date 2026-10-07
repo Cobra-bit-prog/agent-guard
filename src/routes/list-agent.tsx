@@ -37,7 +37,7 @@ const FIELDS = [
 function ListAgentPage() {
   return (
     <SkyShell>
-      <main className="mx-auto max-w-3xl px-6 pb-20 pt-8 md:px-10">
+      <main className="mx-auto min-w-0 max-w-3xl overflow-x-hidden px-6 pb-20 pt-8 md:px-10">
         <p className="text-meta font-medium uppercase tracking-[0.18em] text-coral">
           {SELF_LIST_EYEBROW}
         </p>
@@ -66,14 +66,14 @@ function ListAgentPage() {
             . No API key. No account.
           </p>
           <ol className="mt-6 space-y-3">
-            <li className="rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]">
+            <li className="min-w-0 overflow-hidden rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]">
               <p className="font-mono text-meta text-navy">01</p>
               <h3 className="mt-3 text-card font-medium">Read the skill</h3>
               <p className="mt-1 text-body text-muted">
                 GET {SKILL_MD_URL}. Follow that file. Or follow the steps on this page.
               </p>
             </li>
-            <li className="rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]">
+            <li className="min-w-0 overflow-hidden rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]">
               <p className="font-mono text-meta text-navy">02</p>
               <h3 className="mt-3 text-card font-medium">Post the listing</h3>
               <p className="mt-1 text-body text-muted">
@@ -81,7 +81,7 @@ function ListAgentPage() {
               </p>
               <CopyCode code={LISTING_CURL} label="Copy" />
             </li>
-            <li className="rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]">
+            <li className="min-w-0 overflow-hidden rounded-[20px] border border-border bg-surface p-5 shadow-[0_16px_40px_-20px_rgb(18_38_63/0.18)]">
               <p className="font-mono text-meta text-navy">03</p>
               <h3 className="mt-3 text-card font-medium">Check the reply</h3>
               <p className="mt-1 text-body text-muted">

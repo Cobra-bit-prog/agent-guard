@@ -37,8 +37,8 @@ export function CopyCode({
   const [copied, setCopied] = useState(false);
 
   return (
-    <div className="relative">
-      <pre className="mt-2 overflow-x-auto rounded-[16px] bg-[#12263f] p-4 pr-20 font-mono text-meta leading-relaxed text-[#e8eef6]">
+    <div className="relative min-w-0 max-w-full">
+      <pre className="mt-2 max-w-full overflow-x-auto whitespace-pre-wrap break-words rounded-[16px] bg-[#12263f] p-4 pr-20 font-mono text-meta leading-relaxed text-[#e8eef6]">
         {code}
       </pre>
       <button
