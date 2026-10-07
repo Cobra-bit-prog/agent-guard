@@ -199,8 +199,9 @@ function migrationHeldOnPreview(name, env) {
  * `0034_seed_agent_listings_wave2.sql` are omitted on
  * preview builds only.
  * `0026_hide_exchange_smoke_jobs.sql`,
- * `0028_hide_directory_smoke_listing.sql`, and
- * `0030_hide_junk_listing.sql` still apply.
+ * `0028_hide_directory_smoke_listing.sql`,
+ * `0030_hide_junk_listing.sql`, and
+ * `0035_hide_health_audit_smoke_listing.sql` still apply.
  * @param {Iterable<string>} paths
  * @param {Iterable<string>} applied
  * @param {Record<string, string | undefined>} [env]
