@@ -33,6 +33,7 @@ describe("discovery path redirects", () => {
         ["/pay/meter", "/meter/pay", 308, true],
         ["/meter", "/connect#agent-meter", 307, false],
         [LLMS_WELL_KNOWN_PATH, LLMS_TXT_PATH, 308, true],
+        ["/agents/skill.md", "/skill.md", 308, true],
       ],
     );
   });

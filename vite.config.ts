@@ -159,7 +159,8 @@ function oauthDiscoveryPlugin(): Plugin {
             pathOnly === "/pay" ||
             pathOnly === "/pay/meter" ||
             pathOnly === "/meter" ||
-            pathOnly === "/.well-known/llms.txt";
+            pathOnly === "/.well-known/llms.txt" ||
+            pathOnly === "/agents/skill.md";
           const isOauthDiscovery = pathOnly.startsWith("/.well-known/oauth-");
           const isMeterDiscovery =
             pathOnly === "/.well-known/x402" ||

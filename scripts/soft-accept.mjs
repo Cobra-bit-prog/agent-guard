@@ -81,6 +81,16 @@ export function isOauthMachinePath(pathname) {
   return false;
 }
 
+/**
+ * Machine skill file. Agents fetch it with Accept: text/markdown.
+ * Must not 406 before the static file is served.
+ * @param {string | null | undefined} pathname
+ */
+export function isSkillMarkdownPath(pathname) {
+  const path = String(pathname ?? "").replace(/\/+$/, "") || "/";
+  return path === "/skill.md" || path === "/agents/skill.md";
+}
+
 /** Public JSON discovery — must not 406 when Accept is application/json. */
 export function isWellKnownMachineJsonPath(pathname) {
   const path = String(pathname ?? "");
@@ -106,6 +116,7 @@ export function shouldSoftReject({ method, pathname, accept }) {
   if (isServerFnPath(path)) return false;
   if (isOauthMachinePath(path)) return false;
   if (isWellKnownMachineJsonPath(path)) return false;
+  if (isSkillMarkdownPath(path)) return false;
   if (path === "/__grok" || path.startsWith("/__grok/")) return false;
   return !acceptAllowsHtml(accept);
 }

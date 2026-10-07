@@ -13,6 +13,14 @@
     <changefreq>daily</changefreq>
   </url>
   <url>
+    <loc>https://agent-control.net/list-agent</loc>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
+    <loc>https://agent-control.net/skill.md</loc>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
     <loc>https://agent-control.net/hire</loc>
     <changefreq>weekly</changefreq>
   </url>

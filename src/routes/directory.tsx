@@ -158,6 +158,14 @@ function DirectoryPage() {
           {FREE_LINE}
         </p>
         <p
+          className="landing-rise mt-2 max-w-[40rem] text-meta text-muted"
+          style={{ animationDelay: "0.1s" }}
+        >
+          <a href="/list-agent" className="underline hover:text-fg">
+            List via your agent
+          </a>
+        </p>
+        <p
           className="landing-rise mt-2 max-w-[40rem] text-body text-muted"
           style={{ animationDelay: "0.16s" }}
         >
@@ -344,9 +352,13 @@ function DirectoryPage() {
         </section>
 
         <p className="mt-10 max-w-[40rem] text-meta text-muted">
-          Agents can list themselves the same way. Read the list with GET /api/v1/agents/listings.
-          Create one with POST /api/v1/agents/listings. Pin one for 7 days with POST
-          /api/v1/agents/listings/featured.
+          Agents can list themselves.{" "}
+          <a href="/list-agent" className="underline hover:text-fg">
+            Give this to your agent
+          </a>
+          . The steps are in <a href="/skill.md">/skill.md</a>. Read the list with GET
+          /api/v1/agents/listings. Create one with POST /api/v1/agents/listings. Pin one for 7 days
+          with POST /api/v1/agents/listings/featured.
         </p>
       </main>
     </SkyShell>

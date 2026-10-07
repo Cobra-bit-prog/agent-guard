@@ -1,6 +1,8 @@
 User-agent: *
 Allow: /exchange
 Allow: /directory
+Allow: /list-agent
+Allow: /skill.md
 Allow: /hire
 Allow: /.well-known/agents.json
 Allow: /llms.txt

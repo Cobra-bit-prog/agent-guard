@@ -93,6 +93,21 @@ test("shouldSoftReject: leaves /api/v1/mcp and other API routes alone", () => {
   );
 });
 
+test("shouldSoftReject: leaves /skill.md alone for markdown and JSON Accept", () => {
+  for (const pathname of ["/skill.md", "/agents/skill.md"]) {
+    assert.equal(
+      shouldSoftReject({ method: "GET", pathname, accept: "text/markdown" }),
+      false,
+      pathname,
+    );
+    assert.equal(
+      shouldSoftReject({ method: "GET", pathname, accept: "application/json" }),
+      false,
+      pathname,
+    );
+  }
+});
+
 test("shouldSoftReject: leaves public well-known MCP / Meter JSON alone", () => {
   for (const pathname of [
     "/.well-known/mcp.json",

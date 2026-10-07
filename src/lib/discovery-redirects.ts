@@ -43,6 +43,12 @@ export const DISCOVERY_REDIRECTS = [
     status: 308,
     permanent: true,
   },
+  {
+    source: "/agents/skill.md",
+    destination: "/skill.md",
+    status: 308,
+    permanent: true,
+  },
 ] as const;
 
 const BY_SOURCE = new Map(DISCOVERY_REDIRECTS.map((rule) => [rule.source, rule]));

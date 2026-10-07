@@ -16,6 +16,7 @@ import { Route as DirectoryRouteImport } from './routes/directory'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as ExchangeRouteImport } from './routes/exchange'
 import { Route as HireRouteImport } from './routes/hire'
+import { Route as ListAgentRouteImport } from './routes/list-agent'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LogosRouteImport } from './routes/logos'
 import { Route as PartnersRouteImport } from './routes/partners'
@@ -51,7 +52,6 @@ import { Route as ApiV1HireRouteImport } from './routes/api/v1/hire'
 import { Route as ApiV1McpRouteImport } from './routes/api/v1/mcp'
 import { Route as ApiV1ShopRouteImport } from './routes/api/v1/shop'
 import { Route as ApiV1AgentsListingsRouteImport } from './routes/api/v1/agents.listings'
-import { Route as ApiV1AgentsListingsFeaturedRouteImport } from './routes/api/v1/agents.listings.featured'
 import { Route as ApiV1ApprovalsIdRouteImport } from './routes/api/v1/approvals.$id'
 import { Route as ApiV1AuditSplatRouteImport } from './routes/api/v1/audit.$'
 import { Route as ApiV1BillingCardRouteImport } from './routes/api/v1/billing.card'
@@ -75,6 +75,7 @@ import { Route as ApiV1StorefrontCheckoutRouteImport } from './routes/api/v1/sto
 import { Route as ApiV1StorefrontPricingRouteImport } from './routes/api/v1/storefront.pricing'
 import { Route as ApiV1StorefrontStatusRouteImport } from './routes/api/v1/storefront.status'
 import { Route as ApiV1StorefrontTrialRouteImport } from './routes/api/v1/storefront.trial'
+import { Route as ApiV1AgentsListingsFeaturedRouteImport } from './routes/api/v1/agents.listings.featured'
 import { Route as ApiV1InternalMeterInvoicesRouteImport } from './routes/api/v1/internal/meter.invoices'
 
 const IndexRoute = IndexRouteImport.update({
@@ -109,6 +110,11 @@ const ExchangeRoute = ExchangeRouteImport.update({
 const HireRoute = HireRouteImport.update({
   id: '/hire',
   path: '/hire',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ListAgentRoute = ListAgentRouteImport.update({
+  id: '/list-agent',
+  path: '/list-agent',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -286,12 +292,6 @@ const ApiV1AgentsListingsRoute = ApiV1AgentsListingsRouteImport.update({
   path: '/api/v1/agents/listings',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiV1AgentsListingsFeaturedRoute =
-  ApiV1AgentsListingsFeaturedRouteImport.update({
-    id: '/api/v1/agents/listings/featured',
-    path: '/api/v1/agents/listings/featured',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const ApiV1ApprovalsIdRoute = ApiV1ApprovalsIdRouteImport.update({
   id: '/api/v1/approvals/$id',
   path: '/api/v1/approvals/$id',
@@ -407,6 +407,12 @@ const ApiV1StorefrontTrialRoute = ApiV1StorefrontTrialRouteImport.update({
   path: '/api/v1/storefront/trial',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1AgentsListingsFeaturedRoute =
+  ApiV1AgentsListingsFeaturedRouteImport.update({
+    id: '/featured',
+    path: '/featured',
+    getParentRoute: () => ApiV1AgentsListingsRoute,
+  } as any)
 const ApiV1InternalMeterInvoicesRoute =
   ApiV1InternalMeterInvoicesRouteImport.update({
     id: '/invoices',
@@ -421,6 +427,7 @@ export interface FileRoutesByFullPath {
   '/docs': typeof DocsRoute
   '/exchange': typeof ExchangeRoute
   '/hire': typeof HireRouteWithChildren
+  '/list-agent': typeof ListAgentRoute
   '/login': typeof LoginRoute
   '/logos': typeof LogosRoute
   '/partners': typeof PartnersRoute
@@ -455,8 +462,7 @@ export interface FileRoutesByFullPath {
   '/api/v1/shop': typeof ApiV1ShopRoute
   '/agents/': typeof AppAgentsIndexRoute
   '/billing/': typeof AppBillingIndexRoute
-  '/api/v1/agents/listings': typeof ApiV1AgentsListingsRoute
-  '/api/v1/agents/listings/featured': typeof ApiV1AgentsListingsFeaturedRoute
+  '/api/v1/agents/listings': typeof ApiV1AgentsListingsRouteWithChildren
   '/api/v1/approvals/$id': typeof ApiV1ApprovalsIdRoute
   '/api/v1/audit/$': typeof ApiV1AuditSplatRoute
   '/api/v1/billing/card': typeof ApiV1BillingCardRoute
@@ -480,6 +486,7 @@ export interface FileRoutesByFullPath {
   '/api/v1/storefront/pricing': typeof ApiV1StorefrontPricingRoute
   '/api/v1/storefront/status': typeof ApiV1StorefrontStatusRoute
   '/api/v1/storefront/trial': typeof ApiV1StorefrontTrialRoute
+  '/api/v1/agents/listings/featured': typeof ApiV1AgentsListingsFeaturedRoute
   '/api/v1/internal/meter/invoices': typeof ApiV1InternalMeterInvoicesRoute
 }
 export interface FileRoutesByTo {
@@ -488,6 +495,7 @@ export interface FileRoutesByTo {
   '/directory': typeof DirectoryRoute
   '/docs': typeof DocsRoute
   '/exchange': typeof ExchangeRoute
+  '/list-agent': typeof ListAgentRoute
   '/login': typeof LoginRoute
   '/logos': typeof LogosRoute
   '/partners': typeof PartnersRoute
@@ -519,8 +527,7 @@ export interface FileRoutesByTo {
   '/api/v1/shop': typeof ApiV1ShopRoute
   '/agents': typeof AppAgentsIndexRoute
   '/billing': typeof AppBillingIndexRoute
-  '/api/v1/agents/listings': typeof ApiV1AgentsListingsRoute
-  '/api/v1/agents/listings/featured': typeof ApiV1AgentsListingsFeaturedRoute
+  '/api/v1/agents/listings': typeof ApiV1AgentsListingsRouteWithChildren
   '/api/v1/approvals/$id': typeof ApiV1ApprovalsIdRoute
   '/api/v1/audit/$': typeof ApiV1AuditSplatRoute
   '/api/v1/billing/card': typeof ApiV1BillingCardRoute
@@ -544,6 +551,7 @@ export interface FileRoutesByTo {
   '/api/v1/storefront/pricing': typeof ApiV1StorefrontPricingRoute
   '/api/v1/storefront/status': typeof ApiV1StorefrontStatusRoute
   '/api/v1/storefront/trial': typeof ApiV1StorefrontTrialRoute
+  '/api/v1/agents/listings/featured': typeof ApiV1AgentsListingsFeaturedRoute
   '/api/v1/internal/meter/invoices': typeof ApiV1InternalMeterInvoicesRoute
 }
 export interface FileRoutesById {
@@ -555,6 +563,7 @@ export interface FileRoutesById {
   '/docs': typeof DocsRoute
   '/exchange': typeof ExchangeRoute
   '/hire': typeof HireRouteWithChildren
+  '/list-agent': typeof ListAgentRoute
   '/login': typeof LoginRoute
   '/logos': typeof LogosRoute
   '/partners': typeof PartnersRoute
@@ -589,8 +598,7 @@ export interface FileRoutesById {
   '/api/v1/shop': typeof ApiV1ShopRoute
   '/_app/agents/': typeof AppAgentsIndexRoute
   '/_app/billing/': typeof AppBillingIndexRoute
-  '/api/v1/agents/listings': typeof ApiV1AgentsListingsRoute
-  '/api/v1/agents/listings/featured': typeof ApiV1AgentsListingsFeaturedRoute
+  '/api/v1/agents/listings': typeof ApiV1AgentsListingsRouteWithChildren
   '/api/v1/approvals/$id': typeof ApiV1ApprovalsIdRoute
   '/api/v1/audit/$': typeof ApiV1AuditSplatRoute
   '/api/v1/billing/card': typeof ApiV1BillingCardRoute
@@ -614,6 +622,7 @@ export interface FileRoutesById {
   '/api/v1/storefront/pricing': typeof ApiV1StorefrontPricingRoute
   '/api/v1/storefront/status': typeof ApiV1StorefrontStatusRoute
   '/api/v1/storefront/trial': typeof ApiV1StorefrontTrialRoute
+  '/api/v1/agents/listings/featured': typeof ApiV1AgentsListingsFeaturedRoute
   '/api/v1/internal/meter/invoices': typeof ApiV1InternalMeterInvoicesRoute
 }
 export interface FileRouteTypes {
@@ -625,6 +634,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/exchange'
     | '/hire'
+    | '/list-agent'
     | '/login'
     | '/logos'
     | '/partners'
@@ -660,7 +670,6 @@ export interface FileRouteTypes {
     | '/agents/'
     | '/billing/'
     | '/api/v1/agents/listings'
-    | '/api/v1/agents/listings/featured'
     | '/api/v1/approvals/$id'
     | '/api/v1/audit/$'
     | '/api/v1/billing/card'
@@ -684,6 +693,7 @@ export interface FileRouteTypes {
     | '/api/v1/storefront/pricing'
     | '/api/v1/storefront/status'
     | '/api/v1/storefront/trial'
+    | '/api/v1/agents/listings/featured'
     | '/api/v1/internal/meter/invoices'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -692,6 +702,7 @@ export interface FileRouteTypes {
     | '/directory'
     | '/docs'
     | '/exchange'
+    | '/list-agent'
     | '/login'
     | '/logos'
     | '/partners'
@@ -724,7 +735,6 @@ export interface FileRouteTypes {
     | '/agents'
     | '/billing'
     | '/api/v1/agents/listings'
-    | '/api/v1/agents/listings/featured'
     | '/api/v1/approvals/$id'
     | '/api/v1/audit/$'
     | '/api/v1/billing/card'
@@ -748,6 +758,7 @@ export interface FileRouteTypes {
     | '/api/v1/storefront/pricing'
     | '/api/v1/storefront/status'
     | '/api/v1/storefront/trial'
+    | '/api/v1/agents/listings/featured'
     | '/api/v1/internal/meter/invoices'
   id:
     | '__root__'
@@ -758,6 +769,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/exchange'
     | '/hire'
+    | '/list-agent'
     | '/login'
     | '/logos'
     | '/partners'
@@ -793,7 +805,6 @@ export interface FileRouteTypes {
     | '/_app/agents/'
     | '/_app/billing/'
     | '/api/v1/agents/listings'
-    | '/api/v1/agents/listings/featured'
     | '/api/v1/approvals/$id'
     | '/api/v1/audit/$'
     | '/api/v1/billing/card'
@@ -817,6 +828,7 @@ export interface FileRouteTypes {
     | '/api/v1/storefront/pricing'
     | '/api/v1/storefront/status'
     | '/api/v1/storefront/trial'
+    | '/api/v1/agents/listings/featured'
     | '/api/v1/internal/meter/invoices'
   fileRoutesById: FileRoutesById
 }
@@ -828,6 +840,7 @@ export interface RootRouteChildren {
   DocsRoute: typeof DocsRoute
   ExchangeRoute: typeof ExchangeRoute
   HireRoute: typeof HireRouteWithChildren
+  ListAgentRoute: typeof ListAgentRoute
   LoginRoute: typeof LoginRoute
   LogosRoute: typeof LogosRoute
   PartnersRoute: typeof PartnersRoute
@@ -846,8 +859,7 @@ export interface RootRouteChildren {
   ApiV1HireRoute: typeof ApiV1HireRouteWithChildren
   ApiV1McpRoute: typeof ApiV1McpRoute
   ApiV1ShopRoute: typeof ApiV1ShopRoute
-  ApiV1AgentsListingsRoute: typeof ApiV1AgentsListingsRoute
-  ApiV1AgentsListingsFeaturedRoute: typeof ApiV1AgentsListingsFeaturedRoute
+  ApiV1AgentsListingsRoute: typeof ApiV1AgentsListingsRouteWithChildren
   ApiV1ApprovalsIdRoute: typeof ApiV1ApprovalsIdRoute
   ApiV1AuditSplatRoute: typeof ApiV1AuditSplatRoute
   ApiV1BillingCardRoute: typeof ApiV1BillingCardRoute
@@ -921,6 +933,13 @@ declare module '@tanstack/react-router' {
       path: '/hire'
       fullPath: '/hire'
       preLoaderRoute: typeof HireRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/list-agent': {
+      id: '/list-agent'
+      path: '/list-agent'
+      fullPath: '/list-agent'
+      preLoaderRoute: typeof ListAgentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -1168,13 +1187,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1AgentsListingsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/v1/agents/listings/featured': {
-      id: '/api/v1/agents/listings/featured'
-      path: '/api/v1/agents/listings/featured'
-      fullPath: '/api/v1/agents/listings/featured'
-      preLoaderRoute: typeof ApiV1AgentsListingsFeaturedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/v1/approvals/$id': {
       id: '/api/v1/approvals/$id'
       path: '/api/v1/approvals/$id'
@@ -1336,6 +1348,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1StorefrontTrialRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/agents/listings/featured': {
+      id: '/api/v1/agents/listings/featured'
+      path: '/featured'
+      fullPath: '/api/v1/agents/listings/featured'
+      preLoaderRoute: typeof ApiV1AgentsListingsFeaturedRouteImport
+      parentRoute: typeof ApiV1AgentsListingsRoute
+    }
     '/api/v1/internal/meter/invoices': {
       id: '/api/v1/internal/meter/invoices'
       path: '/invoices'
@@ -1436,6 +1455,17 @@ const ApiV1HireRouteWithChildren = ApiV1HireRoute._addFileChildren(
   ApiV1HireRouteChildren,
 )
 
+interface ApiV1AgentsListingsRouteChildren {
+  ApiV1AgentsListingsFeaturedRoute: typeof ApiV1AgentsListingsFeaturedRoute
+}
+
+const ApiV1AgentsListingsRouteChildren: ApiV1AgentsListingsRouteChildren = {
+  ApiV1AgentsListingsFeaturedRoute: ApiV1AgentsListingsFeaturedRoute,
+}
+
+const ApiV1AgentsListingsRouteWithChildren =
+  ApiV1AgentsListingsRoute._addFileChildren(ApiV1AgentsListingsRouteChildren)
+
 interface ApiV1InternalMeterRouteChildren {
   ApiV1InternalMeterInvoicesRoute: typeof ApiV1InternalMeterInvoicesRoute
 }
@@ -1455,6 +1485,7 @@ const rootRouteChildren: RootRouteChildren = {
   DocsRoute: DocsRoute,
   ExchangeRoute: ExchangeRoute,
   HireRoute: HireRouteWithChildren,
+  ListAgentRoute: ListAgentRoute,
   LoginRoute: LoginRoute,
   LogosRoute: LogosRoute,
   PartnersRoute: PartnersRoute,
@@ -1473,8 +1504,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiV1HireRoute: ApiV1HireRouteWithChildren,
   ApiV1McpRoute: ApiV1McpRoute,
   ApiV1ShopRoute: ApiV1ShopRoute,
-  ApiV1AgentsListingsRoute: ApiV1AgentsListingsRoute,
-  ApiV1AgentsListingsFeaturedRoute: ApiV1AgentsListingsFeaturedRoute,
+  ApiV1AgentsListingsRoute: ApiV1AgentsListingsRouteWithChildren,
   ApiV1ApprovalsIdRoute: ApiV1ApprovalsIdRoute,
   ApiV1AuditSplatRoute: ApiV1AuditSplatRoute,
   ApiV1BillingCardRoute: ApiV1BillingCardRoute,
