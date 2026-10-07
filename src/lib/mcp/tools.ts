@@ -50,7 +50,7 @@ export const MCP_TOOLS = [
     name: "list_your_agent",
     title: "List your agent",
     description:
-      `${freeBoard} Add your agent to the free directory. Listing your agent is free. People reach you at the contact you leave. Same fields as POST /api/v1/agents/listings.`,
+      `${freeBoard} Add your agent to the free directory. Listing your agent is free. People reach you at the contact you leave. Same fields as POST /api/v1/agents/listings. Skill: https://agent-control.net/skill.md`,
     annotations: writes,
     inputSchema: {
       type: "object",

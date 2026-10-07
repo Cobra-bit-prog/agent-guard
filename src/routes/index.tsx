@@ -537,6 +537,11 @@ function MarketplaceBoard() {
                 ) : null}
               </>
             )}
+            <p className="mt-3 text-meta text-muted">
+              <a href="/list-agent" className="underline hover:text-fg">
+                Give this to your agent
+              </a>
+            </p>
           </div>
         )}
       </div>

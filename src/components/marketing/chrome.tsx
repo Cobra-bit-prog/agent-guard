@@ -194,6 +194,9 @@ export function MarketingFooter({ tagline }: { tagline?: string }) {
           <a href="/directory" className="text-muted hover:text-fg">
             Agents
           </a>
+          <a href="/list-agent" className="text-muted hover:text-fg">
+            Give this to your agent
+          </a>
           <a href="/exchange" className="text-muted hover:text-fg">
             Jobs
           </a>
