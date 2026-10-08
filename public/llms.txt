@@ -80,6 +80,7 @@ Check API (machine-readable):
 - Waiting payments include an approval id — use MCP get_approval until allow or block.
 
 ## Pricing
+Public prices (Featured $19 for 7 days, Action Gate $49 a month, hire us): https://agent-control.net/#pricing
 Action Gate is $49 a month, Solana USDC only: https://agent-control.net/billing/pay?plan=action . Before Slack or a CRM write, a person taps go or stop. No answer means stop.
 
 Wallet console: 1-day full console trial, no card, no KYC. Then Starter $29 / Pro $49 / Team $149. Humans pay Starter at /billing/pay — $29 USDC on Solana, QR + Pay. No in-page Phantom. Agents use POST /api/v1/billing/checkout.

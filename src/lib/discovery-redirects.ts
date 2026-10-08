@@ -7,6 +7,10 @@
  *
  * /meter is a temporary soft bounce until the owner merges PR #43
  * (visualize). Do not implement that page here.
+ *
+ * /pricing was never a separate page. Public prices are the homepage
+ * section the nav already calls Pricing. Old and guessed /pricing links
+ * bounce there for good.
  */
 
 export const LLMS_TXT_PATH = "/llms.txt";
@@ -46,6 +50,12 @@ export const DISCOVERY_REDIRECTS = [
   {
     source: "/agents/skill.md",
     destination: "/skill.md",
+    status: 308,
+    permanent: true,
+  },
+  {
+    source: "/pricing",
+    destination: "/#pricing",
     status: 308,
     permanent: true,
   },

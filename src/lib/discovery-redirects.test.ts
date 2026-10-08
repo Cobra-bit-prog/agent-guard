@@ -34,6 +34,7 @@ describe("discovery path redirects", () => {
         ["/meter", "/connect#agent-meter", 307, false],
         [LLMS_WELL_KNOWN_PATH, LLMS_TXT_PATH, 308, true],
         ["/agents/skill.md", "/skill.md", 308, true],
+        ["/pricing", "/#pricing", 308, true],
       ],
     );
   });
@@ -88,6 +89,20 @@ describe("discovery path redirects", () => {
     const options = hit(LLMS_WELL_KNOWN_PATH, "OPTIONS");
     assert.ok(options);
     assert.equal(options.status, 204);
+  });
+
+  it("308s /pricing to the homepage price list", () => {
+    const res = hit("/pricing");
+    assert.ok(res);
+    assert.equal(res.status, 308);
+    assert.equal(res.headers.get("location"), "/#pricing");
+
+    const withQuery = hit("/pricing?ref=old");
+    assert.ok(withQuery);
+    assert.equal(withQuery.headers.get("location"), "/?ref=old#pricing");
+    assert.equal(hit("/#pricing"), null);
+    assert.equal(hit("/billing"), null);
+    assert.equal(hit("/billing/pay"), null);
   });
 
   it("leaves live doors and meter APIs alone", () => {
