@@ -374,6 +374,7 @@ describe("directory featured copy", () => {
     assert.match(copy, /Pay on Base or Solana/);
     assert.match(copy, /Feature this listing — \$19 USDC \/ 7 days/);
     assert.match(copy, /Feature it for \$19/);
+    assert.match(panel, /trackFeaturedStart/);
     assert.match(panel, /FEATURED_PAY_LINE/);
     assert.match(panel, /FEATURED_CTA/);
     assert.match(panel, /Get featured/);

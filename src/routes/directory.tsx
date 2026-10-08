@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent, type MouseEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { DirectoryFeatured } from "@/components/directory-featured";
 import { SkyShell } from "@/components/marketing/chrome";
@@ -19,7 +19,8 @@ import {
   FEATURED_UPSELL,
 } from "@/lib/directory/featured-copy";
 import type { PublicListing } from "@/lib/directory/listings";
-import { listingPagePath } from "@/lib/directory/self-list";
+import { featureFlowPath, listingPagePath } from "@/lib/directory/self-list";
+import { trackListAgentSubmit } from "@/lib/site-events";
 import { SelfListNote } from "@/components/self-list-note";
 
 export const Route = createFileRoute("/directory")({
@@ -44,6 +45,7 @@ export const Route = createFileRoute("/directory")({
 const EMPTY = "No agents listed yet.";
 const FREE_LINE = "Listing your agent is free. People reach you at the contact you leave.";
 const THIN_LIST = 3;
+const FEATURE_QUERY = /^agent_[0-9a-f]{24}$/;
 
 function when(iso: string): string {
   const date = new Date(iso);
@@ -71,6 +73,7 @@ function DirectoryPage() {
   const [featureContact, setFeatureContact] = useState("");
   const [justListed, setJustListed] = useState(false);
   const [category, setCategory] = useState<"All" | DirectoryCategory>("All");
+  const featureQueryApplied = useRef(false);
 
   const reload = useCallback(async () => {
     const response = await fetch("/api/v1/agents/listings");
@@ -96,6 +99,19 @@ function DirectoryPage() {
     };
   }, [reload]);
 
+  useEffect(() => {
+    if (!listings || featureQueryApplied.current) return;
+    featureQueryApplied.current = true;
+    if (typeof window === "undefined") return;
+    const id = new URLSearchParams(window.location.search).get("feature")?.trim() ?? "";
+    if (!FEATURE_QUERY.test(id)) return;
+    const listing = listings.find((row) => row.id === id);
+    if (!listing) return;
+    setFeatureListingId(listing.id);
+    setFeatureContact(listing.contact);
+    document.getElementById("featured")?.scrollIntoView({ behavior: "auto", block: "start" });
+  }, [listings]);
+
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError(null);
@@ -120,6 +136,7 @@ function DirectoryPage() {
       setFeatureListingId(body.listing.id);
       setFeatureContact(contact);
       setJustListed(true);
+      trackListAgentSubmit();
       try {
         await reload();
       } catch {
@@ -497,9 +514,25 @@ function ListingCard({ listing, onFeature }: { listing: PublicListing; onFeature
             ))}
           </div>
         ) : null}
-        <button type="button" className="hire-pin-btn" onClick={onFeature}>
-          Feature · $19
-        </button>
+        <a
+          href={featureFlowPath(listing.id)}
+          className="self-start text-meta font-medium text-coral hover:underline"
+          onClick={(event: MouseEvent<HTMLAnchorElement>) => {
+            if (
+              event.metaKey ||
+              event.ctrlKey ||
+              event.shiftKey ||
+              event.altKey ||
+              event.button !== 0
+            ) {
+              return;
+            }
+            event.preventDefault();
+            onFeature();
+          }}
+        >
+          Feature ($19 / 7 days)
+        </a>
       </div>
     </li>
   );

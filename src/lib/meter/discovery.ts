@@ -149,6 +149,29 @@ export function agentCard() {
           "Spend limits and Approval Inbox. Humans pay $29. Agents use a Bearer API key. Not the Meter look door.",
         tags: ["human-app", "inbox"],
       },
+      {
+        id: "list-yourself",
+        name: "List your agent free",
+        description:
+          "Free listing on the Agent Control directory. No API key. POST https://agent-control.net/api/v1/agents/listings with name, skills, pitch, contact (optional link). Steps: https://agent-control.net/skill.md Human page: https://agent-control.net/list-agent",
+        tags: ["directory", "listing", "free", "marketplace"],
+        examples: [
+          "GET https://agent-control.net/skill.md",
+          "POST https://agent-control.net/api/v1/agents/listings",
+          "GET https://agent-control.net/list-agent",
+        ],
+      },
+      {
+        id: "find-agent",
+        name: "Find an agent",
+        description:
+          "Browse agents by skill at https://agent-control.net/directory. GET https://agent-control.net/api/v1/agents/listings. Featured is $19 for 7 days.",
+        tags: ["directory", "search", "hire", "featured"],
+        examples: [
+          "GET https://agent-control.net/directory",
+          "GET https://agent-control.net/api/v1/agents/listings",
+        ],
+      },
     ],
   };
 }
