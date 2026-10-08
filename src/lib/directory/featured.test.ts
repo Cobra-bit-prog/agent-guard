@@ -15,6 +15,7 @@ import {
 } from "./featured-copy.ts";
 import { handleFeaturedRequest } from "./featured-http.ts";
 import { grantFeatured, startFeaturedPay } from "./featured.ts";
+import { FEATURED_INVOICE_EXAMPLE, FEATURED_PRICE_EXAMPLE, SKILL_MD } from "./self-list.ts";
 import { createListing, listVisibleListings, type ListingQuery } from "./listings.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -293,6 +294,68 @@ describe("featured payment on a throwaway database", () => {
       NOW,
     );
     assert.equal(blocked.status, 503);
+  });
+});
+
+describe("featured skill matches the live endpoint", () => {
+  it("documents the real price body and the real 402 invoice", async () => {
+    const { sql } = await openDb();
+    const row = await createListing(sql, listing(), NOW, "ip");
+    const priced = await handleFeaturedRequest(
+      new Request("https://agent-control.net/api/v1/agents/listings/featured", { method: "GET" }),
+      sql,
+      {},
+      NOW,
+    );
+    assert.equal(priced.status, 200);
+    const price = (await priced.json()) as Record<string, unknown>;
+    assert.deepEqual(Object.keys(price).sort(), Object.keys(FEATURED_PRICE_EXAMPLE).sort());
+    assert.equal(price.pay_to, FEATURED_PRICE_EXAMPLE.pay_to);
+    assert.equal(price.base_pay_to, FEATURED_PRICE_EXAMPLE.base_pay_to);
+    assert.equal(price.amount_base_units, FEATURED_PRICE_EXAMPLE.amount_base_units);
+    assert.deepEqual(price.chains, [...FEATURED_PRICE_EXAMPLE.chains]);
+    assert.ok(SKILL_MD.includes(JSON.stringify(FEATURED_PRICE_EXAMPLE)));
+
+    const started = await handleFeaturedRequest(
+      post({ listing_id: row.id, contact: row.contact }),
+      sql,
+      {},
+      NOW,
+    );
+    assert.equal(started.status, 402);
+    const body = (await started.json()) as Record<string, unknown>;
+    assert.deepEqual(Object.keys(body).sort(), Object.keys(FEATURED_INVOICE_EXAMPLE).sort());
+    assert.equal(body.pay_to, FEATURED_INVOICE_EXAMPLE.pay_to);
+    assert.equal(body.base_pay_to, FEATURED_INVOICE_EXAMPLE.base_pay_to);
+    assert.equal(body.amount_base_units, FEATURED_INVOICE_EXAMPLE.amount_base_units);
+    assert.equal(body.status, "pending");
+    assert.equal(body.sku, FEATURED_INVOICE_EXAMPLE.sku);
+    const liveAccepts = body.accepts as Array<Record<string, unknown>>;
+    assert.equal(liveAccepts.length, FEATURED_INVOICE_EXAMPLE.accepts.length);
+    for (let i = 0; i < liveAccepts.length; i += 1) {
+      const live = liveAccepts[i];
+      const documented = FEATURED_INVOICE_EXAMPLE.accepts[i];
+      if (!live || !documented) throw new Error("missing accept");
+      assert.deepEqual(Object.keys(live).sort(), Object.keys(documented).sort());
+      assert.equal(live.network, documented.network);
+      assert.equal(live.payTo, documented.payTo);
+      assert.equal(live.asset, documented.asset);
+      assert.equal(live.amount, documented.amount);
+      const liveExtra = live.extra as Record<string, unknown>;
+      assert.deepEqual(Object.keys(liveExtra).sort(), Object.keys(documented.extra).sort());
+    }
+    assert.ok(SKILL_MD.includes(JSON.stringify(FEATURED_INVOICE_EXAMPLE)));
+    assert.match(SKILL_MD, /HTTP 402/);
+    assert.match(SKILL_MD, /does not return HTTP 402/);
+
+    const mismatch = await handleFeaturedRequest(
+      post({ listing_id: row.id, contact: "other@example.com" }),
+      sql,
+      {},
+      NOW,
+    );
+    const mismatchError = ((await mismatch.json()) as { error: string }).error;
+    assert.ok(SKILL_MD.includes(mismatchError));
   });
 });
 

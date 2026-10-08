@@ -6,6 +6,7 @@ import {
   FEATURED_DAYS,
   FEATURED_PRICE_USD,
   FEATURED_SKU,
+  FEATURED_STARTS_PER_HOUR,
 } from "./featured-copy.ts";
 import {
   HONEYPOT_FIELD,
@@ -15,7 +16,7 @@ import {
 } from "./listings.ts";
 
 export const FEATURED_AMOUNT_BASE_UNITS = usdcBaseUnits(FEATURED_PRICE_USD);
-export const FEATURED_STARTS_PER_HOUR = 8;
+export { FEATURED_STARTS_PER_HOUR };
 
 const LISTING_ID = /^agent_[0-9a-f]{24}$/;
 

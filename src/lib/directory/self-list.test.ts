@@ -4,16 +4,24 @@ import { dirname, join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { POSTS_PER_HOUR } from "./listings.ts";
+import { FEATURED_STARTS_PER_HOUR } from "./featured-copy.ts";
+import { PAY_EXPIRY_MS } from "../solana-pay.ts";
 import {
   AGENT_PROMPT,
   AGENTS_SKILL_PATH,
+  FEATURED_INVOICE_EXAMPLE,
+  FEATURED_PRICE_EXAMPLE,
+  FEATURED_URL,
   LISTING_CURL,
   LISTINGS_URL,
   LIST_AGENT_PATH,
   LIST_AGENT_URL,
+  SELF_LIST,
+  SELF_LIST_LINK_LABEL,
   SKILL_MD,
   SKILL_MD_PATH,
   SKILL_MD_URL,
+  listingsPayload,
 } from "./self-list.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -50,8 +58,32 @@ describe("self-list skill", () => {
     assert.match(SKILL_MD, /Listing is free/);
     assert.match(SKILL_MD, /\$19 USDC for 7 days/);
     assert.match(SKILL_MD, /No API key/);
+    assert.match(SKILL_MD, /## 2\. Optional: get featured/);
+    assert.match(SKILL_MD, new RegExp(`POST ${FEATURED_URL.replaceAll(".", "\\.")}`));
+    assert.match(SKILL_MD, /HTTP 402/);
+    assert.match(SKILL_MD, /GET returns HTTP 200/);
+    assert.match(SKILL_MD, /does not return HTTP 402/);
+    assert.ok(SKILL_MD.includes(JSON.stringify(FEATURED_PRICE_EXAMPLE)));
+    assert.ok(SKILL_MD.includes(JSON.stringify(FEATURED_INVOICE_EXAMPLE)));
+    assert.match(SKILL_MD, /listing_id/);
+    assert.match(SKILL_MD, /invoice_id/);
+    assert.match(SKILL_MD, /Base or Solana/);
+    assert.match(
+      SKILL_MD,
+      new RegExp(`${FEATURED_STARTS_PER_HOUR} payment starts per hour`),
+    );
+    assert.match(SKILL_MD, new RegExp(`The invoice lasts ${PAY_EXPIRY_MS / 60_000} minutes`));
+    assert.match(SKILL_MD, /Contact does not match this listing\./);
+    assert.match(SKILL_MD, /This payment window closed\. Start again\./);
+    assert.match(SKILL_MD, /The payment was short of \$19 USDC/);
     assert.doesNotMatch(SKILL_MD, BANNED);
     assert.doesNotMatch(AGENT_PROMPT, BANNED);
+    const listed = listingsPayload({ listings: [{ id: "agent_x" }] });
+    assert.equal(listed.self_list.skill_md, SKILL_MD_URL);
+    assert.equal(listed.self_list.post, LISTINGS_URL);
+    assert.equal(listed.self_list.list_agent, LIST_AGENT_URL);
+    assert.deepEqual(listed.self_list, SELF_LIST);
+    assert.equal(listed.listings[0]?.id, "agent_x");
   });
 
   it("points humans at one short note and keeps discovery files on the same path", () => {
@@ -70,10 +102,26 @@ describe("self-list skill", () => {
     assert.doesNotMatch(page, BANNED);
 
     const directory = read("src/routes/directory.tsx");
-    assert.match(directory, /href="\/list-agent"/);
-    assert.match(directory, /List via your agent/);
-    assert.match(directory, /Give this to your agent/);
-    assert.match(directory, /href="\/skill\.md"/);
+    const note = read("src/components/self-list-note.tsx");
+    const listingPage = read("src/routes/directory_.$id.tsx");
+    const listingsApi = read("src/routes/api/v1/agents.listings.ts");
+    assert.match(directory, /SelfListNote/);
+    assert.match(directory, /listingPagePath/);
+    assert.match(listingPage, /SelfListNote/);
+    assert.match(listingPage, /Feature this listing \(\$19 \/ 7 days\)/);
+    assert.equal(SELF_LIST_LINK_LABEL, "List your agent — give this to your agent");
+    assert.match(note, /SELF_LIST_LINK_LABEL/);
+    assert.match(note, /href="\/list-agent"/);
+    assert.match(note, /href=\{SKILL_MD_PATH\}/);
+    assert.match(note, />\s*\/skill\.md\s*</);
+    assert.match(listingsApi, /listingsPayload/);
+    assert.doesNotMatch(listingsApi, /return json\(\{/);
+    assert.doesNotMatch(note, BANNED);
+    assert.doesNotMatch(listingPage, BANNED);
+    assert.doesNotMatch(
+      listingPage,
+      /featured_7d|escrow|refund|\bhold\b|\bsignature\b|\bprotocol\b|\brail\b/i,
+    );
 
     const home = read("src/routes/index.tsx");
     assert.match(home, /href="\/list-agent"/);

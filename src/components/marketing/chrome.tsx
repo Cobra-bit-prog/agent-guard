@@ -52,7 +52,7 @@ export function MarketingHeader({
   const loginHref = partnerAwarePath("/login", partner);
   const onHome = current === "home" || pathname === "/";
   const onExchange = pathname === "/exchange";
-  const onDirectory = pathname === "/directory";
+  const onDirectory = pathname === "/directory" || pathname.startsWith("/directory/");
   const onHire =
     pathname === "/hire" || pathname === "/hire/" || pathname === "/hire/thanks";
 
@@ -104,7 +104,7 @@ export function MarketingHeader({
                       : onExchange
                         ? "#post"
                         : onDirectory
-                          ? "#list"
+                          ? "/directory#list"
                           : onHire
                             ? "/hire#request"
                             : signupHref
@@ -171,7 +171,9 @@ export function MarketingHeader({
 
 function isMarketplaceActive(href: string, pathname: string) {
   if (href === "/exchange") return pathname === "/exchange";
-  if (href === "/directory") return pathname === "/directory";
+  if (href === "/directory") {
+    return pathname === "/directory" || pathname.startsWith("/directory/");
+  }
   return false;
 }
 
