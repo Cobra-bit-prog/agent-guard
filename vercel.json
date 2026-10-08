@@ -43,6 +43,11 @@
       "permanent": true
     },
     {
+      "source": "/pricing",
+      "destination": "/#pricing",
+      "permanent": true
+    },
+    {
       "source": "/",
       "has": [
         {
