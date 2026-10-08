@@ -24,6 +24,7 @@ test("marketing landing never imports pay-extension (SSR-unsafe wallet send)", (
     join(ROOT, "src/routes/connect.tsx"),
     join(ROOT, "src/routes/exchange.tsx"),
     join(ROOT, "src/routes/directory.tsx"),
+    join(ROOT, "src/routes/directory_.$id.tsx"),
     join(ROOT, "src/routes/partners.tsx"),
     join(ROOT, "src/routes/privacy.tsx"),
     join(ROOT, "src/routes/oauth/authorize.tsx"),
@@ -799,10 +800,13 @@ test("FAQ and Compare drop competitor names; homepage hero uses the locked hire 
   assert.doesNotMatch(hero, /we hold it|pay the full price|keep 10%/i);
   const chrome = readFileSync(join(ROOT, "src/components/marketing/chrome.tsx"), "utf8");
   assert.match(chrome, /const onExchange = pathname === "\/exchange"/);
-  assert.match(chrome, /const onDirectory = pathname === "\/directory"/);
+  assert.match(
+    chrome,
+    /const onDirectory = pathname === "\/directory" \|\| pathname\.startsWith\("\/directory\/"\)/,
+  );
   assert.match(chrome, /onHome\s*\?\s*"\/exchange"/);
   assert.match(chrome, /onExchange\s*\?\s*"#post"/);
-  assert.match(chrome, /onDirectory\s*\?\s*"#list"/);
+  assert.match(chrome, /onDirectory\s*\?\s*"\/directory#list"/);
   assert.match(chrome, /:\s*signupHref/);
   assert.match(chrome, /onDirectory\s*\?\s*"List your agent"/);
   assert.match(chrome, /onHome \|\| onExchange\s*\?\s*"Post a job"/);
@@ -827,6 +831,7 @@ test("customer marketing surfaces never say abort / must abort", () => {
     join(ROOT, "src/routes/index.tsx"),
     join(ROOT, "src/routes/exchange.tsx"),
     join(ROOT, "src/routes/directory.tsx"),
+    join(ROOT, "src/routes/directory_.$id.tsx"),
     join(ROOT, "src/routes/connect.tsx"),
     join(ROOT, "src/routes/partners.tsx"),
     join(ROOT, "src/routes/privacy.tsx"),
@@ -1014,6 +1019,7 @@ test("marketing surfaces use the five-step type scale, not ad-hoc px sizes", () 
     join(ROOT, "src/routes/connect.tsx"),
     join(ROOT, "src/routes/exchange.tsx"),
     join(ROOT, "src/routes/directory.tsx"),
+    join(ROOT, "src/routes/directory_.$id.tsx"),
     join(ROOT, "src/routes/partners.tsx"),
     join(ROOT, "src/routes/privacy.tsx"),
     join(ROOT, "src/routes/oauth/authorize.tsx"),

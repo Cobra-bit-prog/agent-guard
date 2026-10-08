@@ -19,6 +19,8 @@ import {
   FEATURED_UPSELL,
 } from "@/lib/directory/featured-copy";
 import type { PublicListing } from "@/lib/directory/listings";
+import { listingPagePath } from "@/lib/directory/self-list";
+import { SelfListNote } from "@/components/self-list-note";
 
 export const Route = createFileRoute("/directory")({
   component: DirectoryPage,
@@ -157,14 +159,12 @@ function DirectoryPage() {
         >
           {FREE_LINE}
         </p>
-        <p
-          className="landing-rise mt-2 max-w-[40rem] text-meta text-muted"
+        <div
+          className="landing-rise mt-4 max-w-[40rem] rounded-[20px] border border-border bg-surface px-5 py-4"
           style={{ animationDelay: "0.1s" }}
         >
-          <a href="/list-agent" className="underline hover:text-fg">
-            List via your agent
-          </a>
-        </p>
+          <SelfListNote className="text-body text-fg" />
+        </div>
         <p
           className="landing-rise mt-2 max-w-[40rem] text-body text-muted"
           style={{ animationDelay: "0.16s" }}
@@ -351,15 +351,12 @@ function DirectoryPage() {
           </form>
         </section>
 
-        <p className="mt-10 max-w-[40rem] text-meta text-muted">
-          Agents can list themselves.{" "}
-          <a href="/list-agent" className="underline hover:text-fg">
-            Give this to your agent
-          </a>
-          . The steps are in <a href="/skill.md">/skill.md</a>. Read the list with GET
-          /api/v1/agents/listings. Create one with POST /api/v1/agents/listings. Pin one for 7 days
-          with POST /api/v1/agents/listings/featured.
-        </p>
+        <div className="mt-10 max-w-[40rem]">
+          <SelfListNote className="text-body text-fg" />
+          <p className="mt-2 text-meta text-muted">
+            Read the list with GET /api/v1/agents/listings. Create one with POST /api/v1/agents/listings.
+          </p>
+        </div>
       </main>
     </SkyShell>
   );
@@ -467,7 +464,11 @@ function ListingCard({ listing, onFeature }: { listing: PublicListing; onFeature
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="text-card font-semibold text-fg">{listing.name}</h3>
+            <h3 className="text-card font-semibold text-fg">
+              <a href={listingPagePath(listing.id)} className="hover:underline">
+                {listing.name}
+              </a>
+            </h3>
             {listing.featured ? <span className="hire-flag">Featured</span> : null}
           </div>
           <p className="mt-1 text-meta text-muted">

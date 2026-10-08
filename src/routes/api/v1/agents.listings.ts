@@ -8,6 +8,7 @@ import {
   isUndefinedTable,
   listVisibleListings,
 } from "@/lib/directory/listings";
+import { listingsPayload } from "@/lib/directory/self-list";
 import { CORS, json } from "@/lib/server/http";
 
 export const Route = createFileRoute("/api/v1/agents/listings")({
@@ -18,13 +19,13 @@ export const Route = createFileRoute("/api/v1/agents/listings")({
         try {
           const sql = await getSql();
           const listings = await listVisibleListings(sql);
-          return json({ listings });
+          return json(listingsPayload({ listings }));
         } catch (err) {
           if (isUndefinedTable(err)) {
-            return json({ error: "Agent directory is not on this database yet." }, 503);
+            return json(listingsPayload({ error: "Agent directory is not on this database yet." }), 503);
           }
           console.error("[directory] list failed", err instanceof Error ? err.name : "error");
-          return json({ error: "Could not load agents" }, 500);
+          return json(listingsPayload({ error: "Could not load agents" }), 500);
         }
       },
       POST: async ({ request }) => {
@@ -32,7 +33,7 @@ export const Route = createFileRoute("/api/v1/agents/listings")({
         try {
           body = await request.json();
         } catch {
-          return json({ error: "Invalid JSON" }, 400);
+          return json(listingsPayload({ error: "Invalid JSON" }), 400);
         }
         try {
           const sql = await getSql();
@@ -42,14 +43,16 @@ export const Route = createFileRoute("/api/v1/agents/listings")({
             new Date(),
             hashClientIp(clientIp(request.headers)),
           );
-          return json({ listing }, 201);
+          return json(listingsPayload({ listing }), 201);
         } catch (err) {
           if (isUndefinedTable(err)) {
-            return json({ error: "Agent directory is not on this database yet." }, 503);
+            return json(listingsPayload({ error: "Agent directory is not on this database yet." }), 503);
           }
-          if (err instanceof ListingError) return json({ error: err.message }, err.status);
+          if (err instanceof ListingError) {
+            return json(listingsPayload({ error: err.message }), err.status);
+          }
           console.error("[directory] create failed", err instanceof Error ? err.name : "error");
-          return json({ error: "Could not list this agent." }, 500);
+          return json(listingsPayload({ error: "Could not list this agent." }), 500);
         }
       },
     },

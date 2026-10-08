@@ -33,6 +33,7 @@ import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppInboxRouteImport } from './routes/_app/inbox'
 import { Route as AppPoliciesRouteImport } from './routes/_app/policies'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
+import { Route as DirectoryIdRouteImport } from './routes/directory_.$id'
 import { Route as HireIndexRouteImport } from './routes/hire.index'
 import { Route as HireThanksRouteImport } from './routes/hire.thanks'
 import { Route as MeterPayRouteImport } from './routes/meter.pay'
@@ -196,6 +197,11 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
   getParentRoute: () => AppRoute,
+} as any)
+const DirectoryIdRoute = DirectoryIdRouteImport.update({
+  id: '/directory_/$id',
+  path: '/directory/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const HireIndexRoute = HireIndexRouteImport.update({
   id: '/',
@@ -444,6 +450,7 @@ export interface FileRoutesByFullPath {
   '/inbox': typeof AppInboxRoute
   '/policies': typeof AppPoliciesRoute
   '/settings': typeof AppSettingsRoute
+  '/directory/$id': typeof DirectoryIdRoute
   '/hire/thanks': typeof HireThanksRoute
   '/meter/pay': typeof MeterPayRoute
   '/oauth/authorize': typeof OauthAuthorizeRoute
@@ -509,6 +516,7 @@ export interface FileRoutesByTo {
   '/inbox': typeof AppInboxRoute
   '/policies': typeof AppPoliciesRoute
   '/settings': typeof AppSettingsRoute
+  '/directory/$id': typeof DirectoryIdRoute
   '/hire/thanks': typeof HireThanksRoute
   '/meter/pay': typeof MeterPayRoute
   '/oauth/authorize': typeof OauthAuthorizeRoute
@@ -580,6 +588,7 @@ export interface FileRoutesById {
   '/_app/inbox': typeof AppInboxRoute
   '/_app/policies': typeof AppPoliciesRoute
   '/_app/settings': typeof AppSettingsRoute
+  '/directory_/$id': typeof DirectoryIdRoute
   '/hire/thanks': typeof HireThanksRoute
   '/meter/pay': typeof MeterPayRoute
   '/oauth/authorize': typeof OauthAuthorizeRoute
@@ -651,6 +660,7 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/policies'
     | '/settings'
+    | '/directory/$id'
     | '/hire/thanks'
     | '/meter/pay'
     | '/oauth/authorize'
@@ -716,6 +726,7 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/policies'
     | '/settings'
+    | '/directory/$id'
     | '/hire/thanks'
     | '/meter/pay'
     | '/oauth/authorize'
@@ -786,6 +797,7 @@ export interface FileRouteTypes {
     | '/_app/inbox'
     | '/_app/policies'
     | '/_app/settings'
+    | '/directory_/$id'
     | '/hire/thanks'
     | '/meter/pay'
     | '/oauth/authorize'
@@ -849,6 +861,7 @@ export interface RootRouteChildren {
   SpendAuditRoute: typeof SpendAuditRouteWithChildren
   StampRoute: typeof StampRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
+  DirectoryIdRoute: typeof DirectoryIdRoute
   MeterPayRoute: typeof MeterPayRoute
   OauthAuthorizeRoute: typeof OauthAuthorizeRoute
   OauthRegisterRoute: typeof OauthRegisterRoute
@@ -1053,6 +1066,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/settings'
       preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/directory_/$id': {
+      id: '/directory_/$id'
+      path: '/directory/$id'
+      fullPath: '/directory/$id'
+      preLoaderRoute: typeof DirectoryIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/hire/': {
       id: '/hire/'
@@ -1494,6 +1514,7 @@ const rootRouteChildren: RootRouteChildren = {
   SpendAuditRoute: SpendAuditRouteWithChildren,
   StampRoute: StampRoute,
   VerifyEmailRoute: VerifyEmailRoute,
+  DirectoryIdRoute: DirectoryIdRoute,
   MeterPayRoute: MeterPayRoute,
   OauthAuthorizeRoute: OauthAuthorizeRoute,
   OauthRegisterRoute: OauthRegisterRoute,
