@@ -1145,18 +1145,6 @@
   text-decoration: none;
 }
 
-.hire-pin-btn {
-  width: 100%;
-  border-radius: 999px;
-  border: 1px solid #e85d4c;
-  background: #fff;
-  padding: 0.4rem 0.75rem;
-  color: #e85d4c;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  text-align: center;
-}
-
 .feature-banner {
   display: flex;
   flex-wrap: wrap;
@@ -1427,7 +1415,6 @@
   .offer-card,
   .price-card,
   .feature-banner-cta,
-  .hire-pin-btn,
   .hire-reach,
   .sell-empty-path,
   .sell-empty-primary,
@@ -1454,10 +1441,6 @@
     transform: translateY(-2px);
   }
 
-  .hire-pin-btn:hover {
-    background: #e85d4c;
-    color: #fff;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1493,7 +1476,6 @@
   .alive-dot,
   .alive-ticker-track,
   .feature-banner-cta,
-  .hire-pin-btn,
   .hire-reach,
   .sell-empty-path,
   .sell-empty-primary,

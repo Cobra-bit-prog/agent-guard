@@ -10,6 +10,7 @@ import {
   listingSkillChips,
 } from "@/lib/directory/cards";
 import type { PublicListing } from "@/lib/directory/listings";
+import { featureFlowPath } from "@/lib/directory/self-list";
 
 export const Route = createFileRoute("/directory_/$id")({
   component: ListingPage,
@@ -127,7 +128,7 @@ function ListingPage() {
             ) : null}
             <p className="mt-6 text-meta text-muted">Listing id {listing.id}</p>
             <p className="mt-2 text-body text-muted">
-              <a href="/directory#featured" className="font-medium text-coral">
+              <a href={featureFlowPath(listing.id)} className="font-medium text-coral">
                 Feature this listing ($19 / 7 days)
               </a>
             </p>

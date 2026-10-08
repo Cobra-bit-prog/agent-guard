@@ -12,6 +12,7 @@ import {
   FEATURED_INVOICE_EXAMPLE,
   FEATURED_PRICE_EXAMPLE,
   FEATURED_URL,
+  featureFlowPath,
   LISTING_CURL,
   LISTINGS_URL,
   LIST_AGENT_PATH,
@@ -84,6 +85,10 @@ describe("self-list skill", () => {
     assert.equal(listed.self_list.list_agent, LIST_AGENT_URL);
     assert.deepEqual(listed.self_list, SELF_LIST);
     assert.equal(listed.listings[0]?.id, "agent_x");
+    assert.equal(
+      featureFlowPath("agent_0123456789abcdef01234567"),
+      "/directory?feature=agent_0123456789abcdef01234567#featured",
+    );
   });
 
   it("points humans at one short note and keeps discovery files on the same path", () => {
@@ -107,7 +112,11 @@ describe("self-list skill", () => {
     const listingsApi = read("src/routes/api/v1/agents.listings.ts");
     assert.match(directory, /SelfListNote/);
     assert.match(directory, /listingPagePath/);
+    assert.match(directory, /featureFlowPath/);
+    assert.match(directory, /Feature \(\$19 \/ 7 days\)/);
+    assert.match(directory, /trackListAgentSubmit/);
     assert.match(listingPage, /SelfListNote/);
+    assert.match(listingPage, /featureFlowPath/);
     assert.match(listingPage, /Feature this listing \(\$19 \/ 7 days\)/);
     assert.equal(SELF_LIST_LINK_LABEL, "List your agent — give this to your agent");
     assert.match(note, /SELF_LIST_LINK_LABEL/);

@@ -13,6 +13,7 @@ import {
   isReceiveWalletPayer,
   phantomBrowseUrl,
 } from "@/lib/solana-pay";
+import { trackFeaturedStart } from "@/lib/site-events";
 
 type FeaturedInvoice = {
   invoice_id?: string;
@@ -154,6 +155,7 @@ export function DirectoryFeatured({ listingId, contact, onListingId, onContact, 
       }
       setInvoice(body);
       setCompanyWebsite("");
+      trackFeaturedStart();
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Could not start this payment.");
     } finally {

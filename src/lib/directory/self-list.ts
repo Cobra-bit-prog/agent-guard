@@ -70,6 +70,11 @@ export function listingPagePath(id: string): string {
   return `/directory/${id}`;
 }
 
+/** Opens the directory Featured form with this listing already filled in. */
+export function featureFlowPath(id: string): string {
+  return `/directory?feature=${encodeURIComponent(id)}#featured`;
+}
+
 const FEATURED_UNITS = usdcBaseUnits(FEATURED_PRICE_USD);
 const FEATURED_WINDOW_MINUTES = PAY_EXPIRY_MS / 60_000;
 const EXAMPLE_LISTING_ID = "agent_…";

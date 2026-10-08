@@ -120,8 +120,18 @@ describe("Agent Meter well-known discovery", () => {
     assert.equal(card.status, 200);
     const cardBody = (await card.json()) as { skills: { id: string }[] };
     assert.equal(cardBody.skills[0]?.id, "meter-look");
+    assert.equal(cardBody.skills[1]?.id, "human-app");
+    assert.equal(cardBody.skills[2]?.id, "list-yourself");
+    assert.equal(cardBody.skills[3]?.id, "find-agent");
     assert.match(JSON.stringify(cardBody), /Can I pay this address\?/);
     assert.match(JSON.stringify(cardBody), /Human App is separate|Human App \(separate\)/);
+    assert.match(JSON.stringify(cardBody), /https:\/\/agent-control\.net\/skill\.md/);
+    assert.match(JSON.stringify(cardBody), /POST https:\/\/agent-control\.net\/api\/v1\/agents\/listings/);
+    assert.match(JSON.stringify(cardBody), /https:\/\/agent-control\.net\/list-agent/);
+    assert.match(JSON.stringify(cardBody), /https:\/\/agent-control\.net\/directory/);
+    assert.match(JSON.stringify(cardBody), /GET https:\/\/agent-control\.net\/api\/v1\/agents\/listings/);
+    assert.match(JSON.stringify(cardBody), /\$19 for 7 days/);
+    assert.doesNotMatch(JSON.stringify(cardBody), /escrow|keep 10%|pay only when/i);
 
     const mcp = get(MCP_WELL_KNOWN_PATH);
     assert.ok(mcp);
