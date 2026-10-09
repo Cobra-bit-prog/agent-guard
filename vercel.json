@@ -28,6 +28,11 @@
       "permanent": true
     },
     {
+      "source": "/pay/stamp",
+      "destination": "/stamp",
+      "permanent": true
+    },
+    {
       "source": "/meter",
       "destination": "/connect#agent-meter",
       "permanent": false

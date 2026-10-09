@@ -31,6 +31,7 @@ describe("discovery path redirects", () => {
         ["/docs/connect", "/connect", 308, true],
         ["/pay", "/billing/pay", 308, true],
         ["/pay/meter", "/meter/pay", 308, true],
+        ["/pay/stamp", "/stamp", 308, true],
         ["/meter", "/connect#agent-meter", 307, false],
         [LLMS_WELL_KNOWN_PATH, LLMS_TXT_PATH, 308, true],
         ["/agents/skill.md", "/skill.md", 308, true],
@@ -68,6 +69,18 @@ describe("discovery path redirects", () => {
     assert.ok(withQuery);
     assert.equal(withQuery.status, 308);
     assert.equal(withQuery.headers.get("location"), "/meter/pay?invoice_id=inv_202f5a771d4c6f77");
+  });
+
+  it("308s /pay/stamp to /stamp and keeps the query string", () => {
+    const bare = hit("/pay/stamp");
+    assert.ok(bare);
+    assert.equal(bare.status, 308);
+    assert.equal(bare.headers.get("location"), "/stamp");
+
+    const withQuery = hit("/pay/stamp?ref=bookmark");
+    assert.ok(withQuery);
+    assert.equal(withQuery.status, 308);
+    assert.equal(withQuery.headers.get("location"), "/stamp?ref=bookmark");
   });
 
   it("soft-redirects /meter to the Agent Meter door until PR #43", () => {
@@ -110,6 +123,8 @@ describe("discovery path redirects", () => {
     assert.equal(hit("/billing/pay?plan=starter"), null);
     assert.equal(hit("/meter/pay"), null);
     assert.equal(hit("/meter/pay?invoice_id=inv_1"), null);
+    assert.equal(hit("/stamp"), null);
+    assert.equal(hit("/stamp?ref=bookmark"), null);
     assert.equal(hit("/llms.txt"), null);
     assert.equal(hit("/docs"), null);
     assert.equal(hit("/.well-known/x402"), null);
