@@ -28,6 +28,15 @@ import {
   SKILL_MD_URL,
   listingsPayload,
 } from "./self-list.ts";
+import {
+  OTHER_AGENT_APPS_FALLBACK_PROMPT,
+  OTHER_AGENT_APPS_FEATURED_LINE,
+  OTHER_AGENT_APPS_FREE_TOOLS,
+  OTHER_AGENT_APPS_HEADING,
+  OTHER_AGENT_APPS_MARKDOWN,
+  OTHER_AGENT_APPS_MCP_URL,
+  OTHER_AGENT_APPS_PASTE_PROMPT,
+} from "../other-agent-apps.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../..");
 
@@ -73,10 +82,7 @@ describe("self-list skill", () => {
     assert.match(SKILL_MD, /listing_id/);
     assert.match(SKILL_MD, /invoice_id/);
     assert.match(SKILL_MD, /Base or Solana/);
-    assert.match(
-      SKILL_MD,
-      new RegExp(`${FEATURED_STARTS_PER_HOUR} payment starts per hour`),
-    );
+    assert.match(SKILL_MD, new RegExp(`${FEATURED_STARTS_PER_HOUR} payment starts per hour`));
     assert.match(SKILL_MD, new RegExp(`The invoice lasts ${PAY_EXPIRY_MS / 60_000} minutes`));
     assert.match(SKILL_MD, /Contact does not match this listing\./);
     assert.match(SKILL_MD, /This payment window closed\. Start again\./);
@@ -164,6 +170,31 @@ describe("self-list skill", () => {
     const llms = read("public/llms.txt");
     assert.match(llms, new RegExp(LIST_AGENT_URL.replaceAll(".", "\\.")));
     assert.match(llms, new RegExp(SKILL_MD_URL.replaceAll(".", "\\.")));
+    assert.ok(SKILL_MD.includes(OTHER_AGENT_APPS_MARKDOWN));
+    assert.ok(llms.includes(OTHER_AGENT_APPS_MARKDOWN));
+    assert.match(SKILL_MD, new RegExp(`## ${OTHER_AGENT_APPS_HEADING}`));
+    assert.match(llms, new RegExp(`## ${OTHER_AGENT_APPS_HEADING}`));
+    assert.ok(SKILL_MD.includes(OTHER_AGENT_APPS_MCP_URL));
+    assert.ok(llms.includes(OTHER_AGENT_APPS_MCP_URL));
+    assert.match(SKILL_MD, /no sign-in needed/);
+    assert.match(llms, /no sign-in needed/);
+    for (const tool of OTHER_AGENT_APPS_FREE_TOOLS) {
+      assert.ok(SKILL_MD.includes(tool));
+      assert.ok(llms.includes(tool));
+    }
+    assert.ok(SKILL_MD.includes(OTHER_AGENT_APPS_PASTE_PROMPT));
+    assert.ok(llms.includes(OTHER_AGENT_APPS_PASTE_PROMPT));
+    assert.ok(SKILL_MD.includes(OTHER_AGENT_APPS_FALLBACK_PROMPT));
+    assert.ok(llms.includes(OTHER_AGENT_APPS_FALLBACK_PROMPT));
+    assert.ok(SKILL_MD.includes(OTHER_AGENT_APPS_FEATURED_LINE));
+    assert.ok(llms.includes(OTHER_AGENT_APPS_FEATURED_LINE));
+    assert.doesNotMatch(OTHER_AGENT_APPS_MARKDOWN, /endorse|officially support|official support/i);
+    assert.doesNotMatch(OTHER_AGENT_APPS_MARKDOWN, BANNED);
+    const docs = read("src/routes/docs.tsx");
+    const connect = read("src/routes/connect.tsx");
+    assert.match(docs, /<OtherAgentApps/);
+    assert.match(docs, /href="#other-agent-apps"/);
+    assert.match(connect, /<OtherAgentApps/);
     assert.match(
       llms,
       /List your agent free: POST \/api\/v1\/agents\/listings with name, skills, pitch, contact\. Browse: GET \/api\/v1\/agents\/listings\.\s*$/,

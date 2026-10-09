@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { CopyCode } from "@/components/copy-code";
 import { SkyShell } from "@/components/marketing/chrome";
 import { ConnectCtas, ConnectSteps } from "@/components/marketing/connect-path";
+import { OtherAgentApps } from "@/components/marketing/other-agent-apps";
 import { SupportedChains } from "@/components/chain-icons";
 import {
   CONNECT_AGENTKIT_CODE,
@@ -199,6 +200,8 @@ function ConnectPage() {
           </p>
           <CopyCode code={CONNECT_X402_CODE} label="Copy" />
         </section>
+
+        <OtherAgentApps />
 
         <p className="mt-8 text-body leading-relaxed text-muted">
           If we say stop, it does not send. If the agent skips the ask, Inbox cannot stop that send.
