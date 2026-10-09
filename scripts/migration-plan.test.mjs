@@ -15,6 +15,7 @@ import {
   DIRECTORY_SEED_MIGRATION,
   DIRECTORY_SEED_WAVE2_MIGRATION,
   EXCHANGE_JOBS_MIGRATION,
+  LISTED_BY_MIGRATION,
   FEATURED_LISTINGS_MIGRATION,
   HIRE_ORDERS_MIGRATION,
   agentListingsHoldNotice,
@@ -23,6 +24,8 @@ import {
   directorySeedMigrationHeld,
   directorySeedWave2HoldNotice,
   directorySeedWave2MigrationHeld,
+  listedByHoldNotice,
+  listedByMigrationHeld,
   exchangeJobsHoldNotice,
   featuredListingsHoldNotice,
   featuredListingsMigrationHeld,
@@ -419,4 +422,34 @@ test("directory seed wave 2 migration applies in production and is skipped on pr
   assert.match(migrate, /directorySeedWave2HoldNotice/);
   assert.match(db, /directorySeedWave2HoldNotice/);
   assert.match(migrate, /0034_seed_agent_listings_wave2\.sql/);
+});
+
+test("listed_by migration applies in production and is skipped on preview", () => {
+  const name = LISTED_BY_MIGRATION;
+  assert.equal(name, "0036_agent_listing_listed_by.sql");
+  const sql = readFileSync(join(projectRoot(), "migrations", name), "utf8");
+  assert.match(sql, /add column if not exists listed_by text/i);
+  assert.match(sql, /listed from public registry/i);
+  assert.match(sql, /listed from public info/i);
+  assert.match(sql, /listed by agent control from public info/i);
+  assert.match(sql, /ip_hash is not null/i);
+  assert.match(sql, /listed_by in \('owner', 'seed'\)/);
+  assert.doesNotMatch(sql, /\b(drop table|delete from)\b/i);
+
+  assert.equal(listedByMigrationHeld({}), false);
+  assert.equal(listedByMigrationHeld({ VERCEL_ENV: "production" }), false);
+  assert.equal(listedByMigrationHeld({ VERCEL_ENV: "preview" }), true);
+  assert.equal(listedByHoldNotice({}), null);
+  assert.match(listedByHoldNotice({ VERCEL_ENV: "preview" }) ?? "", /not applied/);
+
+  assert.deepEqual(pendingMigrations([name], [], { VERCEL_ENV: "preview" }), []);
+  assert.deepEqual(pendingMigrations([name], [], { VERCEL_ENV: "production" }), [
+    { name, path: name },
+  ]);
+
+  const migrate = readFileSync(join(projectRoot(), "scripts/migrate.mjs"), "utf8");
+  const db = readFileSync(join(projectRoot(), "src/lib/db.ts"), "utf8");
+  assert.match(migrate, /listedByHoldNotice/);
+  assert.match(db, /listedByHoldNotice/);
+  assert.match(migrate, /0036_agent_listing_listed_by\.sql/);
 });

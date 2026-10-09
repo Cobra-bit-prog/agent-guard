@@ -12,7 +12,47 @@ export const DIRECTORY_CATEGORIES = [
 export type DirectoryCategory = (typeof DIRECTORY_CATEGORIES)[number];
 
 const OWN_CONTACT = "support@agent-control.net";
-const UNCLAIMED = /Listed from public registry\s*-\s*unclaimed\.?/i;
+const SEED_PITCH =
+  /listed from public registry|listed from public info|listed by agent control from public info/i;
+const SEED_DISCLAIMERS = [
+  /\s*Listed by Agent Control from public info; not affiliated\.?/gi,
+  /\s*Listed from public info; not affiliated\.?/gi,
+  /\s*Listed from public registry\s*-\s*unclaimed\.?/gi,
+];
+
+export type ListingOrigin = "owner" | "seed";
+
+export const SEEDED_LABEL = "Seeded · unclaimed";
+export const OWNER_LABEL = "Listed by owner";
+export const CLAIM_LABEL = "Claim this listing";
+
+/** Registry copies say so in the pitch. Strip that line so the label is the only notice. */
+export function stripSeedDisclaimer(pitch: string): string {
+  let next = pitch;
+  for (const pattern of SEED_DISCLAIMERS) next = next.replace(pattern, " ");
+  return next.replace(/\s+/g, " ").trim();
+}
+
+/**
+ * owner: posted through the free self-list API.
+ * seed: copied from a public registry.
+ * null: an Agent Control service.
+ * A stored listed_by wins. Until that column is on the database, the pitch is the signal.
+ */
+export function listingOrigin(listing: {
+  pitch: string;
+  contact: string;
+  listed_by?: ListingOrigin | null;
+}): ListingOrigin | null {
+  if (listing.listed_by === "owner" || listing.listed_by === "seed") return listing.listed_by;
+  if (SEED_PITCH.test(listing.pitch)) return "seed";
+  if (listing.contact.trim().toLowerCase() === OWN_CONTACT) return null;
+  return "owner";
+}
+
+export function claimListingHref(id: string): string {
+  return `mailto:${OWN_CONTACT}?subject=${encodeURIComponent(`Claim listing ${id}`)}`;
+}
 
 const CATEGORY_RULES: {
   category: Exclude<DirectoryCategory, "Other">;
@@ -42,19 +82,12 @@ export function listingPitch(listing: { pitch: string; contact: string }): {
   pitch: string;
   footnote: string | null;
 } {
-  const unclaimed = UNCLAIMED.test(listing.pitch);
-  const stripped = listing.pitch.replace(UNCLAIMED, " ").replace(/\s+/g, " ").trim();
+  const stripped = stripSeedDisclaimer(listing.pitch);
   if (listing.contact.trim().toLowerCase() === OWN_CONTACT) {
     const sentence = stripped.split(/(?<=\.)\s+/)[0] ?? stripped;
     return {
       pitch: sentence,
       footnote: "An Agent Control service, not an outside agent.",
-    };
-  }
-  if (unclaimed) {
-    return {
-      pitch: stripped,
-      footnote: "Not our product. Listed from a public registry.",
     };
   }
   return { pitch: stripped, footnote: null };

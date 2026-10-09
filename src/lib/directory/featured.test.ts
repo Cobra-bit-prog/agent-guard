@@ -367,8 +367,8 @@ describe("directory featured copy", () => {
     const combined = `${page}\n${panel}`;
     assert.match(page, /FEATURED_LINE/);
     assert.match(page, /FEATURED_HONESTY/);
-    assert.match(page, /FEATURED_CTA/);
-    assert.match(page, /FEATURED_UPSELL/);
+    assert.match(page, /LISTED_FREE_LINE/);
+    assert.match(page, /ACTION_GATE_SUCCESS_LINE/);
     assert.match(page, /Listing your agent is free\. People reach you at the contact you leave\./);
     assert.match(page, /Featured/);
     assert.match(copy, /Pay on Base or Solana/);
@@ -381,6 +381,7 @@ describe("directory featured copy", () => {
     assert.match(panel, /SOLANA_PAYOUT_ADDRESS/);
     assert.match(panel, /EVM_PAYOUT_ADDRESS/);
     assert.doesNotMatch(panel, /featured_7d|\$49|\/month|escrow|refund|\bhold\b|kept safe/i);
+    assert.match(page, /ACTION_GATE_HREF/);
     assert.doesNotMatch(page, /featured_7d|\/month|escrow|refund|\bhold\b|kept safe/i);
     const priced = page.match(/\$49/g) ?? [];
     const hireLine = page.match(/Hire us · directory boost is \$49/g) ?? [];

@@ -11,8 +11,12 @@ import {
   AGENTS_SKILL_PATH,
   FEATURED_INVOICE_EXAMPLE,
   FEATURED_PRICE_EXAMPLE,
+  ACTION_GATE_SUCCESS_LINE,
+  ACTION_GATE_SUCCESS_URL,
   FEATURED_URL,
+  LISTED_FREE_LINE,
   featureFlowPath,
+  listingNext,
   LISTING_CURL,
   LISTINGS_URL,
   LIST_AGENT_PATH,
@@ -89,6 +93,20 @@ describe("self-list skill", () => {
       featureFlowPath("agent_0123456789abcdef01234567"),
       "/directory?feature=agent_0123456789abcdef01234567#featured",
     );
+    const next = listingNext("agent_0123456789abcdef01234567");
+    assert.equal(next.line, LISTED_FREE_LINE);
+    assert.equal(next.featured.post, FEATURED_URL);
+    assert.equal(
+      next.featured.page,
+      "https://agent-control.net/directory?feature=agent_0123456789abcdef01234567#featured",
+    );
+    assert.equal(next.action_gate.line, ACTION_GATE_SUCCESS_LINE);
+    assert.equal(next.action_gate.href, ACTION_GATE_SUCCESS_URL);
+    assert.equal(ACTION_GATE_SUCCESS_URL, "https://agent-control.net/billing/pay?plan=action");
+    assert.match(SKILL_MD, /## 5\. After it is listed/);
+    assert.match(SKILL_MD, /Listed free\. Pin it to the top for 7 days: \$19 USDC, Base or Solana/);
+    assert.match(SKILL_MD, new RegExp(`POST ${FEATURED_URL.replaceAll(".", "\\.")}`));
+    assert.doesNotMatch(SKILL_MD, /escrow|keep 10%|pay only when/i);
   });
 
   it("points humans at one short note and keeps discovery files on the same path", () => {
@@ -102,7 +120,10 @@ describe("self-list skill", () => {
     assert.match(page, /AGENT_PROMPT/);
     assert.match(page, /LISTING_CURL/);
     assert.match(page, /Give this to your agent/);
-    assert.match(page, /Feature a listing \(\$19 \/ 7 days\)/);
+    assert.match(page, /LISTED_FREE_LINE/);
+    assert.match(page, /ACTION_GATE_SUCCESS_LINE/);
+    assert.match(page, /ACTION_GATE_HREF/);
+    assert.match(page, /POST \{FEATURED_PATH\}/);
     assert.match(page, /20 listings an hour/);
     assert.doesNotMatch(page, BANNED);
 
@@ -117,7 +138,10 @@ describe("self-list skill", () => {
     assert.match(directory, /trackListAgentSubmit/);
     assert.match(listingPage, /SelfListNote/);
     assert.match(listingPage, /featureFlowPath/);
+    assert.match(listingPage, /ListingOriginLine/);
     assert.match(listingPage, /Feature this listing \(\$19 \/ 7 days\)/);
+    assert.match(directory, /ListingOriginLine/);
+    assert.match(directory, /LISTED_FREE_LINE/);
     assert.equal(SELF_LIST_LINK_LABEL, "List your agent — give this to your agent");
     assert.match(note, /SELF_LIST_LINK_LABEL/);
     assert.match(note, /href="\/list-agent"/);

@@ -1,8 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CopyCode } from "@/components/copy-code";
 import { SkyShell } from "@/components/marketing/chrome";
+import { FEATURED_PATH } from "@/lib/directory/featured-copy";
+import { ACTION_GATE_HREF } from "@/lib/shop-shield";
 import {
+  ACTION_GATE_SUCCESS_LINE,
   AGENT_PROMPT,
+  DIRECTORY_URL,
+  LISTED_FREE_LINE,
   LISTING_CURL,
   LISTINGS_PATH,
   LISTINGS_URL,
@@ -112,19 +117,24 @@ function ListAgentPage() {
           </p>
         </section>
 
-        <section className="mt-10" aria-labelledby="featured-note">
-          <h2 id="featured-note" className="text-card font-medium">
-            Want it on top?
+        <section className="mt-10" aria-labelledby="after-listed">
+          <h2 id="after-listed" className="text-title font-semibold">
+            After it is listed
           </h2>
-          <p className="mt-2 text-body text-muted">
-            Feature a listing ($19 / 7 days). You pay us directly. The free listing stays free.
+          <p className="mt-3 text-body font-medium text-fg">{LISTED_FREE_LINE}</p>
+          <p className="mt-2 text-body text-muted">POST {FEATURED_PATH}</p>
+          <p className="mt-2 break-all text-body text-muted">
+            {DIRECTORY_URL}?feature=&lt;id&gt;#featured
           </p>
-          <a
-            href="/directory#featured"
-            className="mt-3 inline-block text-body font-medium text-navy hover:text-coral"
-          >
-            Feature a listing ($19 / 7 days)
-          </a>
+          <p className="mt-2 text-meta text-muted">
+            The id is in the 201 reply. That reply also has next, with this line and the page for
+            that id.
+          </p>
+          <p className="mt-4 text-meta text-muted">
+            <a href={ACTION_GATE_HREF} className="underline hover:text-fg">
+              {ACTION_GATE_SUCCESS_LINE}
+            </a>
+          </p>
           <p className="mt-6 text-body text-muted">
             A person can also{" "}
             <a href="/directory#list" className="font-medium text-navy hover:text-coral">

@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
+import { listingOrigin, type ListingOrigin } from "./cards.ts";
 
 export class ListingError extends Error {
   status: number;
@@ -42,6 +43,8 @@ export type PublicListing = {
   created_at: string;
   featured: boolean;
   featured_until: string | null;
+  /** owner: self-list. seed: public registry. null: an Agent Control service. */
+  listed_by: ListingOrigin | null;
 };
 
 export interface ListingQuery {
@@ -57,6 +60,7 @@ type ListingRow = {
   link: string | null;
   created_at: Date | string;
   featured_until?: Date | string | null;
+  listed_by?: string | null;
 };
 
 const PUBLIC_COLUMNS = `id, name, skills, pitch, contact, link, created_at`;
@@ -71,11 +75,20 @@ export function isUndefinedTable(err: unknown): boolean {
 
 /** Preview builds skip migration 0033, so featured_until may be absent. */
 export function isMissingFeaturedColumn(err: unknown): boolean {
+  return isMissingColumn(err, "featured_until");
+}
+
+/** Preview builds skip migration 0036, so listed_by may be absent. */
+export function isMissingListedByColumn(err: unknown): boolean {
+  return isMissingColumn(err, "listed_by");
+}
+
+function isMissingColumn(err: unknown, column: string): boolean {
   if (!err || typeof err !== "object") return false;
   const code = "code" in err ? String((err as { code: unknown }).code) : "";
   const message = err instanceof Error ? err.message : "";
-  if (code === "42703" && /featured_until/i.test(message)) return true;
-  return /featured_until/i.test(message) && /does not exist/i.test(message);
+  if (code === "42703" && new RegExp(column, "i").test(message)) return true;
+  return new RegExp(column, "i").test(message) && /does not exist/i.test(message);
 }
 
 export function hashClientIp(ip: string): string {
@@ -112,6 +125,11 @@ function asSkills(value: unknown): string[] {
   throw new ListingError("Could not read skills");
 }
 
+function storedOrigin(value: string | null | undefined): ListingOrigin | null | undefined {
+  if (value === "owner" || value === "seed") return value;
+  return undefined;
+}
+
 function mapListing(row: ListingRow, now: Date): PublicListing {
   const featuredUntil = row.featured_until ? iso(row.featured_until) : null;
   const featuredAt = featuredUntil ? new Date(featuredUntil).getTime() : Number.NaN;
@@ -125,6 +143,11 @@ function mapListing(row: ListingRow, now: Date): PublicListing {
     created_at: iso(row.created_at),
     featured_until: featuredUntil,
     featured: Number.isFinite(featuredAt) && featuredAt > now.getTime(),
+    listed_by: listingOrigin({
+      pitch: row.pitch,
+      contact: row.contact,
+      listed_by: storedOrigin(row.listed_by),
+    }),
   };
 }
 
@@ -207,31 +230,48 @@ export function parseListing(input: unknown): {
   };
 }
 
+const FEATURED_ORDER = `order by case when featured_until > $1 then 0 else 1 end,
+                case when featured_until > $1 then featured_until end desc nulls last,
+                created_at desc`;
+
 export async function listVisibleListings(sql: ListingQuery, now: Date = new Date()): Promise<PublicListing[]> {
+  const rows = await selectVisibleRows(sql, now);
+  return rows.map((row) => mapListing(row, now));
+}
+
+async function selectVisibleRows(sql: ListingQuery, now: Date): Promise<ListingRow[]> {
   try {
-    const rows = await sql.query<ListingRow>(
-      `select ${PUBLIC_COLUMNS}, featured_until
+    return await sql.query<ListingRow>(
+      `select ${PUBLIC_COLUMNS}, featured_until, listed_by
        from agent_listings
        where hidden_at is null
-       order by case when featured_until > $1 then 0 else 1 end,
-                case when featured_until > $1 then featured_until end desc nulls last,
-                created_at desc
+       ${FEATURED_ORDER}
        limit $2`,
       [now, DIRECTORY_LIST_LIMIT],
     );
-    return rows.map((row) => mapListing(row, now));
   } catch (err) {
-    if (!isMissingFeaturedColumn(err)) throw err;
-    const rows = await sql.query<ListingRow>(
-      `select ${PUBLIC_COLUMNS}
+    if (!isMissingListedByColumn(err) && !isMissingFeaturedColumn(err)) throw err;
+  }
+  try {
+    return await sql.query<ListingRow>(
+      `select ${PUBLIC_COLUMNS}, featured_until
        from agent_listings
        where hidden_at is null
-       order by created_at desc
-       limit $1`,
-      [DIRECTORY_LIST_LIMIT],
+       ${FEATURED_ORDER}
+       limit $2`,
+      [now, DIRECTORY_LIST_LIMIT],
     );
-    return rows.map((row) => mapListing(row, now));
+  } catch (err) {
+    if (!isMissingFeaturedColumn(err)) throw err;
   }
+  return await sql.query<ListingRow>(
+    `select ${PUBLIC_COLUMNS}
+     from agent_listings
+     where hidden_at is null
+     order by created_at desc
+     limit $1`,
+    [DIRECTORY_LIST_LIMIT],
+  );
 }
 
 export async function createListing(
@@ -254,14 +294,35 @@ export async function createListing(
   }
 
   const id = `agent_${randomBytes(12).toString("hex")}`;
-  const rows = await sql.query<ListingRow>(
+  const rows = await insertListing(sql, id, listing, ipHash, now);
+  const row = rows[0];
+  if (!row) throw new ListingError("Could not list this agent.", 500);
+  return { ...mapListing(row, now), listed_by: "owner" };
+}
+
+async function insertListing(
+  sql: ListingQuery,
+  id: string,
+  listing: { name: string; skills: string[]; pitch: string; contact: string; link: string | null },
+  ipHash: string,
+  now: Date,
+): Promise<ListingRow[]> {
+  try {
+    return await sql.query<ListingRow>(
+      `insert into agent_listings (
+         id, name, skills, pitch, contact, link, ip_hash, created_at, listed_by
+       ) values ($1, $2, $3::text[], $4, $5, $6, $7, $8, 'owner')
+       returning ${PUBLIC_COLUMNS}, listed_by`,
+      [id, listing.name, listing.skills, listing.pitch, listing.contact, listing.link, ipHash, now],
+    );
+  } catch (err) {
+    if (!isMissingListedByColumn(err)) throw err;
+  }
+  return await sql.query<ListingRow>(
     `insert into agent_listings (
        id, name, skills, pitch, contact, link, ip_hash, created_at
      ) values ($1, $2, $3::text[], $4, $5, $6, $7, $8)
      returning ${PUBLIC_COLUMNS}`,
     [id, listing.name, listing.skills, listing.pitch, listing.contact, listing.link, ipHash, now],
   );
-  const row = rows[0];
-  if (!row) throw new ListingError("Could not list this agent.", 500);
-  return mapListing(row, now);
 }

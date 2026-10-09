@@ -11,6 +11,8 @@ import {
   exchangeJobsHoldNotice,
   featuredListingsHoldNotice,
   hireOrdersHoldNotice,
+  LISTED_BY_MIGRATION,
+  listedByHoldNotice,
   pendingMigrations,
 } from "../../scripts/migration-plan.mjs";
 
@@ -123,6 +125,10 @@ function logHeldSchemaMigrations(paths: Iterable<string>): void {
   }
   if (names.some((path) => path.endsWith(DIRECTORY_SEED_WAVE2_MIGRATION))) {
     const notice = directorySeedWave2HoldNotice();
+    if (notice) console.log(notice);
+  }
+  if (names.some((path) => path.endsWith(LISTED_BY_MIGRATION))) {
+    const notice = listedByHoldNotice();
     if (notice) console.log(notice);
   }
 }

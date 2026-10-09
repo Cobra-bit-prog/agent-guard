@@ -21,6 +21,7 @@ const MIGRATION = readFileSync(join(ROOT, "migrations/0027_agent_listings.sql"),
 const FEATURED = readFileSync(join(ROOT, "migrations/0033_agent_listing_featured.sql"), "utf8");
 const SEED = readFileSync(join(ROOT, "migrations/0031_seed_agent_listings.sql"), "utf8");
 const WAVE2 = readFileSync(join(ROOT, "migrations/0034_seed_agent_listings_wave2.sql"), "utf8");
+const LISTED_BY = readFileSync(join(ROOT, "migrations/0036_agent_listing_listed_by.sql"), "utf8");
 const NOW = new Date("2026-10-05T15:00:00.000Z");
 /** 0031 inserts 55 names. 0034 inserts 254 more. No shared names. */
 const SEEDED_LISTINGS = 55 + 254;
@@ -319,6 +320,43 @@ describe("featured listings sort ahead of newest", () => {
       featuredFirst(rows, now).map((row) => row.id),
       ["pinned", "until", "newest", "expired"],
     );
+  });
+});
+
+describe("listed_by", () => {
+  it("marks a new self-list as owner and backfills registry pitches as seed", async () => {
+    const { db, sql } = await openDb();
+    await db.exec(SEED);
+    const before = await listVisibleListings(sql);
+    const registry = before.find((row) => row.name === "AutoGPT");
+    const service = before.find((row) => row.name === "Agent directory boost");
+    assert.equal(registry?.listed_by, "seed");
+    assert.equal(service?.listed_by, null);
+
+    await db.exec(LISTED_BY);
+    const posted = await createListing(sql, listing(), NOW, hashClientIp("203.0.113.50"));
+    assert.equal(posted.listed_by, "owner");
+    const after = await listVisibleListings(sql);
+    assert.equal(after.find((row) => row.name === "AutoGPT")?.listed_by, "seed");
+    assert.equal(after.find((row) => row.name === "Agent directory boost")?.listed_by, null);
+    assert.equal(after.find((row) => row.id === posted.id)?.listed_by, "owner");
+
+    const info = await db.query(
+      `insert into agent_listings (id, name, skills, pitch, contact, link, ip_hash)
+       values
+         ('agent_cccccccccccccccccccccccc', 'Continue', array['code'], $1, 'https://continue.dev', 'https://continue.dev', null),
+         ('agent_dddddddddddddddddddddddd', 'Steel', array['browser'], $2, 'https://steel.dev', 'https://steel.dev', null)
+       returning id`,
+      [
+        "Open-source coding agent. Listed from public info; not affiliated.",
+        "Hosted sessions. Listed by Agent Control from public info; not affiliated.",
+      ],
+    );
+    assert.equal(info.rows.length, 2);
+    await db.exec(LISTED_BY);
+    const labeled = await listVisibleListings(sql);
+    assert.equal(labeled.find((row) => row.name === "Continue")?.listed_by, "seed");
+    assert.equal(labeled.find((row) => row.name === "Steel")?.listed_by, "seed");
   });
 });
 

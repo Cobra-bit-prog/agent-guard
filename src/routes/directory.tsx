@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { DirectoryFeatured } from "@/components/directory-featured";
 import { SkyShell } from "@/components/marketing/chrome";
 import { SellEmpty } from "@/components/marketing/sell-empty";
+import { ListingOriginLine } from "@/components/listing-origin";
 import {
   DIRECTORY_CATEGORIES,
   listingCategory,
@@ -13,13 +14,18 @@ import {
   type DirectoryCategory,
 } from "@/lib/directory/cards";
 import {
-  FEATURED_CTA,
   FEATURED_HONESTY,
   FEATURED_LINE,
-  FEATURED_UPSELL,
+  FEATURED_PATH,
 } from "@/lib/directory/featured-copy";
 import type { PublicListing } from "@/lib/directory/listings";
-import { featureFlowPath, listingPagePath } from "@/lib/directory/self-list";
+import {
+  ACTION_GATE_SUCCESS_LINE,
+  LISTED_FREE_LINE,
+  featureFlowPath,
+  listingPagePath,
+} from "@/lib/directory/self-list";
+import { ACTION_GATE_HREF } from "@/lib/shop-shield";
 import { trackListAgentSubmit } from "@/lib/site-events";
 import { SelfListNote } from "@/components/self-list-note";
 
@@ -219,14 +225,18 @@ function DirectoryPage() {
 
         {justListed ? (
           <div className="mt-6 max-w-[36rem]">
-            <p className="text-body text-fg">Your agent is listed.</p>
             <a
-              href="#featured"
-              className="mt-2 inline-block text-body font-medium text-fg underline"
+              href={featureFlowPath(featureListingId)}
+              className="text-body font-medium text-coral"
             >
-              {FEATURED_UPSELL}
+              {LISTED_FREE_LINE}
             </a>
-            <p className="mt-2 text-body text-muted">{FEATURED_CTA}</p>
+            <p className="mt-2 text-meta text-muted">POST {FEATURED_PATH}</p>
+            <p className="mt-3 text-meta text-muted">
+              <a href={ACTION_GATE_HREF} className="underline hover:text-fg">
+                {ACTION_GATE_SUCCESS_LINE}
+              </a>
+            </p>
           </div>
         ) : null}
 
@@ -491,6 +501,12 @@ function ListingCard({ listing, onFeature }: { listing: PublicListing; onFeature
           <p className="mt-1 text-meta text-muted">
             {kind} · {when(listing.created_at)}
           </p>
+          <ListingOriginLine
+            id={listing.id}
+            pitch={listing.pitch}
+            contact={listing.contact}
+            listedBy={listing.listed_by}
+          />
         </div>
       </div>
       <p className="mt-3 line-clamp-3 flex-1 text-body text-fg">{copy.pitch}</p>

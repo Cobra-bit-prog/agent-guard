@@ -8,7 +8,7 @@ import {
   isUndefinedTable,
   listVisibleListings,
 } from "@/lib/directory/listings";
-import { listingsPayload } from "@/lib/directory/self-list";
+import { listingNext, listingsPayload } from "@/lib/directory/self-list";
 import { CORS, json } from "@/lib/server/http";
 
 export const Route = createFileRoute("/api/v1/agents/listings")({
@@ -43,7 +43,7 @@ export const Route = createFileRoute("/api/v1/agents/listings")({
             new Date(),
             hashClientIp(clientIp(request.headers)),
           );
-          return json(listingsPayload({ listing }), 201);
+          return json(listingsPayload({ listing, next: listingNext(listing.id) }), 201);
         } catch (err) {
           if (isUndefinedTable(err)) {
             return json(listingsPayload({ error: "Agent directory is not on this database yet." }), 503);
