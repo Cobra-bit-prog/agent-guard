@@ -5,6 +5,7 @@ import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { PGlite } from "@electric-sql/pglite";
 import { featuredFirst, isFeaturedListing } from "./featured-rank.ts";
+import { handleListingsPost } from "./listings-http.ts";
 import {
   DIRECTORY_LIST_LIMIT,
   ListingError,
@@ -324,6 +325,95 @@ describe("featured listings sort ahead of newest", () => {
 });
 
 describe("listed_by", () => {
+  it("POST /api/v1/agents/listings succeeds before migration 0036 adds listed_by", async () => {
+    const { db, sql } = await openDb();
+    await db.exec(FEATURED);
+    const columns = async (name: string) =>
+      db.query<{ column_name: string }>(
+        `select column_name from information_schema.columns
+         where table_schema = 'public' and table_name = 'agent_listings' and column_name = $1`,
+        [name],
+      );
+    assert.equal((await columns("listed_by")).rows.length, 0);
+    assert.equal((await columns("featured_until")).rows.length, 1);
+
+    const response = await handleListingsPost(
+      new Request("https://agent-control.net/api/v1/agents/listings", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-forwarded-for": "203.0.113.60",
+        },
+        body: JSON.stringify(listing()),
+      }),
+      sql,
+      NOW,
+    );
+    assert.equal(response.status, 201);
+    const body = (await response.json()) as {
+      listing: { id: string; name: string; listed_by: string | null };
+      next: { line: string; featured: { post: string; page: string } };
+    };
+    assert.equal(body.listing.name, "Ada");
+    assert.equal(body.listing.listed_by, "owner");
+    assert.match(body.listing.id, /^agent_[0-9a-f]+$/);
+    assert.equal(
+      body.next.line,
+      "Listed free. Pin it to the top for 7 days: $19 USDC, Base or Solana",
+    );
+    assert.equal(
+      body.next.featured.post,
+      "https://agent-control.net/api/v1/agents/listings/featured",
+    );
+    assert.equal(
+      body.next.featured.page,
+      `https://agent-control.net/directory?feature=${body.listing.id}#featured`,
+    );
+
+    const stored = await db.query<{ name: string; ip_hash: string | null }>(
+      `select name, ip_hash from agent_listings where id = $1`,
+      [body.listing.id],
+    );
+    assert.equal(stored.rows[0]?.name, "Ada");
+    assert.equal(typeof stored.rows[0]?.ip_hash, "string");
+    await assert.rejects(
+      () => db.query(`select listed_by from agent_listings where id = $1`, [body.listing.id]),
+      /listed_by/i,
+    );
+    assert.equal((await columns("listed_by")).rows.length, 0);
+
+    await db.exec(LISTED_BY);
+    const backfilled = await db.query<{ listed_by: string }>(
+      `select listed_by from agent_listings where id = $1`,
+      [body.listing.id],
+    );
+    assert.equal(backfilled.rows[0]?.listed_by, "owner");
+
+    const after = await handleListingsPost(
+      new Request("https://agent-control.net/api/v1/agents/listings", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-forwarded-for": "203.0.113.61",
+        },
+        body: JSON.stringify(listing({ name: "Bea", contact: "bea@example.com" })),
+      }),
+      sql,
+      new Date(NOW.getTime() + 1000),
+    );
+    assert.equal(after.status, 201);
+    const afterBody = (await after.json()) as { listing: { id: string; listed_by: string } };
+    assert.equal(afterBody.listing.listed_by, "owner");
+    const written = await db.query<{ listed_by: string }>(
+      `select listed_by from agent_listings where id = $1`,
+      [afterBody.listing.id],
+    );
+    assert.equal(written.rows[0]?.listed_by, "owner");
+
+    const route = readFileSync(join(ROOT, "src/routes/api/v1/agents.listings.ts"), "utf8");
+    assert.match(route, /return await handleListingsPost\(request, sql\)/);
+  });
+
   it("marks a new self-list as owner and backfills registry pitches as seed", async () => {
     const { db, sql } = await openDb();
     await db.exec(SEED);

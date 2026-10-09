@@ -77,7 +77,9 @@ export const DIRECTORY_SEED_WAVE2_MIGRATION = "0034_seed_agent_listings_wave2.sq
  * listed_by on agent listings. Preview builds use the production DATABASE_URL,
  * so this file is skipped when VERCEL_ENV=preview. The backfill must not run
  * against production from a preview build. Production applies it with no extra
- * environment variable.
+ * environment variable and no manual step: `npm run db:migrate` during
+ * `npm run build`, then server boot if the build has not recorded it yet.
+ * The listings POST succeeds before that column exists.
  */
 export const LISTED_BY_MIGRATION = "0036_agent_listing_listed_by.sql";
 

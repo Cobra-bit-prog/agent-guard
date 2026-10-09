@@ -6,10 +6,15 @@
 -- null: an Agent Control service (the Hire us rows). Not a registry copy
 -- and not an outside owner.
 --
--- Production builds apply this file (npm run db:migrate and server boot).
+-- Production applies this file by itself. No manual step.
+-- 1. The production Vercel build runs `npm run build`, which runs
+--    `npm run db:migrate` (`scripts/migrate.mjs`). VERCEL_ENV=production,
+--    so this file is not held. It runs once, in one transaction, and is
+--    recorded in `_migrations`.
+-- 2. Server boot (`src/lib/db.ts` ensureDbReady) applies it again only if
+--    that build step has not recorded it yet.
 -- Preview builds skip it: VERCEL_ENV=preview uses the production DATABASE_URL.
--- Do not run this file against production by hand. The production migrate
--- step applies it after this change is merged.
+-- Do not run this file against production by hand.
 --
 -- The backfill only fills the new column. It does not change pitch, contact,
 -- or hidden_at.
