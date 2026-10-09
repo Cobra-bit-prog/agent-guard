@@ -35,6 +35,7 @@ describe("discovery path redirects", () => {
         [LLMS_WELL_KNOWN_PATH, LLMS_TXT_PATH, 308, true],
         ["/agents/skill.md", "/skill.md", 308, true],
         ["/pricing", "/#pricing", 308, true],
+        ["/action-gate", "/docs#action-gate", 308, true],
       ],
     );
   });
@@ -103,6 +104,20 @@ describe("discovery path redirects", () => {
     assert.equal(hit("/#pricing"), null);
     assert.equal(hit("/billing"), null);
     assert.equal(hit("/billing/pay"), null);
+  });
+
+  it("308s /action-gate to the docs section that explains and sells it", () => {
+    const res = hit("/action-gate");
+    assert.ok(res);
+    assert.equal(res.status, 308);
+    assert.equal(res.headers.get("location"), "/docs#action-gate");
+
+    const withQuery = hit("/action-gate?ref=old");
+    assert.ok(withQuery);
+    assert.equal(withQuery.headers.get("location"), "/docs?ref=old#action-gate");
+    assert.equal(hit("/docs"), null);
+    assert.equal(hit("/docs#action-gate"), null);
+    assert.equal(hit("/billing/pay?plan=action"), null);
   });
 
   it("leaves live doors and meter APIs alone", () => {

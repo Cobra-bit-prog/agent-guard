@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { CopyCode } from "@/components/copy-code";
 import { SkyShell, SUPPORT_MAIL } from "@/components/marketing/chrome";
 import { ConnectCtas } from "@/components/marketing/connect-path";
+import { OtherAgentApps } from "@/components/marketing/other-agent-apps";
 import { SupportedChains } from "@/components/chain-icons";
 import {
   ACTION_GATE_CURL_CRM,
@@ -223,6 +224,9 @@ function DocsPage() {
           </a>
           <a href="#connectors" className="text-muted hover:text-fg">
             Connectors
+          </a>
+          <a href="#other-agent-apps" className="text-muted hover:text-fg">
+            Grok, Muse, other apps
           </a>
           <a href="#agent-storefront" className="text-muted hover:text-fg">
             Agent storefront
@@ -572,6 +576,7 @@ client.onBeforePaymentCreation(
               Approval Inbox. If the agent skips the check, Inbox cannot stop that send.
             </p>
           </article>
+          <OtherAgentApps className="mt-8" />
         </section>
 
         <section id="agent-storefront" className="mt-16 scroll-mt-6">

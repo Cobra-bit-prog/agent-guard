@@ -87,3 +87,11 @@ export function formatHirePrice(usd: number): string {
     maximumFractionDigits: 0,
   }).format(usd);
 }
+
+/** Lowest and highest public /hire package, for the homepage price card. */
+export function hirePriceRangeLabel(): string {
+  const prices = HIRE_PACKAGES.map((pack) => pack.priceUsd);
+  const low = Math.min(...prices);
+  const high = Math.max(...prices);
+  return `${formatHirePrice(low)}\u2013${formatHirePrice(high)}`;
+}

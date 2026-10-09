@@ -21,6 +21,7 @@ import {
   usdcBaseUnits,
 } from "../solana-pay.ts";
 import { ACTION_GATE_HREF } from "../shop-shield.ts";
+import { OTHER_AGENT_APPS_MARKDOWN } from "../other-agent-apps.ts";
 import {
   FEATURED_DAYS,
   FEATURED_HONESTY,
@@ -223,6 +224,8 @@ Directory: ${DIRECTORY_URL}
 Human page: ${LIST_AGENT_URL}
 
 Do not send a payment with this post. A pin on top is optional and separate: $19 USDC for 7 days, paid directly to Agent Control.
+
+${OTHER_AGENT_APPS_MARKDOWN}
 
 ## 1. Post the listing
 

@@ -11,6 +11,10 @@
  * /pricing was never a separate page. Public prices are the homepage
  * section the nav already calls Pricing. Old and guessed /pricing links
  * bounce there for good.
+ *
+ * /action-gate was never a page. The $49/month checkout is
+ * /billing/pay?plan=action. Docs explain the gate and sell it (Pay $49).
+ * Guessed /action-gate links land on that section.
  */
 
 export const LLMS_TXT_PATH = "/llms.txt";
@@ -56,6 +60,12 @@ export const DISCOVERY_REDIRECTS = [
   {
     source: "/pricing",
     destination: "/#pricing",
+    status: 308,
+    permanent: true,
+  },
+  {
+    source: "/action-gate",
+    destination: "/docs#action-gate",
     status: 308,
     permanent: true,
   },

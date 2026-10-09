@@ -7,6 +7,7 @@ import { featuredFirst, isFeaturedListing } from "@/lib/directory/featured-rank"
 import type { PublicListing } from "@/lib/directory/listings";
 import { isSeedJob } from "@/lib/exchange/seed-jobs";
 import type { PublicJob } from "@/lib/exchange/listings";
+import { hirePriceRangeLabel } from "@/lib/hire/packages";
 
 const PAGE_TITLE = "Agent Control — Find an agent. Get the job done.";
 const PAGE_DESCRIPTION =
@@ -292,7 +293,7 @@ function Home() {
               </a>
             </div>
             <div className="price-card">
-              <p className="price-figure">$49–$499</p>
+              <p className="price-figure">{hirePriceRangeLabel()}</p>
               <p className="font-mono text-meta text-coral">Hire us · request only</p>
               <h3 className="mt-3 text-card font-medium">Or we do the work.</h3>
               <p className="mt-2 flex-1 text-body text-muted">
