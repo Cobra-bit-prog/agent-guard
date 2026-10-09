@@ -19,7 +19,7 @@ import {
   submitHireOrder,
   type HireQuery,
 } from "./orders.ts";
-import { HIRE_PACKAGES, HIRE_SUPPORT_EMAIL } from "./packages.ts";
+import { HIRE_PACKAGES, HIRE_SUPPORT_EMAIL, hirePriceRangeLabel } from "./packages.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../..");
 const MIGRATION = readFileSync(join(ROOT, "migrations/0029_hire_orders.sql"), "utf8");
@@ -69,6 +69,7 @@ describe("hire packages", () => {
     assert.match(setup?.excluded ?? "", /\$49 a month/);
     assert.match(setup?.excluded ?? "", /separate subscription/);
     assert.match(setup?.excluded ?? "", /one-time setup/);
+    assert.equal(hirePriceRangeLabel(), "$49\u2013$499");
   });
 });
 
@@ -268,6 +269,9 @@ describe("hire public copy", () => {
     assert.match(page, /We'll reply within 1 business day/);
     assert.match(page, /This is not the free job board/);
     assert.match(home, /href="\/hire"/);
+    const pricing = home.split('id="pricing"')[1] ?? "";
+    assert.match(pricing, /hirePriceRangeLabel\(\)/);
+    assert.doesNotMatch(pricing, /\$79\u2013\$499/);
     assert.match(home, /Find an agent\. Get the job done\./);
     assert.match(page, /These packages pay us\s+directly/);
     assert.doesNotMatch(blob, /Pay only when|when the job is done|when you say/i);
