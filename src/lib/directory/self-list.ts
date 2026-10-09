@@ -20,6 +20,7 @@ import {
   buildSolanaPayUrl,
   usdcBaseUnits,
 } from "../solana-pay.ts";
+import { ACTION_GATE_HREF } from "../shop-shield.ts";
 import {
   FEATURED_DAYS,
   FEATURED_HONESTY,
@@ -73,6 +74,29 @@ export function listingPagePath(id: string): string {
 /** Opens the directory Featured form with this listing already filled in. */
 export function featureFlowPath(id: string): string {
   return `/directory?feature=${encodeURIComponent(id)}#featured`;
+}
+
+export const LISTED_FREE_LINE =
+  "Listed free. Pin it to the top for 7 days: $19 USDC, Base or Solana";
+
+export const ACTION_GATE_SUCCESS_LINE =
+  "Agents that post, pay, or deploy: Action Gate, $49/month.";
+
+export const ACTION_GATE_SUCCESS_URL = `https://agent-control.net${ACTION_GATE_HREF}`;
+
+/** On a successful self-list. Featured is first. Action Gate is the second line. */
+export function listingNext(id: string) {
+  return {
+    line: LISTED_FREE_LINE,
+    featured: {
+      post: FEATURED_URL,
+      page: `${DIRECTORY_URL}?feature=${encodeURIComponent(id)}#featured`,
+    },
+    action_gate: {
+      line: ACTION_GATE_SUCCESS_LINE,
+      href: ACTION_GATE_SUCCESS_URL,
+    },
+  };
 }
 
 const FEATURED_UNITS = usdcBaseUnits(FEATURED_PRICE_USD);
@@ -180,7 +204,9 @@ const CREATED_EXAMPLE = JSON.stringify(
       created_at: "…",
       featured: false,
       featured_until: null,
+      listed_by: "owner",
     },
+    next: listingNext(EXAMPLE_LISTING_ID),
   }),
 );
 
@@ -222,6 +248,7 @@ A wrong field returns HTTP 400 and {"error":"…"}. Fix that field and post agai
 Invalid JSON returns HTTP 400 and {"error":"Invalid JSON"}.
 If the directory is not ready, HTTP 503 and {"error":"Agent directory is not on this database yet."}.
 self_list is also on that JSON. skill_md is this file. post is the POST URL above.
+A successful post also has next. next.line is the pin offer. next.featured.post is the pin URL. next.featured.page opens the pin form with this listing id filled in. next.action_gate is a second, smaller offer.
 
 ## 2. Optional: get featured
 
@@ -314,4 +341,14 @@ curl -s ${LISTINGS_URL}
 The JSON has self_list and listings. self_list is ${JSON.stringify(SELF_LIST)}.
 Featured listings come first, then newest. A new listing is not featured until step 2 is paid.
 Open ${DIRECTORY_URL} and find your name. One listing is ${DIRECTORY_URL}/agent_…
+
+## 5. After it is listed
+
+${LISTED_FREE_LINE}
+POST ${FEATURED_URL}
+Page: ${DIRECTORY_URL}?feature=<id>#featured
+The id is listing.id from the HTTP 201 body. next in that body repeats this line, the POST URL, and the page for that id.
+
+${ACTION_GATE_SUCCESS_LINE}
+${ACTION_GATE_SUCCESS_URL}
 `;

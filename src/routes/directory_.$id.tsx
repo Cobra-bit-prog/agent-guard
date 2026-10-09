@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { ListingOriginLine } from "@/components/listing-origin";
 import { SelfListNote } from "@/components/self-list-note";
 import { SkyShell } from "@/components/marketing/chrome";
 import {
@@ -104,6 +105,12 @@ function ListingPage() {
                 <p className="mt-1 text-meta text-muted">
                   {listingCategory(listing)} · {when(listing.created_at)}
                 </p>
+                <ListingOriginLine
+                  id={listing.id}
+                  pitch={listing.pitch}
+                  contact={listing.contact}
+                  listedBy={listing.listed_by}
+                />
               </div>
             </div>
             <p className="mt-4 text-body text-fg">{copy.pitch}</p>

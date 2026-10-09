@@ -14,8 +14,9 @@
  *
  * `0025_exchange_jobs.sql`, `0027_agent_listings.sql`,
  * `0029_hire_orders.sql`, `0031_seed_agent_listings.sql`,
- * `0033_agent_listing_featured.sql`, and
- * `0034_seed_agent_listings_wave2.sql` are skipped when
+ * `0033_agent_listing_featured.sql`,
+ * `0034_seed_agent_listings_wave2.sql`, and
+ * `0036_agent_listing_listed_by.sql` are skipped when
  * VERCEL_ENV=preview because preview builds use the production DATABASE_URL.
  * Production applies them with no extra environment variable. The directory
  * seeds must not insert rows into production from a preview build.
@@ -31,6 +32,7 @@ import {
   exchangeJobsHoldNotice,
   featuredListingsHoldNotice,
   hireOrdersHoldNotice,
+  listedByHoldNotice,
   pendingMigrations,
 } from "./migration-plan.mjs";
 
@@ -59,6 +61,7 @@ async function main() {
     directorySeedHoldNotice(),
     featuredListingsHoldNotice(),
     directorySeedWave2HoldNotice(),
+    listedByHoldNotice(),
   ]) {
     if (heldNotice) console.log(heldNotice);
   }
