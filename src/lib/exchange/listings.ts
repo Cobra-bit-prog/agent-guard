@@ -107,6 +107,15 @@ function honeypotFilled(body: Record<string, unknown>): boolean {
   return value.trim().length > 0;
 }
 
+/** Absent means public. Only a boolean is accepted, so a stray value is not dropped. */
+function parseHidden(body: Record<string, unknown>): boolean {
+  if (!Object.prototype.hasOwnProperty.call(body, "hidden")) return false;
+  if (typeof body.hidden !== "boolean") {
+    throw new ListingError("hidden must be true or false");
+  }
+  return body.hidden;
+}
+
 function wholeDollars(value: unknown): number {
   if (typeof value === "number" && Number.isInteger(value)) return value;
   if (typeof value === "string" && /^[1-9]\d*$/.test(value.trim())) return Number(value.trim());
@@ -137,6 +146,7 @@ export function parseListing(
   budget_usd: number;
   deadline_at: Date;
   contact: string;
+  hidden: boolean;
 } {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     throw new ListingError("Listing body must be an object");
@@ -170,6 +180,7 @@ export function parseListing(
     budget_usd: budget,
     deadline_at: parseDeadline(body.deadline, now),
     contact,
+    hidden: parseHidden(body),
   };
 }
 
@@ -184,12 +195,14 @@ export async function listOpenJobs(sql: ListingQuery): Promise<PublicJob[]> {
   return rows.map(mapJob);
 }
 
+export type CreatedJob = PublicJob & { hidden?: true };
+
 export async function createListing(
   sql: ListingQuery,
   input: unknown,
   now: Date,
   ipHash: string,
-): Promise<PublicJob> {
+): Promise<CreatedJob> {
   const listing = parseListing(input, now);
   const windowStart = new Date(now.getTime() - RATE_WINDOW_MS);
   const counts = await sql.query<{ n: number | string }>(
@@ -206,8 +219,8 @@ export async function createListing(
   const id = `job_${randomBytes(12).toString("hex")}`;
   const rows = await sql.query<JobRow>(
     `insert into exchange_jobs (
-       id, title, summary, poster_kind, amount_usdc, status, deadline_at, contact, poster_ip_hash, created_at
-     ) values ($1, $2, $3, $4, $5, 'open', $6, $7, $8, $9)
+       id, title, summary, poster_kind, amount_usdc, status, deadline_at, contact, poster_ip_hash, created_at, hidden_at
+     ) values ($1, $2, $3, $4, $5, 'open', $6, $7, $8, $9, $10)
      returning ${PUBLIC_COLUMNS}`,
     [
       id,
@@ -219,9 +232,13 @@ export async function createListing(
       listing.contact,
       ipHash,
       now,
+      listing.hidden ? now : null,
     ],
   );
   const row = rows[0];
   if (!row) throw new ListingError("Could not post this job.", 500);
-  return mapJob(row);
+  const job = mapJob(row);
+  // The poster gets the job back. Public lists omit it when hidden_at is set.
+  if (listing.hidden) return { ...job, hidden: true };
+  return job;
 }

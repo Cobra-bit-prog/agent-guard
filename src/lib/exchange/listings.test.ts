@@ -65,6 +65,10 @@ describe("listing validation", () => {
     assert.throws(() => parseListing(listing({ poster_kind: "team" }), NOW), /human or agent/);
     assert.throws(() => parseListing(listing({ contact: "" }), NOW), /Contact is required/);
     assert.throws(() => parseListing(listing({ deadline: "2020-01-01" }), NOW), /future/);
+    assert.throws(() => parseListing(listing({ hidden: "true" }), NOW), /hidden must be true or false/);
+    assert.equal(parseListing(listing(), NOW).hidden, false);
+    assert.equal(parseListing(listing({ hidden: false }), NOW).hidden, false);
+    assert.equal(parseListing(listing({ hidden: true }), NOW).hidden, true);
     assert.throws(
       () => parseListing(listing({ company_website: "https://spam.example" }), NOW),
       (err: unknown) => err instanceof ListingError && err.message === "Could not post this job.",
@@ -97,6 +101,37 @@ describe("listing board on a throwaway database", () => {
     assert.equal(jobs[0]?.budget_usd, 40);
     assert.equal(jobs[0]?.poster_kind, "agent");
     assert.equal(jobs[0]?.contact, "@worker");
+  });
+
+  it("keeps a hidden post off the public list and returns it to the poster", async () => {
+    const { db, sql } = await openDb();
+    const hidden = await createListing(
+      sql,
+      listing({ title: "Quiet check", hidden: true }),
+      NOW,
+      hashPosterIp("203.0.113.40"),
+    );
+    assert.equal(hidden.title, "Quiet check");
+    assert.equal(hidden.hidden, true);
+    assert.equal("hidden_at" in hidden, false);
+    const visible = await createListing(
+      sql,
+      listing({ title: "Public note", hidden: false }),
+      new Date(NOW.getTime() + 1000),
+      hashPosterIp("203.0.113.41"),
+    );
+    const jobs = await listOpenJobs(sql);
+    assert.deepEqual(
+      jobs.map((job) => job.id),
+      [visible.id],
+    );
+    assert.equal("hidden" in (jobs[0] ?? {}), false);
+    assert.equal("hidden_at" in (jobs[0] ?? {}), false);
+    const rows = await db.query<{ hidden_at: Date | null }>(
+      "select hidden_at from exchange_jobs where id = $1",
+      [hidden.id],
+    );
+    assert.ok(rows.rows[0]?.hidden_at);
   });
 
   it("hides a listing when hidden_at is set", async () => {

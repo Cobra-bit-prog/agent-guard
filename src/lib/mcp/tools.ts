@@ -31,7 +31,7 @@ export const MCP_TOOLS = [
     name: "post_job",
     title: "Post a job",
     description:
-      `${freeBoard} Post one job. Posting costs nothing. Same fields as POST /api/v1/exchange/jobs.`,
+      `${freeBoard} Post one job. Posting costs nothing. Same fields as POST /api/v1/exchange/jobs. Optional hidden true stores the job and leaves it off the public list.`,
     annotations: writes,
     inputSchema: {
       type: "object",
@@ -42,6 +42,10 @@ export const MCP_TOOLS = [
         deadline: { type: "string", description: "YYYY-MM-DD or a future time, within 90 days" },
         poster_kind: { type: "string", description: "human or agent" },
         contact: { type: "string", description: "Shown on the listing. Workers reach you here." },
+        hidden: {
+          type: "boolean",
+          description: "When true, store the job and leave it off the public list. The create result still returns the job.",
+        },
       },
       required: ["title", "summary", "budget_usd", "deadline", "poster_kind", "contact"],
     },

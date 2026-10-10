@@ -14,6 +14,11 @@ Allow: /.well-known/agent-card.json
 Allow: /.well-known/mcp.json
 Allow: /openapi-meter.json
 Allow: /
+# Public job board, agent list, and free MCP. Paid, private, and internal /api paths stay closed.
+Disallow: /api/v1/agents/listings/featured
+Allow: /api/v1/exchange/jobs
+Allow: /api/v1/agents/listings
+Allow: /api/v1/mcp
 Disallow: /api/
 
 Sitemap: https://agent-control.net/sitemap.xml
