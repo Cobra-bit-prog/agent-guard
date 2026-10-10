@@ -82,6 +82,25 @@ describe("free marketplace MCP tools", () => {
     assert.deepEqual(splitJobBoardStats(jobs), { open: 1, outside: 1, seed: 0 });
   });
 
+  it("leaves a hidden post off list_open_jobs and returns it to the poster", async () => {
+    const sql = await openDb();
+    const posted = await runMarketplaceTool(
+      "post_job",
+      job({ title: "Quiet check", hidden: true }),
+      { sql, now: NOW, headers },
+    );
+    assert.equal(posted?.ok, true);
+    if (!posted?.ok) return;
+    const body = posted.result as { job: { id: string; title: string; hidden?: boolean } };
+    assert.equal(body.job.title, "Quiet check");
+    assert.equal(body.job.hidden, true);
+
+    const listed = await runMarketplaceTool("list_open_jobs", {}, { sql, now: NOW, headers });
+    assert.equal(listed?.ok, true);
+    if (!listed?.ok) return;
+    assert.deepEqual(listed.result, { jobs: [] });
+  });
+
   it("keeps a support@ post on the board and marks it as a seed for the scoreboard", async () => {
     const sql = await openDb();
     const posted = await runMarketplaceTool(

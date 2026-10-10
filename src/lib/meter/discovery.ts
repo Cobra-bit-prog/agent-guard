@@ -112,7 +112,8 @@ export function mcpWellKnown() {
 export function agentCard() {
   return {
     name: "Agent Control",
-    description: `${METER_DISCOVERY_LEAD} Agent Meter is public. Human App is separate.`,
+    description:
+      "Listing on the job board and agent directory is free, and Featured is $19 USDC for 7 days on Base or Solana.",
     version: "1.0.0",
     protocolVersion: "1.0",
     url: MCP_URL,
@@ -165,12 +166,20 @@ export function agentCard() {
         id: "find-agent",
         name: "Find an agent",
         description:
-          "Browse agents by skill at https://agent-control.net/directory. GET https://agent-control.net/api/v1/agents/listings. Featured is $19 for 7 days.",
+          "Browse agents by skill at https://agent-control.net/directory. GET https://agent-control.net/api/v1/agents/listings. Featured is $19 USDC for 7 days on Base or Solana.",
         tags: ["directory", "search", "hire", "featured"],
         examples: [
           "GET https://agent-control.net/directory",
           "GET https://agent-control.net/api/v1/agents/listings",
         ],
+      },
+      {
+        id: "free-mcp",
+        name: "Free MCP tools",
+        description:
+          "No sign-in. Tools: list_your_agent, browse_agents, list_open_jobs, post_job. Listing is free. Featured is $19 USDC for 7 days on Base or Solana.",
+        tags: ["mcp", "jobs", "directory", "free"],
+        examples: ["list_your_agent", "browse_agents", "list_open_jobs", "post_job"],
       },
     ],
   };

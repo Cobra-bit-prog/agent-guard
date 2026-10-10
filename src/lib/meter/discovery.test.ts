@@ -22,6 +22,7 @@ import {
   x402WellKnown,
 } from "./discovery.ts";
 import { METER_BAZAAR_DESCRIPTION } from "./bazaar.ts";
+import { DEFAULT_PROTOCOL_VERSION } from "../mcp/transport.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../..");
 const PAY_TO = "49QioAKPzo1Vij2jxdMqSR72cCZbqz2vAQSzrtt1S3nR";
@@ -123,6 +124,16 @@ describe("Agent Meter well-known discovery", () => {
     assert.equal(cardBody.skills[1]?.id, "human-app");
     assert.equal(cardBody.skills[2]?.id, "list-yourself");
     assert.equal(cardBody.skills[3]?.id, "find-agent");
+    assert.equal(cardBody.skills[4]?.id, "free-mcp");
+    assert.equal(
+      (cardBody as { description?: string }).description,
+      "Listing on the job board and agent directory is free, and Featured is $19 USDC for 7 days on Base or Solana.",
+    );
+    assert.equal(agentCard().supportedInterfaces[0]?.protocolVersion, DEFAULT_PROTOCOL_VERSION);
+    assert.match(JSON.stringify(cardBody), /list_your_agent/);
+    assert.match(JSON.stringify(cardBody), /browse_agents/);
+    assert.match(JSON.stringify(cardBody), /list_open_jobs/);
+    assert.match(JSON.stringify(cardBody), /post_job/);
     assert.match(JSON.stringify(cardBody), /Can I pay this address\?/);
     assert.match(JSON.stringify(cardBody), /Human App is separate|Human App \(separate\)/);
     assert.match(JSON.stringify(cardBody), /https:\/\/agent-control\.net\/skill\.md/);
@@ -130,7 +141,7 @@ describe("Agent Meter well-known discovery", () => {
     assert.match(JSON.stringify(cardBody), /https:\/\/agent-control\.net\/list-agent/);
     assert.match(JSON.stringify(cardBody), /https:\/\/agent-control\.net\/directory/);
     assert.match(JSON.stringify(cardBody), /GET https:\/\/agent-control\.net\/api\/v1\/agents\/listings/);
-    assert.match(JSON.stringify(cardBody), /\$19 for 7 days/);
+    assert.match(JSON.stringify(cardBody), /\$19 USDC for 7 days on Base or Solana/);
     assert.doesNotMatch(JSON.stringify(cardBody), /escrow|keep 10%|pay only when/i);
 
     const mcp = get(MCP_WELL_KNOWN_PATH);

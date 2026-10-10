@@ -4,11 +4,31 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { MARKETPLACE_AGENT_LEAD } from "./marketplace-lead.ts";
+import { BASE_CAIP2, SOLANA_CAIP2 } from "./meter/accepts.ts";
+import { DEFAULT_PROTOCOL_VERSION } from "./mcp/transport.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
 
 function read(rel: string) {
   return readFileSync(join(ROOT, rel), "utf8");
+}
+
+/** RFC 9309: longest matching Allow/Disallow path wins. A tie allows. */
+function robotsAllows(robots: string, path: string): boolean {
+  let bestLength = -1;
+  let allowed = true;
+  for (const raw of robots.split("\n")) {
+    const line = raw.trim();
+    const allow = line.startsWith("Allow:");
+    const disallow = line.startsWith("Disallow:");
+    if (!allow && !disallow) continue;
+    const rule = line.slice(line.indexOf(":") + 1).trim();
+    if (!rule || !path.startsWith(rule) || rule.length < bestLength) continue;
+    if (rule.length === bestLength && !allow) continue;
+    bestLength = rule.length;
+    allowed = allow;
+  }
+  return allowed;
 }
 
 const BANNED = [
@@ -29,7 +49,13 @@ describe("agents.txt Layer 4 discovery", () => {
     version: string;
     standard: string;
     site: { name: string; url: string; description: string };
-    mcp: Array<{ url: string; type: string; description: string }>;
+    payments: {
+      x402: { chains: string[]; description: string };
+      required?: boolean;
+      pricing?: { amount: string | number };
+    };
+    skills: Array<{ url: string; description: string }>;
+    mcp: Array<{ url: string; type: string; version?: string; description: string }>;
   };
   const blob = `${txt}\n${jsonRaw}`;
 
@@ -42,17 +68,34 @@ describe("agents.txt Layer 4 discovery", () => {
     assert.ok(txt.indexOf("https://agent-control.net/directory") < look);
     assert.ok(txt.indexOf("GET and POST https://agent-control.net/api/v1/exchange/jobs") < look);
     assert.ok(txt.indexOf("GET and POST https://agent-control.net/api/v1/agents/listings") < look);
-    assert.equal(json.site.description.startsWith(MARKETPLACE_AGENT_LEAD), true);
-    assert.ok(
-      json.site.description.indexOf("https://agent-control.net/directory") <
-        json.site.description.indexOf("Can I pay this address?"),
+    assert.equal(
+      json.site.description,
+      "Listing on the job board and agent directory is free, and Featured is $19 USDC for 7 days on Base or Solana.",
     );
-    assert.match(json.site.description, /GET and POST https:\/\/agent-control\.net\/api\/v1\/agents\/listings/);
+    assert.equal(json.site.description.split(".").filter((part) => part.trim()).length, 1);
+    assert.match(json.skills[0]?.description ?? "", /GET and POST https:\/\/agent-control\.net\/api\/v1\/agents\/listings/);
+    assert.match(json.skills[0]?.description ?? "", /list_your_agent, browse_agents, list_open_jobs, post_job/);
     assert.doesNotMatch(
       MARKETPLACE_AGENT_LEAD,
       /refund|escrow|keep 10%|pay only when|when the job is done|hold funds/i,
     );
+    assert.doesNotMatch(json.site.description, /escrow|keep 10%|hold funds|endorse/i);
     assert.equal(read("public/.well-known/agents.json"), jsonRaw);
+  });
+
+  it("declares x402 payments, a skill file, and a pinned MCP revision", () => {
+    assert.deepEqual(json.payments.x402.chains, [BASE_CAIP2, SOLANA_CAIP2]);
+    assert.match(json.payments.x402.description, /Listing is free/);
+    assert.match(json.payments.x402.description, /\$19 USDC for 7 days on Base or Solana/);
+    assert.equal(json.payments.required, undefined);
+    assert.equal(json.payments.pricing, undefined);
+    assert.equal(json.skills.length, 1);
+    assert.equal(json.skills[0]?.url, "https://agent-control.net/skill.md");
+    assert.match(json.skills[0]?.description ?? "", /https:\/\/agent-control\.net\/list-agent/);
+    assert.equal(json.mcp[0]?.version, DEFAULT_PROTOCOL_VERSION);
+    assert.equal(json.mcp[0]?.version, "2025-06-18");
+    const marketplace = `${json.site.description}\n${json.payments.x402.description}\n${json.skills[0]?.description ?? ""}`;
+    assert.doesNotMatch(marketplace, /escrow|keep 10%|hold funds|endorse|officially support/i);
   });
 
   it("is Layer 4 agents-txt with MCP, Meter pricing, and llms.txt", () => {
@@ -72,8 +115,6 @@ describe("agents.txt Layer 4 discovery", () => {
     assert.equal(json.mcp.length, 1);
     assert.equal(json.mcp[0]?.url, "https://agent-control.net/api/v1/mcp");
     assert.equal(json.mcp[0]?.type, "streamable-http");
-    assert.match(json.site.description, /https:\/\/agent-control\.net\/api\/v1\/meter\/pricing/);
-    assert.match(json.site.description, /https:\/\/agent-control\.net\/llms\.txt/);
     assert.match(
       json.mcp[0]?.description ?? "",
       /https:\/\/agent-control\.net\/api\/v1\/meter\/pricing/,
@@ -146,6 +187,23 @@ describe("agents discovery crawler surfaces", () => {
     assert.match(robots, /Allow: \/exchange/);
     assert.match(robots, /Allow: \/directory/);
     assert.match(robots, /Allow: \/\.well-known\/agents\.json/);
+    assert.equal(robotsAllows(robots, "/api/v1/exchange/jobs"), true);
+    assert.equal(robotsAllows(robots, "/api/v1/agents/listings"), true);
+    assert.equal(robotsAllows(robots, "/api/v1/mcp"), true);
+    assert.equal(robotsAllows(robots, "/api/v1/agents/listings/featured"), false);
+    assert.equal(robotsAllows(robots, "/api/v1/meter/pricing"), false);
+    assert.equal(robotsAllows(robots, "/api/v1/meter/pass"), false);
+    assert.equal(robotsAllows(robots, "/api/v1/billing/checkout"), false);
+    assert.equal(robotsAllows(robots, "/api/v1/check"), false);
+    assert.equal(robotsAllows(robots, "/api/v1/check_action"), false);
+    assert.equal(robotsAllows(robots, "/api/v1/internal/stats"), false);
+    assert.equal(robotsAllows(robots, "/api/v1/storefront/pricing"), false);
+    assert.equal(robotsAllows(robots, "/api/auth/callback"), false);
+    assert.equal(robotsAllows(robots, "/api/v1/hire"), false);
+    assert.equal(robotsAllows(robots, "/api/v1/audit/pricing"), false);
+    assert.equal(robotsAllows(robots, "/api/v1/approvals/abc"), false);
+    assert.equal(robotsAllows(robots, "/api/v1/gate/demo"), false);
+    assert.equal(robotsAllows(robots, "/exchange"), true);
 
     assert.match(vercel, /"source": "\/agents\.txt"/);
     assert.match(vercel, /"source": "\/agents\.json"/);
