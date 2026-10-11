@@ -25,6 +25,7 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as SpendAuditRouteImport } from './routes/spend-audit'
 import { Route as StampRouteImport } from './routes/stamp'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
+import { Route as X402CheckRouteImport } from './routes/x402-check'
 import { Route as AppAgentsRouteImport } from './routes/_app/agents'
 import { Route as AppAlertsRouteImport } from './routes/_app/alerts'
 import { Route as AppAuditRouteImport } from './routes/_app/audit'
@@ -52,6 +53,7 @@ import { Route as ApiV1Check_actionRouteImport } from './routes/api/v1/check_act
 import { Route as ApiV1HireRouteImport } from './routes/api/v1/hire'
 import { Route as ApiV1McpRouteImport } from './routes/api/v1/mcp'
 import { Route as ApiV1ShopRouteImport } from './routes/api/v1/shop'
+import { Route as ApiV1X402CheckRouteImport } from './routes/api/v1/x402-check'
 import { Route as ApiV1AgentsListingsRouteImport } from './routes/api/v1/agents.listings'
 import { Route as ApiV1ApprovalsIdRouteImport } from './routes/api/v1/approvals.$id'
 import { Route as ApiV1AuditSplatRouteImport } from './routes/api/v1/audit.$'
@@ -76,6 +78,7 @@ import { Route as ApiV1StorefrontCheckoutRouteImport } from './routes/api/v1/sto
 import { Route as ApiV1StorefrontPricingRouteImport } from './routes/api/v1/storefront.pricing'
 import { Route as ApiV1StorefrontStatusRouteImport } from './routes/api/v1/storefront.status'
 import { Route as ApiV1StorefrontTrialRouteImport } from './routes/api/v1/storefront.trial'
+import { Route as ApiV1X402CheckReportRouteImport } from './routes/api/v1/x402-check.report'
 import { Route as ApiV1AgentsListingsFeaturedRouteImport } from './routes/api/v1/agents.listings.featured'
 import { Route as ApiV1InternalMeterInvoicesRouteImport } from './routes/api/v1/internal/meter.invoices'
 
@@ -156,6 +159,11 @@ const StampRoute = StampRouteImport.update({
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
   path: '/verify-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const X402CheckRoute = X402CheckRouteImport.update({
+  id: '/x402-check',
+  path: '/x402-check',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppAgentsRoute = AppAgentsRouteImport.update({
@@ -293,6 +301,11 @@ const ApiV1ShopRoute = ApiV1ShopRouteImport.update({
   path: '/api/v1/shop',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1X402CheckRoute = ApiV1X402CheckRouteImport.update({
+  id: '/api/v1/x402-check',
+  path: '/api/v1/x402-check',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1AgentsListingsRoute = ApiV1AgentsListingsRouteImport.update({
   id: '/api/v1/agents/listings',
   path: '/api/v1/agents/listings',
@@ -413,6 +426,11 @@ const ApiV1StorefrontTrialRoute = ApiV1StorefrontTrialRouteImport.update({
   path: '/api/v1/storefront/trial',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1X402CheckReportRoute = ApiV1X402CheckReportRouteImport.update({
+  id: '/report',
+  path: '/report',
+  getParentRoute: () => ApiV1X402CheckRoute,
+} as any)
 const ApiV1AgentsListingsFeaturedRoute =
   ApiV1AgentsListingsFeaturedRouteImport.update({
     id: '/featured',
@@ -442,6 +460,7 @@ export interface FileRoutesByFullPath {
   '/spend-audit': typeof SpendAuditRouteWithChildren
   '/stamp': typeof StampRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/x402-check': typeof X402CheckRoute
   '/agents': typeof AppAgentsRouteWithChildren
   '/alerts': typeof AppAlertsRoute
   '/audit': typeof AppAuditRoute
@@ -467,6 +486,7 @@ export interface FileRoutesByFullPath {
   '/api/v1/hire': typeof ApiV1HireRouteWithChildren
   '/api/v1/mcp': typeof ApiV1McpRoute
   '/api/v1/shop': typeof ApiV1ShopRoute
+  '/api/v1/x402-check': typeof ApiV1X402CheckRouteWithChildren
   '/agents/': typeof AppAgentsIndexRoute
   '/billing/': typeof AppBillingIndexRoute
   '/api/v1/agents/listings': typeof ApiV1AgentsListingsRouteWithChildren
@@ -493,6 +513,7 @@ export interface FileRoutesByFullPath {
   '/api/v1/storefront/pricing': typeof ApiV1StorefrontPricingRoute
   '/api/v1/storefront/status': typeof ApiV1StorefrontStatusRoute
   '/api/v1/storefront/trial': typeof ApiV1StorefrontTrialRoute
+  '/api/v1/x402-check/report': typeof ApiV1X402CheckReportRoute
   '/api/v1/agents/listings/featured': typeof ApiV1AgentsListingsFeaturedRoute
   '/api/v1/internal/meter/invoices': typeof ApiV1InternalMeterInvoicesRoute
 }
@@ -510,6 +531,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/stamp': typeof StampRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/x402-check': typeof X402CheckRoute
   '/alerts': typeof AppAlertsRoute
   '/audit': typeof AppAuditRoute
   '/dashboard': typeof AppDashboardRoute
@@ -533,6 +555,7 @@ export interface FileRoutesByTo {
   '/api/v1/hire': typeof ApiV1HireRouteWithChildren
   '/api/v1/mcp': typeof ApiV1McpRoute
   '/api/v1/shop': typeof ApiV1ShopRoute
+  '/api/v1/x402-check': typeof ApiV1X402CheckRouteWithChildren
   '/agents': typeof AppAgentsIndexRoute
   '/billing': typeof AppBillingIndexRoute
   '/api/v1/agents/listings': typeof ApiV1AgentsListingsRouteWithChildren
@@ -559,6 +582,7 @@ export interface FileRoutesByTo {
   '/api/v1/storefront/pricing': typeof ApiV1StorefrontPricingRoute
   '/api/v1/storefront/status': typeof ApiV1StorefrontStatusRoute
   '/api/v1/storefront/trial': typeof ApiV1StorefrontTrialRoute
+  '/api/v1/x402-check/report': typeof ApiV1X402CheckReportRoute
   '/api/v1/agents/listings/featured': typeof ApiV1AgentsListingsFeaturedRoute
   '/api/v1/internal/meter/invoices': typeof ApiV1InternalMeterInvoicesRoute
 }
@@ -580,6 +604,7 @@ export interface FileRoutesById {
   '/spend-audit': typeof SpendAuditRouteWithChildren
   '/stamp': typeof StampRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/x402-check': typeof X402CheckRoute
   '/_app/agents': typeof AppAgentsRouteWithChildren
   '/_app/alerts': typeof AppAlertsRoute
   '/_app/audit': typeof AppAuditRoute
@@ -605,6 +630,7 @@ export interface FileRoutesById {
   '/api/v1/hire': typeof ApiV1HireRouteWithChildren
   '/api/v1/mcp': typeof ApiV1McpRoute
   '/api/v1/shop': typeof ApiV1ShopRoute
+  '/api/v1/x402-check': typeof ApiV1X402CheckRouteWithChildren
   '/_app/agents/': typeof AppAgentsIndexRoute
   '/_app/billing/': typeof AppBillingIndexRoute
   '/api/v1/agents/listings': typeof ApiV1AgentsListingsRouteWithChildren
@@ -631,6 +657,7 @@ export interface FileRoutesById {
   '/api/v1/storefront/pricing': typeof ApiV1StorefrontPricingRoute
   '/api/v1/storefront/status': typeof ApiV1StorefrontStatusRoute
   '/api/v1/storefront/trial': typeof ApiV1StorefrontTrialRoute
+  '/api/v1/x402-check/report': typeof ApiV1X402CheckReportRoute
   '/api/v1/agents/listings/featured': typeof ApiV1AgentsListingsFeaturedRoute
   '/api/v1/internal/meter/invoices': typeof ApiV1InternalMeterInvoicesRoute
 }
@@ -652,6 +679,7 @@ export interface FileRouteTypes {
     | '/spend-audit'
     | '/stamp'
     | '/verify-email'
+    | '/x402-check'
     | '/agents'
     | '/alerts'
     | '/audit'
@@ -677,6 +705,7 @@ export interface FileRouteTypes {
     | '/api/v1/hire'
     | '/api/v1/mcp'
     | '/api/v1/shop'
+    | '/api/v1/x402-check'
     | '/agents/'
     | '/billing/'
     | '/api/v1/agents/listings'
@@ -703,6 +732,7 @@ export interface FileRouteTypes {
     | '/api/v1/storefront/pricing'
     | '/api/v1/storefront/status'
     | '/api/v1/storefront/trial'
+    | '/api/v1/x402-check/report'
     | '/api/v1/agents/listings/featured'
     | '/api/v1/internal/meter/invoices'
   fileRoutesByTo: FileRoutesByTo
@@ -720,6 +750,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/stamp'
     | '/verify-email'
+    | '/x402-check'
     | '/alerts'
     | '/audit'
     | '/dashboard'
@@ -743,6 +774,7 @@ export interface FileRouteTypes {
     | '/api/v1/hire'
     | '/api/v1/mcp'
     | '/api/v1/shop'
+    | '/api/v1/x402-check'
     | '/agents'
     | '/billing'
     | '/api/v1/agents/listings'
@@ -769,6 +801,7 @@ export interface FileRouteTypes {
     | '/api/v1/storefront/pricing'
     | '/api/v1/storefront/status'
     | '/api/v1/storefront/trial'
+    | '/api/v1/x402-check/report'
     | '/api/v1/agents/listings/featured'
     | '/api/v1/internal/meter/invoices'
   id:
@@ -789,6 +822,7 @@ export interface FileRouteTypes {
     | '/spend-audit'
     | '/stamp'
     | '/verify-email'
+    | '/x402-check'
     | '/_app/agents'
     | '/_app/alerts'
     | '/_app/audit'
@@ -814,6 +848,7 @@ export interface FileRouteTypes {
     | '/api/v1/hire'
     | '/api/v1/mcp'
     | '/api/v1/shop'
+    | '/api/v1/x402-check'
     | '/_app/agents/'
     | '/_app/billing/'
     | '/api/v1/agents/listings'
@@ -840,6 +875,7 @@ export interface FileRouteTypes {
     | '/api/v1/storefront/pricing'
     | '/api/v1/storefront/status'
     | '/api/v1/storefront/trial'
+    | '/api/v1/x402-check/report'
     | '/api/v1/agents/listings/featured'
     | '/api/v1/internal/meter/invoices'
   fileRoutesById: FileRoutesById
@@ -861,6 +897,7 @@ export interface RootRouteChildren {
   SpendAuditRoute: typeof SpendAuditRouteWithChildren
   StampRoute: typeof StampRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
+  X402CheckRoute: typeof X402CheckRoute
   DirectoryIdRoute: typeof DirectoryIdRoute
   MeterPayRoute: typeof MeterPayRoute
   OauthAuthorizeRoute: typeof OauthAuthorizeRoute
@@ -872,6 +909,7 @@ export interface RootRouteChildren {
   ApiV1HireRoute: typeof ApiV1HireRouteWithChildren
   ApiV1McpRoute: typeof ApiV1McpRoute
   ApiV1ShopRoute: typeof ApiV1ShopRoute
+  ApiV1X402CheckRoute: typeof ApiV1X402CheckRouteWithChildren
   ApiV1AgentsListingsRoute: typeof ApiV1AgentsListingsRouteWithChildren
   ApiV1ApprovalsIdRoute: typeof ApiV1ApprovalsIdRoute
   ApiV1AuditSplatRoute: typeof ApiV1AuditSplatRoute
@@ -1009,6 +1047,13 @@ declare module '@tanstack/react-router' {
       path: '/verify-email'
       fullPath: '/verify-email'
       preLoaderRoute: typeof VerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/x402-check': {
+      id: '/x402-check'
+      path: '/x402-check'
+      fullPath: '/x402-check'
+      preLoaderRoute: typeof X402CheckRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/agents': {
@@ -1200,6 +1245,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1ShopRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/x402-check': {
+      id: '/api/v1/x402-check'
+      path: '/api/v1/x402-check'
+      fullPath: '/api/v1/x402-check'
+      preLoaderRoute: typeof ApiV1X402CheckRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/agents/listings': {
       id: '/api/v1/agents/listings'
       path: '/api/v1/agents/listings'
@@ -1368,6 +1420,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1StorefrontTrialRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/x402-check/report': {
+      id: '/api/v1/x402-check/report'
+      path: '/report'
+      fullPath: '/api/v1/x402-check/report'
+      preLoaderRoute: typeof ApiV1X402CheckReportRouteImport
+      parentRoute: typeof ApiV1X402CheckRoute
+    }
     '/api/v1/agents/listings/featured': {
       id: '/api/v1/agents/listings/featured'
       path: '/featured'
@@ -1475,6 +1534,18 @@ const ApiV1HireRouteWithChildren = ApiV1HireRoute._addFileChildren(
   ApiV1HireRouteChildren,
 )
 
+interface ApiV1X402CheckRouteChildren {
+  ApiV1X402CheckReportRoute: typeof ApiV1X402CheckReportRoute
+}
+
+const ApiV1X402CheckRouteChildren: ApiV1X402CheckRouteChildren = {
+  ApiV1X402CheckReportRoute: ApiV1X402CheckReportRoute,
+}
+
+const ApiV1X402CheckRouteWithChildren = ApiV1X402CheckRoute._addFileChildren(
+  ApiV1X402CheckRouteChildren,
+)
+
 interface ApiV1AgentsListingsRouteChildren {
   ApiV1AgentsListingsFeaturedRoute: typeof ApiV1AgentsListingsFeaturedRoute
 }
@@ -1514,6 +1585,7 @@ const rootRouteChildren: RootRouteChildren = {
   SpendAuditRoute: SpendAuditRouteWithChildren,
   StampRoute: StampRoute,
   VerifyEmailRoute: VerifyEmailRoute,
+  X402CheckRoute: X402CheckRoute,
   DirectoryIdRoute: DirectoryIdRoute,
   MeterPayRoute: MeterPayRoute,
   OauthAuthorizeRoute: OauthAuthorizeRoute,
@@ -1525,6 +1597,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiV1HireRoute: ApiV1HireRouteWithChildren,
   ApiV1McpRoute: ApiV1McpRoute,
   ApiV1ShopRoute: ApiV1ShopRoute,
+  ApiV1X402CheckRoute: ApiV1X402CheckRouteWithChildren,
   ApiV1AgentsListingsRoute: ApiV1AgentsListingsRouteWithChildren,
   ApiV1ApprovalsIdRoute: ApiV1ApprovalsIdRoute,
   ApiV1AuditSplatRoute: ApiV1AuditSplatRoute,
@@ -1552,12 +1625,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

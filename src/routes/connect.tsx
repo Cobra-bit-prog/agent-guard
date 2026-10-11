@@ -137,6 +137,10 @@ function ConnectPage() {
             <a href="/.well-known/x402" className="font-medium text-navy hover:text-coral">
               /.well-known/x402
             </a>
+            {" · "}
+            <a href="/x402-check" className="font-medium text-navy hover:text-coral">
+              Why am I not in the Bazaar?
+            </a>
           </p>
           <CopyCode code={METER_PRICING_CURL} label="Copy" />
         </section>

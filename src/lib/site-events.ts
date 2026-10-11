@@ -1,6 +1,8 @@
 import { track } from "@vercel/analytics";
 
-function trackEvent(name: "list_agent_submit" | "featured_start"): void {
+function trackEvent(
+  name: "list_agent_submit" | "featured_start" | "check_run" | "report_start",
+): void {
   if (typeof window === "undefined") return;
   track(name);
 }
@@ -13,4 +15,14 @@ export function trackListAgentSubmit(): void {
 /** Someone started a Featured payment (the $19 / 7 days invoice exists). */
 export function trackFeaturedStart(): void {
   trackEvent("featured_start");
+}
+
+/** Someone ran the free x402 listing check. */
+export function trackCheckRun(): void {
+  trackEvent("check_run");
+}
+
+/** Someone started the $19 x402 report payment. */
+export function trackReportStart(): void {
+  trackEvent("report_start");
 }

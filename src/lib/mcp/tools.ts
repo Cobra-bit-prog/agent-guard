@@ -81,6 +81,20 @@ export const MCP_TOOLS = [
     inputSchema: { type: "object", properties: {} },
   },
   {
+    name: "x402_listing_check",
+    title: "x402 listing check",
+    description:
+      "Free. No API key. Read a public https x402 endpoint, or a payTo wallet, and return the first five seller-side checks. Same as POST /api/v1/x402-check. A pass does not mean Coinbase will list you. We do not speak for Coinbase.",
+    annotations: readOnly,
+    inputSchema: {
+      type: "object",
+      properties: {
+        url: { type: "string", description: "Public https endpoint" },
+        pay_to: { type: "string", description: "Base or Solana payTo, when you do not have the URL" },
+      },
+    },
+  },
+  {
     name: "meter_pricing",
     title: "Agent Meter pricing",
     description:

@@ -145,7 +145,11 @@ function HirePage() {
           style={{ animationDelay: "0.16s" }}
         >
           This is not the free job board. Listing and posting stay free. These packages pay us
-          directly.
+          directly. Selling an x402 endpoint that is missing from the Bazaar?{" "}
+          <a href="/x402-check" className="text-fg underline">
+            Check why, then hire us to fix it with you
+          </a>
+          .
         </p>
 
         <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

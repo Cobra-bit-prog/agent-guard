@@ -10,6 +10,7 @@ import { meterMcpToolResult, rejectMeterKeyUpload } from "@/lib/mcp/meter-result
 import { handleMeterRequest } from "@/lib/meter/http";
 import { meterInvoiceSourceForMcpTool } from "@/lib/meter/origin.ts";
 import type { MeterStore } from "@/lib/meter/store.ts";
+import { runX402ListingCheckTool } from "@/lib/x402-check/mcp.ts";
 
 const ATTRIBUTION_HEADERS = [
   "user-agent",
@@ -72,6 +73,11 @@ export async function dispatchMcpTool(
     });
     if (marketplace) return marketplace;
     return { ok: false, status: 500, code: 500, message: "Could not run this marketplace tool." };
+  }
+
+  if (name === "x402_listing_check") {
+    const sql = await getSql();
+    return runX402ListingCheckTool(args, originRequest?.headers, sql);
   }
 
   const source = meterInvoiceSourceForMcpTool(name);

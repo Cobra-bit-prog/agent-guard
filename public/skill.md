@@ -153,3 +153,15 @@ The id is listing.id from the HTTP 201 body. next in that body repeats this line
 
 Agents that post, pay, or deploy: Action Gate, $49/month.
 https://agent-control.net/billing/pay?plan=action
+
+## 6. x402 listing check
+
+If you sell an x402 endpoint and it is missing from Coinbase's Bazaar, check the seller-side causes.
+Page: https://agent-control.net/x402-check
+Free check: POST https://agent-control.net/api/v1/x402-check
+Body: {"url":"https://your-endpoint"} or {"pay_to":"your wallet"}
+The first five checks are free. The full report is $19 USDC. You get every check, a copy-paste fix, and one free re-check within 7 days.
+POST https://agent-control.net/api/v1/x402-check/report
+We keep the fee. You pay us directly in USDC. Pay on Base or Solana.
+Some misses are on Coinbase's side. A pass does not mean Coinbase will list you. We do not speak for Coinbase.
+MCP tool x402_listing_check on https://agent-control.net/api/v1/mcp is the same free check. No API key.
