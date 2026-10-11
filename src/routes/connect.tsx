@@ -141,6 +141,10 @@ function ConnectPage() {
             <a href="/x402-check" className="font-medium text-navy hover:text-coral">
               Why am I not in the Bazaar?
             </a>
+            {" · "}
+            <a href="/agent-check" className="font-medium text-navy hover:text-coral">
+              Can an agent use this site?
+            </a>
           </p>
           <CopyCode code={METER_PRICING_CURL} label="Copy" />
         </section>

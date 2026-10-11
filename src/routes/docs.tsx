@@ -225,6 +225,9 @@ function DocsPage() {
           <a href="/x402-check" className="text-muted hover:text-fg">
             x402 listing check
           </a>
+          <a href="/agent-check" className="text-muted hover:text-fg">
+            Agent-readiness check
+          </a>
           <a href="#connectors" className="text-muted hover:text-fg">
             Connectors
           </a>

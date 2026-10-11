@@ -29,6 +29,10 @@
     <changefreq>weekly</changefreq>
   </url>
   <url>
+    <loc>https://agent-control.net/agent-check</loc>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
     <loc>https://agent-control.net/login</loc>
     <changefreq>monthly</changefreq>
   </url>

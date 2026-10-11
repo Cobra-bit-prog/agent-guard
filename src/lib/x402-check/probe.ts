@@ -40,13 +40,17 @@ export type ProbeHop = {
   status: number;
   headers: { get(name: string): string | null };
   body: Uint8Array;
+  truncated?: boolean;
 };
 
 export type ProbeTransport = (input: {
   url: URL;
   ip: string;
-  method: "GET" | "POST";
+  method: "GET" | "POST" | "HEAD";
   body?: string;
+  headers?: Record<string, string>;
+  maxBytes?: number;
+  overflow?: "throw" | "truncate";
 }) => Promise<ProbeHop>;
 
 export type EndpointProbe = {
@@ -80,10 +84,42 @@ function headerMap(headers: NodeJS.Dict<string | string[] | undefined>): { get(n
 export function defaultTransport(input: {
   url: URL;
   ip: string;
-  method: "GET" | "POST";
+  method: "GET" | "POST" | "HEAD";
   body?: string;
+  headers?: Record<string, string>;
+  maxBytes?: number;
+  overflow?: "throw" | "truncate";
 }): Promise<ProbeHop> {
+  const extra = input.headers ?? {};
+  const maxBytes = input.maxBytes ?? MAX_BODY_BYTES;
+  const overflow = input.overflow ?? "throw";
+  const headers: Record<string, string> = {
+    accept: extra.accept ?? "application/json",
+    host: input.url.host,
+    "user-agent": extra["user-agent"] ?? "AgentControl-x402-check/1.0",
+  };
+  if (input.body) {
+    headers["content-type"] = extra["content-type"] ?? "application/json";
+    headers["content-length"] = String(Buffer.byteLength(input.body));
+  }
+  for (const [key, value] of Object.entries(extra)) {
+    const lower = key.toLowerCase();
+    if (lower === "host" || lower === "content-length" || lower === "accept" || lower === "user-agent") continue;
+    if (lower === "content-type" && !input.body) continue;
+    headers[lower] = value;
+  }
   return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (value: ProbeHop) => {
+      if (settled) return;
+      settled = true;
+      resolve(value);
+    };
+    const fail = (err: unknown) => {
+      if (settled) return;
+      settled = true;
+      reject(err);
+    };
     const req = https.request(
       {
         protocol: "https:",
@@ -92,17 +128,7 @@ export function defaultTransport(input: {
         port: 443,
         path: `${input.url.pathname}${input.url.search}`,
         method: input.method,
-        headers: {
-          accept: "application/json",
-          host: input.url.host,
-          "user-agent": "AgentControl-x402-check/1.0",
-          ...(input.body
-            ? {
-                "content-type": "application/json",
-                "content-length": Buffer.byteLength(input.body),
-              }
-            : {}),
-        },
+        headers,
         timeout: REQUEST_TIMEOUT_MS,
         lookup: pinLookup(input.ip) as LookupFunction,
       },
@@ -111,14 +137,24 @@ export function defaultTransport(input: {
         let size = 0;
         res.on("data", (chunk: Buffer) => {
           size += chunk.length;
-          if (size > MAX_BODY_BYTES) {
+          if (size > maxBytes) {
+            if (overflow === "truncate") {
+              req.destroy();
+              finish({
+                status: res.statusCode ?? 0,
+                headers: headerMap(res.headers),
+                body: Buffer.concat(chunks),
+                truncated: true,
+              });
+              return;
+            }
             req.destroy(new SsrfError("The reply was too large."));
             return;
           }
           chunks.push(chunk);
         });
         res.on("end", () => {
-          resolve({
+          finish({
             status: res.statusCode ?? 0,
             headers: headerMap(res.headers),
             body: Buffer.concat(chunks),
@@ -130,8 +166,8 @@ export function defaultTransport(input: {
       req.destroy(new SsrfError("The endpoint did not answer in time."));
     });
     req.on("error", (err) => {
-      if (err instanceof SsrfError) reject(err);
-      else reject(new SsrfError("The endpoint did not answer."));
+      if (err instanceof SsrfError) fail(err);
+      else fail(new SsrfError("The endpoint did not answer."));
     });
     if (input.body) req.write(input.body);
     req.end();
@@ -172,10 +208,17 @@ async function pinnedAddresses(url: URL, lookup: LookupFn): Promise<string[]> {
 
 const REDIRECT = new Set([301, 302, 303, 307, 308]);
 
+type HopRequest = {
+  method: "GET" | "POST" | "HEAD";
+  body?: string;
+  headers?: Record<string, string>;
+  maxBytes?: number;
+  overflow?: "throw" | "truncate";
+};
+
 async function oneHop(
   start: URL,
-  method: "GET" | "POST",
-  body: string | undefined,
+  request: HopRequest,
   lookup: LookupFn,
   transport: ProbeTransport,
 ): Promise<{ finalUrl: URL; hop: ProbeHop }> {
@@ -189,8 +232,11 @@ async function oneHop(
         response = await transport({
           url: current,
           ip,
-          method: hop === 0 ? method : "GET",
-          body: hop === 0 ? body : undefined,
+          method: hop === 0 ? request.method : "GET",
+          body: hop === 0 ? request.body : undefined,
+          headers: request.headers,
+          maxBytes: request.maxBytes,
+          overflow: request.overflow,
         });
         break;
       } catch (err) {
@@ -216,9 +262,9 @@ export async function probeEndpoint(
   const lookup = deps.lookup ?? defaultLookup;
   const transport = deps.transport ?? defaultTransport;
   const start = parsePublicHttpsUrl(rawUrl);
-  let result = await oneHop(start, "GET", undefined, lookup, transport);
+  let result = await oneHop(start, { method: "GET" }, lookup, transport);
   if (result.hop.status !== 402) {
-    result = await oneHop(result.finalUrl, "POST", "{}", lookup, transport);
+    result = await oneHop(result.finalUrl, { method: "POST", body: "{}" }, lookup, transport);
   }
   const bodyText = Buffer.from(result.hop.body).toString("utf8");
   const headerRaw = result.hop.headers.get("payment-required");
@@ -233,5 +279,51 @@ export async function probeEndpoint(
     payment: decoded.payment,
     paymentSource: decoded.source,
     decodeError: decoded.error,
+  };
+}
+
+export type PublicFetchResult = {
+  status: number;
+  contentType: string;
+  finalUrl: string;
+  bodyText: string;
+  truncated: boolean;
+  headers: { get(name: string): string | null };
+};
+
+/** GET, HEAD, or POST a public https URL. Redirects are checked again. Same pin as the x402 probe. */
+export async function fetchPublicHttps(
+  rawUrl: string,
+  opts: {
+    method?: "GET" | "HEAD" | "POST";
+    body?: string;
+    headers?: Record<string, string>;
+    maxBytes?: number;
+    lookup?: LookupFn;
+    transport?: ProbeTransport;
+  } = {},
+): Promise<PublicFetchResult> {
+  const lookup = opts.lookup ?? defaultLookup;
+  const transport = opts.transport ?? defaultTransport;
+  const start = parsePublicHttpsUrl(rawUrl);
+  const result = await oneHop(
+    start,
+    {
+      method: opts.method ?? "GET",
+      body: opts.body,
+      headers: opts.headers,
+      maxBytes: opts.maxBytes,
+      overflow: "truncate",
+    },
+    lookup,
+    transport,
+  );
+  return {
+    status: result.hop.status,
+    contentType: result.hop.headers.get("content-type") ?? "",
+    finalUrl: result.finalUrl.href,
+    bodyText: Buffer.from(result.hop.body).toString("utf8"),
+    truncated: result.hop.truncated === true,
+    headers: result.hop.headers,
   };
 }

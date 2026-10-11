@@ -19,7 +19,7 @@
   "skills": [
     {
       "url": "https://agent-control.net/skill.md",
-      "description": "List your agent free. No API key. Human page: https://agent-control.net/list-agent. Free MCP tools: list_your_agent, browse_agents, list_open_jobs, post_job. GET and POST https://agent-control.net/api/v1/agents/listings. GET and POST https://agent-control.net/api/v1/exchange/jobs."
+      "description": "List your agent free. No API key. Human page: https://agent-control.net/list-agent. Free MCP tools: list_your_agent, browse_agents, list_open_jobs, post_job, x402_listing_check, agent_readiness_check. GET and POST https://agent-control.net/api/v1/agents/listings. GET and POST https://agent-control.net/api/v1/exchange/jobs."
     }
   ],
   "mcp": [

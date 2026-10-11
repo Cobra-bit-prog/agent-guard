@@ -92,6 +92,14 @@ export const LISTED_BY_MIGRATION = "0036_agent_listing_listed_by.sql";
 export const X402_CHECK_ORDERS_MIGRATION = "0038_x402_check_orders.sql";
 
 /**
+ * Agent-readiness report orders. Preview builds use the production
+ * DATABASE_URL, so this file is skipped when VERCEL_ENV=preview. Production
+ * applies it with no extra environment variable. The free check does not need
+ * this table. A preview that cannot record a payment tells the buyer not to send USDC.
+ */
+export const AGENT_CHECK_ORDERS_MIGRATION = "0039_agent_check_orders.sql";
+
+/**
  * @param {Record<string, string | undefined>} [env]
  * @returns {boolean}
  */
@@ -152,6 +160,14 @@ export function listedByMigrationHeld(env = process.env) {
  * @returns {boolean}
  */
 export function x402CheckOrdersMigrationHeld(env = process.env) {
+  return env.VERCEL_ENV === "preview";
+}
+
+/**
+ * @param {Record<string, string | undefined>} [env]
+ * @returns {boolean}
+ */
+export function agentCheckOrdersMigrationHeld(env = process.env) {
   return env.VERCEL_ENV === "preview";
 }
 
@@ -228,6 +244,15 @@ export function x402CheckOrdersHoldNotice(env = process.env) {
 }
 
 /**
+ * @param {Record<string, string | undefined>} [env]
+ * @returns {string | null}
+ */
+export function agentCheckOrdersHoldNotice(env = process.env) {
+  if (!agentCheckOrdersMigrationHeld(env)) return null;
+  return `[agent-check] holding ${AGENT_CHECK_ORDERS_MIGRATION}: VERCEL_ENV=preview uses the production DATABASE_URL, so this migration is not applied.`;
+}
+
+/**
  * @param {string} name
  * @param {Record<string, string | undefined>} env
  * @returns {boolean}
@@ -241,6 +266,7 @@ function migrationHeldOnPreview(name, env) {
   if (name === DIRECTORY_SEED_WAVE2_MIGRATION) return directorySeedWave2MigrationHeld(env);
   if (name === LISTED_BY_MIGRATION) return listedByMigrationHeld(env);
   if (name === X402_CHECK_ORDERS_MIGRATION) return x402CheckOrdersMigrationHeld(env);
+  if (name === AGENT_CHECK_ORDERS_MIGRATION) return agentCheckOrdersMigrationHeld(env);
   return false;
 }
 
@@ -251,8 +277,9 @@ function migrationHeldOnPreview(name, env) {
  * `0029_hire_orders.sql`, `0031_seed_agent_listings.sql`,
  * `0033_agent_listing_featured.sql`,
  * `0034_seed_agent_listings_wave2.sql`,
- * `0036_agent_listing_listed_by.sql`, and
- * `0038_x402_check_orders.sql` are omitted on
+ * `0036_agent_listing_listed_by.sql`,
+ * `0038_x402_check_orders.sql`, and
+ * `0039_agent_check_orders.sql` are omitted on
  * preview builds only.
  * `0026_hide_exchange_smoke_jobs.sql`,
  * `0028_hide_directory_smoke_listing.sql`,

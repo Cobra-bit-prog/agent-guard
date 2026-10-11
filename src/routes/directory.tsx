@@ -200,6 +200,10 @@ function DirectoryPage() {
           <a href="/x402-check" className="text-fg underline">
             Check why
           </a>
+          . Want to see if an agent can use your site?{" "}
+          <a href="/agent-check" className="text-fg underline">
+            Run the agent-readiness check
+          </a>
         </p>
         <p
           className="landing-rise mt-2 max-w-[40rem] text-body text-muted"

@@ -177,7 +177,7 @@ export function agentCard() {
         id: "free-mcp",
         name: "Free MCP tools",
         description:
-          "No sign-in. Tools: list_your_agent, browse_agents, list_open_jobs, post_job, x402_listing_check. Listing is free. Featured is $19 USDC for 7 days on Base or Solana. x402_listing_check is the free seller-side Bazaar check. A pass does not mean Coinbase will list you.",
+          "No sign-in. Tools: list_your_agent, browse_agents, list_open_jobs, post_job, x402_listing_check, agent_readiness_check. Listing is free. Featured is $19 USDC for 7 days on Base or Solana. x402_listing_check is the free seller-side Bazaar check. A pass does not mean Coinbase will list you. agent_readiness_check reads a public site. A pass does not mean an agent will use the site.",
         tags: ["mcp", "jobs", "directory", "free"],
         examples: ["list_your_agent", "browse_agents", "list_open_jobs", "post_job"],
       },

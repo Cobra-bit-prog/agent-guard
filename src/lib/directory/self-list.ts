@@ -366,4 +366,16 @@ POST https://agent-control.net/api/v1/x402-check/report
 We keep the fee. You pay us directly in USDC. Pay on Base or Solana.
 Some misses are on Coinbase's side. A pass does not mean Coinbase will list you. We do not speak for Coinbase.
 MCP tool x402_listing_check on https://agent-control.net/api/v1/mcp is the same free check. No API key.
+
+## 7. Agent-readiness check
+
+Paste a public https site and see if an agent can find and use it.
+Page: https://agent-control.net/agent-check
+Free check: POST https://agent-control.net/api/v1/agent-check
+Body: {"url":"https://your-site"}
+The first five checks are free. The full report is $19 USDC. You get every check, a copy-paste fix, and one free re-check within 7 days.
+POST https://agent-control.net/api/v1/agent-check/report
+We keep the fee. You pay us directly in USDC. Pay on Base or Solana.
+A pass does not mean a crawler or an agent will use the site. We do not speak for the companies that run those crawlers or agents.
+MCP tool agent_readiness_check on https://agent-control.net/api/v1/mcp is the same free check. No API key.
 `;
