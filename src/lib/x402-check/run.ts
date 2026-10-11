@@ -1,23 +1,30 @@
 import type { ListingQuery } from "../directory/listings.ts";
 import { X402_CHECK_CAVEAT } from "./copy.ts";
 import {
+  absentCheck,
   checkBazaar,
+  checkDescription,
+  checkExample,
   checkMerchant,
   checkPresence,
   checkReplyShape,
+  checkResourceHttps,
   checkResourceUrl,
+  checkSchemaRefs,
   checkSearch,
   checkSnippet,
   checkTargets,
   checkV2Fields,
   checkValidate,
+  exampleCallOf,
   FREE_CHECK_IDS,
   resourceUrlOf,
+  type CheckAbsence,
   type CheckRow,
   walletLooksValid,
 } from "./checks.ts";
-import { probeEndpoint, type EndpointProbe, type LookupFn, type ProbeTransport } from "./probe.ts";
-import { SsrfError } from "./ssrf.ts";
+import { probeEndpoint, probeExchange, type EndpointProbe, type LookupFn, type ProbeTransport } from "./probe.ts";
+import { parsePublicHttpsUrl, SsrfError } from "./ssrf.ts";
 import {
   lookupDirectory,
   lookupMerchant,
@@ -42,6 +49,7 @@ export type X402Report = {
   failed: number;
   warned: number;
   unchecked: number;
+  not_applicable: number;
   caveat: string;
   fetched: { status: number; final_url: string; content_type: string } | null;
 };
@@ -61,6 +69,7 @@ function counts(checks: CheckRow[]) {
     failed: checks.filter((check) => check.status === "fail").length,
     warned: checks.filter((check) => check.status === "warn").length,
     unchecked: checks.filter((check) => check.status === "unchecked").length,
+    not_applicable: checks.filter((check) => check.status === "na").length,
   };
 }
 
@@ -107,13 +116,83 @@ function stripFix(checks: CheckRow[]): CheckRow[] {
   });
 }
 
-function localChecks(payment: unknown, target: CheckTarget, probe: EndpointProbe | null): CheckRow[] {
+function absenceOf(probe: EndpointProbe | null): CheckAbsence | null {
+  if (!probe) return "wallet";
+  if (probe.route === "mcp") return "mcp";
+  if (probe.status !== 402) return "not_402";
+  if (!probe.payment) return "undecoded";
+  return null;
+}
+
+async function exampleRow(
+  payment: unknown,
+  target: CheckTarget,
+  probe: EndpointProbe | null,
+  deps: RunDeps,
+): Promise<CheckRow> {
+  const call = exampleCallOf(payment);
+  if (call === "none") return checkExample(null, "none");
+  if (call === "mcp") return checkExample(null, "mcp");
+  const baseRaw = probe?.finalUrl ?? target.url;
+  if (!baseRaw) return checkExample(null, "error");
+  const sameGet = call.method === "GET" && !call.search && !call.body && probe?.method !== "POST";
+  if (sameGet && probe) return checkExample(probe.status, "pass-or-status");
+  try {
+    const base = parsePublicHttpsUrl(baseRaw);
+    base.hash = "";
+    base.search = call.search ? `?${call.search}` : "";
+    if (base.href.length > 2000) return checkExample(null, "error");
+    const replayed = await probeExchange(base.href, call.method, call.body, {
+      lookup: deps.lookup,
+      transport: deps.transport,
+    });
+    return checkExample(replayed.status, "pass-or-status");
+  } catch {
+    return checkExample(null, "error");
+  }
+}
+
+function whySnippet(payment: unknown, requestedUrl: string | null, probe: EndpointProbe | null): CheckRow {
+  const why = absenceOf(probe);
+  if (why) return absentCheck("snippet", "Copy-paste snippet", why);
+  return checkSnippet(payment, requestedUrl);
+}
+
+async function localChecks(
+  payment: unknown,
+  target: CheckTarget,
+  probe: EndpointProbe | null,
+  deps: RunDeps,
+): Promise<CheckRow[]> {
+  const why = absenceOf(probe);
+  const reply = checkReplyShape(probe);
+  if (why) {
+    const targets =
+      why === "wallet"
+        ? checkTargets(payment, target.payTo)
+        : absentCheck("payment_targets", "Network, asset, and payTo", why);
+    return [
+      reply,
+      absentCheck("resource_https", "resource.url https", why),
+      absentCheck("bazaar", "Bazaar extension", why),
+      absentCheck("description_length", "Description length", why),
+      absentCheck("example_input", "Example input", why),
+      absentCheck("v2_fields", "x402 version 2 fields", why),
+      absentCheck("resource_url", "Resource URL", why),
+      absentCheck("schema_refs", "Bazaar schema references", why),
+      targets,
+    ];
+  }
   return [
+    reply,
+    checkResourceHttps(payment),
+    checkBazaar(payment),
+    checkDescription(payment),
+    await exampleRow(payment, target, probe, deps),
     checkV2Fields(payment),
     checkResourceUrl(payment, target.url),
-    checkBazaar(payment),
+    checkSchemaRefs(payment),
     checkTargets(payment, target.payTo),
-    checkReplyShape(probe),
   ];
 }
 
@@ -130,7 +209,7 @@ export async function runListingCheck(target: CheckTarget, tier: "free" | "full"
     probe = await probeEndpoint(target.url, { lookup: deps.lookup, transport: deps.transport });
   }
   const payment = probe?.payment ?? null;
-  const free = localChecks(payment, target, probe);
+  const free = await localChecks(payment, target, probe, deps);
 
   if (tier === "free") {
     const checks = stripFix(free.filter((check) => (FREE_CHECK_IDS as readonly string[]).includes(check.id)));
@@ -169,7 +248,7 @@ export async function runListingCheck(target: CheckTarget, tier: "free" | "full"
     ...free,
     checkMerchant(payment, merchants.length ? merchants : null, target.payTo),
     checkSearch(payment, [openSearch, curatedSearch]),
-    checkSnippet(payment, target.url),
+    whySnippet(payment, target.url, probe),
     checkPresence({ directory, registry }),
     checkValidate(payment, validate),
   ];

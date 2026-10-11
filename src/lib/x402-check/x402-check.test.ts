@@ -12,10 +12,14 @@ import { SOLANA_PAYOUT_ADDRESS, USDC_MINT } from "../solana-pay.ts";
 import type { ListingQuery } from "../directory/listings.ts";
 import {
   checkBazaar,
+  checkDescription,
+  checkExample,
   checkMerchant,
   checkPresence,
   checkReplyShape,
+  checkResourceHttps,
   checkResourceUrl,
+  checkSchemaRefs,
   checkSearch,
   checkSnippet,
   checkTargets,
@@ -138,6 +142,7 @@ function fullReport(): X402Report {
     failed: 0,
     warned: 0,
     unchecked: 0,
+    not_applicable: 0,
     caveat: X402_CHECK_CAVEAT,
     fetched: { status: 402, final_url: URL, content_type: "application/json" },
   };
@@ -295,7 +300,11 @@ describe("listing checks", () => {
     assert.match(checkReplyShape(probe).detail, /PAYMENT-REQUIRED/);
     assert.equal(checkReplyShape({ ...probe, status: 200, payment: null, paymentSource: null }).status, "fail");
     assert.equal(checkReplyShape({ ...probe, contentType: "text/plain" }).status, "warn");
-    assert.equal(checkReplyShape(null).status, "fail");
+    assert.equal(checkReplyShape(null).status, "na");
+    assert.match(checkReplyShape(null).detail, /Not applicable/);
+    const mcp = checkReplyShape({ ...probe, status: 200, route: "mcp", payment: null, paymentSource: null });
+    assert.equal(mcp.status, "na");
+    assert.match(mcp.detail, /MCP endpoint, not an x402 payment route/);
   });
 
   it("reads the merchant list without guessing when the lookup fails", () => {
@@ -347,7 +356,48 @@ describe("listing checks", () => {
     assert.match(row.fix ?? "", /"routeTemplate": "\/v1\/yield"/);
     assert.doesNotMatch(row.fix ?? "", /\?q=/);
     assert.equal(checkSnippet(payment(), URL).status, "pass");
-    assert.equal(checkSnippet(null, null).status, "fail");
+    assert.equal(checkSnippet(null, null).status, "na");
+  });
+
+  it("flags http resource urls, long descriptions, and external schema refs", () => {
+    const http = payment({
+      resource: { url: "http://api.example.com/v1/yield", description: "x", mimeType: "application/json" },
+    });
+    assert.equal(checkResourceHttps(http).status, "fail");
+    assert.match(checkResourceHttps(http).detail, /http:\/\//);
+    assert.equal(checkResourceHttps(payment()).status, "pass");
+    assert.equal(checkResourceUrl(http, URL).status, "pass");
+
+    const long = payment({
+      resource: { url: URL, description: "x".repeat(501), mimeType: "application/json" },
+    });
+    assert.equal(checkDescription(long).status, "fail");
+    assert.match(checkDescription(long).detail, /501/);
+    assert.equal(checkDescription(payment()).status, "pass");
+
+    const external = payment({
+      extensions: {
+        bazaar: {
+          info: { input: { type: "http", method: "GET" }, output: { type: "json" } },
+          schema: { $id: "https://example.com/schema", properties: { input: { $ref: "https://example.com/in.json" } } },
+        },
+      },
+    });
+    assert.equal(checkSchemaRefs(external).status, "fail");
+    assert.match(checkSchemaRefs(external).detail, /\$ref/);
+    const local = payment({
+      extensions: {
+        bazaar: {
+          info: { input: { type: "http", method: "GET" }, output: { type: "json" } },
+          schema: { $id: "#", properties: { input: { $ref: "#/$defs/input" } } },
+        },
+      },
+    });
+    assert.equal(checkSchemaRefs(local).status, "pass");
+    assert.equal(checkExample(400, "pass-or-status").status, "fail");
+    assert.equal(checkExample(409, "pass-or-status").status, "fail");
+    assert.equal(checkExample(402, "pass-or-status").status, "pass");
+    assert.equal(checkExample(200, "pass-or-status").status, "warn");
   });
 
   it("reports directory and registry presence, and validate failures honestly", () => {
@@ -383,11 +433,118 @@ describe("free and paid report", () => {
     );
     assert.deepEqual(
       report.checks.map((check) => check.id),
-      ["v2_fields", "resource_url", "bazaar", "payment_targets", "reply_shape"],
+      ["reply_shape", "resource_https", "bazaar", "description_length", "example_input"],
     );
+    assert.equal(report.failed, 0);
     assert.equal(report.checks.some((check) => "fix" in check), false);
     assert.match(report.caveat, /does not mean Coinbase will list you/);
     assert.doesNotMatch(`${report.caveat} ${X402_CHECK_LINE} ${X402_CHECK_HONESTY}`, BANNED);
+  });
+
+  it("does not fail a wallet or an MCP URL when nothing payable was fetched", async () => {
+    const wallet = await runListingCheck({ url: null, payTo: PAY_BASE }, "free");
+    assert.equal(wallet.fetched, null);
+    assert.equal(wallet.failed, 0);
+    assert.equal(wallet.not_applicable, 5);
+    for (const check of wallet.checks) {
+      assert.equal(check.status, "na");
+      assert.match(check.detail, /Not applicable/);
+    }
+
+    const calls: string[] = [];
+    const transport: ProbeTransport = async (input) => {
+      calls.push(`${input.method} ${input.url.pathname}`);
+      if (input.method === "GET") {
+        return hop(
+          { name: "Agent Control", protocol: "mcp", tools: [] },
+          200,
+          "application/json",
+        );
+      }
+      return hop({ jsonrpc: "2.0", error: { code: -32601, message: "Unknown method." } }, 400, "application/json");
+    };
+    const mcp = await runListingCheck(
+      { url: "https://agent-control.net/api/v1/mcp", payTo: null },
+      "free",
+      { lookup: publicLookup, transport },
+    );
+    assert.equal(mcp.fetched?.status, 200);
+    assert.equal(mcp.failed, 0);
+    const reply = mcp.checks.find((check) => check.id === "reply_shape");
+    assert.equal(reply?.status, "na");
+    assert.match(reply?.detail ?? "", /This is an MCP endpoint, not an x402 payment route\. Paste the paid route URL\./);
+    for (const check of mcp.checks) assert.notEqual(check.status, "fail");
+
+    const other = await runListingCheck(
+      { url: URL, payTo: null },
+      "free",
+      { lookup: publicLookup, transport: transportFor({ ok: true }, 200) },
+    );
+    assert.equal(other.checks.find((check) => check.id === "reply_shape")?.status, "fail");
+    assert.equal(other.failed, 1);
+    for (const check of other.checks) {
+      if (check.id !== "reply_shape") assert.equal(check.status, "na");
+    }
+    assert.ok(calls.length >= 1);
+  });
+
+  it("fails an example input that returns 400 or 409 instead of 402", async () => {
+    const declared = payment({
+      extensions: {
+        bazaar: {
+          info: {
+            input: { type: "http", method: "GET", queryParams: { city: "Paris" } },
+            output: { type: "json" },
+          },
+          schema: { type: "object" },
+        },
+      },
+    });
+    const transport: ProbeTransport = async (input) => {
+      if (input.url.searchParams.get("city") === "Paris") return hop({ error: "missing payment" }, 409, "application/json");
+      return hop(declared, 402);
+    };
+    const report = await runListingCheck(
+      { url: URL, payTo: null },
+      "free",
+      { lookup: publicLookup, transport },
+    );
+    const example = report.checks.find((check) => check.id === "example_input");
+    assert.equal(example?.status, "fail");
+    assert.match(example?.detail ?? "", /409/);
+  });
+
+  it("replays the example on the fetched https host", async () => {
+    const declared = payment({
+      resource: {
+        url: "http://169.254.169.254/latest",
+        description: "x",
+        mimeType: "application/json",
+      },
+      extensions: {
+        bazaar: {
+          info: {
+            input: { type: "http", method: "POST", body: { q: "1" } },
+            output: { type: "json" },
+          },
+          schema: { type: "object" },
+        },
+      },
+    });
+    const seen: string[] = [];
+    const transport: ProbeTransport = async (input) => {
+      seen.push(`${input.method} ${input.url.href}`);
+      assert.equal(input.url.protocol, "https:");
+      assert.equal(input.url.hostname, "api.example.com");
+      if (input.method === "POST" && input.body) return hop({ error: "bad example" }, 400, "application/json");
+      return hop(declared, 402);
+    };
+    const report = await runListingCheck({ url: URL, payTo: null }, "free", { lookup: publicLookup, transport });
+    assert.equal(report.checks.find((check) => check.id === "resource_https")?.status, "fail");
+    assert.equal(report.checks.find((check) => check.id === "example_input")?.status, "fail");
+    assert.match(report.checks.find((check) => check.id === "example_input")?.detail ?? "", /400/);
+    assert.ok(seen.some((line) => line.startsWith("POST https://api.example.com/")));
+    assert.equal(seen.some((line) => line.includes("169.254.169.254")), false);
   });
 
   it("adds the remote checks on the full report", async () => {
@@ -419,7 +576,7 @@ describe("free and paid report", () => {
         directory: async () => ({ names: [] }),
       },
     );
-    assert.equal(report.checks.length, 10);
+    assert.equal(report.checks.length, 14);
     const search = report.checks.find((check) => check.id === "search");
     assert.equal(search?.status, "warn");
     const snippet = report.checks.find((check) => check.id === "snippet");

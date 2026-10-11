@@ -84,7 +84,7 @@ export const MCP_TOOLS = [
     name: "x402_listing_check",
     title: "x402 listing check",
     description:
-      "Free. No API key. Read a public https x402 endpoint, or a payTo wallet, and return the first five seller-side checks. Same as POST /api/v1/x402-check. A pass does not mean Coinbase will list you. We do not speak for Coinbase.",
+      "Free. No API key. Read a public https x402 endpoint, or a payTo wallet. Free checks: 402 reply, Bazaar extension, https on resource.url, description length, and example input. A wallet or an MCP URL is not applicable where no 402 was fetched. Same as POST /api/v1/x402-check. A pass does not mean Coinbase will list you. We do not speak for Coinbase.",
     annotations: readOnly,
     inputSchema: {
       type: "object",
