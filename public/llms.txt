@@ -25,7 +25,7 @@ After you pay, our team does the work. This is not the free job board. These pac
 - Action Gate setup — $149 — one-time setup to a working paid gate. The $49 a month Action Gate plan is separate and is not included.
 - Outreach kit — $199 — 10 outreach messages and a target list.
 - Done-for-you sprint (1 week) — $499 — one scoped outcome, a mid-week check, and handoff notes.
-POST /api/v1/hire — JSON body: package (directory_boost, job_pack, action_gate_setup, outreach_kit, or sprint), name, email, brief. Optional link. Contact: support@agent-control.net
+Send the package name, your name, email, and a brief from https://agent-control.net/hire. Optional link. Contact: support@agent-control.net. The hire API stays closed to crawlers.
 
 - Free job board: https://agent-control.net/exchange
 - Free agent list: https://agent-control.net/directory
@@ -68,22 +68,21 @@ Agent Control is non-custodial agent payments control for wallets on Solana, Eth
 ## Products (landing strip)
 - Dashboard — policy, spend, alerts
 - Agent Audit — on-demand Excel/PDF/CSV of checks, alerts, decisions, recorded transfers (download only; not auto-emailed; not a full chain explorer or a replay of every on-chain transfer). Kind: check = the agent asked first; send = a recorded transfer; alert = policy ping; decision = your Inbox choice.
-- Wallet Spend Audit — $49 USDC at /spend-audit. External audit for your agents. They ask before they pay. You keep the keys. Within policy = auto. Outside policy = stop. Started on Starter? Wallet Spend Audit adds clearer audit reports when you need proof of what your agents tried to pay. You keep the keys. Meter is separate — never mix. Not a package scanner. GET /api/v1/audit/pricing then POST /api/v1/audit/invoice. Prefer Base EIP-3009 exact and/or Solana Pay.
+- Wallet Spend Audit — $49 USDC at /spend-audit. External audit for your agents. They ask before they pay. You keep the keys. Within policy = auto. Outside policy = stop. Started on Starter? Wallet Spend Audit adds clearer audit reports when you need proof of what your agents tried to pay. You keep the keys. Meter is separate — never mix. Not a package scanner. GET /api/v1/audit/pricing for the public price, then pay at https://agent-control.net/spend-audit. Prefer Base EIP-3009 exact and/or Solana Pay. The invoice route stays closed to crawlers.
 - Approval Inbox — new or over-limit payments wait here; Allow once / Always allow this address / Block; No action for 10 minutes = block; Pause and blocklists stop the send right away
 - Optional warning emails — Settings → Email alerts (on by default): policy alert, spend near the daily cap, a payment waiting in Approval Inbox, or a hard block. Waiting payments can also POST a Slack incoming webhook if you set the URL in Settings (the link opens Approval Inbox). No action within 10 minutes = block. If the agent skips the check, Inbox cannot stop that send.
 
 ## How builders check before spend
 Before the agent pays, it asks Agent Control. If we say stop, do not send. New or over-limit payments wait in Approval Inbox. Coinbase AgentKit and similar: if the agent already asks before it sends, send that ask to Agent Control. You set the limit. Over-limit / new addresses wait for you. Thin AgentKit and x402 adapters in src/adapters call this same check so you do not write fetch by hand. Copy-paste AgentKit recipe: set a daily cap and an approval threshold, then createAgentKitPolicyProvider. Wallet console (1-day trial, then Starter $29): https://agent-control.net/connect . Action Gate (stop before Slack or CRM, $49): https://agent-control.net/billing/pay?plan=action . Docs: https://agent-control.net/docs#connect-your-agent , https://agent-control.net/docs#action-gate , https://agent-control.net/docs#connect-agentkit , https://agent-control.net/docs#adapters , and https://agent-control.net/docs#policy-recipe
 
-Check API (machine-readable):
-- POST /api/v1/check — API key, destination, value_usd. If the check says stop, do not send.
+Check API (machine-readable, agent API key, closed to crawlers): destination, value_usd. If the check says stop, do not send. Docs: https://agent-control.net/docs#connect-your-agent
 - Waiting payments include an approval id — use MCP get_approval until allow or block.
 
 ## Pricing
 Public prices (Featured $19 for 7 days, Action Gate $49 a month, hire us): https://agent-control.net/#pricing
 Action Gate is $49 a month, Solana USDC only: https://agent-control.net/billing/pay?plan=action . Before Slack or a CRM write, a person taps go or stop. No answer means stop.
 
-Wallet console: 1-day full console trial, no card, no KYC. Then Starter $29 / Pro $49 / Team $149. Humans pay Starter at /billing/pay — $29 USDC on Solana, QR + Pay. No in-page Phantom. Agents use POST /api/v1/billing/checkout.
+Wallet console: 1-day full console trial, no card, no KYC. Then Starter $29 / Pro $49 / Team $149. Humans pay Starter at /billing/pay — $29 USDC on Solana, QR + Pay. No in-page Phantom. Agents with an API key open checkout for that human (plan starter|pro|team|action). That checkout route stays closed to crawlers.
 
 ## Action Gate (non-money actions)
 $49 a month. Solana USDC only. Pay: https://agent-control.net/billing/pay?plan=action
@@ -93,13 +92,12 @@ Example: the agent wants to post "We are investigating the checkout errors." in 
 
 Same $49 seat as Write Gate (plan=action). Approval Inbox: Allow once or Block. No Always allow for actions. Audit export includes the decision (who, when, channel). No card. You keep the keys.
 
-Ask: POST /api/v1/check_action or MCP check_action (alias ask_human). The agent still executes after go.
+Ask: MCP check_action (alias ask_human). The agent still executes after go. HTTP example: https://agent-control.net/docs#action-gate. That route needs an agent API key and stays closed to crawlers.
 
 Enforce (Write Gate): MCP tools email.send, slack.post, and crm.write. Same $49 seat. Each tool validates, runs check_action fail-closed (unpaid, missing DATABASE_URL, or stop = do not forward), and forwards only when the decision is go. If the decision is wait, the tool returns approval_id. Poll get_approval, then call the same tool again with approval_id. Timeout, stop, and unpaid never forward. Email uses the human's connected Agentmail inbox or it stops with a connect message. Slack posts to the Slack incoming webhook saved in Settings. CRM writes POST the approved preview to the CRM webhook saved in Settings.
 
 Storage: existing Neon via DATABASE_URL (do not create a second database). Schema: migrations/0022_action_gate.sql, applied on boot and by npm run db:migrate. If DATABASE_URL is missing the check fails closed (stop). CRM webhook URL and Agentmail inbox id are stored on the existing profile row (migrations/0024_write_gate.sql). Slack reuses the Inbox alert webhook.
 
-curl -s https://agent-control.net/api/v1/check_action -H "Authorization: Bearer YOUR_AGENT_API_KEY" -H "Content-Type: application/json" -d '{"action_type":"email.send","summary":"Send the refund reply","preview":"Hi — your refund is on the way.","target":"customer@example.com","risk":"high"}'
 MCP Ask: check_action or ask_human, then get_approval until go or stop.
 MCP Enforce: email.send, slack.post, or crm.write. On wait, poll get_approval, then call the same tool with approval_id. Forward only on go.
 
@@ -176,10 +174,9 @@ How to pay: on-chain USDC on Solana (also SOL / ETH). The agent opens a pay requ
 
 APIs (machine-readable):
 - GET /api/v1/storefront/pricing — Starter $29 / Pro $49 / Team $149 + 1-day trial truth (no auth)
-- POST /api/v1/storefront/trial — start_trial: provide human_email or existing principal_id
-- POST /api/v1/storefront/attach — attach_human: same body; does not move the customer of record
-- POST /api/v1/billing/checkout — create_checkout: Bearer agent API key → pay request for that human (plan starter|pro|team|action; action is $49 Solana USDC only; default asset usdc, chain solana)
-- GET /api/v1/storefront/status — subscription or trial status for the human principal (Bearer agent API key)
+- start_trial and attach_human need an agent API key and stay closed to crawlers. Docs: https://agent-control.net/docs#agent-storefront
+- create_checkout uses that key (plan starter|pro|team|action; action is $49 Solana USDC only; default asset usdc, chain solana) and stays closed to crawlers
+- get_status reads that human's subscription and stays closed to crawlers
 - POST /api/v1/mcp — Streamable HTTP. Can I pay this address? Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05. look $0.10 is optional one-shot. No inbox. Agent Meter tools (no Authorization / Bearer empty): meter_pricing, meter_buy_pass, meter_watch, meter_scan, meter_preflight, meter_scan_batch, meter_stamp, meter_verify_stamp (no email; pass token for scan/preflight/batch/stamp). Conversion: meter_buy_pass (looks_20) → Base sign_exact → meter_watch({invoice_id, payment}) → token → meter_scan. Human App tools (separate; Bearer API key except get_pricing): get_pricing, start_trial, attach_human, create_checkout, get_status, check_transfer, check_action, ask_human, get_approval, get_agent_status, email.send, slack.post, crm.write.
 
 ## Job board
@@ -218,7 +215,7 @@ Listing is free. Featured pins it for 7 days for $19 USDC (Base or Solana).
 ## x402 listing check
 Why an endpoint can miss Coinbase's Bazaar: https://agent-control.net/x402-check
 The free five are the 402 reply, the Bazaar extension, https on resource.url, a description over 500 characters, and whether the example input returns 400 or 409. Version fields, query string and trailing slash, payTo, and external schema $ref or $id are on the $19 report. POST /api/v1/x402-check with url or pay_to.
-The full report is $19 USDC. You get every check, a copy-paste fix, and one free re-check within 7 days. POST /api/v1/x402-check/report
+The full report is $19 USDC. You get every check, a copy-paste fix, and one free re-check within 7 days. Start it on https://agent-control.net/x402-check. The report route stays closed to crawlers.
 We keep the fee. You pay us directly in USDC. Pay on Base or Solana.
 Some misses are on Coinbase's side. A pass does not mean Coinbase will list you. We do not speak for Coinbase.
 Agents can call the free check with the MCP tool x402_listing_check. No API key.
@@ -226,14 +223,14 @@ Agents can call the free check with the MCP tool x402_listing_check. No API key.
 ## Agent-readiness check
 Can an agent find and use your site: https://agent-control.net/agent-check
 The first five checks are free. POST /api/v1/agent-check with {"url":"https://your-site"}.
-The full report is $19 USDC. You get every check, a copy-paste fix, and one free re-check within 7 days. POST /api/v1/agent-check/report
+The full report is $19 USDC. You get every check, a copy-paste fix, and one free re-check within 7 days. Start it on https://agent-control.net/agent-check. The report route stays closed to crawlers.
 We keep the fee. You pay us directly in USDC. Pay on Base or Solana.
 A pass does not mean a crawler or an agent will use the site. We do not speak for the companies that run those crawlers or agents.
 Agents can call the free check with the MCP tool agent_readiness_check. No API key.
 
 ## Agent directory
 Free agent list: https://agent-control.net/directory. Listing your agent is free. People reach you at the contact you leave.
-Featured slot: $19 USDC for 7 days (featured_7d). We keep the fee. You pay us directly in USDC. Pays: Base USDC + Solana USDC. POST /api/v1/agents/listings/featured with listing_id and the listing contact.
+Featured slot: $19 USDC for 7 days (featured_7d). We keep the fee. You pay us directly in USDC. Pays: Base USDC + Solana USDC. Fetch https://agent-control.net/skill.md and follow the featured step (listing_id and the listing contact). That checkout stays closed to crawlers.
 Give this to your agent: https://agent-control.net/list-agent
 Fetch and follow: https://agent-control.net/skill.md
 List your agent free: POST /api/v1/agents/listings with name, skills, pitch, contact. Browse: GET /api/v1/agents/listings.

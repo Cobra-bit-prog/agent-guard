@@ -14,7 +14,20 @@ Allow: /.well-known/agent-card.json
 Allow: /.well-known/mcp.json
 Allow: /openapi-meter.json
 Allow: /
-# Public job board, agent list, and free MCP. Paid, private, and internal /api paths stay closed.
+# Public agent APIs. No API key. A crawler GET returns a catalog, a 402 challenge, or the stamp demo.
+# meter pricing, pass, scan, watch, preflight, scan-batch, and stamp (including stamp ids) are the public Meter doors.
+# gate demo does not mint an invoice. storefront pricing and audit pricing are public catalogs.
+Allow: /api/v1/meter/pricing
+Allow: /api/v1/meter/pass
+Allow: /api/v1/meter/scan-batch
+Allow: /api/v1/meter/scan
+Allow: /api/v1/meter/watch
+Allow: /api/v1/meter/preflight
+Allow: /api/v1/meter/stamp
+Allow: /api/v1/gate/demo
+Allow: /api/v1/storefront/pricing
+Allow: /api/v1/audit/pricing
+# Public job board, agent list, free checks, and free MCP. The longest matching rule wins.
 Disallow: /api/v1/agents/listings/featured
 Allow: /api/v1/exchange/jobs
 Allow: /api/v1/agents/listings
@@ -23,6 +36,16 @@ Allow: /api/v1/x402-check
 Disallow: /api/v1/x402-check/report
 Allow: /api/v1/agent-check
 Disallow: /api/v1/agent-check/report
+# API-key, account, invoice, and checkout routes stay closed. The agent files no longer name these paths.
+# Featured checkout stays closed to crawlers. skill.md still shows a paying agent how to call it.
+Disallow: /api/v1/billing/checkout
+Disallow: /api/v1/hire
+Disallow: /api/v1/check_action
+Disallow: /api/v1/check
+Disallow: /api/v1/audit/invoice
+Disallow: /api/v1/storefront/trial
+Disallow: /api/v1/storefront/attach
+Disallow: /api/v1/storefront/status
 Disallow: /api/
 
 Sitemap: https://agent-control.net/sitemap.xml

@@ -155,24 +155,25 @@ describe("Agent Meter well-known discovery", () => {
     assert.equal(mcpBody.transport, "streamable-http");
     assert.equal(mcpBody.remotes[0]?.type, "streamable-http");
     assert.equal(mcpBody.remotes[0]?.url, `${PUBLIC_ORIGIN}/api/v1/mcp`);
-    assert.match(mcpBody.description, /^Free job board: https:\/\/agent-control\.net\/exchange\./);
+    assert.match(mcpBody.products.marketplace, /^Free job board: https:\/\/agent-control\.net\/exchange\./);
     assert.ok(
-      mcpBody.description.indexOf("https://agent-control.net/exchange") <
-        mcpBody.description.indexOf("Can I pay this address?"),
+      JSON.stringify(mcpBody).indexOf("https://agent-control.net/exchange") <
+        JSON.stringify(mcpBody).indexOf("Can I pay this address?"),
     );
+    assert.match(mcpBody.description, /https:\/\/agent-control\.net\/exchange/);
     assert.match(mcpBody.description, /https:\/\/agent-control\.net\/directory/);
-    assert.match(mcpBody.description, /Hire paths pay us directly/);
+    assert.match(mcpBody.products.marketplace, /Hire paths pay us directly/);
+    assert.match(mcpBody.products.marketplace, /Posting costs nothing/);
     assert.doesNotMatch(mcpBody.description, /Pay only when|when the job is done|Paying through Agent Control is not live/i);
-    assert.match(mcpBody.description, /Posting costs nothing/);
     assert.match(mcpBody.products.marketplace, /https:\/\/agent-control\.net\/directory/);
     assert.doesNotMatch(mcpBody.products.marketplace, /refund|escrow|keep 10%/i);
-    assert.match(mcpBody.description, /Can I pay this address\?/);
-    assert.match(mcpBody.description, /Buy looks_20 pack \(\$0\.20\) or look \$0\.10/);
-    assert.match(mcpBody.description, /Stamp ticket \$0\.05/);
+    assert.match(mcpBody.products.meter, /Can I pay this address\?/);
+    assert.match(mcpBody.products.meter, /Buy looks_20 pack \(\$0\.20\) or look \$0\.10/);
+    assert.match(mcpBody.products.meter, /Stamp ticket \$0\.05/);
     assert.doesNotMatch(mcpBody.description, /First 5 free/);
     assert.doesNotMatch(JSON.stringify(mcpBody), /free-5/);
-    assert.match(mcpBody.description, /looks_20 pack \(\$0\.20\)/);
-    assert.match(mcpBody.description, /No inbox/);
+    assert.match(mcpBody.products.meter, /looks_20 pack \(\$0\.20\)/);
+    assert.match(mcpBody.products.meter, /No inbox/);
     assert.match(mcpBody.description, /Human App is separate \(\$29\)/);
     assert.match(mcpBody.products.meter, /Bearer empty/);
     assert.match(mcpBody.products.meter, /no Authorization/);

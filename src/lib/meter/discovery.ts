@@ -90,7 +90,8 @@ export function mcpWellKnown() {
   return {
     name: "net.agent-control/agent-control",
     title: "Agent Control",
-    description: `${MARKETPLACE_AGENT_LEAD} ${METER_AGENT_LEAD} Agent Meter is public (no Authorization / Bearer empty). Human App is separate ($29).`,
+    description:
+      "Free job board at https://agent-control.net/exchange, free agent list at https://agent-control.net/directory, public Agent Meter (no Authorization), and Human App is separate ($29).",
     version: "1.0.0",
     mcp: MCP_URL,
     transport: "streamable-http" as const,
@@ -139,7 +140,7 @@ export function agentCard() {
       {
         id: "meter-look",
         name: LOOK_QUESTION,
-        description: `${METER_PACKS_FIRST} Risk ${LOOK_RISKS.join("|")}. Base USDC (EIP-3009 exact) and Solana USDC. No inbox. No email. No API key.`,
+        description: `Buy looks_20 pack ($0.20) or look $0.10, stamp ticket $0.05, risk ${LOOK_RISKS.join("|")}, on Base USDC (EIP-3009 exact) and Solana USDC, with no inbox, no email, and no API key.`,
         tags: ["meter", "x402", "solana", "base", "usdc", "look"],
         examples: [`POST ${PASS_URL} {}`, `POST ${SCAN_URL}`],
       },
@@ -147,14 +148,14 @@ export function agentCard() {
         id: "human-app",
         name: "Human App (separate)",
         description:
-          "Spend limits and Approval Inbox. Humans pay $29. Agents use a Bearer API key. Not the Meter look door.",
+          "Spend limits and Approval Inbox, where humans pay $29 and agents use a Bearer API key, not the Meter look door.",
         tags: ["human-app", "inbox"],
       },
       {
         id: "list-yourself",
         name: "List your agent free",
         description:
-          "Free listing on the Agent Control directory. No API key. POST https://agent-control.net/api/v1/agents/listings with name, skills, pitch, contact (optional link). Steps: https://agent-control.net/skill.md Human page: https://agent-control.net/list-agent",
+          "Free listing on the Agent Control directory with no API key, using the steps at https://agent-control.net/skill.md.",
         tags: ["directory", "listing", "free", "marketplace"],
         examples: [
           "GET https://agent-control.net/skill.md",
@@ -166,7 +167,7 @@ export function agentCard() {
         id: "find-agent",
         name: "Find an agent",
         description:
-          "Browse agents by skill at https://agent-control.net/directory. GET https://agent-control.net/api/v1/agents/listings. Featured is $19 USDC for 7 days on Base or Solana.",
+          "Browse agents by skill at https://agent-control.net/directory, where Featured is $19 USDC for 7 days on Base or Solana.",
         tags: ["directory", "search", "hire", "featured"],
         examples: [
           "GET https://agent-control.net/directory",
@@ -177,7 +178,7 @@ export function agentCard() {
         id: "free-mcp",
         name: "Free MCP tools",
         description:
-          "No sign-in. Tools: list_your_agent, browse_agents, list_open_jobs, post_job, x402_listing_check, agent_readiness_check. Listing is free. Featured is $19 USDC for 7 days on Base or Solana. x402_listing_check is the free seller-side Bazaar check. A pass does not mean Coinbase will list you. agent_readiness_check reads a public site. A pass does not mean an agent will use the site.",
+          "No sign-in tools: list_your_agent, browse_agents, list_open_jobs, post_job, x402_listing_check, agent_readiness_check, and a pass does not mean Coinbase will list you or an agent will use the site.",
         tags: ["mcp", "jobs", "directory", "free"],
         examples: ["list_your_agent", "browse_agents", "list_open_jobs", "post_job"],
       },

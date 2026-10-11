@@ -24,6 +24,7 @@ import {
   checkMcpReach,
   checkMcpVersion,
   checkRegistry,
+  agentPathsFrom,
   checkRobotsPaths,
   checkSitemap,
   checkSkill,
@@ -43,6 +44,7 @@ import {
 } from "./copy.ts";
 import type { DocFetch } from "./crawl.ts";
 import { handleAgentCheckRequest, handleAgentReportRequest } from "./http.ts";
+import { blockedAgentPaths } from "./robots.ts";
 import { runAgentCheck, type AgentReport } from "./run.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -581,6 +583,46 @@ describe("discovery", () => {
 
     const names = MCP_TOOLS.map((tool) => tool.name);
     assert.equal(names.indexOf("agent_readiness_check"), names.indexOf("x402_listing_check") + 1);
+
+    const origin = "https://agent-control.net";
+    const agentsJson = readFileSync(join(ROOT, "public/agents.json"), "utf8");
+    const mcpFile = readFileSync(join(ROOT, "public/.well-known/mcp.json"), "utf8");
+    const robots = readFileSync(join(ROOT, "public/robots.txt"), "utf8");
+    const jsonDoc = (path: string, body: string) => doc(path, body, 200, "application/json");
+    const ownSite = site({
+      origin,
+      robots: doc("/robots.txt", robots),
+      llms: doc("/llms.txt", llms),
+      skill: doc("/skill.md", skill),
+      agentsWellKnown: jsonDoc("/.well-known/agents.json", agentsJson),
+      agentsRoot: jsonDoc("/agents.json", agentsJson),
+      agentCard: jsonDoc("/.well-known/agent-card.json", card),
+      mcpJson: jsonDoc("/.well-known/mcp.json", mcpFile),
+    });
+    const robotsCheck = checkRobotsPaths(ownSite);
+    assert.equal(robotsCheck.status, "pass", robotsCheck.detail);
+    const descriptions = checkDescriptions(ownSite);
+    assert.equal(descriptions.status, "pass", descriptions.detail);
+    const named = agentPathsFrom(origin, [llms, skill, agentsJson, agentsJson, card, mcpFile]);
+    assert.equal(named.includes("/api/v1/agents/listings/featured"), false);
+    assert.deepEqual(blockedAgentPaths(robots, named), []);
+    const advertised = new Set<string>();
+    const host = new URL(origin).host;
+    for (const text of [llms, skill, agentsJson, card, mcpFile]) {
+      for (const match of text.matchAll(/https:\/\/[^\s<>"')\]]+/g)) {
+        try {
+          const url = new URL(match[0].replace(/[.,);]+$/, ""));
+          if (url.host === host && url.pathname !== "/") advertised.add(url.pathname);
+        } catch {
+          /* skip a bad url */
+        }
+      }
+      for (const match of text.matchAll(/(?:GET|POST|HEAD)\s+(\/[A-Za-z0-9._~%+\-/]*)/g)) {
+        const path = match[1]?.replace(/[.,);]+$/, "");
+        if (path && path !== "/") advertised.add(path);
+      }
+    }
+    assert.deepEqual(blockedAgentPaths(robots, [...advertised]), ["/api/v1/agents/listings/featured"]);
     const res = await handleMcpPost(
       new Request("https://agent-control.net/api/v1/mcp", {
         method: "POST",

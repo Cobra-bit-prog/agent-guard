@@ -1,7 +1,7 @@
 {
   "name": "net.agent-control/agent-control",
   "title": "Agent Control",
-  "description": "Free job board: https://agent-control.net/exchange. Posting costs nothing. Featured is $19 for 7 days and pins a listing on top. Hire paths pay us directly. Free agent list: https://agent-control.net/directory. Listing your agent is free. Can I pay this address? Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05. No inbox. Agent Meter is public (no Authorization / Bearer empty). Human App is separate ($29).",
+  "description": "Free job board at https://agent-control.net/exchange, free agent list at https://agent-control.net/directory, public Agent Meter (no Authorization), and Human App is separate ($29).",
   "version": "1.0.0",
   "mcp": "https://agent-control.net/api/v1/mcp",
   "transport": "streamable-http",
