@@ -2,7 +2,10 @@ import { BASE_USDC, SOLANA_CAIP2 } from "../meter/accepts.ts";
 import { USDC_MINT } from "../solana-pay.ts";
 import type { EndpointProbe } from "./probe.ts";
 
-export type CheckStatus = "pass" | "fail" | "warn" | "unchecked";
+export type CheckStatus = "pass" | "fail" | "warn" | "unchecked" | "na";
+
+/** Why a check has no 402 body to read. Never reported as a fail. */
+export type CheckAbsence = "wallet" | "mcp" | "not_402" | "undecoded";
 
 export type CheckRow = {
   id: string;
@@ -48,6 +51,19 @@ function bazaarOf(payment: unknown): Bag | null {
 
 function row(id: string, title: string, status: CheckStatus, detail: string, fix?: string): CheckRow {
   return fix ? { id, title, status, detail, fix } : { id, title, status, detail };
+}
+
+export function absentCheck(id: string, title: string, why: CheckAbsence): CheckRow {
+  if (why === "undecoded") {
+    return row(id, title, "unchecked", "Could not check. The 402 did not include a payment object.");
+  }
+  if (why === "wallet") {
+    return row(id, title, "na", "Not applicable. A wallet alone has nothing to fetch. Paste the https endpoint.");
+  }
+  if (why === "mcp") {
+    return row(id, title, "na", "Not applicable. This is an MCP endpoint, not an x402 payment route.");
+  }
+  return row(id, title, "na", "Not applicable. The URL did not return a 402, so this check did not run.");
 }
 
 export function checkV2Fields(payment: unknown): CheckRow {
@@ -101,7 +117,12 @@ function slashMismatch(left: string, right: string): boolean {
 export function checkResourceUrl(payment: unknown, requestedUrl: string | null): CheckRow {
   const title = "Resource URL";
   if (!requestedUrl) {
-    return row("resource_url", title, "fail", "Paste the https endpoint. A wallet alone has no resource.url to compare.");
+    return row(
+      "resource_url",
+      title,
+      "na",
+      "Not applicable. A wallet alone has no resource.url to compare. Paste the https endpoint.",
+    );
   }
   const url = resourceUrlOf(payment);
   if (!url) return row("resource_url", title, "fail", "resource.url is missing. Bazaar has nothing to attach a payment to.");
@@ -112,7 +133,6 @@ export function checkResourceUrl(payment: unknown, requestedUrl: string | null):
     return row("resource_url", title, "fail", "resource.url is not an absolute URL.");
   }
   const problems: string[] = [];
-  if (parsed.protocol !== "https:") problems.push("resource.url must be https.");
   if (parsed.search) problems.push("resource.url has a query string. Leave the query off.");
   if (parsed.hash) problems.push("resource.url has a fragment. Leave it off.");
   let requested: URL | null = null;
@@ -129,7 +149,33 @@ export function checkResourceUrl(payment: unknown, requestedUrl: string | null):
     problems.push("resource.url points at a different host than the URL you pasted.");
   }
   if (problems.length) return row("resource_url", title, "fail", problems.join(" "));
-  return row("resource_url", title, "pass", "resource.url is an https URL with no query string, and the slash matches the URL you pasted.");
+  return row("resource_url", title, "pass", "resource.url has no query string, and the slash matches the URL you pasted.");
+}
+
+export function checkResourceHttps(payment: unknown): CheckRow {
+  const title = "resource.url https";
+  const url = resourceUrlOf(payment);
+  if (!url) {
+    return row("resource_https", title, "fail", "resource.url is missing. Bazaar needs an absolute https URL.");
+  }
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return row("resource_https", title, "fail", "resource.url is not an absolute URL, so it is not https.");
+  }
+  if (parsed.protocol === "https:") {
+    return row("resource_https", title, "pass", "resource.url uses https://.");
+  }
+  if (parsed.protocol === "http:") {
+    return row(
+      "resource_https",
+      title,
+      "fail",
+      "resource.url uses http:// instead of https://. Bazaar catalogs https URLs. Change it to https://.",
+    );
+  }
+  return row("resource_https", title, "fail", `resource.url uses ${parsed.protocol} Paste an https:// URL.`);
 }
 
 function routeTemplateOf(bazaar: Bag): string | null {
@@ -268,7 +314,22 @@ export function checkTargets(payment: unknown, pastedPayTo: string | null): Chec
 
 export function checkReplyShape(probe: EndpointProbe | null): CheckRow {
   const title = "402 reply";
-  if (!probe) return row("reply_shape", title, "fail", "Paste the https endpoint. A wallet alone has no 402 reply.");
+  if (!probe) {
+    return row(
+      "reply_shape",
+      title,
+      "na",
+      "Not applicable. A wallet alone has no 402 reply. Paste the https endpoint.",
+    );
+  }
+  if (probe.route === "mcp") {
+    return row(
+      "reply_shape",
+      title,
+      "na",
+      "This is an MCP endpoint, not an x402 payment route. Paste the paid route URL.",
+    );
+  }
   const json = probe.contentType.toLowerCase().includes("application/json");
   const decoded = probe.payment != null;
   if (probe.status !== 402) {
@@ -472,7 +533,13 @@ export function checkSnippet(payment: unknown, requestedUrl: string | null): Che
   const title = "Copy-paste snippet";
   const snippet = bazaarSnippet(payment, requestedUrl);
   if (!requestedUrl && !resourceUrlOf(payment)) {
-    return row("snippet", title, "fail", "Paste the https endpoint to get a snippet.", snippet);
+    return row(
+      "snippet",
+      title,
+      "na",
+      "Not applicable. Paste the https endpoint to get a snippet.",
+      snippet,
+    );
   }
   const missing: string[] = [];
   if (!resourceUrlOf(payment)) missing.push("resource.url");
@@ -531,12 +598,8 @@ export type ValidateLook =
 export function checkValidate(payment: unknown, look: ValidateLook | null): CheckRow {
   const title = "Coinbase validate";
   const resource = resourceOf(payment);
-  const description = typeof resource?.description === "string" ? resource.description : "";
   const tags = Array.isArray(resource?.tags) ? resource.tags.length : 0;
   const notes: string[] = [];
-  if (description.length > 500) {
-    notes.push(`The description is ${description.length} characters. Coinbase's facilitator has refused long descriptions before.`);
-  }
   if (tags > 5) notes.push(`There are ${tags} tags. Facilitators keep about 5.`);
   const serviceName = typeof resource?.serviceName === "string" ? resource.serviceName : "";
   if (serviceName.length > 32) notes.push("serviceName is longer than 32 characters.");
@@ -570,4 +633,138 @@ export function checkValidate(payment: unknown, look: ValidateLook | null): Chec
   );
 }
 
-export const FREE_CHECK_IDS = ["v2_fields", "resource_url", "bazaar", "payment_targets", "reply_shape"] as const;
+const DESCRIPTION_LIMIT = 500;
+
+export function checkDescription(payment: unknown): CheckRow {
+  const title = "Description length";
+  const description = resourceOf(payment)?.description;
+  if (typeof description !== "string") {
+    return row("description_length", title, "pass", "No resource.description to measure. The 500-character limit does not apply.");
+  }
+  const length = description.length;
+  if (length > DESCRIPTION_LIMIT) {
+    return row(
+      "description_length",
+      title,
+      "fail",
+      `The description is ${length} characters. Coinbase's facilitator has rejected descriptions over ${DESCRIPTION_LIMIT} characters, so a settled payment can still miss the catalog. Shorten resource.description to ${DESCRIPTION_LIMIT} characters or fewer.`,
+    );
+  }
+  return row("description_length", title, "pass", `The description is ${length} characters, within ${DESCRIPTION_LIMIT}.`);
+}
+
+function externalSchemaRef(value: string): boolean {
+  return !value.startsWith("#");
+}
+
+function walkExternalSchema(value: unknown, hits: string[]): void {
+  if (!value || typeof value !== "object") return;
+  if (Array.isArray(value)) {
+    for (const item of value) walkExternalSchema(item, hits);
+    return;
+  }
+  const record = value as Bag;
+  if (typeof record.$ref === "string" && externalSchemaRef(record.$ref)) hits.push(`$ref ${record.$ref}`);
+  if (typeof record.$id === "string" && externalSchemaRef(record.$id)) hits.push(`$id ${record.$id}`);
+  for (const [key, child] of Object.entries(record)) {
+    if (key === "$ref" || key === "$id") continue;
+    walkExternalSchema(child, hits);
+  }
+}
+
+export function checkSchemaRefs(payment: unknown): CheckRow {
+  const title = "Bazaar schema references";
+  const schema = bazaarOf(payment)?.schema;
+  if (!schema || typeof schema !== "object") {
+    return row("schema_refs", title, "na", "Not applicable. There is no Bazaar schema to read for $ref or $id.");
+  }
+  const hits: string[] = [];
+  walkExternalSchema(schema, hits);
+  if (hits.length === 0) {
+    return row(
+      "schema_refs",
+      title,
+      "pass",
+      "Schema $ref and $id values are same-document pointers, or there are none. External references are the ones that get dropped.",
+    );
+  }
+  const shown = hits.slice(0, 3).join("; ");
+  return row(
+    "schema_refs",
+    title,
+    "fail",
+    `The Bazaar schema has an external $ref or $id (${shown}). Facilitators only allow same-document pointers that start with #. Inline the schema. They do not fetch outside references.`,
+  );
+}
+
+export type ExampleCall = {
+  method: "GET" | "POST";
+  search: string;
+  body?: string;
+};
+
+export function exampleCallOf(payment: unknown): ExampleCall | "mcp" | "none" {
+  const input = bag(bag(bazaarOf(payment)?.info)?.input);
+  if (!input) return "none";
+  if (input.type === "mcp") return "mcp";
+  const methodRaw = typeof input.method === "string" ? input.method.toUpperCase() : "GET";
+  if (methodRaw !== "GET" && methodRaw !== "POST") return "none";
+  const params = bag(input.queryParams);
+  const search = new URLSearchParams();
+  if (params) {
+    for (const [key, value] of Object.entries(params)) {
+      if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+        search.set(key, String(value));
+      }
+    }
+  }
+  let body: string | undefined;
+  if (methodRaw === "POST" && input.body !== undefined) {
+    const encoded = typeof input.body === "string" ? input.body : JSON.stringify(input.body);
+    body = encoded.slice(0, 8000);
+  }
+  return { method: methodRaw, search: search.toString(), body };
+}
+
+export function checkExample(status: number | null, note: "pass-or-status" | "none" | "mcp" | "error"): CheckRow {
+  const title = "Example input";
+  if (note === "none") {
+    return row("example_input", title, "unchecked", "Could not check. The 402 has no extensions.bazaar.info.input example to replay.");
+  }
+  if (note === "mcp") {
+    return row("example_input", title, "na", "Not applicable. The Bazaar input is an MCP tool, not an HTTP example to replay.");
+  }
+  if (note === "error" || status == null) {
+    return row("example_input", title, "unchecked", "Could not replay the example input.");
+  }
+  if (status === 402) {
+    return row("example_input", title, "pass", "The example input returned HTTP 402, which is what a catalog probe needs.");
+  }
+  if (status === 400 || status === 409) {
+    return row(
+      "example_input",
+      title,
+      "fail",
+      `The example input returned HTTP ${status} instead of 402. Facilitators replay extensions.bazaar.info.input. A 400 or 409 means that probe never sees a payment requirement. Return 402 for that example.`,
+    );
+  }
+  return row(
+    "example_input",
+    title,
+    "warn",
+    `The example input returned HTTP ${status}, not 402. This check flags 400 and 409, which stop a catalog probe before payment.`,
+  );
+}
+
+/**
+ * Free stays at five. Moved off the free tier onto the paid report: v2_fields,
+ * resource_url (query string, trailing slash, host), and payment_targets.
+ * schema_refs is paid. resource_https, description_length, and example_input are free.
+ */
+export const FREE_CHECK_IDS = [
+  "reply_shape",
+  "resource_https",
+  "bazaar",
+  "description_length",
+  "example_input",
+] as const;

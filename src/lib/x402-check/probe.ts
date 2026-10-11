@@ -54,6 +54,8 @@ export type EndpointProbe = {
   status: number;
   contentType: string;
   finalUrl: string;
+  method: "GET" | "POST";
+  route: "payment" | "mcp" | "other";
   headerRaw: string | null;
   bodyText: string;
   payment: unknown | null;
@@ -138,7 +140,7 @@ export function defaultTransport(input: {
   });
 }
 
-function decodePayment(headerRaw: string | null, bodyText: string): {
+function decodePayment(headerRaw: string | null, bodyText: string, status: number): {
   payment: unknown | null;
   source: "header" | "body" | null;
   error: string | null;
@@ -152,6 +154,7 @@ function decodePayment(headerRaw: string | null, bodyText: string): {
       /* try the body */
     }
   }
+  if (status !== 402) return { payment: null, source: null, error: null };
   if (bodyText.trim()) {
     try {
       const parsed: unknown = JSON.parse(bodyText);
@@ -161,6 +164,24 @@ function decodePayment(headerRaw: string | null, bodyText: string): {
     }
   }
   return { payment: null, source: null, error: "No payment requirement in the header or the body." };
+}
+
+function hopBody(hop: ProbeHop): string {
+  return Buffer.from(hop.body).toString("utf8").slice(0, 8000).toLowerCase();
+}
+
+/** A non-402 reply that is an MCP server, not a payment route. */
+export function isMcpHop(url: URL, hop: ProbeHop): boolean {
+  if (hop.status === 402) return false;
+  if (hop.headers.get("payment-required")?.trim()) return false;
+  const body = hopBody(hop);
+  if (body.includes("\"x402version\"")) return false;
+  const ctype = (hop.headers.get("content-type") ?? "").toLowerCase();
+  if (ctype.includes("text/event-stream")) return true;
+  if (body.includes("\"jsonrpc\"") || body.includes("\"protocolversion\"") || body.includes("\"serverinfo\"")) return true;
+  const path = url.pathname.toLowerCase().replace(/\/+$/, "") || "/";
+  const mcpPath = path === "/mcp" || path.endsWith("/mcp");
+  return mcpPath && (hop.status === 200 || hop.status === 400 || hop.status === 405 || hop.status === 406);
 }
 
 async function pinnedAddresses(url: URL, lookup: LookupFn): Promise<string[]> {
@@ -208,6 +229,30 @@ async function oneHop(
   throw new SsrfError("Too many redirects.");
 }
 
+function finishProbe(
+  result: { finalUrl: URL; hop: ProbeHop },
+  method: "GET" | "POST",
+  route: EndpointProbe["route"],
+): EndpointProbe {
+  const bodyText = Buffer.from(result.hop.body).toString("utf8");
+  const headerRaw = result.hop.headers.get("payment-required");
+  const decoded = decodePayment(headerRaw, bodyText, result.hop.status);
+  const paymentRoute = result.hop.status === 402 && decoded.payment ? "payment" : route;
+  return {
+    ok: true,
+    status: result.hop.status,
+    contentType: result.hop.headers.get("content-type") ?? "",
+    finalUrl: result.finalUrl.href,
+    method,
+    route: paymentRoute,
+    headerRaw,
+    bodyText,
+    payment: decoded.payment,
+    paymentSource: decoded.source,
+    decodeError: decoded.error,
+  };
+}
+
 /** GET the endpoint the way a buyer would. One POST with an empty JSON body if GET is not 402. */
 export async function probeEndpoint(
   rawUrl: string,
@@ -216,22 +261,25 @@ export async function probeEndpoint(
   const lookup = deps.lookup ?? defaultLookup;
   const transport = deps.transport ?? defaultTransport;
   const start = parsePublicHttpsUrl(rawUrl);
-  let result = await oneHop(start, "GET", undefined, lookup, transport);
-  if (result.hop.status !== 402) {
-    result = await oneHop(result.finalUrl, "POST", "{}", lookup, transport);
-  }
-  const bodyText = Buffer.from(result.hop.body).toString("utf8");
-  const headerRaw = result.hop.headers.get("payment-required");
-  const decoded = decodePayment(headerRaw, bodyText);
-  return {
-    ok: true,
-    status: result.hop.status,
-    contentType: result.hop.headers.get("content-type") ?? "",
-    finalUrl: result.finalUrl.href,
-    headerRaw,
-    bodyText,
-    payment: decoded.payment,
-    paymentSource: decoded.source,
-    decodeError: decoded.error,
-  };
+  const getResult = await oneHop(start, "GET", undefined, lookup, transport);
+  if (getResult.hop.status === 402) return finishProbe(getResult, "GET", "payment");
+  const postResult = await oneHop(getResult.finalUrl, "POST", "{}", lookup, transport);
+  if (postResult.hop.status === 402) return finishProbe(postResult, "POST", "payment");
+  if (isMcpHop(getResult.finalUrl, getResult.hop)) return finishProbe(getResult, "GET", "mcp");
+  if (isMcpHop(postResult.finalUrl, postResult.hop)) return finishProbe(postResult, "POST", "mcp");
+  return finishProbe(postResult, "POST", "other");
+}
+
+/** One request, no second method. Used to replay a Bazaar example. Same SSRF rules as the probe. */
+export async function probeExchange(
+  rawUrl: string,
+  method: "GET" | "POST",
+  body: string | undefined,
+  deps: { lookup?: LookupFn; transport?: ProbeTransport } = {},
+): Promise<{ status: number; finalUrl: string }> {
+  const lookup = deps.lookup ?? defaultLookup;
+  const transport = deps.transport ?? defaultTransport;
+  const start = parsePublicHttpsUrl(rawUrl);
+  const result = await oneHop(start, method, method === "POST" ? body : undefined, lookup, transport);
+  return { status: result.hop.status, finalUrl: result.finalUrl.href };
 }
