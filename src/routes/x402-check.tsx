@@ -6,6 +6,7 @@ import {
   X402_CHECK_CAVEAT,
   X402_CHECK_DAYS,
   X402_CHECK_DIRECTORY_LINE,
+  X402_CHECK_FREE_LINE,
   X402_CHECK_HIRE_LINE,
   X402_CHECK_HONESTY,
   X402_CHECK_LINE,
@@ -23,7 +24,7 @@ export const Route = createFileRoute("/x402-check")({
       {
         name: "description",
         content:
-          "Check the seller-side reasons an x402 endpoint can miss Coinbase's Bazaar. The first 5 checks are free. The full report is $19 USDC.",
+          "Check the seller-side reasons an x402 endpoint can miss Coinbase's Bazaar. Five checks are free. The full report is $19 USDC.",
       },
       { name: "theme-color", content: "#eef3f8" },
       { property: "og:title", content: "Why am I not in the Bazaar? — Agent Control" },
@@ -38,7 +39,7 @@ export const Route = createFileRoute("/x402-check")({
 type CheckRow = {
   id: string;
   title: string;
-  status: "pass" | "fail" | "warn" | "unchecked";
+  status: "pass" | "fail" | "warn" | "unchecked" | "na";
   detail: string;
   fix?: string;
 };
@@ -50,6 +51,8 @@ type FreeBody = {
   passed?: number;
   failed?: number;
   warned?: number;
+  unchecked?: number;
+  not_applicable?: number;
 };
 
 type InvoiceBody = {
@@ -78,6 +81,7 @@ const STATUS_LABEL: Record<CheckRow["status"], string> = {
   fail: "Fail",
   warn: "Check",
   unchecked: "Could not check",
+  na: "Not applicable",
 };
 
 function CheckList({ checks }: { checks: CheckRow[] }) {
@@ -191,6 +195,7 @@ function X402CheckPage() {
           This reads the 402 the way a buyer would and checks the seller-side causes.
         </p>
         <p className="mt-3 max-w-[52ch] text-body text-muted">{X402_CHECK_CAVEAT}</p>
+        <p className="mt-3 max-w-[52ch] text-body text-muted">{X402_CHECK_FREE_LINE}</p>
 
         <form className="mt-8 space-y-3" onSubmit={onCheck}>
           <label className="block text-body font-medium" htmlFor="x402-target">
@@ -230,7 +235,9 @@ function X402CheckPage() {
             </h2>
             <p className="mt-2 text-body text-muted">
               {free.passed ?? 0} passed, {free.failed ?? 0} failed
-              {free.warned ? `, ${free.warned} to check` : ""}. The first 5 checks only.
+              {free.warned ? `, ${free.warned} to check` : ""}
+              {free.not_applicable ? `, ${free.not_applicable} not applicable` : ""}
+              {free.unchecked ? `, ${free.unchecked} could not check` : ""}. Five checks.
             </p>
             <CheckList checks={free.checks} />
             <p className="mt-4 text-body text-muted">{free.caveat}</p>
