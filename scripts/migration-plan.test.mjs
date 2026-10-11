@@ -27,6 +27,9 @@ import {
   directorySeedWave2MigrationHeld,
   listedByHoldNotice,
   listedByMigrationHeld,
+  AGENT_CHECK_ORDERS_MIGRATION,
+  agentCheckOrdersHoldNotice,
+  agentCheckOrdersMigrationHeld,
   x402CheckOrdersHoldNotice,
   x402CheckOrdersMigrationHeld,
   exchangeJobsHoldNotice,
@@ -483,4 +486,32 @@ test("x402 check orders migration applies in production and is skipped on previe
   assert.match(migrate, /x402CheckOrdersHoldNotice/);
   assert.match(db, /x402CheckOrdersHoldNotice/);
   assert.match(migrate, /0038_x402_check_orders\.sql/);
+});
+
+test("agent check orders migration applies in production and is skipped on preview", () => {
+  const name = AGENT_CHECK_ORDERS_MIGRATION;
+  assert.equal(name, "0039_agent_check_orders.sql");
+  const sql = readFileSync(join(projectRoot(), "migrations", name), "utf8");
+  assert.match(sql, /create table if not exists agent_check_orders/i);
+  assert.match(sql, /agent_report_7d/);
+  assert.match(sql, /amount_usd = 19/);
+  assert.match(sql, /create table if not exists agent_check_hits/i);
+  assert.doesNotMatch(sql, /\b(drop table|delete from)\b/i);
+
+  assert.equal(agentCheckOrdersMigrationHeld({}), false);
+  assert.equal(agentCheckOrdersMigrationHeld({ VERCEL_ENV: "production" }), false);
+  assert.equal(agentCheckOrdersMigrationHeld({ VERCEL_ENV: "preview" }), true);
+  assert.equal(agentCheckOrdersHoldNotice({}), null);
+  assert.match(agentCheckOrdersHoldNotice({ VERCEL_ENV: "preview" }) ?? "", /not applied/);
+
+  assert.deepEqual(pendingMigrations([name], [], { VERCEL_ENV: "preview" }), []);
+  assert.deepEqual(pendingMigrations([name], [], { VERCEL_ENV: "production" }), [
+    { name, path: name },
+  ]);
+
+  const migrate = readFileSync(join(projectRoot(), "scripts/migrate.mjs"), "utf8");
+  const db = readFileSync(join(projectRoot(), "src/lib/db.ts"), "utf8");
+  assert.match(migrate, /agentCheckOrdersHoldNotice/);
+  assert.match(db, /agentCheckOrdersHoldNotice/);
+  assert.match(migrate, /0039_agent_check_orders\.sql/);
 });

@@ -27,3 +27,5 @@ MCP: https://agent-control.net/api/v1/mcp
 
 # List your agent free: POST /api/v1/agents/listings with name, skills, pitch, contact. Browse: GET /api/v1/agents/listings.
 # Skill: https://agent-control.net/skill.md
+# Agent-readiness check: https://agent-control.net/agent-check
+# Free check: POST https://agent-control.net/api/v1/agent-check with {"url":"https://your-site"}

@@ -10,6 +10,7 @@ import { meterMcpToolResult, rejectMeterKeyUpload } from "@/lib/mcp/meter-result
 import { handleMeterRequest } from "@/lib/meter/http";
 import { meterInvoiceSourceForMcpTool } from "@/lib/meter/origin.ts";
 import type { MeterStore } from "@/lib/meter/store.ts";
+import { runAgentReadinessCheckTool } from "@/lib/agent-check/mcp.ts";
 import { runX402ListingCheckTool } from "@/lib/x402-check/mcp.ts";
 
 const ATTRIBUTION_HEADERS = [
@@ -83,6 +84,16 @@ export async function dispatchMcpTool(
       console.error("[x402-check] database unavailable", err instanceof Error ? err.name : "error");
     }
     return runX402ListingCheckTool(args, originRequest?.headers, sql);
+  }
+
+  if (name === "agent_readiness_check") {
+    let sql = null;
+    try {
+      sql = await getSql();
+    } catch (err) {
+      console.error("[agent-check] database unavailable", err instanceof Error ? err.name : "error");
+    }
+    return runAgentReadinessCheckTool(args, originRequest?.headers, sql);
   }
 
   const source = meterInvoiceSourceForMcpTool(name);

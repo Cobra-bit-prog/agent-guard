@@ -149,6 +149,10 @@ function HirePage() {
           <a href="/x402-check" className="text-fg underline">
             Check why, then hire us to fix it with you
           </a>
+          . Want the agent files fixed with you?{" "}
+          <a href="/agent-check" className="text-fg underline">
+            Run the agent-readiness check
+          </a>
           .
         </p>
 

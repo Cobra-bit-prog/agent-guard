@@ -16,6 +16,8 @@ import {
   pendingMigrations,
   X402_CHECK_ORDERS_MIGRATION,
   x402CheckOrdersHoldNotice,
+  AGENT_CHECK_ORDERS_MIGRATION,
+  agentCheckOrdersHoldNotice,
 } from "../../scripts/migration-plan.mjs";
 
 /** Which database backend is active. */
@@ -135,6 +137,10 @@ function logHeldSchemaMigrations(paths: Iterable<string>): void {
   }
   if (names.some((path) => path.endsWith(X402_CHECK_ORDERS_MIGRATION))) {
     const notice = x402CheckOrdersHoldNotice();
+    if (notice) console.log(notice);
+  }
+  if (names.some((path) => path.endsWith(AGENT_CHECK_ORDERS_MIGRATION))) {
+    const notice = agentCheckOrdersHoldNotice();
     if (notice) console.log(notice);
   }
 }

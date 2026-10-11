@@ -95,6 +95,20 @@ export const MCP_TOOLS = [
     },
   },
   {
+    name: "agent_readiness_check",
+    title: "Agent-readiness check",
+    description:
+      "Free. No API key. Read a public https site and return the first five checks for robots.txt, llms.txt, agents.json, descriptions, and skill.md. Same as POST /api/v1/agent-check. A pass does not mean a crawler or an agent will use the site.",
+    annotations: readOnly,
+    inputSchema: {
+      type: "object",
+      properties: {
+        url: { type: "string", description: "Public https site URL" },
+      },
+      required: ["url"],
+    },
+  },
+  {
     name: "meter_pricing",
     title: "Agent Meter pricing",
     description:

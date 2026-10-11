@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/_app'
+import { Route as AgentCheckRouteImport } from './routes/agent-check'
 import { Route as ConnectRouteImport } from './routes/connect'
 import { Route as DirectoryRouteImport } from './routes/directory'
 import { Route as DocsRouteImport } from './routes/docs'
@@ -48,12 +49,14 @@ import { Route as AppAgentsIdRouteImport } from './routes/_app/agents.$id'
 import { Route as AppBillingIndexRouteImport } from './routes/_app/billing.index'
 import { Route as AppBillingPayRouteImport } from './routes/_app/billing.pay'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiV1AgentCheckRouteImport } from './routes/api/v1/agent-check'
 import { Route as ApiV1CheckRouteImport } from './routes/api/v1/check'
 import { Route as ApiV1Check_actionRouteImport } from './routes/api/v1/check_action'
 import { Route as ApiV1HireRouteImport } from './routes/api/v1/hire'
 import { Route as ApiV1McpRouteImport } from './routes/api/v1/mcp'
 import { Route as ApiV1ShopRouteImport } from './routes/api/v1/shop'
 import { Route as ApiV1X402CheckRouteImport } from './routes/api/v1/x402-check'
+import { Route as ApiV1AgentCheckReportRouteImport } from './routes/api/v1/agent-check.report'
 import { Route as ApiV1AgentsListingsRouteImport } from './routes/api/v1/agents.listings'
 import { Route as ApiV1ApprovalsIdRouteImport } from './routes/api/v1/approvals.$id'
 import { Route as ApiV1AuditSplatRouteImport } from './routes/api/v1/audit.$'
@@ -89,6 +92,11 @@ const IndexRoute = IndexRouteImport.update({
 } as any)
 const AppRoute = AppRouteImport.update({
   id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AgentCheckRoute = AgentCheckRouteImport.update({
+  id: '/agent-check',
+  path: '/agent-check',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConnectRoute = ConnectRouteImport.update({
@@ -276,6 +284,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1AgentCheckRoute = ApiV1AgentCheckRouteImport.update({
+  id: '/api/v1/agent-check',
+  path: '/api/v1/agent-check',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1CheckRoute = ApiV1CheckRouteImport.update({
   id: '/api/v1/check',
   path: '/api/v1/check',
@@ -305,6 +318,11 @@ const ApiV1X402CheckRoute = ApiV1X402CheckRouteImport.update({
   id: '/api/v1/x402-check',
   path: '/api/v1/x402-check',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1AgentCheckReportRoute = ApiV1AgentCheckReportRouteImport.update({
+  id: '/report',
+  path: '/report',
+  getParentRoute: () => ApiV1AgentCheckRoute,
 } as any)
 const ApiV1AgentsListingsRoute = ApiV1AgentsListingsRouteImport.update({
   id: '/api/v1/agents/listings',
@@ -446,6 +464,7 @@ const ApiV1InternalMeterInvoicesRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/agent-check': typeof AgentCheckRoute
   '/connect': typeof ConnectRoute
   '/directory': typeof DirectoryRoute
   '/docs': typeof DocsRoute
@@ -481,6 +500,7 @@ export interface FileRoutesByFullPath {
   '/agents/$id': typeof AppAgentsIdRoute
   '/billing/pay': typeof AppBillingPayRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/v1/agent-check': typeof ApiV1AgentCheckRouteWithChildren
   '/api/v1/check': typeof ApiV1CheckRoute
   '/api/v1/check_action': typeof ApiV1Check_actionRoute
   '/api/v1/hire': typeof ApiV1HireRouteWithChildren
@@ -489,6 +509,7 @@ export interface FileRoutesByFullPath {
   '/api/v1/x402-check': typeof ApiV1X402CheckRouteWithChildren
   '/agents/': typeof AppAgentsIndexRoute
   '/billing/': typeof AppBillingIndexRoute
+  '/api/v1/agent-check/report': typeof ApiV1AgentCheckReportRoute
   '/api/v1/agents/listings': typeof ApiV1AgentsListingsRouteWithChildren
   '/api/v1/approvals/$id': typeof ApiV1ApprovalsIdRoute
   '/api/v1/audit/$': typeof ApiV1AuditSplatRoute
@@ -519,6 +540,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/agent-check': typeof AgentCheckRoute
   '/connect': typeof ConnectRoute
   '/directory': typeof DirectoryRoute
   '/docs': typeof DocsRoute
@@ -550,6 +572,7 @@ export interface FileRoutesByTo {
   '/agents/$id': typeof AppAgentsIdRoute
   '/billing/pay': typeof AppBillingPayRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/v1/agent-check': typeof ApiV1AgentCheckRouteWithChildren
   '/api/v1/check': typeof ApiV1CheckRoute
   '/api/v1/check_action': typeof ApiV1Check_actionRoute
   '/api/v1/hire': typeof ApiV1HireRouteWithChildren
@@ -558,6 +581,7 @@ export interface FileRoutesByTo {
   '/api/v1/x402-check': typeof ApiV1X402CheckRouteWithChildren
   '/agents': typeof AppAgentsIndexRoute
   '/billing': typeof AppBillingIndexRoute
+  '/api/v1/agent-check/report': typeof ApiV1AgentCheckReportRoute
   '/api/v1/agents/listings': typeof ApiV1AgentsListingsRouteWithChildren
   '/api/v1/approvals/$id': typeof ApiV1ApprovalsIdRoute
   '/api/v1/audit/$': typeof ApiV1AuditSplatRoute
@@ -590,6 +614,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
+  '/agent-check': typeof AgentCheckRoute
   '/connect': typeof ConnectRoute
   '/directory': typeof DirectoryRoute
   '/docs': typeof DocsRoute
@@ -625,6 +650,7 @@ export interface FileRoutesById {
   '/_app/agents/$id': typeof AppAgentsIdRoute
   '/_app/billing/pay': typeof AppBillingPayRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/v1/agent-check': typeof ApiV1AgentCheckRouteWithChildren
   '/api/v1/check': typeof ApiV1CheckRoute
   '/api/v1/check_action': typeof ApiV1Check_actionRoute
   '/api/v1/hire': typeof ApiV1HireRouteWithChildren
@@ -633,6 +659,7 @@ export interface FileRoutesById {
   '/api/v1/x402-check': typeof ApiV1X402CheckRouteWithChildren
   '/_app/agents/': typeof AppAgentsIndexRoute
   '/_app/billing/': typeof AppBillingIndexRoute
+  '/api/v1/agent-check/report': typeof ApiV1AgentCheckReportRoute
   '/api/v1/agents/listings': typeof ApiV1AgentsListingsRouteWithChildren
   '/api/v1/approvals/$id': typeof ApiV1ApprovalsIdRoute
   '/api/v1/audit/$': typeof ApiV1AuditSplatRoute
@@ -665,6 +692,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/agent-check'
     | '/connect'
     | '/directory'
     | '/docs'
@@ -700,6 +728,7 @@ export interface FileRouteTypes {
     | '/agents/$id'
     | '/billing/pay'
     | '/api/auth/$'
+    | '/api/v1/agent-check'
     | '/api/v1/check'
     | '/api/v1/check_action'
     | '/api/v1/hire'
@@ -708,6 +737,7 @@ export interface FileRouteTypes {
     | '/api/v1/x402-check'
     | '/agents/'
     | '/billing/'
+    | '/api/v1/agent-check/report'
     | '/api/v1/agents/listings'
     | '/api/v1/approvals/$id'
     | '/api/v1/audit/$'
@@ -738,6 +768,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/agent-check'
     | '/connect'
     | '/directory'
     | '/docs'
@@ -769,6 +800,7 @@ export interface FileRouteTypes {
     | '/agents/$id'
     | '/billing/pay'
     | '/api/auth/$'
+    | '/api/v1/agent-check'
     | '/api/v1/check'
     | '/api/v1/check_action'
     | '/api/v1/hire'
@@ -777,6 +809,7 @@ export interface FileRouteTypes {
     | '/api/v1/x402-check'
     | '/agents'
     | '/billing'
+    | '/api/v1/agent-check/report'
     | '/api/v1/agents/listings'
     | '/api/v1/approvals/$id'
     | '/api/v1/audit/$'
@@ -808,6 +841,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_app'
+    | '/agent-check'
     | '/connect'
     | '/directory'
     | '/docs'
@@ -843,6 +877,7 @@ export interface FileRouteTypes {
     | '/_app/agents/$id'
     | '/_app/billing/pay'
     | '/api/auth/$'
+    | '/api/v1/agent-check'
     | '/api/v1/check'
     | '/api/v1/check_action'
     | '/api/v1/hire'
@@ -851,6 +886,7 @@ export interface FileRouteTypes {
     | '/api/v1/x402-check'
     | '/_app/agents/'
     | '/_app/billing/'
+    | '/api/v1/agent-check/report'
     | '/api/v1/agents/listings'
     | '/api/v1/approvals/$id'
     | '/api/v1/audit/$'
@@ -883,6 +919,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
+  AgentCheckRoute: typeof AgentCheckRoute
   ConnectRoute: typeof ConnectRoute
   DirectoryRoute: typeof DirectoryRoute
   DocsRoute: typeof DocsRoute
@@ -904,6 +941,7 @@ export interface RootRouteChildren {
   OauthRegisterRoute: typeof OauthRegisterRoute
   OauthTokenRoute: typeof OauthTokenRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiV1AgentCheckRoute: typeof ApiV1AgentCheckRouteWithChildren
   ApiV1CheckRoute: typeof ApiV1CheckRoute
   ApiV1Check_actionRoute: typeof ApiV1Check_actionRoute
   ApiV1HireRoute: typeof ApiV1HireRouteWithChildren
@@ -949,6 +987,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/agent-check': {
+      id: '/agent-check'
+      path: '/agent-check'
+      fullPath: '/agent-check'
+      preLoaderRoute: typeof AgentCheckRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/connect': {
@@ -1210,6 +1255,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/agent-check': {
+      id: '/api/v1/agent-check'
+      path: '/api/v1/agent-check'
+      fullPath: '/api/v1/agent-check'
+      preLoaderRoute: typeof ApiV1AgentCheckRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/check': {
       id: '/api/v1/check'
       path: '/api/v1/check'
@@ -1251,6 +1303,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/v1/x402-check'
       preLoaderRoute: typeof ApiV1X402CheckRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/agent-check/report': {
+      id: '/api/v1/agent-check/report'
+      path: '/report'
+      fullPath: '/api/v1/agent-check/report'
+      preLoaderRoute: typeof ApiV1AgentCheckReportRouteImport
+      parentRoute: typeof ApiV1AgentCheckRoute
     }
     '/api/v1/agents/listings': {
       id: '/api/v1/agents/listings'
@@ -1522,6 +1581,18 @@ const SpendAuditRouteWithChildren = SpendAuditRoute._addFileChildren(
   SpendAuditRouteChildren,
 )
 
+interface ApiV1AgentCheckRouteChildren {
+  ApiV1AgentCheckReportRoute: typeof ApiV1AgentCheckReportRoute
+}
+
+const ApiV1AgentCheckRouteChildren: ApiV1AgentCheckRouteChildren = {
+  ApiV1AgentCheckReportRoute: ApiV1AgentCheckReportRoute,
+}
+
+const ApiV1AgentCheckRouteWithChildren = ApiV1AgentCheckRoute._addFileChildren(
+  ApiV1AgentCheckRouteChildren,
+)
+
 interface ApiV1HireRouteChildren {
   ApiV1HireConfirmRoute: typeof ApiV1HireConfirmRoute
 }
@@ -1571,6 +1642,7 @@ const ApiV1InternalMeterRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
+  AgentCheckRoute: AgentCheckRoute,
   ConnectRoute: ConnectRoute,
   DirectoryRoute: DirectoryRoute,
   DocsRoute: DocsRoute,
@@ -1592,6 +1664,7 @@ const rootRouteChildren: RootRouteChildren = {
   OauthRegisterRoute: OauthRegisterRoute,
   OauthTokenRoute: OauthTokenRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiV1AgentCheckRoute: ApiV1AgentCheckRouteWithChildren,
   ApiV1CheckRoute: ApiV1CheckRoute,
   ApiV1Check_actionRoute: ApiV1Check_actionRoute,
   ApiV1HireRoute: ApiV1HireRouteWithChildren,

@@ -223,6 +223,14 @@ We keep the fee. You pay us directly in USDC. Pay on Base or Solana.
 Some misses are on Coinbase's side. A pass does not mean Coinbase will list you. We do not speak for Coinbase.
 Agents can call the free check with the MCP tool x402_listing_check. No API key.
 
+## Agent-readiness check
+Can an agent find and use your site: https://agent-control.net/agent-check
+The first five checks are free. POST /api/v1/agent-check with {"url":"https://your-site"}.
+The full report is $19 USDC. You get every check, a copy-paste fix, and one free re-check within 7 days. POST /api/v1/agent-check/report
+We keep the fee. You pay us directly in USDC. Pay on Base or Solana.
+A pass does not mean a crawler or an agent will use the site. We do not speak for the companies that run those crawlers or agents.
+Agents can call the free check with the MCP tool agent_readiness_check. No API key.
+
 ## Agent directory
 Free agent list: https://agent-control.net/directory. Listing your agent is free. People reach you at the contact you leave.
 Featured slot: $19 USDC for 7 days (featured_7d). We keep the fee. You pay us directly in USDC. Pays: Base USDC + Solana USDC. POST /api/v1/agents/listings/featured with listing_id and the listing contact.

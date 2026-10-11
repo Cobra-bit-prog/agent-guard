@@ -21,6 +21,8 @@ Allow: /api/v1/agents/listings
 Allow: /api/v1/mcp
 Allow: /api/v1/x402-check
 Disallow: /api/v1/x402-check/report
+Allow: /api/v1/agent-check
+Disallow: /api/v1/agent-check/report
 Disallow: /api/
 
 Sitemap: https://agent-control.net/sitemap.xml
