@@ -365,14 +365,22 @@ export async function handleX402ReportRequest(
   try {
     if (request.method === "GET") return json(pricingBody());
     if (request.method !== "POST") return json({ error: "Use POST to start a report payment." }, 405);
-    if (!sql) {
-      return json({ error: "This database cannot record the report payment yet. Do not send USDC." }, 503);
-    }
     let body: Record<string, unknown> = {};
     try {
       body = parseBody(await request.json());
     } catch {
       return json({ error: "Invalid JSON" }, 400);
+    }
+    if (!sql) {
+      const target = parseCheckTarget(body);
+      const order = unrecordedOrder(target, now);
+      return json(
+        {
+          ...x402InvoiceView(order, now, false),
+          error: "This database cannot record the report payment yet. Do not send USDC.",
+        },
+        402,
+      );
     }
     const payment = readX402Payment(request, body);
     const key = invoiceKey(body, payment);

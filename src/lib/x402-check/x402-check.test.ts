@@ -515,8 +515,11 @@ describe("free and paid report", () => {
     assert.equal(body.amount_base_units, "19000000");
 
     const missingDb = await handleX402ReportRequest(post("/api/v1/x402-check/report", { url: URL }), null, {}, NOW);
-    assert.equal(missingDb.status, 503);
-    assert.match(((await missingDb.json()) as { error: string }).error, /Do not send USDC/);
+    assert.equal(missingDb.status, 402);
+    const missingBody = (await missingDb.json()) as { recorded: boolean; error: string; amount_base_units: string };
+    assert.equal(missingBody.recorded, false);
+    assert.match(missingBody.error, /Do not send USDC/);
+    assert.equal(missingBody.amount_base_units, "19000000");
   });
 });
 

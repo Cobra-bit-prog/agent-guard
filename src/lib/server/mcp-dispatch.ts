@@ -76,7 +76,12 @@ export async function dispatchMcpTool(
   }
 
   if (name === "x402_listing_check") {
-    const sql = await getSql();
+    let sql = null;
+    try {
+      sql = await getSql();
+    } catch (err) {
+      console.error("[x402-check] database unavailable", err instanceof Error ? err.name : "error");
+    }
     return runX402ListingCheckTool(args, originRequest?.headers, sql);
   }
 
