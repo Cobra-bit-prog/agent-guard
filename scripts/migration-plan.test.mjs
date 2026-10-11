@@ -16,6 +16,7 @@ import {
   DIRECTORY_SEED_WAVE2_MIGRATION,
   EXCHANGE_JOBS_MIGRATION,
   LISTED_BY_MIGRATION,
+  X402_CHECK_ORDERS_MIGRATION,
   FEATURED_LISTINGS_MIGRATION,
   HIRE_ORDERS_MIGRATION,
   agentListingsHoldNotice,
@@ -26,6 +27,8 @@ import {
   directorySeedWave2MigrationHeld,
   listedByHoldNotice,
   listedByMigrationHeld,
+  x402CheckOrdersHoldNotice,
+  x402CheckOrdersMigrationHeld,
   exchangeJobsHoldNotice,
   featuredListingsHoldNotice,
   featuredListingsMigrationHeld,
@@ -452,4 +455,32 @@ test("listed_by migration applies in production and is skipped on preview", () =
   assert.match(migrate, /listedByHoldNotice/);
   assert.match(db, /listedByHoldNotice/);
   assert.match(migrate, /0036_agent_listing_listed_by\.sql/);
+});
+
+test("x402 check orders migration applies in production and is skipped on preview", () => {
+  const name = X402_CHECK_ORDERS_MIGRATION;
+  assert.equal(name, "0038_x402_check_orders.sql");
+  const sql = readFileSync(join(projectRoot(), "migrations", name), "utf8");
+  assert.match(sql, /create table if not exists x402_check_orders/i);
+  assert.match(sql, /x402_report_7d/);
+  assert.match(sql, /amount_usd = 19/);
+  assert.match(sql, /create table if not exists x402_check_hits/i);
+  assert.doesNotMatch(sql, /\b(drop table|delete from)\b/i);
+
+  assert.equal(x402CheckOrdersMigrationHeld({}), false);
+  assert.equal(x402CheckOrdersMigrationHeld({ VERCEL_ENV: "production" }), false);
+  assert.equal(x402CheckOrdersMigrationHeld({ VERCEL_ENV: "preview" }), true);
+  assert.equal(x402CheckOrdersHoldNotice({}), null);
+  assert.match(x402CheckOrdersHoldNotice({ VERCEL_ENV: "preview" }) ?? "", /not applied/);
+
+  assert.deepEqual(pendingMigrations([name], [], { VERCEL_ENV: "preview" }), []);
+  assert.deepEqual(pendingMigrations([name], [], { VERCEL_ENV: "production" }), [
+    { name, path: name },
+  ]);
+
+  const migrate = readFileSync(join(projectRoot(), "scripts/migrate.mjs"), "utf8");
+  const db = readFileSync(join(projectRoot(), "src/lib/db.ts"), "utf8");
+  assert.match(migrate, /x402CheckOrdersHoldNotice/);
+  assert.match(db, /x402CheckOrdersHoldNotice/);
+  assert.match(migrate, /0038_x402_check_orders\.sql/);
 });

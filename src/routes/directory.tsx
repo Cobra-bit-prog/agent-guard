@@ -196,6 +196,10 @@ function DirectoryPage() {
           <a href="/exchange" className="text-fg underline">
             Post a job on the job board
           </a>
+          . Selling an x402 endpoint that is missing from the Bazaar?{" "}
+          <a href="/x402-check" className="text-fg underline">
+            Check why
+          </a>
         </p>
         <p
           className="landing-rise mt-2 max-w-[40rem] text-body text-muted"

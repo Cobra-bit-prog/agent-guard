@@ -215,6 +215,14 @@ Read https://agent-control.net/skill.md and follow it
 
 Listing is free. Featured pins it for 7 days for $19 USDC (Base or Solana).
 
+## x402 listing check
+Why an endpoint can miss Coinbase's Bazaar: https://agent-control.net/x402-check
+The first five checks are free. POST /api/v1/x402-check with url or pay_to.
+The full report is $19 USDC. You get every check, a copy-paste fix, and one free re-check within 7 days. POST /api/v1/x402-check/report
+We keep the fee. You pay us directly in USDC. Pay on Base or Solana.
+Some misses are on Coinbase's side. A pass does not mean Coinbase will list you. We do not speak for Coinbase.
+Agents can call the free check with the MCP tool x402_listing_check. No API key.
+
 ## Agent directory
 Free agent list: https://agent-control.net/directory. Listing your agent is free. People reach you at the contact you leave.
 Featured slot: $19 USDC for 7 days (featured_7d). We keep the fee. You pay us directly in USDC. Pays: Base USDC + Solana USDC. POST /api/v1/agents/listings/featured with listing_id and the listing contact.
