@@ -1,7 +1,34 @@
+import type { LookupAddress, LookupOptions } from "node:dns";
 import { lookup as dnsLookup } from "node:dns/promises";
 import https from "node:https";
-import { isIP } from "node:net";
+import { isIP, type LookupFunction } from "node:net";
 import { assertPublicAddresses, parsePublicHttpsUrl, resolveRedirect, SsrfError } from "./ssrf.ts";
+
+/** IPv4 first. Some hosts publish IPv6 that this runtime cannot reach. */
+export function orderAddresses(addresses: readonly string[]): string[] {
+  const v4: string[] = [];
+  const v6: string[] = [];
+  for (const address of addresses) {
+    if (isIP(address) === 6) v6.push(address);
+    else v4.push(address);
+  }
+  return [...v4, ...v6];
+}
+
+/** Node's HTTP client asks for `options.all`, which expects an address list. */
+export function pinLookup(ip: string): LookupFunction {
+  const family = ip.includes(":") ? 6 : 4;
+  return (_hostname, options, callback) => {
+    const cb = typeof options === "function" ? options : callback;
+    const opts: LookupOptions = typeof options === "function" || !options ? {} : options;
+    if (opts.all) {
+      const addresses: LookupAddress[] = [{ address: ip, family }];
+      cb(null, addresses);
+      return;
+    }
+    cb(null, ip, family);
+  };
+}
 
 export const MAX_REDIRECTS = 2;
 export const MAX_BODY_BYTES = 64 * 1024;
@@ -57,7 +84,6 @@ export function defaultTransport(input: {
   body?: string;
 }): Promise<ProbeHop> {
   return new Promise((resolve, reject) => {
-    const family = input.ip.includes(":") ? 6 : 4;
     const req = https.request(
       {
         protocol: "https:",
@@ -78,9 +104,7 @@ export function defaultTransport(input: {
             : {}),
         },
         timeout: REQUEST_TIMEOUT_MS,
-        lookup: (_hostname, _options, callback) => {
-          callback(null, input.ip, family);
-        },
+        lookup: pinLookup(input.ip) as LookupFunction,
       },
       (res) => {
         const chunks: Buffer[] = [];
@@ -139,12 +163,11 @@ function decodePayment(headerRaw: string | null, bodyText: string): {
   return { payment: null, source: null, error: "No payment requirement in the header or the body." };
 }
 
-async function pinnedAddresses(url: URL, lookup: LookupFn): Promise<string> {
-  const addresses = await lookup(url.hostname);
+async function pinnedAddresses(url: URL, lookup: LookupFn): Promise<string[]> {
+  const addresses = orderAddresses(await lookup(url.hostname));
   assertPublicAddresses(addresses);
-  const first = addresses[0];
-  if (!first) throw new SsrfError("That host is not a public address.");
-  return first;
+  if (addresses.length === 0) throw new SsrfError("That host is not a public address.");
+  return addresses;
 }
 
 const REDIRECT = new Set([301, 302, 303, 307, 308]);
@@ -158,13 +181,24 @@ async function oneHop(
 ): Promise<{ finalUrl: URL; hop: ProbeHop }> {
   let current = start;
   for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
-    const ip = await pinnedAddresses(current, lookup);
-    const response = await transport({
-      url: current,
-      ip,
-      method: hop === 0 ? method : "GET",
-      body: hop === 0 ? body : undefined,
-    });
+    const addresses = await pinnedAddresses(current, lookup);
+    let response: ProbeHop | null = null;
+    let lastError: unknown = null;
+    for (const ip of addresses) {
+      try {
+        response = await transport({
+          url: current,
+          ip,
+          method: hop === 0 ? method : "GET",
+          body: hop === 0 ? body : undefined,
+        });
+        break;
+      } catch (err) {
+        if (err instanceof SsrfError && err.message !== "The endpoint did not answer.") throw err;
+        lastError = err;
+      }
+    }
+    if (!response) throw lastError instanceof SsrfError ? lastError : new SsrfError("The endpoint did not answer.");
     if (!REDIRECT.has(response.status)) return { finalUrl: current, hop: response };
     const location = response.headers.get("location");
     if (!location) throw new SsrfError("The redirect is not a public https URL.");

@@ -31,7 +31,7 @@ import {
   X402_CHECK_SKU,
 } from "./copy.ts";
 import { handleX402CheckRequest, handleX402ReportRequest } from "./http.ts";
-import { probeEndpoint, type ProbeHop, type ProbeTransport } from "./probe.ts";
+import { orderAddresses, pinLookup, probeEndpoint, type ProbeHop, type ProbeTransport } from "./probe.ts";
 import { runListingCheck, type X402Report } from "./run.ts";
 import { isBlockedIp, parsePublicHttpsUrl, SsrfError } from "./ssrf.ts";
 
@@ -188,6 +188,16 @@ describe("ssrf", () => {
       /not a public address/,
     );
     assert.equal(calls, 1);
+  });
+
+  it("pins the address in the shape Node's HTTP client expects", () => {
+    assert.deepEqual(orderAddresses(["2606:4700::1", "1.1.1.1"]), ["1.1.1.1", "2606:4700::1"]);
+    const listed = pinLookup("1.1.1.1");
+    let allResult: unknown;
+    listed("example.com", { all: true }, (_err, address) => {
+      allResult = address;
+    });
+    assert.deepEqual(allResult, [{ address: "1.1.1.1", family: 4 }]);
   });
 
   it("rejects a host that resolves to a public and a private address", async () => {
