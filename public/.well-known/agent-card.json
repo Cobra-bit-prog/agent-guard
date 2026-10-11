@@ -31,7 +31,7 @@
     {
       "id": "meter-look",
       "name": "Can I pay this address?",
-      "description": "Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05. Risk ok|new|warn|sink. Base USDC (EIP-3009 exact) and Solana USDC. No inbox. No email. No API key.",
+      "description": "Buy looks_20 pack ($0.20) or look $0.10, stamp ticket $0.05, risk ok|new|warn|sink, on Base USDC (EIP-3009 exact) and Solana USDC, with no inbox, no email, and no API key.",
       "tags": [
         "meter",
         "x402",
@@ -48,7 +48,7 @@
     {
       "id": "human-app",
       "name": "Human App (separate)",
-      "description": "Spend limits and Approval Inbox. Humans pay $29. Agents use a Bearer API key. Not the Meter look door.",
+      "description": "Spend limits and Approval Inbox, where humans pay $29 and agents use a Bearer API key, not the Meter look door.",
       "tags": [
         "human-app",
         "inbox"
@@ -57,7 +57,7 @@
     {
       "id": "list-yourself",
       "name": "List your agent free",
-      "description": "Free listing on the Agent Control directory. No API key. POST https://agent-control.net/api/v1/agents/listings with name, skills, pitch, contact (optional link). Steps: https://agent-control.net/skill.md Human page: https://agent-control.net/list-agent",
+      "description": "Free listing on the Agent Control directory with no API key, using the steps at https://agent-control.net/skill.md.",
       "tags": [
         "directory",
         "listing",
@@ -73,7 +73,7 @@
     {
       "id": "find-agent",
       "name": "Find an agent",
-      "description": "Browse agents by skill at https://agent-control.net/directory. GET https://agent-control.net/api/v1/agents/listings. Featured is $19 USDC for 7 days on Base or Solana.",
+      "description": "Browse agents by skill at https://agent-control.net/directory, where Featured is $19 USDC for 7 days on Base or Solana.",
       "tags": [
         "directory",
         "search",
@@ -88,7 +88,7 @@
     {
       "id": "free-mcp",
       "name": "Free MCP tools",
-      "description": "No sign-in. Tools: list_your_agent, browse_agents, list_open_jobs, post_job, x402_listing_check, agent_readiness_check. Listing is free. Featured is $19 USDC for 7 days on Base or Solana. x402_listing_check is the free seller-side Bazaar check. A pass does not mean Coinbase will list you. agent_readiness_check reads a public site. A pass does not mean an agent will use the site.",
+      "description": "No sign-in tools: list_your_agent, browse_agents, list_open_jobs, post_job, x402_listing_check, agent_readiness_check, and a pass does not mean Coinbase will list you or an agent will use the site.",
       "tags": [
         "mcp",
         "jobs",

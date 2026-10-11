@@ -163,7 +163,7 @@ describe("agents discovery crawler surfaces", () => {
     assert.match(robots, /Allow: \/agents\.txt/);
     assert.match(robots, /Allow: \/agents\.json/);
     assert.match(robots, /Allow: \/llms\.txt/);
-    assert.doesNotMatch(robots, /\/meter/);
+    assert.doesNotMatch(robots, /(?:Allow|Disallow):\s+\/meter(?:\/|\s|$)/);
     assert.doesNotMatch(robots, /Agents-Txt:/);
 
     assert.match(sitemap, /<loc>https:\/\/agent-control\.net\/agents\.txt<\/loc>/);
@@ -191,18 +191,27 @@ describe("agents discovery crawler surfaces", () => {
     assert.equal(robotsAllows(robots, "/api/v1/agents/listings"), true);
     assert.equal(robotsAllows(robots, "/api/v1/mcp"), true);
     assert.equal(robotsAllows(robots, "/api/v1/agents/listings/featured"), false);
-    assert.equal(robotsAllows(robots, "/api/v1/meter/pricing"), false);
-    assert.equal(robotsAllows(robots, "/api/v1/meter/pass"), false);
+    assert.equal(robotsAllows(robots, "/api/v1/meter/pricing"), true);
+    assert.equal(robotsAllows(robots, "/api/v1/meter/pass"), true);
+    assert.equal(robotsAllows(robots, "/api/v1/meter/scan"), true);
+    assert.equal(robotsAllows(robots, "/api/v1/meter/watch"), true);
+    assert.equal(robotsAllows(robots, "/api/v1/meter/preflight"), true);
+    assert.equal(robotsAllows(robots, "/api/v1/meter/stamp"), true);
+    assert.equal(robotsAllows(robots, "/api/v1/gate/demo"), true);
+    assert.equal(robotsAllows(robots, "/api/v1/storefront/pricing"), true);
+    assert.equal(robotsAllows(robots, "/api/v1/audit/pricing"), true);
     assert.equal(robotsAllows(robots, "/api/v1/billing/checkout"), false);
     assert.equal(robotsAllows(robots, "/api/v1/check"), false);
     assert.equal(robotsAllows(robots, "/api/v1/check_action"), false);
     assert.equal(robotsAllows(robots, "/api/v1/internal/stats"), false);
-    assert.equal(robotsAllows(robots, "/api/v1/storefront/pricing"), false);
     assert.equal(robotsAllows(robots, "/api/auth/callback"), false);
     assert.equal(robotsAllows(robots, "/api/v1/hire"), false);
-    assert.equal(robotsAllows(robots, "/api/v1/audit/pricing"), false);
+    assert.equal(robotsAllows(robots, "/api/v1/audit/invoice"), false);
+    assert.equal(robotsAllows(robots, "/api/v1/storefront/trial"), false);
+    assert.equal(robotsAllows(robots, "/api/v1/storefront/status"), false);
+    assert.equal(robotsAllows(robots, "/api/v1/x402-check/report"), false);
+    assert.equal(robotsAllows(robots, "/api/v1/agent-check/report"), false);
     assert.equal(robotsAllows(robots, "/api/v1/approvals/abc"), false);
-    assert.equal(robotsAllows(robots, "/api/v1/gate/demo"), false);
     assert.equal(robotsAllows(robots, "/exchange"), true);
 
     assert.match(vercel, /"source": "\/agents\.txt"/);

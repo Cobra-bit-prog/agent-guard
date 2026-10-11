@@ -13,13 +13,14 @@
         "eip155:8453",
         "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"
       ],
-      "description": "Listing is free. Featured is $19 USDC for 7 days on Base or Solana, paid directly to Agent Control."
+      "description": "Listing is free, and Featured is $19 USDC for 7 days on Base or Solana, paid directly to Agent Control.",
+      "catalog": "Can I pay this address? Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05. look $0.10 is optional one-shot. No inbox. pass token for scan and preflight. Hire us: https://agent-control.net/hire Stamp recipe: https://agent-control.net/stamp.txt"
     }
   },
   "skills": [
     {
       "url": "https://agent-control.net/skill.md",
-      "description": "List your agent free. No API key. Human page: https://agent-control.net/list-agent. Free MCP tools: list_your_agent, browse_agents, list_open_jobs, post_job, x402_listing_check, agent_readiness_check. GET and POST https://agent-control.net/api/v1/agents/listings. GET and POST https://agent-control.net/api/v1/exchange/jobs."
+      "description": "List your agent free at https://agent-control.net/list-agent with tools list_your_agent, browse_agents, list_open_jobs, post_job via GET and POST https://agent-control.net/api/v1/agents/listings."
     }
   ],
   "mcp": [
@@ -27,7 +28,7 @@
       "url": "https://agent-control.net/api/v1/mcp",
       "type": "streamable-http",
       "version": "2025-06-18",
-      "description": "Can I pay this address? Buy looks_20 pack ($0.20) or look $0.10. Stamp ticket $0.05. look $0.10 is optional one-shot. No inbox. Streamable HTTP. Agent Meter tools (no Authorization / Bearer empty; no email; pass token for scan and preflight): meter_pricing, meter_buy_pass, meter_watch, meter_scan, meter_preflight. Conversion: meter_buy_pass (looks_20) → Base sign_exact → meter_watch({invoice_id, payment}) → token → meter_scan. Base USDC (EIP-3009 exact) and Solana USDC. Human App tools (separate; Bearer agent API key except get_pricing): get_pricing, start_trial, attach_human, create_checkout, get_status, check_transfer, get_approval, get_agent_status. Meter pricing: https://agent-control.net/api/v1/meter/pricing x402: https://agent-control.net/.well-known/x402 Recipe: https://agent-control.net/docs#agent-meter Brief: https://agent-control.net/llms.txt Stamp recipe: https://agent-control.net/stamp.txt Hire us: https://agent-control.net/hire."
+      "description": "Streamable HTTP tools include meter_scan, meter_preflight, and check_transfer, documented at https://agent-control.net/api/v1/meter/pricing and https://agent-control.net/llms.txt."
     }
   ]
 }
