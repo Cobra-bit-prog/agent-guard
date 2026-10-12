@@ -4,6 +4,7 @@ Allow: /directory
 Allow: /list-agent
 Allow: /skill.md
 Allow: /hire
+Allow: /ship
 Allow: /.well-known/agents.json
 Allow: /llms.txt
 Allow: /stamp.txt
@@ -40,6 +41,7 @@ Disallow: /api/v1/agent-check/report
 # Featured checkout stays closed to crawlers. skill.md still shows a paying agent how to call it.
 Disallow: /api/v1/billing/checkout
 Disallow: /api/v1/hire
+Disallow: /api/v1/ship
 Disallow: /api/v1/check_action
 Disallow: /api/v1/check
 Disallow: /api/v1/audit/invoice

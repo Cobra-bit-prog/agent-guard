@@ -4,6 +4,7 @@ import {
   isHirePackageId,
   type HirePackageId,
 } from "./packages.ts";
+import { isShipPackageId, type ShipPackageId } from "../ship/packages.ts";
 import type { HireMail, HireMailKind } from "./notify.ts";
 import { customerHireMail, supportHireMail } from "./notify.ts";
 import { sessionMatchesOrder, type HireCheckoutSession } from "./checkout.ts";
@@ -31,7 +32,7 @@ export type HireOrderStatus = "requested" | "checkout" | "paid";
 
 export type HireOrder = {
   id: string;
-  package_id: HirePackageId;
+  package_id: HirePackageId | ShipPackageId;
   package_name: string;
   amount_usd: number;
   name: string;
@@ -106,7 +107,9 @@ function asStatus(value: string): HireOrderStatus {
 }
 
 function mapOrder(row: HireRow): HireOrder {
-  if (!isHirePackageId(row.package_id)) throw new HireError("Unknown package", 500);
+  if (!isHirePackageId(row.package_id) && !isShipPackageId(row.package_id)) {
+    throw new HireError("Unknown package", 500);
+  }
   const amount = Number(row.amount_usd);
   if (!Number.isInteger(amount)) throw new HireError("Price must stay a whole dollar amount", 500);
   return {

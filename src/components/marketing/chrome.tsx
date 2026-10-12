@@ -220,6 +220,9 @@ export function MarketingFooter({ tagline }: { tagline?: string }) {
           <a href="/hire" className="text-muted hover:text-fg">
             Hire us
           </a>
+          <a href="/ship" className="text-muted hover:text-fg">
+            Ship to paid
+          </a>
           <a href="/llms.txt" className="text-muted hover:text-fg">
             llms.txt
           </a>

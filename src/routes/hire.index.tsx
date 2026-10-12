@@ -153,7 +153,11 @@ function HirePage() {
           <a href="/agent-check" className="text-fg underline">
             Run the agent-readiness check
           </a>
-          .
+          . Need the endpoint itself made ready?{" "}
+          <a href="/ship" className="text-fg underline">
+            Ship to paid
+          </a>
+          . Fix is $149. Launch is $399.
         </p>
 
         <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

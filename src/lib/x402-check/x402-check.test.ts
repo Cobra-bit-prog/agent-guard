@@ -775,9 +775,34 @@ describe("free and paid report", () => {
       NOW,
     );
     assert.equal(free.status, 200);
-    const freeBody = (await free.json()) as { checks: CheckRow[]; next: { hire: { href: string } } };
+    const freeBody = (await free.json()) as {
+      checks: CheckRow[];
+      next: { hire: { href: string }; ship?: { href: string } };
+    };
     assert.equal(freeBody.checks.length, 2);
     assert.equal(freeBody.next.hire.href, "/hire");
+    assert.equal(freeBody.next.ship, undefined);
+
+    const failed = await handleX402CheckRequest(
+      post("/api/v1/x402-check", { url: URL }, "203.0.113.77"),
+      sql,
+      {
+        runFree: async () => ({
+          ...fullReport(),
+          failed: 1,
+          checks: [{ id: "v2_fields", title: "x402 version 2 fields", status: "fail", detail: "missing" }],
+        }),
+      },
+      NOW,
+    );
+    assert.equal(failed.status, 200);
+    const failedBody = (await failed.json()) as {
+      next: { ship?: { href: string; line: string; fix_usd: number; launch_usd: number } };
+    };
+    assert.equal(failedBody.next.ship?.href, "/ship");
+    assert.equal(failedBody.next.ship?.line, "Ship to paid");
+    assert.equal(failedBody.next.ship?.fix_usd, 149);
+    assert.equal(failedBody.next.ship?.launch_usd, 399);
 
     const started = await handleX402ReportRequest(
       post("/api/v1/x402-check/report", { url: URL, pay_to: "not-our-wallet", amount_usd: 49 }),

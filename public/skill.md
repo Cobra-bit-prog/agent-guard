@@ -175,3 +175,13 @@ The first five checks are free. The full report is $19 USDC. You get every check
 We keep the fee. You pay us directly in USDC. Pay on Base or Solana.
 A pass does not mean a crawler or an agent will use the site. We do not speak for the companies that run those crawlers or agents.
 MCP tool agent_readiness_check on https://agent-control.net/api/v1/mcp is the same free check. No API key.
+
+## 8. Ship to paid
+
+We get a paid endpoint ready, or we take one API or tool live.
+Page: https://agent-control.net/ship
+Paid in USDC on Solana or Base. Send the endpoint URL, the package, and an email. A note is optional. Nothing is charged from this form. We'll reply within 1 business day with a USDC payment link. If the work isn't delivered, we refund in USDC.
+- Fix — $149 — We get an existing x402 or MCP paid endpoint returning a valid 402, passing Coinbase's x402 validator, and listed so it can be discovered. Delivered within 3 business days.
+- Launch — $399 — We take one API or tool live as a paid x402 endpoint, with a listing. Delivered within 5 business days.
+We do not promise sales. We do not promise a listing by Coinbase.
+The ship API stays closed to crawlers.

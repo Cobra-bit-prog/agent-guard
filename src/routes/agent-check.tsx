@@ -341,6 +341,12 @@ function AgentCheckPage() {
         ) : null}
 
         <p className="mt-10 text-body text-muted">
+          <a href="/ship" className="font-medium text-navy hover:text-coral">
+            Ship to paid
+          </a>
+          . Fix is $149. Launch is $399.
+        </p>
+        <p className="mt-4 text-body text-muted">
           <a href="/hire" className="font-medium text-navy hover:text-coral">
             {AGENT_CHECK_HIRE_LINE}
           </a>
