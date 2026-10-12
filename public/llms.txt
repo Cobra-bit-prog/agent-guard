@@ -214,7 +214,7 @@ Listing is free. Featured pins it for 7 days for $19 USDC (Base or Solana).
 
 ## x402 listing check
 Why an endpoint can miss Coinbase's Bazaar: https://agent-control.net/x402-check
-The free five are the 402 reply, the Bazaar extension, https on resource.url, a description over 500 characters, and whether the example input returns 400 or 409. Version fields, query string and trailing slash, payTo, and external schema $ref or $id are on the $19 report. POST /api/v1/x402-check with url or pay_to.
+The free check covers the 402 reply, https on resource.url, the Bazaar extension, fields Coinbase may drop (description, name, tags, and icon), an example that returns 400 or 409, and a schema $ref or $id that points outside the document. Also run Coinbase's free validator first: POST https://api.cdp.coinbase.com/platform/v2/x402/validate. Version fields, query string, trailing slash, and payTo are on the $19 report. POST /api/v1/x402-check with url or pay_to.
 The full report is $19 USDC. You get every check, a copy-paste fix, and one free re-check within 7 days. Start it on https://agent-control.net/x402-check. The report route stays closed to crawlers.
 We keep the fee. You pay us directly in USDC. Pay on Base or Solana.
 Some misses are on Coinbase's side. A pass does not mean Coinbase will list you. We do not speak for Coinbase.

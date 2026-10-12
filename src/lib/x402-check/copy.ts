@@ -14,9 +14,12 @@ export const X402_CHECK_REPORT_PATH = "/api/v1/x402-check/report";
 
 export const X402_CHECK_LINE =
   "Full report is $19. You get every check, a copy-paste fix, and one free re-check within 7 days.";
-/** Free stays at five. Version fields, query string, trailing slash, and payTo moved to the paid report. */
+/** Coinbase publishes this validator. We are not the only checker. */
+export const X402_CHECK_VALIDATOR_LINE =
+  "Also run Coinbase's free validator first: POST https://api.cdp.coinbase.com/platform/v2/x402/validate. This check is not the only one.";
+/** Version fields, query string, trailing slash, and payTo stay on the paid report. */
 export const X402_CHECK_FREE_LINE =
-  "The free five are the 402 reply, the Bazaar extension, https on resource.url, a description over 500 characters, and whether the example input returns 400 or 409. Version fields, query string and trailing slash, payTo, and external schema $ref or $id are on the $19 report.";
+  "The free check covers the 402 reply, https on resource.url, the Bazaar extension, fields Coinbase may drop (description, name, tags, and icon), an example that returns 400 or 409, and a schema $ref or $id that points outside the document. Version fields, query string, trailing slash, and payTo are on the $19 report. Also run Coinbase's free validator first: POST https://api.cdp.coinbase.com/platform/v2/x402/validate. This check is not the only one.";
 export const X402_CHECK_HONESTY = "We keep the fee. You pay us directly in USDC.";
 export const X402_CHECK_PAY_LINE = "Pay on Base or Solana.";
 export const X402_CHECK_CAVEAT =

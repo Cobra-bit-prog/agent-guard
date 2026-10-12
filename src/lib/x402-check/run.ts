@@ -1,9 +1,9 @@
 import type { ListingQuery } from "../directory/listings.ts";
-import { X402_CHECK_CAVEAT } from "./copy.ts";
+import { X402_CHECK_CAVEAT, X402_CHECK_VALIDATOR_LINE } from "./copy.ts";
 import {
   absentCheck,
   checkBazaar,
-  checkDescription,
+  checkDroppedFields,
   checkExample,
   checkMerchant,
   checkPresence,
@@ -51,6 +51,10 @@ export type X402Report = {
   unchecked: number;
   not_applicable: number;
   caveat: string;
+  /** Plain-language score. Omitted the word "failed" when nothing failed. */
+  summary: string;
+  /** Coinbase's own free validator. We are not the only checker. */
+  validator: string;
   fetched: { status: number; final_url: string; content_type: string } | null;
 };
 
@@ -109,11 +113,21 @@ function methodOf(payment: unknown): string {
   return typeof method === "string" && method ? method : "GET";
 }
 
-function stripFix(checks: CheckRow[]): CheckRow[] {
-  return checks.map((check) => {
-    const { fix: _fix, ...rest } = check;
-    return rest;
-  });
+function summaryOf(checks: CheckRow[]): string {
+  const failed = checks.filter((check) => check.status === "fail").length;
+  const passed = checks.filter((check) => check.status === "pass").length;
+  const only = checks.length === 1 ? checks[0] : undefined;
+  if (only?.id === "not_402") return only.detail;
+  if (failed === 0 && passed === 0) return "Could not check — paste the endpoint URL.";
+  const parts = [`${passed} passed`];
+  if (failed > 0) parts.push(`${failed} failed`);
+  const warned = checks.filter((check) => check.status === "warn").length;
+  const unchecked = checks.filter((check) => check.status === "unchecked").length;
+  const notApplicable = checks.filter((check) => check.status === "na").length;
+  if (warned) parts.push(`${warned} to check`);
+  if (unchecked) parts.push(`${unchecked} could not check`);
+  if (notApplicable) parts.push(`${notApplicable} not applicable`);
+  return `${parts.join(", ")}.`;
 }
 
 function absenceOf(probe: EndpointProbe | null): CheckAbsence | null {
@@ -175,7 +189,7 @@ async function localChecks(
       reply,
       absentCheck("resource_https", "resource.url https", why),
       absentCheck("bazaar", "Bazaar extension", why),
-      absentCheck("description_length", "Description length", why),
+      absentCheck("dropped_fields", "Fields Coinbase may drop", why),
       absentCheck("example_input", "Example input", why),
       absentCheck("v2_fields", "x402 version 2 fields", why),
       absentCheck("resource_url", "Resource URL", why),
@@ -187,7 +201,7 @@ async function localChecks(
     reply,
     checkResourceHttps(payment),
     checkBazaar(payment),
-    checkDescription(payment),
+    checkDroppedFields(payment),
     await exampleRow(payment, target, probe, deps),
     checkV2Fields(payment),
     checkResourceUrl(payment, target.url),
@@ -209,10 +223,12 @@ export async function runListingCheck(target: CheckTarget, tier: "free" | "full"
     probe = await probeEndpoint(target.url, { lookup: deps.lookup, transport: deps.transport });
   }
   const payment = probe?.payment ?? null;
-  const free = await localChecks(payment, target, probe, deps);
+  const fetched = probe
+    ? { status: probe.status, final_url: probe.finalUrl, content_type: probe.contentType }
+    : null;
 
-  if (tier === "free") {
-    const checks = stripFix(free.filter((check) => (FREE_CHECK_IDS as readonly string[]).includes(check.id)));
+  if (probe && probe.status !== 402) {
+    const checks = [checkReplyShape(probe)];
     return {
       product: "x402_listing_check",
       tier,
@@ -220,9 +236,26 @@ export async function runListingCheck(target: CheckTarget, tier: "free" | "full"
       checks,
       ...counts(checks),
       caveat: X402_CHECK_CAVEAT,
-      fetched: probe
-        ? { status: probe.status, final_url: probe.finalUrl, content_type: probe.contentType }
-        : null,
+      summary: summaryOf(checks),
+      validator: X402_CHECK_VALIDATOR_LINE,
+      fetched,
+    };
+  }
+
+  const free = await localChecks(payment, target, probe, deps);
+
+  if (tier === "free") {
+    const checks = free.filter((check) => (FREE_CHECK_IDS as readonly string[]).includes(check.id));
+    return {
+      product: "x402_listing_check",
+      tier,
+      input: inputOf(target),
+      checks,
+      ...counts(checks),
+      caveat: X402_CHECK_CAVEAT,
+      summary: summaryOf(checks),
+      validator: X402_CHECK_VALIDATOR_LINE,
+      fetched,
     };
   }
 
@@ -260,8 +293,8 @@ export async function runListingCheck(target: CheckTarget, tier: "free" | "full"
     checks,
     ...counts(checks),
     caveat: X402_CHECK_CAVEAT,
-    fetched: probe
-      ? { status: probe.status, final_url: probe.finalUrl, content_type: probe.contentType }
-      : null,
+    summary: summaryOf(checks),
+    validator: X402_CHECK_VALIDATOR_LINE,
+    fetched,
   };
 }

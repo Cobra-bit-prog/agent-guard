@@ -309,6 +309,7 @@ export async function probeEndpoint(
   const start = parsePublicHttpsUrl(rawUrl);
   const getResult = await oneHop(start, { method: "GET" }, lookup, transport);
   if (getResult.hop.status === 402) return finishProbe(getResult, "GET", "payment");
+  if (isMcpHop(getResult.finalUrl, getResult.hop)) return finishProbe(getResult, "GET", "mcp");
   const postResult = await oneHop(getResult.finalUrl, { method: "POST", body: "{}" }, lookup, transport);
   if (postResult.hop.status === 402) return finishProbe(postResult, "POST", "payment");
   if (isMcpHop(getResult.finalUrl, getResult.hop)) return finishProbe(getResult, "GET", "mcp");
