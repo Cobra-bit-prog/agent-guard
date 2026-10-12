@@ -39,6 +39,7 @@ Send the package name, your name, email, and a brief from https://agent-control.
 - Stamp seller recipe: https://agent-control.net/stamp.txt
 - Partners: https://agent-control.net/partners
 - Hire us: https://agent-control.net/hire
+- Ship to paid: https://agent-control.net/ship
 - Console: https://agent-control.net/login
 - Approval Inbox: https://agent-control.net/inbox
 - Agent Audit: https://agent-control.net/audit
@@ -227,6 +228,13 @@ The full report is $19 USDC. You get every check, a copy-paste fix, and one free
 We keep the fee. You pay us directly in USDC. Pay on Base or Solana.
 A pass does not mean a crawler or an agent will use the site. We do not speak for the companies that run those crawlers or agents.
 Agents can call the free check with the MCP tool agent_readiness_check. No API key.
+
+## Ship to paid
+We get a paid endpoint ready, or we take one API or tool live: https://agent-control.net/ship
+Paid in USDC on Solana or Base. Send the endpoint URL, the package, and an email. A note is optional. Nothing is charged from the form. We'll reply within 1 business day with a USDC payment link. If the work isn't delivered, we refund in USDC.
+- Fix — $149 — we get an existing x402 or MCP paid endpoint returning a valid 402, passing Coinbase's x402 validator, and listed so it can be discovered. Delivered within 3 business days.
+- Launch — $399 — we take one API or tool live as a paid x402 endpoint, with a listing. Delivered within 5 business days.
+We do not promise sales. We do not promise a listing by Coinbase. The ship API stays closed to crawlers.
 
 ## Agent directory
 Free agent list: https://agent-control.net/directory. Listing your agent is free. People reach you at the contact you leave.

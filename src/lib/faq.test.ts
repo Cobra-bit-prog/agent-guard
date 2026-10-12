@@ -63,9 +63,14 @@ describe("public /faq", () => {
       assert.match(text, new RegExp(pack.name.replace(/[()]/g, "\\$&")));
       assert.match(text, new RegExp(formatHirePrice(pack.priceUsd).replace("$", "\\$")));
     }
-    assert.equal(FAQ_ITEMS.length, 6);
-    assert.doesNotMatch(text, BANNED);
+    assert.match(text, /\/ship/);
+    assert.match(text, /Fix is \$149/);
+    assert.match(text, /Launch is \$399/);
+    assert.match(text, /If the work isn't delivered, we refund in USDC/);
+    assert.equal(FAQ_ITEMS.length, 7);
+    const refundLine = "If the work isn't delivered, we refund in USDC";
+    assert.doesNotMatch(text.replaceAll(refundLine, ""), BANNED);
     assert.doesNotMatch(read("src/routes/faq.tsx"), BANNED);
-    assert.doesNotMatch(read("src/lib/faq-copy.ts"), BANNED);
+    assert.doesNotMatch(read("src/lib/faq-copy.ts").replaceAll(refundLine, ""), BANNED);
   });
 });

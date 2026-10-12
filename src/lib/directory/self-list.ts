@@ -21,6 +21,7 @@ import {
   usdcBaseUnits,
 } from "../solana-pay.ts";
 import { ACTION_GATE_HREF } from "../shop-shield.ts";
+import { SHIP_SKILL_SECTION } from "../ship/packages.ts";
 import { OTHER_AGENT_APPS_MARKDOWN } from "../other-agent-apps.ts";
 import {
   FEATURED_DAYS,
@@ -376,4 +377,4 @@ The first five checks are free. The full report is $19 USDC. You get every check
 We keep the fee. You pay us directly in USDC. Pay on Base or Solana.
 A pass does not mean a crawler or an agent will use the site. We do not speak for the companies that run those crawlers or agents.
 MCP tool agent_readiness_check on https://agent-control.net/api/v1/mcp is the same free check. No API key.
-`;
+${SHIP_SKILL_SECTION}`;

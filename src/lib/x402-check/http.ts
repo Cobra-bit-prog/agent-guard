@@ -21,6 +21,7 @@ import {
 } from "../meter/x402-evm.ts";
 import { PAY_EXPIRY_MS, SOLANA_PAYOUT_ADDRESS, USDC_MINT, buildSolanaPayUrl, lockedSolanaUsdcRecipient } from "../solana-pay.ts";
 import { json } from "../server/http.ts";
+import { shipPackage } from "../ship/packages.ts";
 import {
   X402_CHECK_DAYS,
   X402_CHECK_HONESTY,
@@ -349,6 +350,16 @@ export async function handleX402CheckRequest(
         directory: { line: "List in the directory, free.", href: "/directory" },
         featured: { line: "Feature a listing for $19.", href: "/directory#featured" },
         report: { post: X402_CHECK_REPORT_PATH, price_usd: X402_CHECK_PRICE_USD, days: X402_CHECK_DAYS },
+        ...(report.failed > 0
+          ? {
+              ship: {
+                line: "Ship to paid",
+                href: "/ship",
+                fix_usd: shipPackage("fix")?.priceUsd,
+                launch_usd: shipPackage("launch")?.priceUsd,
+              },
+            }
+          : {}),
       },
     });
   } catch (err) {

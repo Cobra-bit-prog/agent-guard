@@ -87,7 +87,16 @@ describe("self-list skill", () => {
     assert.match(SKILL_MD, /Contact does not match this listing\./);
     assert.match(SKILL_MD, /This payment window closed\. Start again\./);
     assert.match(SKILL_MD, /The payment was short of \$19 USDC/);
-    assert.doesNotMatch(SKILL_MD, BANNED);
+    const shipAt = SKILL_MD.indexOf("## 8. Ship to paid");
+    assert.ok(shipAt > 0);
+    assert.doesNotMatch(SKILL_MD.slice(0, shipAt), BANNED);
+    assert.match(SKILL_MD.slice(shipAt), /If the work isn't delivered, we refund in USDC/);
+    assert.match(SKILL_MD.slice(shipAt), /Fix — \$149/);
+    assert.match(SKILL_MD.slice(shipAt), /Launch — \$399/);
+    assert.doesNotMatch(
+      SKILL_MD.slice(shipAt),
+      /escrow|keep 10%|pay only when|\bhold\b|\bHOLD\b|honeypot|company_website/i,
+    );
     assert.doesNotMatch(AGENT_PROMPT, BANNED);
     const listed = listingsPayload({ listings: [{ id: "agent_x" }] });
     assert.equal(listed.self_list.skill_md, SKILL_MD_URL);

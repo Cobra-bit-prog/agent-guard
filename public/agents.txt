@@ -9,6 +9,8 @@
 # Give this to your agent: https://agent-control.net/list-agent
 # Fetch and follow: https://agent-control.net/skill.md
 # Hire us (services we do, not the job board): https://agent-control.net/hire
+# Ship to paid (Fix $149, Launch $399): https://agent-control.net/ship
+# If the work isn't delivered, we refund in USDC.
 #
 # Agent Control — two products. Do not collapse them.
 #

@@ -15,7 +15,7 @@ import {
   isUndefinedHireTable,
   submitHireOrder,
 } from "./orders.ts";
-import { HIRE_PACKAGES, formatHirePrice } from "./packages.ts";
+import { HIRE_PACKAGES, formatHirePrice, isHirePackageId } from "./packages.ts";
 
 async function sendMail(mail: HireMail): Promise<void> {
   await deliverHireMail(mail);
@@ -50,15 +50,17 @@ export async function postHireOrder(request: Request): Promise<Response> {
       now: new Date(),
       ipHash: hashHireIp(clientIp(request.headers)),
       card: hireCardConfigured(),
-      startCheckout: (order) =>
-        createHireCheckoutSession({
+      startCheckout: (order) => {
+        if (!isHirePackageId(order.package_id)) throw new HireError("Pick a package");
+        return createHireCheckoutSession({
           orderId: order.id,
           packageId: order.package_id,
           packageName: order.package_name,
           amountUsd: order.amount_usd,
           email: order.email,
           origin: originFromRequest(request),
-        }),
+        });
+      },
       sendMail,
     });
     return json(result, 201);

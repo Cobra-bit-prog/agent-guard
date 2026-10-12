@@ -23,6 +23,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as LogosRouteImport } from './routes/logos'
 import { Route as PartnersRouteImport } from './routes/partners'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as ShipRouteImport } from './routes/ship'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as SpendAuditRouteImport } from './routes/spend-audit'
 import { Route as StampRouteImport } from './routes/stamp'
@@ -43,6 +44,8 @@ import { Route as MeterPayRouteImport } from './routes/meter.pay'
 import { Route as OauthAuthorizeRouteImport } from './routes/oauth/authorize'
 import { Route as OauthRegisterRouteImport } from './routes/oauth/register'
 import { Route as OauthTokenRouteImport } from './routes/oauth/token'
+import { Route as ShipIndexRouteImport } from './routes/ship.index'
+import { Route as ShipThanksRouteImport } from './routes/ship.thanks'
 import { Route as SpendAuditIndexRouteImport } from './routes/spend-audit.index'
 import { Route as SpendAuditPayRouteImport } from './routes/spend-audit.pay'
 import { Route as AppAgentsIndexRouteImport } from './routes/_app/agents.index'
@@ -55,6 +58,7 @@ import { Route as ApiV1CheckRouteImport } from './routes/api/v1/check'
 import { Route as ApiV1Check_actionRouteImport } from './routes/api/v1/check_action'
 import { Route as ApiV1HireRouteImport } from './routes/api/v1/hire'
 import { Route as ApiV1McpRouteImport } from './routes/api/v1/mcp'
+import { Route as ApiV1ShipRouteImport } from './routes/api/v1/ship'
 import { Route as ApiV1ShopRouteImport } from './routes/api/v1/shop'
 import { Route as ApiV1X402CheckRouteImport } from './routes/api/v1/x402-check'
 import { Route as ApiV1AgentCheckReportRouteImport } from './routes/api/v1/agent-check.report'
@@ -153,6 +157,11 @@ const PartnersRoute = PartnersRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShipRoute = ShipRouteImport.update({
+  id: '/ship',
+  path: '/ship',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignupRoute = SignupRouteImport.update({
@@ -255,6 +264,16 @@ const OauthTokenRoute = OauthTokenRouteImport.update({
   path: '/oauth/token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ShipIndexRoute = ShipIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ShipRoute,
+} as any)
+const ShipThanksRoute = ShipThanksRouteImport.update({
+  id: '/thanks',
+  path: '/thanks',
+  getParentRoute: () => ShipRoute,
+} as any)
 const SpendAuditIndexRoute = SpendAuditIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -313,6 +332,11 @@ const ApiV1HireRoute = ApiV1HireRouteImport.update({
 const ApiV1McpRoute = ApiV1McpRouteImport.update({
   id: '/api/v1/mcp',
   path: '/api/v1/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1ShipRoute = ApiV1ShipRouteImport.update({
+  id: '/api/v1/ship',
+  path: '/api/v1/ship',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiV1ShopRoute = ApiV1ShopRouteImport.update({
@@ -482,6 +506,7 @@ export interface FileRoutesByFullPath {
   '/logos': typeof LogosRoute
   '/partners': typeof PartnersRoute
   '/privacy': typeof PrivacyRoute
+  '/ship': typeof ShipRouteWithChildren
   '/signup': typeof SignupRoute
   '/spend-audit': typeof SpendAuditRouteWithChildren
   '/stamp': typeof StampRoute
@@ -501,8 +526,10 @@ export interface FileRoutesByFullPath {
   '/oauth/authorize': typeof OauthAuthorizeRoute
   '/oauth/register': typeof OauthRegisterRoute
   '/oauth/token': typeof OauthTokenRoute
+  '/ship/thanks': typeof ShipThanksRoute
   '/spend-audit/pay': typeof SpendAuditPayRoute
   '/hire/': typeof HireIndexRoute
+  '/ship/': typeof ShipIndexRoute
   '/spend-audit/': typeof SpendAuditIndexRoute
   '/agents/$id': typeof AppAgentsIdRoute
   '/billing/pay': typeof AppBillingPayRoute
@@ -512,6 +539,7 @@ export interface FileRoutesByFullPath {
   '/api/v1/check_action': typeof ApiV1Check_actionRoute
   '/api/v1/hire': typeof ApiV1HireRouteWithChildren
   '/api/v1/mcp': typeof ApiV1McpRoute
+  '/api/v1/ship': typeof ApiV1ShipRoute
   '/api/v1/shop': typeof ApiV1ShopRoute
   '/api/v1/x402-check': typeof ApiV1X402CheckRouteWithChildren
   '/agents/': typeof AppAgentsIndexRoute
@@ -574,8 +602,10 @@ export interface FileRoutesByTo {
   '/oauth/authorize': typeof OauthAuthorizeRoute
   '/oauth/register': typeof OauthRegisterRoute
   '/oauth/token': typeof OauthTokenRoute
+  '/ship/thanks': typeof ShipThanksRoute
   '/spend-audit/pay': typeof SpendAuditPayRoute
   '/hire': typeof HireIndexRoute
+  '/ship': typeof ShipIndexRoute
   '/spend-audit': typeof SpendAuditIndexRoute
   '/agents/$id': typeof AppAgentsIdRoute
   '/billing/pay': typeof AppBillingPayRoute
@@ -585,6 +615,7 @@ export interface FileRoutesByTo {
   '/api/v1/check_action': typeof ApiV1Check_actionRoute
   '/api/v1/hire': typeof ApiV1HireRouteWithChildren
   '/api/v1/mcp': typeof ApiV1McpRoute
+  '/api/v1/ship': typeof ApiV1ShipRoute
   '/api/v1/shop': typeof ApiV1ShopRoute
   '/api/v1/x402-check': typeof ApiV1X402CheckRouteWithChildren
   '/agents': typeof AppAgentsIndexRoute
@@ -634,6 +665,7 @@ export interface FileRoutesById {
   '/logos': typeof LogosRoute
   '/partners': typeof PartnersRoute
   '/privacy': typeof PrivacyRoute
+  '/ship': typeof ShipRouteWithChildren
   '/signup': typeof SignupRoute
   '/spend-audit': typeof SpendAuditRouteWithChildren
   '/stamp': typeof StampRoute
@@ -653,8 +685,10 @@ export interface FileRoutesById {
   '/oauth/authorize': typeof OauthAuthorizeRoute
   '/oauth/register': typeof OauthRegisterRoute
   '/oauth/token': typeof OauthTokenRoute
+  '/ship/thanks': typeof ShipThanksRoute
   '/spend-audit/pay': typeof SpendAuditPayRoute
   '/hire/': typeof HireIndexRoute
+  '/ship/': typeof ShipIndexRoute
   '/spend-audit/': typeof SpendAuditIndexRoute
   '/_app/agents/$id': typeof AppAgentsIdRoute
   '/_app/billing/pay': typeof AppBillingPayRoute
@@ -664,6 +698,7 @@ export interface FileRoutesById {
   '/api/v1/check_action': typeof ApiV1Check_actionRoute
   '/api/v1/hire': typeof ApiV1HireRouteWithChildren
   '/api/v1/mcp': typeof ApiV1McpRoute
+  '/api/v1/ship': typeof ApiV1ShipRoute
   '/api/v1/shop': typeof ApiV1ShopRoute
   '/api/v1/x402-check': typeof ApiV1X402CheckRouteWithChildren
   '/_app/agents/': typeof AppAgentsIndexRoute
@@ -713,6 +748,7 @@ export interface FileRouteTypes {
     | '/logos'
     | '/partners'
     | '/privacy'
+    | '/ship'
     | '/signup'
     | '/spend-audit'
     | '/stamp'
@@ -732,8 +768,10 @@ export interface FileRouteTypes {
     | '/oauth/authorize'
     | '/oauth/register'
     | '/oauth/token'
+    | '/ship/thanks'
     | '/spend-audit/pay'
     | '/hire/'
+    | '/ship/'
     | '/spend-audit/'
     | '/agents/$id'
     | '/billing/pay'
@@ -743,6 +781,7 @@ export interface FileRouteTypes {
     | '/api/v1/check_action'
     | '/api/v1/hire'
     | '/api/v1/mcp'
+    | '/api/v1/ship'
     | '/api/v1/shop'
     | '/api/v1/x402-check'
     | '/agents/'
@@ -805,8 +844,10 @@ export interface FileRouteTypes {
     | '/oauth/authorize'
     | '/oauth/register'
     | '/oauth/token'
+    | '/ship/thanks'
     | '/spend-audit/pay'
     | '/hire'
+    | '/ship'
     | '/spend-audit'
     | '/agents/$id'
     | '/billing/pay'
@@ -816,6 +857,7 @@ export interface FileRouteTypes {
     | '/api/v1/check_action'
     | '/api/v1/hire'
     | '/api/v1/mcp'
+    | '/api/v1/ship'
     | '/api/v1/shop'
     | '/api/v1/x402-check'
     | '/agents'
@@ -864,6 +906,7 @@ export interface FileRouteTypes {
     | '/logos'
     | '/partners'
     | '/privacy'
+    | '/ship'
     | '/signup'
     | '/spend-audit'
     | '/stamp'
@@ -883,8 +926,10 @@ export interface FileRouteTypes {
     | '/oauth/authorize'
     | '/oauth/register'
     | '/oauth/token'
+    | '/ship/thanks'
     | '/spend-audit/pay'
     | '/hire/'
+    | '/ship/'
     | '/spend-audit/'
     | '/_app/agents/$id'
     | '/_app/billing/pay'
@@ -894,6 +939,7 @@ export interface FileRouteTypes {
     | '/api/v1/check_action'
     | '/api/v1/hire'
     | '/api/v1/mcp'
+    | '/api/v1/ship'
     | '/api/v1/shop'
     | '/api/v1/x402-check'
     | '/_app/agents/'
@@ -943,6 +989,7 @@ export interface RootRouteChildren {
   LogosRoute: typeof LogosRoute
   PartnersRoute: typeof PartnersRoute
   PrivacyRoute: typeof PrivacyRoute
+  ShipRoute: typeof ShipRouteWithChildren
   SignupRoute: typeof SignupRoute
   SpendAuditRoute: typeof SpendAuditRouteWithChildren
   StampRoute: typeof StampRoute
@@ -959,6 +1006,7 @@ export interface RootRouteChildren {
   ApiV1Check_actionRoute: typeof ApiV1Check_actionRoute
   ApiV1HireRoute: typeof ApiV1HireRouteWithChildren
   ApiV1McpRoute: typeof ApiV1McpRoute
+  ApiV1ShipRoute: typeof ApiV1ShipRoute
   ApiV1ShopRoute: typeof ApiV1ShopRoute
   ApiV1X402CheckRoute: typeof ApiV1X402CheckRouteWithChildren
   ApiV1AgentsListingsRoute: typeof ApiV1AgentsListingsRouteWithChildren
@@ -1084,6 +1132,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ship': {
+      id: '/ship'
+      path: '/ship'
+      fullPath: '/ship'
+      preLoaderRoute: typeof ShipRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/signup': {
@@ -1226,6 +1281,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OauthTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ship/': {
+      id: '/ship/'
+      path: '/'
+      fullPath: '/ship/'
+      preLoaderRoute: typeof ShipIndexRouteImport
+      parentRoute: typeof ShipRoute
+    }
+    '/ship/thanks': {
+      id: '/ship/thanks'
+      path: '/thanks'
+      fullPath: '/ship/thanks'
+      preLoaderRoute: typeof ShipThanksRouteImport
+      parentRoute: typeof ShipRoute
+    }
     '/spend-audit/': {
       id: '/spend-audit/'
       path: '/'
@@ -1308,6 +1377,13 @@ declare module '@tanstack/react-router' {
       path: '/api/v1/mcp'
       fullPath: '/api/v1/mcp'
       preLoaderRoute: typeof ApiV1McpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/ship': {
+      id: '/api/v1/ship'
+      path: '/api/v1/ship'
+      fullPath: '/api/v1/ship'
+      preLoaderRoute: typeof ApiV1ShipRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/v1/shop': {
@@ -1587,6 +1663,18 @@ const HireRouteChildren: HireRouteChildren = {
 
 const HireRouteWithChildren = HireRoute._addFileChildren(HireRouteChildren)
 
+interface ShipRouteChildren {
+  ShipThanksRoute: typeof ShipThanksRoute
+  ShipIndexRoute: typeof ShipIndexRoute
+}
+
+const ShipRouteChildren: ShipRouteChildren = {
+  ShipThanksRoute: ShipThanksRoute,
+  ShipIndexRoute: ShipIndexRoute,
+}
+
+const ShipRouteWithChildren = ShipRoute._addFileChildren(ShipRouteChildren)
+
 interface SpendAuditRouteChildren {
   SpendAuditPayRoute: typeof SpendAuditPayRoute
   SpendAuditIndexRoute: typeof SpendAuditIndexRoute
@@ -1674,6 +1762,7 @@ const rootRouteChildren: RootRouteChildren = {
   LogosRoute: LogosRoute,
   PartnersRoute: PartnersRoute,
   PrivacyRoute: PrivacyRoute,
+  ShipRoute: ShipRouteWithChildren,
   SignupRoute: SignupRoute,
   SpendAuditRoute: SpendAuditRouteWithChildren,
   StampRoute: StampRoute,
@@ -1690,6 +1779,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiV1Check_actionRoute: ApiV1Check_actionRoute,
   ApiV1HireRoute: ApiV1HireRouteWithChildren,
   ApiV1McpRoute: ApiV1McpRoute,
+  ApiV1ShipRoute: ApiV1ShipRoute,
   ApiV1ShopRoute: ApiV1ShopRoute,
   ApiV1X402CheckRoute: ApiV1X402CheckRouteWithChildren,
   ApiV1AgentsListingsRoute: ApiV1AgentsListingsRouteWithChildren,
@@ -1721,10 +1811,13 @@ export const routeTree = rootRouteImport
   ._addFileTypes<FileRouteTypes>()
 
 import type { getRouter } from './router.tsx'
+
 import type { createStart } from '@tanstack/react-start'
+
 declare module '@tanstack/react-start' {
   interface Register {
     ssr: true
+
     router: Awaited<ReturnType<typeof getRouter>>
   }
 }

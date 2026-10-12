@@ -75,7 +75,7 @@ type InvoiceBody = {
   recorded?: boolean;
   rechecks_left?: number;
   report_until?: string | null;
-  report?: { checks?: CheckRow[]; caveat?: string };
+  report?: { checks?: CheckRow[]; caveat?: string; failed?: number };
 };
 
 const STATUS_LABEL: Record<CheckRow["status"], string> = {
@@ -85,6 +85,23 @@ const STATUS_LABEL: Record<CheckRow["status"], string> = {
   unchecked: "Could not check",
   na: "Not applicable",
 };
+
+function checkFailed(failed: number | undefined, checks: CheckRow[] | undefined): boolean {
+  if ((failed ?? 0) > 0) return true;
+  return (checks ?? []).some((check) => check.status === "fail");
+}
+
+function ShipFailLink({ show }: { show: boolean }) {
+  if (!show) return null;
+  return (
+    <p className="mt-4 text-body text-muted">
+      <a href="/ship" className="font-medium text-navy hover:text-coral">
+        Ship to paid
+      </a>
+      . Fix is $149. Launch is $399. Nothing is charged from that form.
+    </p>
+  );
+}
 
 function CheckList({ checks }: { checks: CheckRow[] }) {
   return (
@@ -239,6 +256,7 @@ function X402CheckPage() {
             <CheckList checks={free.checks} />
             {free.validator ? <p className="mt-4 text-body text-muted">{free.validator}</p> : null}
             <p className="mt-4 text-body text-muted">{free.caveat}</p>
+            <ShipFailLink show={checkFailed(free.failed, free.checks)} />
           </section>
         ) : null}
 
@@ -342,6 +360,7 @@ function X402CheckPage() {
               Full report
             </h2>
             <CheckList checks={reportChecks} />
+            <ShipFailLink show={checkFailed(invoice?.report?.failed, reportChecks)} />
             <p className="mt-4 text-body text-muted">{invoice?.report?.caveat}</p>
           </section>
         ) : null}
