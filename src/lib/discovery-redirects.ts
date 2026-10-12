@@ -5,6 +5,9 @@
  * /pay/meter is a guessed Meter pay URL after 402 invoices; the live door is
  * /meter/pay. Preserve the query string (especially invoice_id).
  *
+ * /pay/stamp is a guessed Stamp seller URL. stamp.txt points sellers at
+ * /stamp. Preserve the query string.
+ *
  * /meter is a temporary soft bounce until the owner merges PR #43
  * (visualize). Do not implement that page here.
  *
@@ -36,6 +39,12 @@ export const DISCOVERY_REDIRECTS = [
   {
     source: "/pay/meter",
     destination: "/meter/pay",
+    status: 308,
+    permanent: true,
+  },
+  {
+    source: "/pay/stamp",
+    destination: "/stamp",
     status: 308,
     permanent: true,
   },

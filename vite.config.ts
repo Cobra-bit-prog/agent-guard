@@ -158,6 +158,7 @@ function oauthDiscoveryPlugin(): Plugin {
             pathOnly === "/docs/connect" ||
             pathOnly === "/pay" ||
             pathOnly === "/pay/meter" ||
+            pathOnly === "/pay/stamp" ||
             pathOnly === "/meter" ||
             pathOnly === "/.well-known/llms.txt" ||
             pathOnly === "/agents/skill.md" ||
