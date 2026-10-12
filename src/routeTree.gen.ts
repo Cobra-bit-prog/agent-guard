@@ -16,6 +16,7 @@ import { Route as ConnectRouteImport } from './routes/connect'
 import { Route as DirectoryRouteImport } from './routes/directory'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as ExchangeRouteImport } from './routes/exchange'
+import { Route as FaqRouteImport } from './routes/faq'
 import { Route as HireRouteImport } from './routes/hire'
 import { Route as ListAgentRouteImport } from './routes/list-agent'
 import { Route as LoginRouteImport } from './routes/login'
@@ -117,6 +118,11 @@ const DocsRoute = DocsRouteImport.update({
 const ExchangeRoute = ExchangeRouteImport.update({
   id: '/exchange',
   path: '/exchange',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FaqRoute = FaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HireRoute = HireRouteImport.update({
@@ -469,6 +475,7 @@ export interface FileRoutesByFullPath {
   '/directory': typeof DirectoryRoute
   '/docs': typeof DocsRoute
   '/exchange': typeof ExchangeRoute
+  '/faq': typeof FaqRoute
   '/hire': typeof HireRouteWithChildren
   '/list-agent': typeof ListAgentRoute
   '/login': typeof LoginRoute
@@ -545,6 +552,7 @@ export interface FileRoutesByTo {
   '/directory': typeof DirectoryRoute
   '/docs': typeof DocsRoute
   '/exchange': typeof ExchangeRoute
+  '/faq': typeof FaqRoute
   '/list-agent': typeof ListAgentRoute
   '/login': typeof LoginRoute
   '/logos': typeof LogosRoute
@@ -619,6 +627,7 @@ export interface FileRoutesById {
   '/directory': typeof DirectoryRoute
   '/docs': typeof DocsRoute
   '/exchange': typeof ExchangeRoute
+  '/faq': typeof FaqRoute
   '/hire': typeof HireRouteWithChildren
   '/list-agent': typeof ListAgentRoute
   '/login': typeof LoginRoute
@@ -697,6 +706,7 @@ export interface FileRouteTypes {
     | '/directory'
     | '/docs'
     | '/exchange'
+    | '/faq'
     | '/hire'
     | '/list-agent'
     | '/login'
@@ -773,6 +783,7 @@ export interface FileRouteTypes {
     | '/directory'
     | '/docs'
     | '/exchange'
+    | '/faq'
     | '/list-agent'
     | '/login'
     | '/logos'
@@ -846,6 +857,7 @@ export interface FileRouteTypes {
     | '/directory'
     | '/docs'
     | '/exchange'
+    | '/faq'
     | '/hire'
     | '/list-agent'
     | '/login'
@@ -924,6 +936,7 @@ export interface RootRouteChildren {
   DirectoryRoute: typeof DirectoryRoute
   DocsRoute: typeof DocsRoute
   ExchangeRoute: typeof ExchangeRoute
+  FaqRoute: typeof FaqRoute
   HireRoute: typeof HireRouteWithChildren
   ListAgentRoute: typeof ListAgentRoute
   LoginRoute: typeof LoginRoute
@@ -1022,6 +1035,13 @@ declare module '@tanstack/react-router' {
       path: '/exchange'
       fullPath: '/exchange'
       preLoaderRoute: typeof ExchangeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/faq': {
+      id: '/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof FaqRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/hire': {
@@ -1647,6 +1667,7 @@ const rootRouteChildren: RootRouteChildren = {
   DirectoryRoute: DirectoryRoute,
   DocsRoute: DocsRoute,
   ExchangeRoute: ExchangeRoute,
+  FaqRoute: FaqRoute,
   HireRoute: HireRouteWithChildren,
   ListAgentRoute: ListAgentRoute,
   LoginRoute: LoginRoute,
@@ -1698,3 +1719,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}

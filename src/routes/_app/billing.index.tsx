@@ -204,7 +204,7 @@ function BillingPage() {
         </p>
       )}
       <p className="text-center text-xs">
-        <Link to="/" hash="faq" className="text-primary underline-offset-4 hover:underline">
+        <Link to="/faq" className="text-primary underline-offset-4 hover:underline">
           Learn more about billing
         </Link>
         <span className="text-subtle"> · </span>

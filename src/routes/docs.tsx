@@ -261,6 +261,9 @@ function DocsPage() {
           <a href="/llms.txt" className="text-muted hover:text-fg">
             llms.txt
           </a>
+          <a href="/faq" className="text-muted hover:text-fg">
+            FAQ
+          </a>
         </nav>
 
         <ol id="quick-start" className="mt-10 scroll-mt-6 space-y-3">
