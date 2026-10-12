@@ -93,6 +93,10 @@
     <changefreq>weekly</changefreq>
   </url>
   <url>
+    <loc>https://agent-control.net/faq</loc>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
     <loc>https://agent-control.net/privacy</loc>
     <changefreq>monthly</changefreq>
   </url>
