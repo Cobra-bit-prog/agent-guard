@@ -12,7 +12,7 @@ import { SOLANA_PAYOUT_ADDRESS, USDC_MINT } from "../solana-pay.ts";
 import type { ListingQuery } from "../directory/listings.ts";
 import {
   checkBazaar,
-  checkDescription,
+  checkDroppedFields,
   checkExample,
   checkMerchant,
   checkPresence,
@@ -33,7 +33,9 @@ import {
   X402_CHECK_LINE,
   X402_CHECK_PRICE_USD,
   X402_CHECK_SKU,
+  X402_CHECK_VALIDATOR_LINE,
 } from "./copy.ts";
+import { runX402ListingCheckTool } from "./mcp.ts";
 import { handleX402CheckRequest, handleX402ReportRequest } from "./http.ts";
 import { orderAddresses, pinLookup, probeEndpoint, type ProbeHop, type ProbeTransport } from "./probe.ts";
 import { runListingCheck, type X402Report } from "./run.ts";
@@ -144,6 +146,8 @@ function fullReport(): X402Report {
     unchecked: 0,
     not_applicable: 0,
     caveat: X402_CHECK_CAVEAT,
+    summary: "2 passed.",
+    validator: X402_CHECK_VALIDATOR_LINE,
     fetched: { status: 402, final_url: URL, content_type: "application/json" },
   };
 }
@@ -289,6 +293,8 @@ describe("listing checks", () => {
     const probe = {
       ok: true as const,
       status: 402,
+      method: "GET" as const,
+      route: "payment" as const,
       contentType: "application/json",
       finalUrl: URL,
       headerRaw: "e30",
@@ -298,13 +304,15 @@ describe("listing checks", () => {
       decodeError: null,
     };
     assert.match(checkReplyShape(probe).detail, /PAYMENT-REQUIRED/);
-    assert.equal(checkReplyShape({ ...probe, status: 200, payment: null, paymentSource: null }).status, "fail");
+    const other = checkReplyShape({ ...probe, status: 200, payment: null, paymentSource: null });
+    assert.equal(other.status, "unchecked");
+    assert.match(other.detail, /Not an HTTP 402 endpoint — could not check/);
     assert.equal(checkReplyShape({ ...probe, contentType: "text/plain" }).status, "warn");
-    assert.equal(checkReplyShape(null).status, "na");
-    assert.match(checkReplyShape(null).detail, /Not applicable/);
-    const mcp = checkReplyShape({ ...probe, status: 200, route: "mcp", payment: null, paymentSource: null });
-    assert.equal(mcp.status, "na");
-    assert.match(mcp.detail, /MCP endpoint, not an x402 payment route/);
+    assert.equal(checkReplyShape(null).status, "unchecked");
+    assert.match(checkReplyShape(null).detail, /Could not check — paste the endpoint URL/);
+    const mcp = checkReplyShape({ ...probe, status: 406, route: "mcp", payment: null, paymentSource: null });
+    assert.equal(mcp.status, "unchecked");
+    assert.match(mcp.detail, /Not an HTTP 402 endpoint — could not check/);
   });
 
   it("reads the merchant list without guessing when the lookup fails", () => {
@@ -371,9 +379,11 @@ describe("listing checks", () => {
     const long = payment({
       resource: { url: URL, description: "x".repeat(501), mimeType: "application/json" },
     });
-    assert.equal(checkDescription(long).status, "fail");
-    assert.match(checkDescription(long).detail, /501/);
-    assert.equal(checkDescription(payment()).status, "pass");
+    const described = checkDroppedFields(long);
+    assert.equal(described.status, "fail");
+    assert.match(described.detail, /501/);
+    assert.match(described.fix ?? "", /Shorten the description to 500 characters or fewer/);
+    assert.equal(checkDroppedFields(payment()).status, "pass");
 
     const external = payment({
       extensions: {
@@ -383,8 +393,10 @@ describe("listing checks", () => {
         },
       },
     });
-    assert.equal(checkSchemaRefs(external).status, "fail");
-    assert.match(checkSchemaRefs(external).detail, /\$ref/);
+    const schema = checkSchemaRefs(external);
+    assert.equal(schema.status, "fail");
+    assert.match(schema.detail, /\$ref/);
+    assert.match(schema.fix ?? "", /\$ref and \$id must start with #/);
     const local = payment({
       extensions: {
         bazaar: {
@@ -398,6 +410,124 @@ describe("listing checks", () => {
     assert.equal(checkExample(409, "pass-or-status").status, "fail");
     assert.equal(checkExample(402, "pass-or-status").status, "pass");
     assert.equal(checkExample(200, "pass-or-status").status, "warn");
+  });
+
+  it("lints fields Coinbase may drop: name, tags, and icon", () => {
+    const longName = payment({
+      resource: {
+        url: URL,
+        description: "USDC yield",
+        mimeType: "application/json",
+        serviceName: "N".repeat(33),
+        tags: ["usdc"],
+      },
+    });
+    const named = checkDroppedFields(longName);
+    assert.equal(named.status, "fail");
+    assert.match(named.detail, /33 characters/);
+    assert.match(named.fix ?? "", /32 plain ASCII characters or fewer/);
+
+    const fancyName = payment({
+      resource: {
+        url: URL,
+        description: "USDC yield",
+        mimeType: "application/json",
+        serviceName: "Yield café",
+      },
+    });
+    assert.equal(checkDroppedFields(fancyName).status, "fail");
+    assert.match(checkDroppedFields(fancyName).detail, /plain ASCII/);
+
+    const manyTags = payment({
+      resource: {
+        url: URL,
+        description: "USDC yield",
+        mimeType: "application/json",
+        serviceName: "USDC yield",
+        tags: ["a", "b", "c", "d", "e", "f"],
+      },
+    });
+    const tagged = checkDroppedFields(manyTags);
+    assert.equal(tagged.status, "fail");
+    assert.match(tagged.detail, /6 tags/);
+    assert.match(tagged.fix ?? "", /Keep 5 tags or fewer/);
+
+    const longTag = payment({
+      resource: {
+        url: URL,
+        description: "USDC yield",
+        mimeType: "application/json",
+        serviceName: "USDC yield",
+        tags: ["t".repeat(33)],
+      },
+    });
+    assert.equal(checkDroppedFields(longTag).status, "fail");
+
+    const httpIcon = payment({
+      resource: {
+        url: URL,
+        description: "USDC yield",
+        mimeType: "application/json",
+        serviceName: "USDC yield",
+        tags: ["usdc"],
+        iconUrl: "http://cdn.example.com/icon.png",
+      },
+    });
+    const http = checkDroppedFields(httpIcon);
+    assert.equal(http.status, "warn");
+    assert.match(http.detail, /Sellers report/);
+    assert.match(http.fix ?? "", /Change iconUrl to https/);
+
+    const oddIcon = payment({
+      resource: {
+        url: URL,
+        description: "USDC yield",
+        mimeType: "application/json",
+        serviceName: "USDC yield",
+        tags: ["usdc"],
+        iconUrl: "https://cdn.example.com/icon.html",
+      },
+    });
+    const odd = checkDroppedFields(oddIcon);
+    assert.equal(odd.status, "warn");
+    assert.match(odd.detail, /Sellers report/);
+    assert.match(odd.fix ?? "", /png, jpg/);
+
+    const localIcon = payment({
+      resource: {
+        url: URL,
+        description: "USDC yield",
+        mimeType: "application/json",
+        serviceName: "USDC yield",
+        tags: ["usdc"],
+        iconUrl: "https://127.0.0.1/icon.png",
+      },
+    });
+    assert.equal(checkDroppedFields(localIcon).status, "fail");
+    assert.match(checkDroppedFields(localIcon).detail, /local or numeric host/);
+
+    const dataIcon = payment({
+      resource: {
+        url: URL,
+        description: "USDC yield",
+        mimeType: "application/json",
+        serviceName: "USDC yield",
+        iconUrl: "data:image/png;base64,aaaa",
+      },
+    });
+    assert.equal(checkDroppedFields(dataIcon).status, "fail");
+
+    const goodIcon = payment({
+      resource: {
+        url: URL,
+        description: "USDC yield",
+        mimeType: "application/json",
+        serviceName: "A".repeat(32),
+        tags: ["one", "two", "three", "four", "five"],
+        iconUrl: "https://cdn.example.com/icon.png",
+      },
+    });
+    assert.equal(checkDroppedFields(goodIcon).status, "pass");
   });
 
   it("reports directory and registry presence, and validate failures honestly", () => {
@@ -425,7 +555,7 @@ describe("listing checks", () => {
 });
 
 describe("free and paid report", () => {
-  it("keeps the free result to the first five checks", async () => {
+  it("passes a clean 402 on the free checks", async () => {
     const report = await runListingCheck(
       { url: URL, payTo: null },
       "free",
@@ -433,59 +563,110 @@ describe("free and paid report", () => {
     );
     assert.deepEqual(
       report.checks.map((check) => check.id),
-      ["reply_shape", "resource_https", "bazaar", "description_length", "example_input"],
+      ["reply_shape", "resource_https", "bazaar", "dropped_fields", "example_input", "schema_refs"],
     );
     assert.equal(report.failed, 0);
+    assert.equal(report.checks.every((check) => check.status === "pass"), true);
     assert.equal(report.checks.some((check) => "fix" in check), false);
     assert.match(report.caveat, /does not mean Coinbase will list you/);
-    assert.doesNotMatch(`${report.caveat} ${X402_CHECK_LINE} ${X402_CHECK_HONESTY}`, BANNED);
+    assert.match(report.validator, /api\.cdp\.coinbase\.com\/platform\/v2\/x402\/validate/);
+    assert.match(report.summary, /6 passed/);
+    assert.doesNotMatch(report.summary, /fail/i);
+    assert.doesNotMatch(`${report.caveat} ${report.validator} ${X402_CHECK_LINE} ${X402_CHECK_HONESTY}`, BANNED);
   });
 
   it("does not fail a wallet or an MCP URL when nothing payable was fetched", async () => {
     const wallet = await runListingCheck({ url: null, payTo: PAY_BASE }, "free");
     assert.equal(wallet.fetched, null);
     assert.equal(wallet.failed, 0);
-    assert.equal(wallet.not_applicable, 5);
+    assert.equal(wallet.passed, 0);
+    assert.equal(wallet.unchecked, wallet.checks.length);
+    assert.doesNotMatch(wallet.summary, /fail/i);
+    assert.match(wallet.summary, /Could not check — paste the endpoint URL/);
     for (const check of wallet.checks) {
-      assert.equal(check.status, "na");
-      assert.match(check.detail, /Not applicable/);
+      assert.equal(check.status, "unchecked");
+      assert.match(check.detail, /Could not check — paste the endpoint URL/);
     }
+    const viaTool = await runX402ListingCheckTool({ pay_to: PAY_BASE }, undefined, null);
+    assert.equal(viaTool.ok, true);
+    if (!viaTool.ok) return;
+    const toolBody = viaTool.result as { checks: CheckRow[]; failed: number; summary: string };
+    assert.equal(toolBody.failed, 0);
+    assert.equal(toolBody.checks.some((check) => check.id === "dropped_fields"), true);
+    assert.doesNotMatch(toolBody.summary, /fail/i);
+    for (const check of toolBody.checks) assert.notEqual(check.status, "fail");
 
     const calls: string[] = [];
     const transport: ProbeTransport = async (input) => {
       calls.push(`${input.method} ${input.url.pathname}`);
       if (input.method === "GET") {
         return hop(
-          { name: "Agent Control", protocol: "mcp", tools: [] },
+          { jsonrpc: "2.0", result: { isError: true, content: [] } },
           200,
           "application/json",
         );
       }
-      return hop({ jsonrpc: "2.0", error: { code: -32601, message: "Unknown method." } }, 400, "application/json");
+      return hop({ jsonrpc: "2.0", error: { code: -32601, message: "Unknown method." } }, 406, "application/json");
     };
     const mcp = await runListingCheck(
-      { url: "https://agent-control.net/api/v1/mcp", payTo: null },
+      { url: "https://api.seekapi.ai/mcp", payTo: null },
       "free",
       { lookup: publicLookup, transport },
     );
     assert.equal(mcp.fetched?.status, 200);
     assert.equal(mcp.failed, 0);
-    const reply = mcp.checks.find((check) => check.id === "reply_shape");
-    assert.equal(reply?.status, "na");
-    assert.match(reply?.detail ?? "", /This is an MCP endpoint, not an x402 payment route\. Paste the paid route URL\./);
-    for (const check of mcp.checks) assert.notEqual(check.status, "fail");
+    assert.equal(mcp.checks.length, 1);
+    assert.equal(mcp.checks[0]?.id, "not_402");
+    assert.equal(mcp.checks[0]?.status, "unchecked");
+    assert.match(mcp.checks[0]?.detail ?? "", /Not an HTTP 402 endpoint — could not check/);
+    assert.doesNotMatch(mcp.summary, /fail/i);
+    assert.equal(calls.length, 1);
+
+    const denied = await runListingCheck(
+      { url: "https://api.seekapi.ai/mcp", payTo: null },
+      "free",
+      { lookup: publicLookup, transport: transportFor({ error: "Not Acceptable" }, 406) },
+    );
+    assert.equal(denied.fetched?.status, 406);
+    assert.equal(denied.checks.length, 1);
+    assert.equal(denied.failed, 0);
+    assert.match(denied.summary, /Not an HTTP 402 endpoint — could not check/);
 
     const other = await runListingCheck(
       { url: URL, payTo: null },
       "free",
       { lookup: publicLookup, transport: transportFor({ ok: true }, 200) },
     );
-    assert.equal(other.checks.find((check) => check.id === "reply_shape")?.status, "fail");
-    assert.equal(other.failed, 1);
-    for (const check of other.checks) {
-      if (check.id !== "reply_shape") assert.equal(check.status, "na");
-    }
-    assert.ok(calls.length >= 1);
+    assert.equal(other.checks.length, 1);
+    assert.equal(other.checks[0]?.status, "unchecked");
+    assert.match(other.checks[0]?.detail ?? "", /Not an HTTP 402 endpoint — could not check/);
+    assert.equal(other.failed, 0);
+    assert.doesNotMatch(other.summary, /fail/i);
+  });
+
+  it("fails a long description and an external schema ref on the free result", async () => {
+    const declared = payment({
+      resource: { url: URL, description: "d".repeat(501), mimeType: "application/json", serviceName: "USDC yield" },
+      extensions: {
+        bazaar: {
+          info: { input: { type: "http", method: "GET" }, output: { type: "json" } },
+          schema: { properties: { input: { $ref: "https://example.com/in.json" } } },
+        },
+      },
+    });
+    const report = await runListingCheck(
+      { url: URL, payTo: null },
+      "free",
+      { lookup: publicLookup, transport: transportFor(declared) },
+    );
+    const dropped = report.checks.find((check) => check.id === "dropped_fields");
+    const schema = report.checks.find((check) => check.id === "schema_refs");
+    assert.equal(dropped?.status, "fail");
+    assert.match(dropped?.fix ?? "", /Shorten the description to 500 characters or fewer/);
+    assert.equal(schema?.status, "fail");
+    assert.match(schema?.fix ?? "", /must start with #/);
+    assert.ok(report.failed >= 2);
+    assert.match(report.summary, /failed/);
   });
 
   it("fails an example input that returns 400 or 409 instead of 402", async () => {

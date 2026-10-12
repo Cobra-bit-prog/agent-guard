@@ -24,7 +24,7 @@ export const Route = createFileRoute("/x402-check")({
       {
         name: "description",
         content:
-          "Check the seller-side reasons an x402 endpoint can miss Coinbase's Bazaar. Five checks are free. The full report is $19 USDC.",
+          "Check the seller-side reasons an x402 endpoint can miss Coinbase's Bazaar. The opening checks are free. The full report is $19 USDC.",
       },
       { name: "theme-color", content: "#eef3f8" },
       { property: "og:title", content: "Why am I not in the Bazaar? — Agent Control" },
@@ -53,6 +53,8 @@ type FreeBody = {
   warned?: number;
   unchecked?: number;
   not_applicable?: number;
+  summary?: string;
+  validator?: string;
 };
 
 type InvoiceBody = {
@@ -233,13 +235,9 @@ function X402CheckPage() {
             <h2 id="free-checks" className="text-title font-semibold">
               Free result
             </h2>
-            <p className="mt-2 text-body text-muted">
-              {free.passed ?? 0} passed, {free.failed ?? 0} failed
-              {free.warned ? `, ${free.warned} to check` : ""}
-              {free.not_applicable ? `, ${free.not_applicable} not applicable` : ""}
-              {free.unchecked ? `, ${free.unchecked} could not check` : ""}. Five checks.
-            </p>
+            <p className="mt-2 text-body text-muted">{free.summary}</p>
             <CheckList checks={free.checks} />
+            {free.validator ? <p className="mt-4 text-body text-muted">{free.validator}</p> : null}
             <p className="mt-4 text-body text-muted">{free.caveat}</p>
           </section>
         ) : null}

@@ -53,17 +53,20 @@ function row(id: string, title: string, status: CheckStatus, detail: string, fix
   return fix ? { id, title, status, detail, fix } : { id, title, status, detail };
 }
 
+export const COULD_NOT_CHECK_URL = "Could not check — paste the endpoint URL.";
+export const NOT_402_DETAIL = "Not an HTTP 402 endpoint — could not check. Paste the URL that returns HTTP 402.";
+
 export function absentCheck(id: string, title: string, why: CheckAbsence): CheckRow {
   if (why === "undecoded") {
     return row(id, title, "unchecked", "Could not check. The 402 did not include a payment object.");
   }
   if (why === "wallet") {
-    return row(id, title, "na", "Not applicable. A wallet alone has nothing to fetch. Paste the https endpoint.");
+    return row(id, title, "unchecked", COULD_NOT_CHECK_URL);
   }
-  if (why === "mcp") {
-    return row(id, title, "na", "Not applicable. This is an MCP endpoint, not an x402 payment route.");
+  if (why === "mcp" || why === "not_402") {
+    return row(id, title, "unchecked", NOT_402_DETAIL);
   }
-  return row(id, title, "na", "Not applicable. The URL did not return a 402, so this check did not run.");
+  return row(id, title, "unchecked", COULD_NOT_CHECK_URL);
 }
 
 export function checkV2Fields(payment: unknown): CheckRow {
@@ -315,20 +318,10 @@ export function checkTargets(payment: unknown, pastedPayTo: string | null): Chec
 export function checkReplyShape(probe: EndpointProbe | null): CheckRow {
   const title = "402 reply";
   if (!probe) {
-    return row(
-      "reply_shape",
-      title,
-      "na",
-      "Not applicable. A wallet alone has no 402 reply. Paste the https endpoint.",
-    );
+    return row("reply_shape", title, "unchecked", COULD_NOT_CHECK_URL);
   }
-  if (probe.route === "mcp") {
-    return row(
-      "reply_shape",
-      title,
-      "na",
-      "This is an MCP endpoint, not an x402 payment route. Paste the paid route URL.",
-    );
+  if (probe.route === "mcp" || probe.status !== 402) {
+    return row("not_402", "HTTP 402 endpoint", "unchecked", NOT_402_DETAIL);
   }
   const json = probe.contentType.toLowerCase().includes("application/json");
   const decoded = probe.payment != null;
@@ -634,23 +627,204 @@ export function checkValidate(payment: unknown, look: ValidateLook | null): Chec
 }
 
 const DESCRIPTION_LIMIT = 500;
+const NAME_LIMIT = 32;
+const TAG_LIMIT = 32;
+const TAG_COUNT = 5;
+const ICON_LIMIT = 2048;
+const PRINTABLE_ASCII = /^[ -~]+$/;
+const LOOPBACK_HOSTS = new Set(["localhost", "localhost.localdomain", "ip6-localhost", "ip6-loopback"]);
+const IMAGE_EXT = new Set(["png", "jpg", "jpeg", "gif", "webp", "svg", "ico", "avif", "bmp"]);
 
-export function checkDescription(payment: unknown): CheckRow {
-  const title = "Description length";
-  const description = resourceOf(payment)?.description;
-  if (typeof description !== "string") {
-    return row("description_length", title, "pass", "No resource.description to measure. The 500-character limit does not apply.");
+type FieldIssue = { level: "fail" | "warn"; detail: string; fix: string };
+
+function printableAscii(value: string): boolean {
+  return PRINTABLE_ASCII.test(value);
+}
+
+function hasControlChar(value: string): boolean {
+  for (let i = 0; i < value.length; i += 1) {
+    const code = value.charCodeAt(i);
+    if (code <= 31 || code === 127) return true;
   }
-  const length = description.length;
-  if (length > DESCRIPTION_LIMIT) {
+  return false;
+}
+
+function looksLikeIp(host: string): boolean {
+  const bare = host.replace(/^\[|\]$/g, "");
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(bare)) return true;
+  return bare.includes(":");
+}
+
+function iconIssues(raw: string): FieldIssue[] {
+  if (raw.length > ICON_LIMIT) {
+    return [
+      {
+        level: "fail",
+        detail: `The icon URL is ${raw.length} characters. The x402 spec drops an icon URL longer than ${ICON_LIMIT} characters.`,
+        fix: `Shorten iconUrl to ${ICON_LIMIT} characters or fewer.`,
+      },
+    ];
+  }
+  if (hasControlChar(raw)) {
+    return [
+      {
+        level: "fail",
+        detail: "The icon URL contains a control character. The x402 spec drops it.",
+        fix: "Use a public https icon URL with no control characters.",
+      },
+    ];
+  }
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    return [
+      {
+        level: "fail",
+        detail: "The icon URL is not an absolute http or https URL. The x402 spec drops it.",
+        fix: "Set iconUrl to a public https address.",
+      },
+    ];
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    return [
+      {
+        level: "fail",
+        detail: `The icon URL uses ${parsed.protocol} The x402 spec drops anything that is not http or https.`,
+        fix: "Set iconUrl to a public https address.",
+      },
+    ];
+  }
+  if (parsed.username || parsed.password) {
+    return [
+      {
+        level: "fail",
+        detail: "The icon URL includes a username. The x402 spec drops it.",
+        fix: "Remove the username and set iconUrl to a public https address.",
+      },
+    ];
+  }
+  let host = parsed.hostname.toLowerCase();
+  try {
+    host = decodeURIComponent(host);
+  } catch {
+    host = parsed.hostname.toLowerCase();
+  }
+  if (looksLikeIp(host) || LOOPBACK_HOSTS.has(host) || /^\d+$/.test(host) || /^0x[0-9a-f]+$/i.test(host)) {
+    return [
+      {
+        level: "fail",
+        detail: "The icon URL points at a local or numeric host. The x402 spec drops it, so the icon will not load.",
+        fix: "Point iconUrl at a public https host.",
+      },
+    ];
+  }
+  const issues: FieldIssue[] = [];
+  if (parsed.protocol === "http:") {
+    issues.push({
+      level: "warn",
+      detail:
+        "The icon uses http. Sellers report Coinbase keeps an icon only when it is a public https URL. The spec still allows http, so this is not a hard miss.",
+      fix: "Change iconUrl to https.",
+    });
+  }
+  const ext = parsed.pathname.match(/\.([a-z0-9]+)$/i)?.[1]?.toLowerCase();
+  if (ext && !IMAGE_EXT.has(ext)) {
+    issues.push({
+      level: "warn",
+      detail: `The icon address ends in .${ext}. Sellers report an icon that is not a normal image may not show. The spec does not require a file type, so this is not a hard miss.`,
+      fix: "Use a png, jpg, webp, gif, or svg at a public https address.",
+    });
+  }
+  return issues;
+}
+
+/**
+ * Fields the catalog can drop or reject.
+ * Documented: description over 500 (CDP rejects verify/settle), serviceName and tags
+ * (x402 spec soft-drops), iconUrl shape (x402 spec soft-drops).
+ * http-only icons and odd file types are seller reports, so they warn.
+ */
+export function checkDroppedFields(payment: unknown): CheckRow {
+  const title = "Fields Coinbase may drop";
+  const resource = resourceOf(payment);
+  const issues: FieldIssue[] = [];
+
+  const description = resource?.description;
+  if (typeof description === "string" && description.length > DESCRIPTION_LIMIT) {
+    issues.push({
+      level: "fail",
+      detail: `The description is ${description.length} characters. Coinbase's facilitator rejects a description over ${DESCRIPTION_LIMIT} characters, so the payment can be turned away before it is listed.`,
+      fix: `Shorten the description to ${DESCRIPTION_LIMIT} characters or fewer.`,
+    });
+  }
+
+  if (typeof resource?.serviceName === "string") {
+    const name = resource.serviceName;
+    if (!name || name.length > NAME_LIMIT || !printableAscii(name)) {
+      const detail =
+        name.length > NAME_LIMIT
+          ? `The name is ${name.length} characters. The x402 spec drops a serviceName longer than ${NAME_LIMIT} characters.`
+          : "The name is empty or not plain ASCII. The x402 spec drops a serviceName that is not 1 to 32 printable ASCII characters.";
+      issues.push({
+        level: "fail",
+        detail,
+        fix: `Use a serviceName of ${NAME_LIMIT} plain ASCII characters or fewer.`,
+      });
+    }
+  }
+
+  if (resource && "tags" in resource && resource.tags !== undefined) {
+    const tags = resource.tags;
+    if (!Array.isArray(tags)) {
+      issues.push({
+        level: "fail",
+        detail: "tags is not a list. The x402 spec keeps at most 5 short ASCII tags and drops anything else.",
+        fix: "Send tags as a list of up to 5 short ASCII words.",
+      });
+    } else {
+      const problems: string[] = [];
+      if (tags.length > TAG_COUNT) problems.push(`there are ${tags.length} tags and the spec keeps ${TAG_COUNT}`);
+      const seen = new Set<string>();
+      for (const tag of tags.slice(0, TAG_COUNT)) {
+        if (typeof tag !== "string" || !tag || tag.length > TAG_LIMIT || !printableAscii(tag)) {
+          problems.push("a tag is missing, too long, or not plain ASCII");
+          break;
+        }
+        const key = tag.toLowerCase();
+        if (seen.has(key)) problems.push("a repeated tag is dropped");
+        seen.add(key);
+      }
+      if (problems.length) {
+        issues.push({
+          level: "fail",
+          detail: `Tags will be cut down. ${problems[0]}. Each tag must be ${TAG_LIMIT} plain ASCII characters or fewer, and only the first ${TAG_COUNT} count.`,
+          fix: `Keep ${TAG_COUNT} tags or fewer, each ${TAG_LIMIT} plain ASCII characters or fewer.`,
+        });
+      }
+    }
+  }
+
+  if (typeof resource?.iconUrl === "string") {
+    issues.push(...iconIssues(resource.iconUrl));
+  } else if (resource && "iconUrl" in resource && resource.iconUrl != null && resource.iconUrl !== "") {
+    issues.push({
+      level: "fail",
+      detail: "iconUrl is not text. The x402 spec drops an icon that is not an http or https URL.",
+      fix: "Set iconUrl to a public https address.",
+    });
+  }
+
+  if (issues.length === 0) {
     return row(
-      "description_length",
+      "dropped_fields",
       title,
-      "fail",
-      `The description is ${length} characters. Coinbase's facilitator has rejected descriptions over ${DESCRIPTION_LIMIT} characters, so a settled payment can still miss the catalog. Shorten resource.description to ${DESCRIPTION_LIMIT} characters or fewer.`,
+      "pass",
+      "Description, name, tags, and icon are within the limits Coinbase and the x402 spec publish. A missing field is fine.",
     );
   }
-  return row("description_length", title, "pass", `The description is ${length} characters, within ${DESCRIPTION_LIMIT}.`);
+  const status: CheckStatus = issues.some((item) => item.level === "fail") ? "fail" : "warn";
+  return row("dropped_fields", title, status, issues.map((item) => item.detail).join(" "), issues.map((item) => item.fix).join("\n"));
 }
 
 function externalSchemaRef(value: string): boolean {
@@ -693,7 +867,8 @@ export function checkSchemaRefs(payment: unknown): CheckRow {
     "schema_refs",
     title,
     "fail",
-    `The Bazaar schema has an external $ref or $id (${shown}). Facilitators only allow same-document pointers that start with #. Inline the schema. They do not fetch outside references.`,
+    `The Bazaar schema has an external $ref or $id (${shown}). Facilitators only allow same-document pointers that start with #. They do not fetch outside references.`,
+    "Put the schema in the document. $ref and $id must start with #.",
   );
 }
 
@@ -757,14 +932,14 @@ export function checkExample(status: number | null, note: "pass-or-status" | "no
 }
 
 /**
- * Free stays at five. Moved off the free tier onto the paid report: v2_fields,
- * resource_url (query string, trailing slash, host), and payment_targets.
- * schema_refs is paid. resource_https, description_length, and example_input are free.
+ * Free check. Paid report adds version fields, query string, trailing slash, payTo,
+ * merchant list, search, the snippet, directory, and Coinbase's validate call.
  */
 export const FREE_CHECK_IDS = [
   "reply_shape",
   "resource_https",
   "bazaar",
-  "description_length",
+  "dropped_fields",
   "example_input",
+  "schema_refs",
 ] as const;
