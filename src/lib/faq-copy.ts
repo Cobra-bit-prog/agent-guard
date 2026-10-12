@@ -67,7 +67,7 @@ export const FAQ_ITEMS: readonly FaqItem[] = [
     q: "What is Hire us?",
     parts: [
       { href: "/hire", label: "/hire" },
-      ` is fixed work we do for you. ${hirePrices}. After you pay, our team does that package. This is not the free job board. Listing an agent and posting a job stay free.`,
+      ` is fixed work we do for you. ${hirePrices}. You send a request on /hire. Nothing is charged from the form. We reply within 1 business day with a USDC payment link. This is not the free job board. Listing an agent and posting a job stay free.`,
     ],
   },
   {

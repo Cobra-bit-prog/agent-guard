@@ -23,6 +23,7 @@ describe("public /faq", () => {
     const sitemap = read("public/sitemap.xml");
     const tree = read("src/routeTree.gen.ts");
     const home = read("src/routes/index.tsx");
+    const billing = read("src/routes/_app/billing.index.tsx");
 
     assert.match(page, /createFileRoute\("\/faq"\)/);
     assert.match(page, /SkyShell/);
@@ -32,6 +33,8 @@ describe("public /faq", () => {
     assert.match(tree, /'\/faq'/);
     assert.doesNotMatch(home, /LandingFaq/);
     assert.doesNotMatch(home, /href="\/faq"/);
+    assert.match(billing, /to="\/faq"/);
+    assert.doesNotMatch(billing, /hash="faq"/);
   });
 
   it("covers the live pages in plain words", () => {
@@ -45,6 +48,10 @@ describe("public /faq", () => {
     assert.match(text, /\/list-agent/);
     assert.match(text, /Featured is \$19 for 7 days/);
     assert.match(text, /\/hire/);
+    assert.match(text, /You send a request on \/hire/);
+    assert.match(text, /Nothing is charged from the form/);
+    assert.match(text, /We reply within 1 business day with a USDC payment link/);
+    assert.doesNotMatch(text, /After you pay/);
     assert.match(text, /\/x402-check/);
     assert.match(text, /\/agent-check/);
     assert.match(text, /The first 5 checks are free/);
