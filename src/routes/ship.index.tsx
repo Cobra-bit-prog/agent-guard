@@ -6,7 +6,7 @@ import {
   SHIP_HONESTY_LINE,
   SHIP_PACKAGES,
   SHIP_PAY_LINE,
-  SHIP_REFUND_LINE,
+  SHIP_SCOPE_LINE,
   SHIP_REPLY_LINE,
   SHIP_SUPPORT_EMAIL,
   formatShipPrice,
@@ -122,7 +122,7 @@ function ShipPage() {
           className="landing-rise mt-2 max-w-[40rem] text-body text-muted"
           style={{ animationDelay: "0.16s" }}
         >
-          {SHIP_REFUND_LINE} {SHIP_HONESTY_LINE}
+          {SHIP_SCOPE_LINE} {SHIP_HONESTY_LINE}
         </p>
 
         <ul className="mt-10 grid gap-4 sm:grid-cols-2">
@@ -256,7 +256,7 @@ function ShipPage() {
             </a>
           </p>
           <p className="mt-2 text-meta text-muted">
-            {SHIP_CHARGE_LINE} {SHIP_REPLY_LINE} {SHIP_REFUND_LINE}
+            {SHIP_CHARGE_LINE} {SHIP_REPLY_LINE} {SHIP_SCOPE_LINE}
           </p>
         </section>
       </main>
