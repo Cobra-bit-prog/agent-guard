@@ -18,6 +18,12 @@
  * /action-gate was never a page. The $49/month checkout is
  * /billing/pay?plan=action. Docs explain the gate and sell it (Pay $49).
  * Guessed /action-gate links land on that section.
+ *
+ * /featured and /api/v1/featured are guessed feature-desk URLs. The page is
+ * the #featured section of /directory; the API is
+ * /api/v1/agents/listings/featured. 308 keeps POST bodies intact.
+ *
+ * /billing/card?plan=action was a 404. Checkout is /billing/pay. Keep the query.
  */
 
 export const LLMS_TXT_PATH = "/llms.txt";
@@ -75,6 +81,24 @@ export const DISCOVERY_REDIRECTS = [
   {
     source: "/action-gate",
     destination: "/docs#action-gate",
+    status: 308,
+    permanent: true,
+  },
+  {
+    source: "/featured",
+    destination: "/directory#featured",
+    status: 308,
+    permanent: true,
+  },
+  {
+    source: "/api/v1/featured",
+    destination: "/api/v1/agents/listings/featured",
+    status: 308,
+    permanent: true,
+  },
+  {
+    source: "/billing/card",
+    destination: "/billing/pay",
     status: 308,
     permanent: true,
   },

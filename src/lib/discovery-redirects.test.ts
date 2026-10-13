@@ -37,6 +37,9 @@ describe("discovery path redirects", () => {
         ["/agents/skill.md", "/skill.md", 308, true],
         ["/pricing", "/#pricing", 308, true],
         ["/action-gate", "/docs#action-gate", 308, true],
+        ["/featured", "/directory#featured", 308, true],
+        ["/api/v1/featured", "/api/v1/agents/listings/featured", 308, true],
+        ["/billing/card", "/billing/pay", 308, true],
       ],
     );
   });
@@ -145,6 +148,30 @@ describe("discovery path redirects", () => {
     assert.equal(hit("/.well-known/x402"), null);
     assert.equal(hit("/.well-known/mcp.json"), null);
     assert.equal(hit("/api/v1/meter/pricing"), null);
+  });
+
+  it("308s /featured to /directory#featured", () => {
+    const res = hit("/featured");
+    assert.ok(res);
+    assert.equal(res.status, 308);
+    assert.equal(res.headers.get("location"), "/directory#featured");
+    const q = hit("/featured?feature=a1");
+    assert.equal(q?.headers.get("location"), "/directory?feature=a1#featured");
+  });
+
+  it("308s /api/v1/featured to the listings API and keeps POST", () => {
+    const res = hit("/api/v1/featured", "POST");
+    assert.ok(res);
+    assert.equal(res.status, 308);
+    assert.equal(res.headers.get("location"), "/api/v1/agents/listings/featured");
+  });
+
+  it("308s /billing/card?plan=action to /billing/pay?plan=action", () => {
+    const res = hit("/billing/card?plan=action");
+    assert.ok(res);
+    assert.equal(res.status, 308);
+    assert.equal(res.headers.get("location"), "/billing/pay?plan=action");
+    assert.equal(hit("/api/v1/billing/card"), null);
   });
 
   it("places search before a hash fragment", () => {
