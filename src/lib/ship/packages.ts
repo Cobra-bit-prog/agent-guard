@@ -15,7 +15,7 @@ export const SHIP_PAGE_URL = "https://agent-control.net/ship";
 export const SHIP_PAY_LINE = "Paid in USDC on Solana or Base.";
 export const SHIP_CHARGE_LINE = "Nothing is charged from this form.";
 export const SHIP_REPLY_LINE = "We'll reply within 1 business day with a USDC payment link.";
-export const SHIP_REFUND_LINE = "If the work isn't delivered, we refund in USDC.";
+export const SHIP_SCOPE_LINE = "We confirm scope with you before you pay.";
 export const SHIP_HONESTY_LINE =
   "We do not promise sales. We do not promise a listing by Coinbase.";
 
@@ -73,7 +73,7 @@ export const SHIP_SKILL_SECTION = `
 
 We get a paid endpoint ready, or we take one API or tool live.
 Page: ${SHIP_PAGE_URL}
-${SHIP_PAY_LINE} Send the endpoint URL, the package, and an email. A note is optional. ${SHIP_CHARGE_LINE} ${SHIP_REPLY_LINE} ${SHIP_REFUND_LINE}
+${SHIP_PAY_LINE} Send the endpoint URL, the package, and an email. A note is optional. ${SHIP_CHARGE_LINE} ${SHIP_REPLY_LINE} ${SHIP_SCOPE_LINE}
 ${SHIP_PACKAGES.map((pack) => `- ${pack.name} — ${formatShipPrice(pack.priceUsd)} — ${pack.included}`).join("\n")}
 ${SHIP_HONESTY_LINE}
 The ship API stays closed to crawlers.

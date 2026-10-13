@@ -6,7 +6,7 @@ import {
   SHIP_CHARGE_LINE,
   SHIP_HONESTY_LINE,
   SHIP_PAY_LINE,
-  SHIP_REFUND_LINE,
+  SHIP_SCOPE_LINE,
   SHIP_REPLY_LINE,
   SHIP_SUPPORT_EMAIL,
   formatShipPrice,
@@ -76,7 +76,7 @@ export function customerShipMail(order: ShipMailOrder): ShipMail {
     "",
     SHIP_REPLY_LINE,
     SHIP_PAY_LINE,
-    SHIP_REFUND_LINE,
+    SHIP_SCOPE_LINE,
     SHIP_HONESTY_LINE,
     "",
     `Questions? Email ${SHIP_SUPPORT_EMAIL}.`,
@@ -87,7 +87,7 @@ export function customerShipMail(order: ShipMailOrder): ShipMail {
   <p style="font-size:15px;line-height:1.55;color:#444">${escapeHtml(lead)}</p>
   <p style="font-size:15px;line-height:1.55;color:#111">${escapeHtml(SHIP_REPLY_LINE)}</p>
   <p style="font-size:15px;line-height:1.55;color:#111">${escapeHtml(SHIP_PAY_LINE)}</p>
-  <p style="font-size:15px;line-height:1.55;color:#111">${escapeHtml(SHIP_REFUND_LINE)}</p>
+  <p style="font-size:15px;line-height:1.55;color:#111">${escapeHtml(SHIP_SCOPE_LINE)}</p>
   <p style="font-size:15px;line-height:1.55;color:#444">${escapeHtml(SHIP_HONESTY_LINE)}</p>
   <p style="font-size:12px;line-height:1.5;color:#888">Questions? Email <a href="mailto:${SHIP_SUPPORT_EMAIL}" style="color:#111">${SHIP_SUPPORT_EMAIL}</a>.</p>
 </div>`;
