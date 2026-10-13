@@ -66,11 +66,10 @@ describe("public /faq", () => {
     assert.match(text, /\/ship/);
     assert.match(text, /Fix is \$149/);
     assert.match(text, /Launch is \$399/);
-    assert.match(text, /If the work isn't delivered, we refund in USDC/);
+    assert.match(text, /We confirm scope with you before you pay/);
     assert.equal(FAQ_ITEMS.length, 7);
-    const refundLine = "If the work isn't delivered, we refund in USDC";
-    assert.doesNotMatch(text.replaceAll(refundLine, ""), BANNED);
+    assert.doesNotMatch(text, BANNED);
     assert.doesNotMatch(read("src/routes/faq.tsx"), BANNED);
-    assert.doesNotMatch(read("src/lib/faq-copy.ts").replaceAll(refundLine, ""), BANNED);
+    assert.doesNotMatch(read("src/lib/faq-copy.ts"), BANNED);
   });
 });

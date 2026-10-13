@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { SkyShell } from "@/components/marketing/chrome";
 import {
   SHIP_CHARGE_LINE,
-  SHIP_REFUND_LINE,
+  SHIP_SCOPE_LINE,
   SHIP_REPLY_LINE,
   SHIP_SUPPORT_EMAIL,
 } from "@/lib/ship/packages";
@@ -42,7 +42,7 @@ function ShipThanksPage() {
               We got your request. {SHIP_CHARGE_LINE}
             </p>
             <p className="mt-2 max-w-[40rem] text-body text-muted">{SHIP_REPLY_LINE}</p>
-            <p className="mt-2 max-w-[40rem] text-body text-muted">{SHIP_REFUND_LINE}</p>
+            <p className="mt-2 max-w-[40rem] text-body text-muted">{SHIP_SCOPE_LINE}</p>
           </>
         ) : (
           <p className="mt-4 max-w-[40rem] text-body text-muted">

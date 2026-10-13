@@ -13,7 +13,7 @@ import {
   SHIP_HONESTY_LINE,
   SHIP_PACKAGES,
   SHIP_PAY_LINE,
-  SHIP_REFUND_LINE,
+  SHIP_SCOPE_LINE,
   SHIP_REPLY_LINE,
   formatShipPrice,
 } from "./packages.ts";
@@ -28,7 +28,7 @@ export function shipCatalogResponse(): Response {
     charged_from_form: false,
     pay: SHIP_PAY_LINE,
     reply: SHIP_REPLY_LINE,
-    refund: SHIP_REFUND_LINE,
+    scope: SHIP_SCOPE_LINE,
     honesty: SHIP_HONESTY_LINE,
     packages: SHIP_PACKAGES.map((pack) => ({
       id: pack.id,
