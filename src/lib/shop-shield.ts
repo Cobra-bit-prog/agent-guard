@@ -45,6 +45,21 @@ export function isActionGatePlan(value: unknown): boolean {
   return String(value ?? "").trim().toLowerCase() === ACTION_GATE_PLAN;
 }
 
+/** Every plan an invoice can be created for. */
+export const VALID_PAY_PLANS: readonly PayPlanId[] = [...HUMAN_PLANS, SHOP_SHIELD_PLAN, ACTION_GATE_PLAN];
+
+/**
+ * Strict plan check for invoice creation. Missing/blank stays Starter (the
+ * historical default); an unknown value returns null so callers can 400.
+ */
+export function strictPayPlan(value: unknown): PayPlanId | null {
+  if (value === undefined || value === null) return "starter";
+  if (typeof value !== "string") return null;
+  const id = value.trim().toLowerCase();
+  if (!id) return "starter";
+  return (VALID_PAY_PLANS as readonly string[]).includes(id) ? (id as PayPlanId) : null;
+}
+
 /** Pay-page plan. Unknown values stay on Starter. Shield stays Shield. Action stays Action. */
 export function parsePayPlan(value: unknown): PayPlanId {
   const id = String(value ?? "starter").trim().toLowerCase();

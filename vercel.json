@@ -58,6 +58,21 @@
       "permanent": true
     },
     {
+      "source": "/featured",
+      "destination": "/directory#featured",
+      "permanent": true
+    },
+    {
+      "source": "/api/v1/featured",
+      "destination": "/api/v1/agents/listings/featured",
+      "permanent": true
+    },
+    {
+      "source": "/billing/card",
+      "destination": "/billing/pay",
+      "permanent": true
+    },
+    {
       "source": "/",
       "has": [
         {

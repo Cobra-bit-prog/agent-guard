@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { PLANS } from "./plans.ts";
+import { strictPayPlan, VALID_PAY_PLANS } from "./shop-shield.ts";
 import { METER_FREE_LOOKS, METER_STAMP_TX } from "./meter/pricing.ts";
 import {
   billingPaySearch,
@@ -169,4 +170,31 @@ describe("Shop Shield status", () => {
     assert.match(STAMP_RECIPE, /stamp_tx \$0\.05/);
     assert.match(STAMP_RECIPE, /merchant verifies free/);
   });
+});
+
+describe("invoice plan validation", () => {
+  const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
+  const src = (rel: string) => readFileSync(join(root, rel), "utf8");
+
+  it("accepts every real plan and rejects unknown ones", () => {
+    assert.deepEqual([...VALID_PAY_PLANS], ["starter", "pro", "team", "shield", "action"]);
+    for (const plan of VALID_PAY_PLANS) assert.equal(strictPayPlan(plan), plan);
+    assert.equal(strictPayPlan(" Action "), "action");
+    assert.equal(strictPayPlan("bogus"), null);
+    assert.equal(strictPayPlan(42), null);
+  });
+
+  it("keeps a missing plan on Starter", () => {
+    assert.equal(strictPayPlan(undefined), "starter");
+    assert.equal(strictPayPlan(null), "starter");
+    assert.equal(strictPayPlan(""), "starter");
+  });
+
+  it("invoice route 400s unknown plans with the valid list", () => {
+    const route = src("src/routes/api/v1/billing.invoice.ts");
+    assert.match(route, /strictPayPlan\(rec\.plan\)/);
+    assert.match(route, /valid_plans: VALID_PAY_PLANS/);
+    assert.match(route, /400/);
+  });
+
 });
