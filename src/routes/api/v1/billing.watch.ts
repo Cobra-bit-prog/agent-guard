@@ -6,8 +6,6 @@ import {
   isHumanUsdcInvoice,
   watchUsdcInvoice,
 } from "@/lib/server/billing-core.server";
-import { payPlanQuote } from "@/lib/shop-shield";
-import { findMatchingUsdcPayment, payoutAddress } from "@/lib/solana-pay.server";
 
 /** Public status poll. Pay UI works without Helius. */
 export const Route = createFileRoute("/api/v1/billing/watch")({
@@ -42,25 +40,8 @@ async function handleWatch({ request }: { request: Request }) {
   if (row && !isHumanUsdcInvoice(row)) {
     return json({ error: "Invoice is not Solana USDC.", asset: row.asset, chain: row.chain }, 409);
   }
-  if (!row) {
-    const quote = payPlanQuote(url.searchParams.get("plan") || body.plan);
-    if (!reference) return json({ error: "Invoice not found." }, 404);
-    try {
-      const match = await findMatchingUsdcPayment({
-        reference,
-        recipient: payoutAddress(),
-        amountUsdc: quote.price,
-      });
-      return json({
-        status: match.kind === "paid" ? "paid" : "pending",
-        signature: match.kind === "paid" || match.kind === "underpaid" ? match.signature : null,
-        recipient: payoutAddress(),
-      });
-    } catch (err) {
-      console.error("[billing] watch rpc failed", err);
-      return json({ status: "pending", signature: null, recipient: payoutAddress() });
-    }
-  }
+  // No invoice row: unknown id/reference. Never report a phantom "pending".
+  if (!row) return json({ error: "Invoice not found." }, 404);
   try {
     row = await watchUsdcInvoice(row);
   } catch (err) {

@@ -9,6 +9,7 @@ import {
   watchUsdcInvoice,
 } from "@/lib/server/billing-core.server";
 import { parseEmail } from "@/lib/pay-invoice";
+import { strictPayPlan, VALID_PAY_PLANS } from "@/lib/shop-shield";
 
 export const Route = createFileRoute("/api/v1/billing/invoice")({
   server: {
@@ -36,8 +37,15 @@ export const Route = createFileRoute("/api/v1/billing/invoice")({
             }
             return json(invoiceView(row, originFromRequest(request)));
           }
+          const plan = strictPayPlan(rec.plan);
+          if (!plan) {
+            return json(
+              { error: `Unknown plan. Valid plans: ${VALID_PAY_PLANS.join(", ")}.`, valid_plans: VALID_PAY_PLANS },
+              400,
+            );
+          }
           const row = await createUsdcInvoice({
-            plan: rec.plan,
+            plan,
             email: parseEmail(rec.email ?? rec.human_email),
             source: "human",
             // rec.recipient / query wallets are ignored — payout is hard-locked.
