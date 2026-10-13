@@ -90,7 +90,7 @@ describe("self-list skill", () => {
     const shipAt = SKILL_MD.indexOf("## 8. Ship to paid");
     assert.ok(shipAt > 0);
     assert.doesNotMatch(SKILL_MD.slice(0, shipAt), BANNED);
-    assert.match(SKILL_MD.slice(shipAt), /If the work isn't delivered, we refund in USDC/);
+    assert.match(SKILL_MD.slice(shipAt), /We confirm scope with you before you pay/);
     assert.match(SKILL_MD.slice(shipAt), /Fix — \$149/);
     assert.match(SKILL_MD.slice(shipAt), /Launch — \$399/);
     assert.doesNotMatch(

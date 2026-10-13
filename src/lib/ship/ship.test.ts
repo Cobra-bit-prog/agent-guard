@@ -18,7 +18,7 @@ import {
   SHIP_CHARGE_LINE,
   SHIP_HONESTY_LINE,
   SHIP_PACKAGES,
-  SHIP_REFUND_LINE,
+  SHIP_SCOPE_LINE,
   SHIP_REPLY_LINE,
   SHIP_SUPPORT_EMAIL,
 } from "./packages.ts";
@@ -155,7 +155,7 @@ describe("ship intake", () => {
     assert.equal(sent[1]?.to, "ada@example.com");
     assert.match(sent[1]?.text ?? "", new RegExp(SHIP_CHARGE_LINE.replace(/[.]/g, "\\.")));
     assert.match(sent[1]?.text ?? "", new RegExp(SHIP_REPLY_LINE.replace(/[.]/g, "\\.")));
-    assert.match(sent[1]?.text ?? "", new RegExp(SHIP_REFUND_LINE.replace(/[.]/g, "\\.")));
+    assert.match(sent[1]?.text ?? "", new RegExp(SHIP_SCOPE_LINE.replace(/[.]/g, "\\.")));
     assert.match(sent[1]?.text ?? "", new RegExp(SHIP_HONESTY_LINE.replace(/[.]/g, "\\.")));
     for (const mail of sent) assert.doesNotMatch(`${mail.subject}\n${mail.text}`, JARGON);
 
@@ -248,12 +248,12 @@ describe("ship API", () => {
     const listed = (await catalog.json()) as {
       request_only: boolean;
       charged_from_form: boolean;
-      refund: string;
+      scope: string;
       packages: Array<{ id: string; price_usd: number }>;
     };
     assert.equal(listed.request_only, true);
     assert.equal(listed.charged_from_form, false);
-    assert.equal(listed.refund, SHIP_REFUND_LINE);
+    assert.equal(listed.scope, SHIP_SCOPE_LINE);
     assert.deepEqual(
       listed.packages.map((pack) => [pack.id, pack.price_usd]),
       [
@@ -319,15 +319,18 @@ describe("ship page and discovery", () => {
     assert.match(page, /Optional/);
     assert.match(page, /fetch\("\/api\/v1\/ship"/);
     assert.match(page, /Send request/);
-    assert.equal(SHIP_REFUND_LINE, "If the work isn't delivered, we refund in USDC.");
-    assert.match(page, /\{SHIP_REFUND_LINE\}/);
+    assert.equal(SHIP_SCOPE_LINE, "We confirm scope with you before you pay.");
+    assert.match(page, /\{SHIP_SCOPE_LINE\}/);
     assert.match(page, /\{SHIP_CHARGE_LINE\}/);
     assert.match(page, /\{SHIP_REPLY_LINE\}/);
     assert.match(page, /\{SHIP_HONESTY_LINE\}/);
-    assert.match(thanks, /\{SHIP_REFUND_LINE\}/);
+    assert.match(thanks, /\{SHIP_SCOPE_LINE\}/);
     assert.match(thanks, /Nothing is charged/);
     assert.doesNotMatch(page, /stripe|Pay \$|mode: "checkout"/i);
     const packages = read("src/lib/ship/packages.ts");
+    for (const copy of [page, thanks, packages, read("public/llms.txt"), read("public/skill.md"), read("public/agents.json"), read("public/.well-known/agents.json"), read("public/agents.txt")]) {
+      assert.doesNotMatch(copy, /refund/i);
+    }
     const shipLlms = llms.slice(
       llms.indexOf("## Ship to paid"),
       llms.indexOf("## Agent directory"),
@@ -361,7 +364,7 @@ describe("ship page and discovery", () => {
     assert.match(llms, /https:\/\/agent-control\.net\/ship/);
     assert.match(llms, /Fix — \$149/);
     assert.match(llms, /Launch — \$399/);
-    assert.match(llms, new RegExp(SHIP_REFUND_LINE));
+    assert.match(llms, new RegExp(SHIP_SCOPE_LINE));
     assert.match(skill, /## 8\. Ship to paid/);
     assert.match(skill, /Fix — \$149/);
     assert.match(skill, /Launch — \$399/);
@@ -388,7 +391,7 @@ describe("ship mail copy", () => {
     const support = supportShipMail(order);
     assert.match(customer.text, /Nothing is charged from this form/);
     assert.match(customer.text, /USDC payment link/);
-    assert.match(customer.text, /If the work isn't delivered, we refund in USDC/);
+    assert.match(customer.text, /We confirm scope with you before you pay/);
     assert.match(support.text, /not paid yet/);
     assert.match(support.text, /\(none\)/);
     assert.doesNotMatch(`${customer.text}\n${support.text}`, JARGON);
