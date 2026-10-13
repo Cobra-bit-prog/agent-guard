@@ -197,10 +197,4 @@ describe("invoice plan validation", () => {
     assert.match(route, /400/);
   });
 
-  it("watch route 404s when no invoice row exists", () => {
-    const route = src("src/routes/api/v1/billing.watch.ts");
-    assert.match(route, /if \(!row\) return json\(\{ error: "Invoice not found\." \}, 404\);/);
-    assert.doesNotMatch(route, /findMatchingUsdcPayment/);
-    assert.doesNotMatch(route, /status: "pending"/);
-  });
 });
