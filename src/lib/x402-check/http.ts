@@ -357,6 +357,7 @@ export async function handleX402CheckRequest(
                 href: "/ship",
                 fix_usd: shipPackage("fix")?.priceUsd,
                 launch_usd: shipPackage("launch")?.priceUsd,
+                keep_usd: shipPackage("keep")?.priceUsd,
               },
             }
           : {}),

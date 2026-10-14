@@ -74,7 +74,7 @@ export const FAQ_ITEMS: readonly FaqItem[] = [
     q: "What is Ship to paid?",
     parts: [
       { href: "/ship", label: "/ship" },
-      " is two fixed packages, paid in USDC on Solana or Base. Fix is $149. We get an existing x402 or MCP paid endpoint returning a valid 402, passing Coinbase's x402 validator, and listed so it can be discovered. Delivered within 3 business days. Launch is $399. We take one API or tool live as a paid x402 endpoint, with a listing. Delivered within 5 business days. You send the endpoint URL, the package, and an email on /ship. A note is optional. Nothing is charged from the form. We reply within 1 business day with a USDC payment link. We confirm scope with you before you pay. We do not promise sales. We do not promise a listing by Coinbase.",
+      " is three fixed packages, paid in USDC on Solana or Base. Fix is $149. We get an existing x402 or MCP paid endpoint returning a valid 402, passing Coinbase's x402 validator, and listed so it can be discovered. Delivered within 3 business days. Launch is $399. We take one API or tool live as a paid x402 endpoint, with a listing. Delivered within 5 business days. Keep-Paid is $29 a month. A daily check that your x402 or MCP paid endpoint still returns a valid 402 and is still listed where we can see it. We email you when something breaks, with the fix. First report within 1 business day. Then $29 USDC each month. This is monitoring and alerts, not unlimited engineering. You send the endpoint URL, the package, and an email on /ship. A note is optional. Nothing is charged from the form. We reply within 1 business day with a USDC payment link. We confirm scope with you before you pay. We do not promise sales. We do not promise a listing by Coinbase.",
     ],
   },
   {

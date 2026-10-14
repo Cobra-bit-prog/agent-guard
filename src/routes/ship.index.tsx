@@ -11,12 +11,13 @@ import {
   SHIP_SUPPORT_EMAIL,
   formatShipPrice,
   isShipPackageId,
+  shipDeliveryLine,
   type ShipPackageId,
 } from "@/lib/ship/packages";
 
 const PAGE_TITLE = "Ship to paid — Agent Control";
 const PAGE_DESCRIPTION =
-  "Fix is $149. Launch is $399. Paid in USDC on Solana or Base. Nothing is charged from the form. We reply within 1 business day with a USDC payment link.";
+  "Keep-Paid is $29/mo. Fix is $149. Launch is $399. Paid in USDC on Solana or Base. Nothing is charged from the form. We reply within 1 business day with a USDC payment link.";
 
 export const Route = createFileRoute("/ship/")({
   validateSearch: (search: Record<string, unknown>): { package?: ShipPackageId } => {
@@ -116,7 +117,7 @@ function ShipPage() {
           className="landing-rise mt-4 max-w-[40rem] text-body text-muted"
           style={{ animationDelay: "0.08s" }}
         >
-          Two fixed packages. {SHIP_PAY_LINE} {SHIP_CHARGE_LINE} {SHIP_REPLY_LINE}
+          Three fixed packages. {SHIP_PAY_LINE} {SHIP_CHARGE_LINE} {SHIP_REPLY_LINE}
         </p>
         <p
           className="landing-rise mt-2 max-w-[40rem] text-body text-muted"
@@ -125,7 +126,7 @@ function ShipPage() {
           {SHIP_SCOPE_LINE} {SHIP_HONESTY_LINE}
         </p>
 
-        <ul className="mt-10 grid gap-4 sm:grid-cols-2">
+        <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {SHIP_PACKAGES.map((item) => {
             const active = item.id === selected;
             return (
@@ -138,10 +139,11 @@ function ShipPage() {
                   <h2 className="text-card font-medium text-fg">{item.name}</h2>
                   <p className="mt-3 text-title font-semibold text-fg">
                     {formatShipPrice(item.priceUsd)}
+                    {item.id === "keep" ? (
+                      <span className="text-body font-medium text-muted"> a month</span>
+                    ) : null}
                   </p>
-                  <p className="mt-2 text-meta text-muted">
-                    Delivered within {item.days} business days.
-                  </p>
+                  <p className="mt-2 text-meta text-muted">{shipDeliveryLine(item)}</p>
                   <h3 className="mt-4 font-mono text-meta text-coral">Included</h3>
                   <p className="mt-2 flex-1 text-body text-muted">{item.included}</p>
                   <h3 className="mt-4 font-mono text-meta text-muted">Not included</h3>
@@ -164,7 +166,7 @@ function ShipPage() {
           <h2 className="text-title font-semibold text-fg">Tell us the endpoint</h2>
           <p className="mt-2 text-body text-muted">
             {pack
-              ? `${pack.name} · ${formatShipPrice(pack.priceUsd)}`
+              ? `${pack.name} · ${formatShipPrice(pack.priceUsd)}${pack.id === "keep" ? " a month" : ""}`
               : "Pick a package above, then send the endpoint URL."}
           </p>
           <p className="mt-2 text-body text-muted">{SHIP_REPLY_LINE}</p>

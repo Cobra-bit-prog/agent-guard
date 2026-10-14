@@ -142,7 +142,7 @@ function mapShip(row: ShipRow): ShipOrder {
 
 /**
  * Saves a ship request on hire_orders.
- * package_id is fix or launch. link is the endpoint URL. brief is the optional note.
+ * package_id is fix, launch, or keep. link is the endpoint URL. brief is the optional note.
  * name stores the email because this form does not collect a separate name.
  * status stays requested. This path does not open card checkout.
  */

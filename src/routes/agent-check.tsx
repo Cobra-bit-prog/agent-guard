@@ -344,7 +344,7 @@ function AgentCheckPage() {
           <a href="/ship" className="font-medium text-navy hover:text-coral">
             Ship to paid
           </a>
-          . Fix is $149. Launch is $399.
+          . Fix is $149. Keep-Paid is $29 a month. Launch is $399.
         </p>
         <p className="mt-4 text-body text-muted">
           <a href="/hire" className="font-medium text-navy hover:text-coral">

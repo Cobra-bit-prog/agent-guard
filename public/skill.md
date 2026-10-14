@@ -178,10 +178,11 @@ MCP tool agent_readiness_check on https://agent-control.net/api/v1/mcp is the sa
 
 ## 8. Ship to paid
 
-We get a paid endpoint ready, or we take one API or tool live.
+We get a paid endpoint ready, we take one API or tool live, or we check a paid endpoint each day.
 Page: https://agent-control.net/ship
 Paid in USDC on Solana or Base. Send the endpoint URL, the package, and an email. A note is optional. Nothing is charged from this form. We'll reply within 1 business day with a USDC payment link. We confirm scope with you before you pay.
 - Fix — $149 — We get an existing x402 or MCP paid endpoint returning a valid 402, passing Coinbase's x402 validator, and listed so it can be discovered. Delivered within 3 business days.
 - Launch — $399 — We take one API or tool live as a paid x402 endpoint, with a listing. Delivered within 5 business days.
+- Keep-Paid — $29 — A daily check that your x402 or MCP paid endpoint still returns a valid 402 and is still listed where we can see it. We email you when something breaks, with the fix. First report within 1 business day after payment. Then $29 USDC each month.
 We do not promise sales. We do not promise a listing by Coinbase.
 The ship API stays closed to crawlers.

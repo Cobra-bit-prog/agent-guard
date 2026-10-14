@@ -797,12 +797,13 @@ describe("free and paid report", () => {
     );
     assert.equal(failed.status, 200);
     const failedBody = (await failed.json()) as {
-      next: { ship?: { href: string; line: string; fix_usd: number; launch_usd: number } };
+      next: { ship?: { href: string; line: string; fix_usd: number; launch_usd: number; keep_usd: number } };
     };
     assert.equal(failedBody.next.ship?.href, "/ship");
     assert.equal(failedBody.next.ship?.line, "Ship to paid");
     assert.equal(failedBody.next.ship?.fix_usd, 149);
     assert.equal(failedBody.next.ship?.launch_usd, 399);
+    assert.equal(failedBody.next.ship?.keep_usd, 29);
 
     const started = await handleX402ReportRequest(
       post("/api/v1/x402-check/report", { url: URL, pay_to: "not-our-wallet", amount_usd: 49 }),
