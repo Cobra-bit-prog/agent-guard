@@ -93,6 +93,8 @@ describe("self-list skill", () => {
     assert.match(SKILL_MD.slice(shipAt), /We confirm scope with you before you pay/);
     assert.match(SKILL_MD.slice(shipAt), /Fix — \$149/);
     assert.match(SKILL_MD.slice(shipAt), /Launch — \$399/);
+    assert.match(SKILL_MD.slice(shipAt), /Keep-Paid — \$29/);
+    assert.match(SKILL_MD.slice(shipAt), /\$29 USDC each month/);
     assert.doesNotMatch(
       SKILL_MD.slice(shipAt),
       /escrow|keep 10%|pay only when|\bhold\b|\bHOLD\b|honeypot|company_website/i,

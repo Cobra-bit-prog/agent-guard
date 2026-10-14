@@ -157,7 +157,7 @@ function HirePage() {
           <a href="/ship" className="text-fg underline">
             Ship to paid
           </a>
-          . Fix is $149. Launch is $399.
+          . Fix is $149. Keep-Paid is $29 a month. Launch is $399.
         </p>
 
         <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

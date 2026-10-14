@@ -21,6 +21,7 @@ import {
   SHIP_SCOPE_LINE,
   SHIP_REPLY_LINE,
   SHIP_SUPPORT_EMAIL,
+  shipDeliveryLine,
 } from "./packages.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -67,16 +68,18 @@ function post(body: unknown, ip = "203.0.113.50") {
 }
 
 describe("ship packages", () => {
-  it("keeps Fix at $149 and Launch at $399", () => {
+  it("keeps Fix at $149, Launch at $399, and Keep-Paid at $29 a month", () => {
     assert.deepEqual(
       SHIP_PACKAGES.map((pack) => [pack.id, pack.name, pack.priceUsd, pack.days]),
       [
         ["fix", "Fix", 149, 3],
         ["launch", "Launch", 399, 5],
+        ["keep", "Keep-Paid", 29, 1],
       ],
     );
     const fix = SHIP_PACKAGES[0];
     const launch = SHIP_PACKAGES[1];
+    const keep = SHIP_PACKAGES[2];
     assert.match(fix?.included ?? "", /valid 402/);
     assert.match(fix?.included ?? "", /Coinbase's x402 validator/);
     assert.match(fix?.included ?? "", /listed so it can be discovered/);
@@ -86,6 +89,18 @@ describe("ship packages", () => {
       /one API or tool live as a paid x402 endpoint, with a listing/,
     );
     assert.match(launch?.included ?? "", /5 business days/);
+    assert.match(keep?.included ?? "", /daily check/);
+    assert.match(keep?.included ?? "", /valid 402/);
+    assert.match(keep?.included ?? "", /email you when something breaks/);
+    assert.match(keep?.included ?? "", /First report within 1 business day/);
+    assert.match(keep?.included ?? "", /\$29 USDC each month/);
+    assert.match(keep?.excluded ?? "", /monitoring and alerts, not unlimited engineering/);
+    assert.equal(
+      keep ? shipDeliveryLine(keep) : "",
+      "First report within 1 business day. Then $29 USDC a month.",
+    );
+    assert.equal(fix ? shipDeliveryLine(fix) : "", "Delivered within 3 business days.");
+    assert.doesNotMatch(keep ? shipDeliveryLine(keep) : "", /Delivered within/i);
     for (const pack of SHIP_PACKAGES) {
       assert.match(pack.excluded, /do not promise sales/i);
       assert.match(pack.excluded, /do not promise a listing by Coinbase/i);
@@ -105,6 +120,7 @@ describe("ship intake", () => {
     assert.equal(parsed.email, "ada@example.com");
     assert.equal(parsed.endpoint, "https://example.com/pay");
     assert.equal(parsed.note, "The 402 body is missing a field.");
+    assert.equal(parseShipIntake(intake({ package: "keep" })).package_id, "keep");
     assert.equal(parseShipIntake(intake({ note: "  " })).note, "");
     assert.equal(parseShipIntake(intake({ note: undefined })).note, "");
   });
@@ -190,6 +206,32 @@ describe("ship intake", () => {
     assert.equal(stored?.link, "https://example.com/pay");
   });
 
+  it("saves Keep-Paid at $29 a month and names it in the mail", async () => {
+    const sql = await openDb();
+    const sent: ShipMail[] = [];
+    const result = await submitShipOrder({
+      sql,
+      body: intake({ package: "keep", note: "Check it every day." }),
+      now: NOW,
+      ipHash: hashHireIp("203.0.113.54"),
+      sendMail: async (mail) => {
+        sent.push(mail);
+      },
+    });
+    assert.equal(result.mode, "request");
+    assert.equal(result.package_name, "Keep-Paid");
+    assert.equal(result.amount_usd, 29);
+    assert.equal("url" in result, false);
+    assert.match(sent[0]?.subject ?? "", /Keep-Paid/);
+    assert.match(sent[0]?.text ?? "", /\$29/);
+    assert.match(sent[1]?.subject ?? "", /Keep-Paid/);
+    assert.match(sent[1]?.text ?? "", /Nothing is charged from this form/);
+    const stored = await getHireOrder(sql, result.id);
+    assert.equal(stored?.package_id, "keep");
+    assert.equal(stored?.package_name, "Keep-Paid");
+    assert.equal(stored?.amount_usd, 29);
+  });
+
   it("writes an empty note when the field is left blank", async () => {
     const sql = await openDb();
     const sent: ShipMail[] = [];
@@ -238,7 +280,7 @@ describe("ship intake", () => {
 });
 
 describe("ship API", () => {
-  it("lists both packages and saves a request without a payment URL", async () => {
+  it("lists three packages and saves a request without a payment URL", async () => {
     const catalog = await handleShipRequest(
       new Request("https://agent-control.net/api/v1/ship"),
       null,
@@ -259,6 +301,7 @@ describe("ship API", () => {
       [
         ["fix", 149],
         ["launch", 399],
+        ["keep", 29],
       ],
     );
 
@@ -324,11 +367,24 @@ describe("ship page and discovery", () => {
     assert.match(page, /\{SHIP_CHARGE_LINE\}/);
     assert.match(page, /\{SHIP_REPLY_LINE\}/);
     assert.match(page, /\{SHIP_HONESTY_LINE\}/);
+    assert.match(page, /Three fixed packages/);
+    assert.match(page, /Keep-Paid is \$29\/mo/);
+    assert.match(page, /shipDeliveryLine/);
+    assert.doesNotMatch(page, /Delivered within \{item\.days\}/);
     assert.match(thanks, /\{SHIP_SCOPE_LINE\}/);
     assert.match(thanks, /Nothing is charged/);
     assert.doesNotMatch(page, /stripe|Pay \$|mode: "checkout"/i);
     const packages = read("src/lib/ship/packages.ts");
-    for (const copy of [page, thanks, packages, read("public/llms.txt"), read("public/skill.md"), read("public/agents.json"), read("public/.well-known/agents.json"), read("public/agents.txt")]) {
+    for (const copy of [
+      page,
+      thanks,
+      packages,
+      read("public/llms.txt"),
+      read("public/skill.md"),
+      read("public/agents.json"),
+      read("public/.well-known/agents.json"),
+      read("public/agents.txt"),
+    ]) {
       assert.doesNotMatch(copy, /refund/i);
     }
     const shipLlms = llms.slice(
@@ -352,8 +408,13 @@ describe("ship page and discovery", () => {
     assert.match(faq, /href: "\/ship"/);
     assert.match(chrome, /href="\/ship"/);
     assert.match(chrome, /Ship to paid/);
-    assert.equal((x402.match(/href="\/ship"/g) ?? []).length, 1);
+    assert.equal((x402.match(/href="\/ship/g) ?? []).length, 3);
     assert.match(x402, /function ShipFailLink/);
+    assert.match(x402, /href="\/ship\?package=fix"/);
+    assert.match(x402, /href="\/ship\?package=keep"/);
+    assert.match(x402, /Fix is \$149/);
+    assert.match(x402, /Keep-Paid is \$29 a month/);
+    assert.match(x402, /Launch is \$399/);
     assert.match(x402, /if \(!show\) return null/);
     assert.match(x402, /checkFailed\(free\.failed, free\.checks\)/);
     assert.match(x402, /checkFailed\(invoice\?\.report\?\.failed, reportChecks\)/);
@@ -364,14 +425,17 @@ describe("ship page and discovery", () => {
     assert.match(llms, /https:\/\/agent-control\.net\/ship/);
     assert.match(llms, /Fix — \$149/);
     assert.match(llms, /Launch — \$399/);
+    assert.match(llms, /Keep-Paid — \$29 a month/);
     assert.match(llms, new RegExp(SHIP_SCOPE_LINE));
     assert.match(skill, /## 8\. Ship to paid/);
     assert.match(skill, /Fix — \$149/);
     assert.match(skill, /Launch — \$399/);
+    assert.match(skill, /Keep-Paid — \$29/);
+    assert.match(skill, /\$29 USDC each month/);
     assert.equal(agents, wellKnown);
     assert.match(agents, /https:\/\/agent-control\.net\/ship/);
-    assert.match(agents, /Fix \$149, Launch \$399/);
-    assert.match(agentsTxt, /Fix \$149, Launch \$399/);
+    assert.match(agents, /Fix \$149, Launch \$399, Keep-Paid \$29\/mo/);
+    assert.match(agentsTxt, /Fix \$149, Launch \$399, Keep-Paid \$29\/mo/);
     assert.match(tree, /'\/ship'/);
     assert.match(tree, /'\/api\/v1\/ship'/);
   });

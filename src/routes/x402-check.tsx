@@ -98,7 +98,15 @@ function ShipFailLink({ show }: { show: boolean }) {
       <a href="/ship" className="font-medium text-navy hover:text-coral">
         Ship to paid
       </a>
-      . Fix is $149. Launch is $399. Nothing is charged from that form.
+      .{" "}
+      <a href="/ship?package=fix" className="font-medium text-navy hover:text-coral">
+        Fix is $149
+      </a>
+      .{" "}
+      <a href="/ship?package=keep" className="font-medium text-navy hover:text-coral">
+        Keep-Paid is $29 a month
+      </a>
+      . Launch is $399. Nothing is charged from that form.
     </p>
   );
 }

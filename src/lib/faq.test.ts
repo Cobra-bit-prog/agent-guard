@@ -66,6 +66,8 @@ describe("public /faq", () => {
     assert.match(text, /\/ship/);
     assert.match(text, /Fix is \$149/);
     assert.match(text, /Launch is \$399/);
+    assert.match(text, /Keep-Paid is \$29 a month/);
+    assert.match(text, /three fixed packages/);
     assert.match(text, /We confirm scope with you before you pay/);
     assert.equal(FAQ_ITEMS.length, 7);
     assert.doesNotMatch(text, BANNED);

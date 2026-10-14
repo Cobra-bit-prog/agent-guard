@@ -1,5 +1,5 @@
 /**
- * Ship to paid. Two fixed packages, paid in USDC on Solana or Base.
+ * Ship to paid. Three fixed packages, paid in USDC on Solana or Base.
  * Requests land in hire_orders with these package ids. Nothing is charged
  * from the form. We reply with a USDC payment link.
  * Do not promise sales, or a listing by Coinbase.
@@ -19,7 +19,7 @@ export const SHIP_SCOPE_LINE = "We confirm scope with you before you pay.";
 export const SHIP_HONESTY_LINE =
   "We do not promise sales. We do not promise a listing by Coinbase.";
 
-export const SHIP_PACKAGE_IDS = ["fix", "launch"] as const;
+export const SHIP_PACKAGE_IDS = ["fix", "launch", "keep"] as const;
 
 export type ShipPackageId = (typeof SHIP_PACKAGE_IDS)[number];
 
@@ -51,6 +51,15 @@ export const SHIP_PACKAGES: readonly ShipPackage[] = [
       "We take one API or tool live as a paid x402 endpoint, with a listing. Delivered within 5 business days.",
     excluded: `${SHIP_HONESTY_LINE} One API or one tool.`,
   },
+  {
+    id: "keep",
+    name: "Keep-Paid",
+    priceUsd: 29,
+    days: 1,
+    included:
+      "A daily check that your x402 or MCP paid endpoint still returns a valid 402 and is still listed where we can see it. We email you when something breaks, with the fix. First report within 1 business day after payment. Then $29 USDC each month.",
+    excluded: `${SHIP_HONESTY_LINE} This is monitoring and alerts, not unlimited engineering.`,
+  },
 ];
 
 const BY_ID = new Map(SHIP_PACKAGES.map((pack) => [pack.id, pack]));
@@ -67,11 +76,19 @@ export function formatShipPrice(usd: number): string {
   return formatHirePrice(usd);
 }
 
+/** Card line under the price. Keep-Paid is monthly, so it is not a one-shot delivery. */
+export function shipDeliveryLine(pack: ShipPackage): string {
+  if (pack.id === "keep") {
+    return `First report within ${pack.days} business day. Then ${formatShipPrice(pack.priceUsd)} USDC a month.`;
+  }
+  return `Delivered within ${pack.days} business days.`;
+}
+
 /** Plain-text block for skill.md. Prices stay tied to SHIP_PACKAGES. */
 export const SHIP_SKILL_SECTION = `
 ## 8. Ship to paid
 
-We get a paid endpoint ready, or we take one API or tool live.
+We get a paid endpoint ready, we take one API or tool live, or we check a paid endpoint each day.
 Page: ${SHIP_PAGE_URL}
 ${SHIP_PAY_LINE} Send the endpoint URL, the package, and an email. A note is optional. ${SHIP_CHARGE_LINE} ${SHIP_REPLY_LINE} ${SHIP_SCOPE_LINE}
 ${SHIP_PACKAGES.map((pack) => `- ${pack.name} — ${formatShipPrice(pack.priceUsd)} — ${pack.included}`).join("\n")}
