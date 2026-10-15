@@ -100,6 +100,15 @@ export const X402_CHECK_ORDERS_MIGRATION = "0038_x402_check_orders.sql";
 export const AGENT_CHECK_ORDERS_MIGRATION = "0039_agent_check_orders.sql";
 
 /**
+ * Directory update on 2026-10-15: Lacuna's topic price, plus the providers
+ * from the buy gateway catalog as seeded, unclaimed listings. Preview builds
+ * use the production DATABASE_URL, so this file is skipped when
+ * VERCEL_ENV=preview. A preview build must not change production rows.
+ * Production, local, and tests apply it with no extra environment variable.
+ */
+export const DIRECTORY_CELO_BUY_MIGRATION = "0040_directory_lacuna_price_celo_buy_providers.sql";
+
+/**
  * @param {Record<string, string | undefined>} [env]
  * @returns {boolean}
  */
@@ -168,6 +177,14 @@ export function x402CheckOrdersMigrationHeld(env = process.env) {
  * @returns {boolean}
  */
 export function agentCheckOrdersMigrationHeld(env = process.env) {
+  return env.VERCEL_ENV === "preview";
+}
+
+/**
+ * @param {Record<string, string | undefined>} [env]
+ * @returns {boolean}
+ */
+export function directoryCeloBuyMigrationHeld(env = process.env) {
   return env.VERCEL_ENV === "preview";
 }
 
@@ -253,6 +270,15 @@ export function agentCheckOrdersHoldNotice(env = process.env) {
 }
 
 /**
+ * @param {Record<string, string | undefined>} [env]
+ * @returns {string | null}
+ */
+export function directoryCeloBuyHoldNotice(env = process.env) {
+  if (!directoryCeloBuyMigrationHeld(env)) return null;
+  return `[directory] holding ${DIRECTORY_CELO_BUY_MIGRATION}: VERCEL_ENV=preview uses the production DATABASE_URL, so this migration is not applied.`;
+}
+
+/**
  * @param {string} name
  * @param {Record<string, string | undefined>} env
  * @returns {boolean}
@@ -267,6 +293,7 @@ function migrationHeldOnPreview(name, env) {
   if (name === LISTED_BY_MIGRATION) return listedByMigrationHeld(env);
   if (name === X402_CHECK_ORDERS_MIGRATION) return x402CheckOrdersMigrationHeld(env);
   if (name === AGENT_CHECK_ORDERS_MIGRATION) return agentCheckOrdersMigrationHeld(env);
+  if (name === DIRECTORY_CELO_BUY_MIGRATION) return directoryCeloBuyMigrationHeld(env);
   return false;
 }
 
@@ -278,8 +305,9 @@ function migrationHeldOnPreview(name, env) {
  * `0033_agent_listing_featured.sql`,
  * `0034_seed_agent_listings_wave2.sql`,
  * `0036_agent_listing_listed_by.sql`,
- * `0038_x402_check_orders.sql`, and
- * `0039_agent_check_orders.sql` are omitted on
+ * `0038_x402_check_orders.sql`,
+ * `0039_agent_check_orders.sql`, and
+ * `0040_directory_lacuna_price_celo_buy_providers.sql` are omitted on
  * preview builds only.
  * `0026_hide_exchange_smoke_jobs.sql`,
  * `0028_hide_directory_smoke_listing.sql`,

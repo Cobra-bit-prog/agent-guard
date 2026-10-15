@@ -30,6 +30,9 @@ import {
   AGENT_CHECK_ORDERS_MIGRATION,
   agentCheckOrdersHoldNotice,
   agentCheckOrdersMigrationHeld,
+  DIRECTORY_CELO_BUY_MIGRATION,
+  directoryCeloBuyHoldNotice,
+  directoryCeloBuyMigrationHeld,
   x402CheckOrdersHoldNotice,
   x402CheckOrdersMigrationHeld,
   exchangeJobsHoldNotice,
@@ -514,4 +517,42 @@ test("agent check orders migration applies in production and is skipped on previ
   assert.match(migrate, /agentCheckOrdersHoldNotice/);
   assert.match(db, /agentCheckOrdersHoldNotice/);
   assert.match(migrate, /0039_agent_check_orders\.sql/);
+});
+
+test("directory Lacuna price and buy catalog providers migration applies in production and is skipped on preview", () => {
+  const name = DIRECTORY_CELO_BUY_MIGRATION;
+  assert.equal(name, "0040_directory_lacuna_price_celo_buy_providers.sql");
+  const sql = readFileSync(join(projectRoot(), "migrations", name), "utf8");
+  assert.match(sql, /insert into agent_listings/i);
+  assert.match(sql, /where not exists/i);
+  assert.match(sql, /e\.id = v\.id or lower\(e\.name\) = lower\(v\.name\)/);
+  assert.match(sql, /where id = 'agent_b1d4d13d18ef231566c5a125'\s+and pitch = /);
+  assert.match(sql, /Topics cost \$0\.50 USDC\./);
+  assert.doesNotMatch(sql, /\b(drop|delete)\b/i);
+  assert.doesNotMatch(sql, /\/workspace/);
+  const rows = sql.match(/^\s+\('agent_[0-9a-f]{24}'.*$/gm) ?? [];
+  assert.equal(rows.length, 10);
+  for (const row of rows) {
+    assert.match(row, /Listed from public registry - unclaimed\./);
+    // link and contact are the provider's own site, never the gateway.
+    assert.doesNotMatch(row, /'https:\/\/[^']*usebuy\.ai[^']*'/);
+  }
+  assert.doesNotMatch(sql, /'Apify'/);
+
+  assert.equal(directoryCeloBuyMigrationHeld({}), false);
+  assert.equal(directoryCeloBuyMigrationHeld({ VERCEL_ENV: "production" }), false);
+  assert.equal(directoryCeloBuyMigrationHeld({ VERCEL_ENV: "preview" }), true);
+  assert.equal(directoryCeloBuyHoldNotice({}), null);
+  assert.match(directoryCeloBuyHoldNotice({ VERCEL_ENV: "preview" }) ?? "", /not applied/);
+
+  assert.deepEqual(pendingMigrations([name], [], { VERCEL_ENV: "preview" }), []);
+  assert.deepEqual(pendingMigrations([name], [], { VERCEL_ENV: "production" }), [
+    { name, path: name },
+  ]);
+
+  const migrate = readFileSync(join(projectRoot(), "scripts/migrate.mjs"), "utf8");
+  const db = readFileSync(join(projectRoot(), "src/lib/db.ts"), "utf8");
+  assert.match(migrate, /directoryCeloBuyHoldNotice/);
+  assert.match(db, /directoryCeloBuyHoldNotice/);
+  assert.match(migrate, /0040_directory_lacuna_price_celo_buy_providers\.sql/);
 });
