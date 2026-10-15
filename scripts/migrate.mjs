@@ -19,7 +19,8 @@
  * `0036_agent_listing_listed_by.sql`,
  * `0038_x402_check_orders.sql`,
  * `0039_agent_check_orders.sql`,
- * `0040_directory_lacuna_price_celo_buy_providers.sql`, and
+ * `0040_directory_lacuna_price_celo_buy_providers.sql`,
+ * `0041_lacuna_pitch_topic_price.sql`, and
  * `0042_payment_asks.sql` are skipped when
  * VERCEL_ENV=preview because preview builds use the production DATABASE_URL.
  * Production applies them with no extra environment variable. The directory
@@ -39,6 +40,7 @@ import {
   listedByHoldNotice,
   agentCheckOrdersHoldNotice,
   directoryCeloBuyHoldNotice,
+  lacunaPitchHoldNotice,
   paymentAsksHoldNotice,
   pendingMigrations,
   x402CheckOrdersHoldNotice,
@@ -73,6 +75,7 @@ async function main() {
     x402CheckOrdersHoldNotice(),
     agentCheckOrdersHoldNotice(),
     directoryCeloBuyHoldNotice(),
+    lacunaPitchHoldNotice(),
     paymentAsksHoldNotice(),
   ]) {
     if (heldNotice) console.log(heldNotice);

@@ -109,6 +109,13 @@ export const AGENT_CHECK_ORDERS_MIGRATION = "0039_agent_check_orders.sql";
 export const DIRECTORY_CELO_BUY_MIGRATION = "0040_directory_lacuna_price_celo_buy_providers.sql";
 
 /**
+ * Lacuna's pitch with the topic price text Lacuna sent. Preview builds use the
+ * production DATABASE_URL, so this file is skipped when VERCEL_ENV=preview.
+ * Production, local, and tests apply it with no extra environment variable.
+ */
+export const LACUNA_PITCH_MIGRATION = "0041_lacuna_pitch_topic_price.sql";
+
+/**
  * Log of 402 replies and unpaid checkouts (who asked to pay). Preview builds
  * use the production DATABASE_URL, so this file is skipped when
  * VERCEL_ENV=preview. Production applies it with no extra environment
@@ -193,6 +200,14 @@ export function agentCheckOrdersMigrationHeld(env = process.env) {
  * @returns {boolean}
  */
 export function directoryCeloBuyMigrationHeld(env = process.env) {
+  return env.VERCEL_ENV === "preview";
+}
+
+/**
+ * @param {Record<string, string | undefined>} [env]
+ * @returns {boolean}
+ */
+export function lacunaPitchMigrationHeld(env = process.env) {
   return env.VERCEL_ENV === "preview";
 }
 
@@ -298,6 +313,15 @@ export function directoryCeloBuyHoldNotice(env = process.env) {
  * @param {Record<string, string | undefined>} [env]
  * @returns {string | null}
  */
+export function lacunaPitchHoldNotice(env = process.env) {
+  if (!lacunaPitchMigrationHeld(env)) return null;
+  return `[directory] holding ${LACUNA_PITCH_MIGRATION}: VERCEL_ENV=preview uses the production DATABASE_URL, so this migration is not applied.`;
+}
+
+/**
+ * @param {Record<string, string | undefined>} [env]
+ * @returns {string | null}
+ */
 export function paymentAsksHoldNotice(env = process.env) {
   if (!paymentAsksMigrationHeld(env)) return null;
   return `[payment-ask] holding ${PAYMENT_ASKS_MIGRATION}: VERCEL_ENV=preview uses the production DATABASE_URL, so this migration is not applied.`;
@@ -319,6 +343,7 @@ function migrationHeldOnPreview(name, env) {
   if (name === X402_CHECK_ORDERS_MIGRATION) return x402CheckOrdersMigrationHeld(env);
   if (name === AGENT_CHECK_ORDERS_MIGRATION) return agentCheckOrdersMigrationHeld(env);
   if (name === DIRECTORY_CELO_BUY_MIGRATION) return directoryCeloBuyMigrationHeld(env);
+  if (name === LACUNA_PITCH_MIGRATION) return lacunaPitchMigrationHeld(env);
   if (name === PAYMENT_ASKS_MIGRATION) return paymentAsksMigrationHeld(env);
   return false;
 }
@@ -333,7 +358,8 @@ function migrationHeldOnPreview(name, env) {
  * `0036_agent_listing_listed_by.sql`,
  * `0038_x402_check_orders.sql`,
  * `0039_agent_check_orders.sql`,
- * `0040_directory_lacuna_price_celo_buy_providers.sql`, and
+ * `0040_directory_lacuna_price_celo_buy_providers.sql`,
+ * `0041_lacuna_pitch_topic_price.sql`, and
  * `0042_payment_asks.sql` are omitted on
  * preview builds only.
  * `0026_hide_exchange_smoke_jobs.sql`,
