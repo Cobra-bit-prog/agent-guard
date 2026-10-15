@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { withPaymentAskLog } from "@/lib/payment-ask/route";
 import { getSql } from "@/lib/db";
 import { CORS } from "@/lib/server/http";
 import { handleAgentReportRequest } from "@/lib/agent-check/http";
@@ -16,8 +17,14 @@ export const Route = createFileRoute("/api/v1/agent-check/report")({
   server: {
     handlers: {
       OPTIONS: () => new Response(null, { status: 204, headers: CORS }),
-      GET: async ({ request }) => handleAgentReportRequest(request, await sqlOrNull()),
-      POST: async ({ request }) => handleAgentReportRequest(request, await sqlOrNull()),
+      GET: withPaymentAskLog("/api/v1/agent-check/report", async ({ request }) =>
+        handleAgentReportRequest(request, await sqlOrNull()),
+      ),
+      POST: withPaymentAskLog(
+        "/api/v1/agent-check/report",
+        async ({ request }) => handleAgentReportRequest(request, await sqlOrNull()),
+        { createsCheckout: true },
+      ),
     },
   },
 });

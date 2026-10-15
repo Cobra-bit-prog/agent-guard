@@ -116,6 +116,14 @@ export const DIRECTORY_CELO_BUY_MIGRATION = "0040_directory_lacuna_price_celo_bu
 export const LACUNA_PITCH_MIGRATION = "0041_lacuna_pitch_topic_price.sql";
 
 /**
+ * Log of 402 replies and unpaid checkouts (who asked to pay). Preview builds
+ * use the production DATABASE_URL, so this file is skipped when
+ * VERCEL_ENV=preview. Production applies it with no extra environment
+ * variable. Paid endpoints work the same before the table exists.
+ */
+export const PAYMENT_ASKS_MIGRATION = "0042_payment_asks.sql";
+
+/**
  * @param {Record<string, string | undefined>} [env]
  * @returns {boolean}
  */
@@ -200,6 +208,14 @@ export function directoryCeloBuyMigrationHeld(env = process.env) {
  * @returns {boolean}
  */
 export function lacunaPitchMigrationHeld(env = process.env) {
+  return env.VERCEL_ENV === "preview";
+}
+
+/**
+ * @param {Record<string, string | undefined>} [env]
+ * @returns {boolean}
+ */
+export function paymentAsksMigrationHeld(env = process.env) {
   return env.VERCEL_ENV === "preview";
 }
 
@@ -303,6 +319,15 @@ export function lacunaPitchHoldNotice(env = process.env) {
 }
 
 /**
+ * @param {Record<string, string | undefined>} [env]
+ * @returns {string | null}
+ */
+export function paymentAsksHoldNotice(env = process.env) {
+  if (!paymentAsksMigrationHeld(env)) return null;
+  return `[payment-ask] holding ${PAYMENT_ASKS_MIGRATION}: VERCEL_ENV=preview uses the production DATABASE_URL, so this migration is not applied.`;
+}
+
+/**
  * @param {string} name
  * @param {Record<string, string | undefined>} env
  * @returns {boolean}
@@ -319,6 +344,7 @@ function migrationHeldOnPreview(name, env) {
   if (name === AGENT_CHECK_ORDERS_MIGRATION) return agentCheckOrdersMigrationHeld(env);
   if (name === DIRECTORY_CELO_BUY_MIGRATION) return directoryCeloBuyMigrationHeld(env);
   if (name === LACUNA_PITCH_MIGRATION) return lacunaPitchMigrationHeld(env);
+  if (name === PAYMENT_ASKS_MIGRATION) return paymentAsksMigrationHeld(env);
   return false;
 }
 
@@ -332,8 +358,9 @@ function migrationHeldOnPreview(name, env) {
  * `0036_agent_listing_listed_by.sql`,
  * `0038_x402_check_orders.sql`,
  * `0039_agent_check_orders.sql`,
- * `0040_directory_lacuna_price_celo_buy_providers.sql`, and
- * `0041_lacuna_pitch_topic_price.sql` are omitted on
+ * `0040_directory_lacuna_price_celo_buy_providers.sql`,
+ * `0041_lacuna_pitch_topic_price.sql`, and
+ * `0042_payment_asks.sql` are omitted on
  * preview builds only.
  * `0026_hide_exchange_smoke_jobs.sql`,
  * `0028_hide_directory_smoke_listing.sql`,
