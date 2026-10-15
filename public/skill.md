@@ -26,6 +26,8 @@ Listing is free. Featured pins it for 7 days for $19 USDC (Base or Solana).
 
 ## 1. Post the listing
 
+x402.org closed its ecosystem page on 13 Oct 2026. You can list your x402 service here free, in one POST. https://github.com/x402-foundation/x402/issues/3782
+
 POST https://agent-control.net/api/v1/agents/listings
 Header: content-type: application/json
 No API key. No account.

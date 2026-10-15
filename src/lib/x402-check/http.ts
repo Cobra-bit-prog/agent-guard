@@ -19,7 +19,13 @@ import {
   settleExactEvmPayment,
   type ExactEvmSettler,
 } from "../meter/x402-evm.ts";
-import { PAY_EXPIRY_MS, SOLANA_PAYOUT_ADDRESS, USDC_MINT, buildSolanaPayUrl, lockedSolanaUsdcRecipient } from "../solana-pay.ts";
+import {
+  PAY_EXPIRY_MS,
+  SOLANA_PAYOUT_ADDRESS,
+  USDC_MINT,
+  buildSolanaPayUrl,
+  lockedSolanaUsdcRecipient,
+} from "../solana-pay.ts";
 import { json } from "../server/http.ts";
 import { shipPackage } from "../ship/packages.ts";
 import {
@@ -164,10 +170,15 @@ function pricingBody() {
 }
 
 function targetFromOrder(order: X402Order): CheckTarget {
-  return order.target_kind === "url" ? { url: order.target, payTo: null } : { url: null, payTo: order.target };
+  return order.target_kind === "url"
+    ? { url: order.target, payTo: null }
+    : { url: null, payTo: order.target };
 }
 
-function invoiceKey(body: Record<string, unknown>, payment: Record<string, unknown> | null): string {
+function invoiceKey(
+  body: Record<string, unknown>,
+  payment: Record<string, unknown> | null,
+): string {
   const fromPayment = payment ? invoiceIdFromPayment(payment) || referenceFromPayment(payment) : "";
   const fromBody = String(body.invoice_id ?? body.invoiceId ?? body.reference ?? "").trim();
   return (fromPayment || fromBody).slice(0, 120);
@@ -200,9 +211,10 @@ async function watchOrder(
         return json(
           {
             ...x402InvoiceView(order, now),
-            error: order.runs_used >= X402_CHECK_RUNS
-              ? "The free re-check was already used."
-              : "The 7 days are over. Start a new report.",
+            error:
+              order.runs_used >= X402_CHECK_RUNS
+                ? "The free re-check was already used."
+                : "The 7 days are over. Start a new report.",
           },
           402,
         );
@@ -217,11 +229,17 @@ async function watchOrder(
     return json(x402InvoiceView(order, now));
   }
   if (order.status === "expired") {
-    return json({ ...x402InvoiceView(order, now), error: "This payment window closed. Start again." }, 402);
+    return json(
+      { ...x402InvoiceView(order, now), error: "This payment window closed. Start again." },
+      402,
+    );
   }
   if (order.status === "underpaid") {
     return json(
-      { ...x402InvoiceView(order, now), error: "The payment was short of $19 USDC. Start again and pay the full $19." },
+      {
+        ...x402InvoiceView(order, now),
+        error: "The payment was short of $19 USDC. Start again and pay the full $19.",
+      },
       402,
     );
   }
@@ -240,7 +258,11 @@ async function watchOrder(
       { settler: deps.settleExactEvm },
     );
     if (!settled.ok) return json(exactEvmFailureBody(settled), 400);
-    const granted = await grantX402Pay(sql, order.id, { chain: "base", txRef: settled.transaction, now });
+    const granted = await grantX402Pay(sql, order.id, {
+      chain: "base",
+      txRef: settled.transaction,
+      now,
+    });
     const current = granted ?? (await getX402Order(sql, order.id));
     if (!current) return json({ error: "Unknown payment." }, 404);
     const withReport = current.report_json ? current : await attachReport(sql, current, 1, deps);
@@ -265,17 +287,27 @@ async function watchOrder(
   }
 
   if (match.kind === "paid" && match.amountUsdc + 1e-9 >= X402_CHECK_PRICE_USD) {
-    const granted = await grantX402Pay(sql, order.id, { chain: "solana", txRef: match.signature, now });
+    const granted = await grantX402Pay(sql, order.id, {
+      chain: "solana",
+      txRef: match.signature,
+      now,
+    });
     const current = granted ?? (await getX402Order(sql, order.id));
     if (!current) return json({ error: "Unknown payment." }, 404);
     const withReport = current.report_json ? current : await attachReport(sql, current, 1, deps);
     return json(x402InvoiceView(withReport, now));
   }
 
-  if (match.kind === "underpaid" || (match.kind === "paid" && match.amountUsdc + 1e-9 < X402_CHECK_PRICE_USD)) {
+  if (
+    match.kind === "underpaid" ||
+    (match.kind === "paid" && match.amountUsdc + 1e-9 < X402_CHECK_PRICE_USD)
+  ) {
     const noted = (await noteX402Underpaid(sql, order.id, match.signature)) ?? order;
     return json(
-      { ...x402InvoiceView(noted, now), error: "The payment was short of $19 USDC. Start again and pay the full $19." },
+      {
+        ...x402InvoiceView(noted, now),
+        error: "The payment was short of $19 USDC. Start again and pay the full $19.",
+      },
       402,
     );
   }
@@ -283,7 +315,10 @@ async function watchOrder(
   const opened = new Date(order.created_at).getTime();
   if (now.getTime() > opened + PAY_EXPIRY_MS) {
     const expired = (await expireX402Order(sql, order.id)) ?? order;
-    return json({ ...x402InvoiceView(expired, now), error: "This payment window closed. Start again." }, 402);
+    return json(
+      { ...x402InvoiceView(expired, now), error: "This payment window closed. Start again." },
+      402,
+    );
   }
 
   return json(x402InvoiceView(order, now), 402);
@@ -339,17 +374,24 @@ export async function handleX402CheckRequest(
     const ipHash = hashCheckIp(clientIp(request.headers));
     await assertFreeRate(sql, ipHash, now);
     const checkTarget: CheckTarget =
-      target.kind === "url" ? { url: target.value, payTo: null } : { url: null, payTo: target.value };
+      target.kind === "url"
+        ? { url: target.value, payTo: null }
+        : { url: null, payTo: target.value };
     const report = deps.runFree
       ? await deps.runFree(checkTarget, sql)
       : await runListingCheck(checkTarget, "free", { sql });
     return json({
       ...report,
+      listing: report.listing ?? null,
       next: {
         hire: { line: "Hire us, we fix it with you", href: "/hire" },
         directory: { line: "List in the directory, free.", href: "/directory" },
         featured: { line: "Feature a listing for $19.", href: "/directory#featured" },
-        report: { post: X402_CHECK_REPORT_PATH, price_usd: X402_CHECK_PRICE_USD, days: X402_CHECK_DAYS },
+        report: {
+          post: X402_CHECK_REPORT_PATH,
+          price_usd: X402_CHECK_PRICE_USD,
+          days: X402_CHECK_DAYS,
+        },
         ...(report.failed > 0
           ? {
               ship: {
@@ -376,7 +418,8 @@ export async function handleX402ReportRequest(
 ): Promise<Response> {
   try {
     if (request.method === "GET") return json(pricingBody());
-    if (request.method !== "POST") return json({ error: "Use POST to start a report payment." }, 405);
+    if (request.method !== "POST")
+      return json({ error: "Use POST to start a report payment." }, 405);
     let body: Record<string, unknown> = {};
     try {
       body = parseBody(await request.json());
@@ -418,7 +461,10 @@ export async function handleX402ReportRequest(
     }
   } catch (err) {
     if (isX402SchemaMissing(err)) {
-      return json({ error: "This database cannot record the report payment yet. Do not send USDC." }, 503);
+      return json(
+        { error: "This database cannot record the report payment yet. Do not send USDC." },
+        503,
+      );
     }
     return fail(err, "Could not start the report.");
   }

@@ -81,8 +81,12 @@ export function featureFlowPath(id: string): string {
 export const LISTED_FREE_LINE =
   "Listed free. Pin it to the top for 7 days: $19 USDC, Base or Solana";
 
-export const ACTION_GATE_SUCCESS_LINE =
-  "Agents that post, pay, or deploy: Action Gate, $49/month.";
+/** x402.org ecosystem page closed. One factual line for the directory, skill.md, and llms.txt. */
+export const X402_ORG_CLOSED_LINE =
+  "x402.org closed its ecosystem page on 13 Oct 2026. You can list your x402 service here free, in one POST.";
+export const X402_ORG_CLOSED_ISSUE = "https://github.com/x402-foundation/x402/issues/3782";
+
+export const ACTION_GATE_SUCCESS_LINE = "Agents that post, pay, or deploy: Action Gate, $49/month.";
 
 export const ACTION_GATE_SUCCESS_URL = `https://agent-control.net${ACTION_GATE_HREF}`;
 
@@ -229,6 +233,8 @@ Do not send a payment with this post. A pin on top is optional and separate: $19
 ${OTHER_AGENT_APPS_MARKDOWN}
 
 ## 1. Post the listing
+
+${X402_ORG_CLOSED_LINE} ${X402_ORG_CLOSED_ISSUE}
 
 POST ${LISTINGS_URL}
 Header: content-type: application/json
