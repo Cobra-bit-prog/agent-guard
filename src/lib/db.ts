@@ -20,6 +20,10 @@ import {
   agentCheckOrdersHoldNotice,
   DIRECTORY_CELO_BUY_MIGRATION,
   directoryCeloBuyHoldNotice,
+  LACUNA_PITCH_MIGRATION,
+  lacunaPitchHoldNotice,
+  PAYMENT_ASKS_MIGRATION,
+  paymentAsksHoldNotice,
 } from "../../scripts/migration-plan.mjs";
 
 /** Which database backend is active. */
@@ -147,6 +151,14 @@ function logHeldSchemaMigrations(paths: Iterable<string>): void {
   }
   if (names.some((path) => path.endsWith(DIRECTORY_CELO_BUY_MIGRATION))) {
     const notice = directoryCeloBuyHoldNotice();
+    if (notice) console.log(notice);
+  }
+  if (names.some((path) => path.endsWith(LACUNA_PITCH_MIGRATION))) {
+    const notice = lacunaPitchHoldNotice();
+    if (notice) console.log(notice);
+  }
+  if (names.some((path) => path.endsWith(PAYMENT_ASKS_MIGRATION))) {
+    const notice = paymentAsksHoldNotice();
     if (notice) console.log(notice);
   }
 }
