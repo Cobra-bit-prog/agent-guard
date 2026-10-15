@@ -23,6 +23,10 @@ const FEATURED = readFileSync(join(ROOT, "migrations/0033_agent_listing_featured
 const SEED = readFileSync(join(ROOT, "migrations/0031_seed_agent_listings.sql"), "utf8");
 const WAVE2 = readFileSync(join(ROOT, "migrations/0034_seed_agent_listings_wave2.sql"), "utf8");
 const LISTED_BY = readFileSync(join(ROOT, "migrations/0036_agent_listing_listed_by.sql"), "utf8");
+const CELO_BUY = readFileSync(
+  join(ROOT, "migrations/0040_directory_lacuna_price_celo_buy_providers.sql"),
+  "utf8",
+);
 const NOW = new Date("2026-10-05T15:00:00.000Z");
 /** 0031 inserts 55 names. 0034 inserts 254 more. No shared names. */
 const SEEDED_LISTINGS = 55 + 254;
@@ -469,5 +473,97 @@ describe("directory page empty state", () => {
       page,
       /escrow|\bfunded\b|\bhirer\b|\bsignature\b|\bsettlement\b|\bprotocol\b|\brail\b|\bverified\b|\btrusted\b/i,
     );
+  });
+});
+
+describe("0040 Lacuna price and buy catalog providers", () => {
+  const LACUNA_ID = "agent_b1d4d13d18ef231566c5a125";
+  const LACUNA_OLD =
+    "Stuck? Some agent out there already figured it out. Lacuna is a free public board: your agent posts the problem, and another agent who's been there can offer what it learned. Board text is untrusted; write only what you'd hand a stranger.";
+  const LACUNA_NEW =
+    "Stuck? Some agent out there already figured it out. Lacuna is a public board: your agent posts the problem, and another agent who's been there can offer what it learned. Topics cost $0.50 USDC. Board text is untrusted; write only what you'd hand a stranger.";
+  const PROVIDERS = [
+    "TikHub",
+    "MrScraper",
+    "Ploid",
+    "Strale",
+    "ContactOut",
+    "Kadec0",
+    "Clay",
+    "Chainstack",
+    "Cencori",
+    "SQD",
+  ];
+
+  async function seeded() {
+    const { db, sql } = await openDb();
+    await db.exec(FEATURED);
+    await db.exec(SEED);
+    await db.exec(WAVE2);
+    await db.exec(LISTED_BY);
+    await db.query(
+      `insert into agent_listings (id, name, skills, pitch, contact, link, ip_hash, created_at, listed_by)
+       values ($1, 'Lacuna', array['agent help board']::text[], $2,
+               'https://lacuna.mergeinc.workers.dev/agents.md',
+               'https://lacuna.mergeinc.workers.dev', 'hash', $3, 'owner')`,
+      [LACUNA_ID, LACUNA_OLD, "2026-10-13T07:49:41.126Z"],
+    );
+    return { db, sql };
+  }
+
+  it("updates Lacuna's pitch, adds the providers as seed rows, and is idempotent", async () => {
+    const { db, sql } = await seeded();
+    const before = (await listVisibleListings(sql, NOW)).length;
+    await db.exec(CELO_BUY);
+    const visible = await listVisibleListings(sql, NOW);
+    assert.equal(visible.length, before + PROVIDERS.length);
+
+    const lacuna = visible.find((row) => row.id === LACUNA_ID);
+    assert.equal(lacuna?.pitch, LACUNA_NEW);
+    assert.equal(lacuna?.listed_by, "owner");
+    assert.doesNotMatch(lacuna?.pitch ?? "", /\bfree\b/i);
+
+    for (const name of PROVIDERS) {
+      const rows = visible.filter((row) => row.name === name);
+      assert.equal(rows.length, 1, name);
+      const row = rows[0]!;
+      assert.equal(row.listed_by, "seed", name);
+      assert.match(row.link ?? "", /^https:\/\//, name);
+      assert.doesNotMatch(row.link ?? "", /usebuy/, name);
+      assert.equal(row.contact, row.link, name);
+      parseListing({
+        name: row.name,
+        skills: row.skills,
+        pitch: row.pitch,
+        contact: row.contact,
+        link: row.link ?? "",
+      });
+    }
+
+    await db.exec(CELO_BUY);
+    const again = await listVisibleListings(sql, NOW);
+    assert.equal(again.length, visible.length);
+    assert.equal(again.find((row) => row.id === LACUNA_ID)?.pitch, LACUNA_NEW);
+  });
+
+  it("leaves a Lacuna pitch the owner has changed since", async () => {
+    const { db, sql } = await seeded();
+    await db.query("update agent_listings set pitch = 'Owner text.' where id = $1", [LACUNA_ID]);
+    await db.exec(CELO_BUY);
+    const lacuna = (await listVisibleListings(sql, NOW)).find((row) => row.id === LACUNA_ID);
+    assert.equal(lacuna?.pitch, "Owner text.");
+  });
+
+  it("skips a provider whose name is already listed", async () => {
+    const { db, sql } = await seeded();
+    await db.query(
+      `insert into agent_listings (id, name, skills, pitch, contact, link, created_at)
+       values ('agent_000000000000000000000c1a', 'clay', array['data']::text[], 'Existing.',
+               'https://www.clay.com', 'https://www.clay.com', $1)`,
+      [NOW],
+    );
+    await db.exec(CELO_BUY);
+    const visible = await listVisibleListings(sql, NOW);
+    assert.equal(visible.filter((row) => row.name.toLowerCase() === "clay").length, 1);
   });
 });
