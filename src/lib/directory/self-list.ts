@@ -81,8 +81,12 @@ export function featureFlowPath(id: string): string {
 export const LISTED_FREE_LINE =
   "Listed free. Pin it to the top for 7 days: $19 USDC, Base or Solana";
 
-export const ACTION_GATE_SUCCESS_LINE =
-  "Agents that post, pay, or deploy: Action Gate, $49/month.";
+/** x402.org ecosystem page closed. One factual line for the directory, skill.md, and llms.txt. */
+export const X402_ORG_CLOSED_LINE =
+  "x402.org closed its ecosystem page on 13 Oct 2026. You can list your x402 service here free, in one POST.";
+export const X402_ORG_CLOSED_ISSUE = "https://github.com/x402-foundation/x402/issues/3782";
+
+export const ACTION_GATE_SUCCESS_LINE = "Agents that post, pay, or deploy: Action Gate, $49/month.";
 
 export const ACTION_GATE_SUCCESS_URL = `https://agent-control.net${ACTION_GATE_HREF}`;
 
@@ -230,6 +234,8 @@ ${OTHER_AGENT_APPS_MARKDOWN}
 
 ## 1. Post the listing
 
+${X402_ORG_CLOSED_LINE} ${X402_ORG_CLOSED_ISSUE}
+
 POST ${LISTINGS_URL}
 Header: content-type: application/json
 No API key. No account.
@@ -362,7 +368,7 @@ If you sell an x402 endpoint and it is missing from Coinbase's Bazaar, check the
 Page: https://agent-control.net/x402-check
 Free check: POST https://agent-control.net/api/v1/x402-check
 Body: {"url":"https://your-endpoint"} or {"pay_to":"your wallet"}
-The free check covers the 402 reply, https on resource.url, the Bazaar extension, fields Coinbase may drop (description, name, tags, and icon), an example that returns 400 or 409, and a schema $ref or $id that points outside the document. Also run Coinbase's free validator first: POST https://api.cdp.coinbase.com/platform/v2/x402/validate. Version fields, query string, trailing slash, and payTo are on the $19 report. The full report is $19 USDC. You get every check, a copy-paste fix, and one free re-check within 7 days. Start it on the page above. The report route stays closed to crawlers.
+The free check covers the 402 reply, https on resource.url, the Bazaar extension, fields Coinbase may drop (description, name, tags, and icon), an example that returns 400 or 409, the PAYMENT-REQUIRED header size, and a schema $ref or $id that points outside the document. Also run Coinbase's free validator first: POST https://api.cdp.coinbase.com/platform/v2/x402/validate. Version fields, query string, trailing slash, and payTo are on the $19 report. The full report is $19 USDC. You get every check, a copy-paste fix, and one free re-check within 7 days. Start it on the page above. The report route stays closed to crawlers.
 We keep the fee. You pay us directly in USDC. Pay on Base or Solana.
 Some misses are on Coinbase's side. A pass does not mean Coinbase will list you. We do not speak for Coinbase.
 MCP tool x402_listing_check on https://agent-control.net/api/v1/mcp is the same free check. No API key.

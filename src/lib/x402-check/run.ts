@@ -1,10 +1,17 @@
-import type { ListingQuery } from "../directory/listings.ts";
+import { findVisibleListingByLink, type ListingQuery } from "../directory/listings.ts";
+import { listingPagePath } from "../directory/self-list.ts";
 import { X402_CHECK_CAVEAT, X402_CHECK_VALIDATOR_LINE } from "./copy.ts";
+import {
+  ALREADY_LISTED_LINE,
+  listingDraftFromPayment,
+  type X402ListingPrefill,
+} from "./listing-draft.ts";
 import {
   absentCheck,
   checkBazaar,
   checkDroppedFields,
   checkExample,
+  checkHeaderSize,
   checkMerchant,
   checkPresence,
   checkReplyShape,
@@ -23,7 +30,13 @@ import {
   type CheckRow,
   walletLooksValid,
 } from "./checks.ts";
-import { probeEndpoint, probeExchange, type EndpointProbe, type LookupFn, type ProbeTransport } from "./probe.ts";
+import {
+  probeEndpoint,
+  probeExchange,
+  type EndpointProbe,
+  type LookupFn,
+  type ProbeTransport,
+} from "./probe.ts";
 import { parsePublicHttpsUrl, SsrfError } from "./ssrf.ts";
 import {
   lookupDirectory,
@@ -56,6 +69,11 @@ export type X402Report = {
   /** Coinbase's own free validator. We are not the only checker. */
   validator: string;
   fetched: { status: number; final_url: string; content_type: string } | null;
+  /**
+   * Prefill for the directory when the 402 decoded.
+   * Null when the reply was not a decoded 402. Omitted by older callers.
+   */
+  listing?: X402ListingPrefill | null;
 };
 
 export type RunDeps = {
@@ -87,9 +105,17 @@ function inputOf(target: CheckTarget): { url?: string; pay_to?: string } {
 function payTosFrom(payment: unknown, pasted: string | null): string[] {
   const found = new Set<string>();
   if (pasted) found.add(pasted);
-  if (payment && typeof payment === "object" && Array.isArray((payment as { accepts?: unknown }).accepts)) {
+  if (
+    payment &&
+    typeof payment === "object" &&
+    Array.isArray((payment as { accepts?: unknown }).accepts)
+  ) {
     for (const accept of (payment as { accepts: unknown[] }).accepts) {
-      if (accept && typeof accept === "object" && typeof (accept as { payTo?: unknown }).payTo === "string") {
+      if (
+        accept &&
+        typeof accept === "object" &&
+        typeof (accept as { payTo?: unknown }).payTo === "string"
+      ) {
         found.add((accept as { payTo: string }).payTo);
       }
     }
@@ -107,10 +133,38 @@ function hostOf(url: string | null): string {
 }
 
 function methodOf(payment: unknown): string {
-  const bazaar = (payment as { extensions?: { bazaar?: { info?: { input?: { method?: unknown } } } } } | null)
-    ?.extensions?.bazaar;
+  const bazaar = (
+    payment as { extensions?: { bazaar?: { info?: { input?: { method?: unknown } } } } } | null
+  )?.extensions?.bazaar;
   const method = bazaar?.info?.input?.method;
   return typeof method === "string" && method ? method : "GET";
+}
+
+async function listingFromDecoded(
+  payment: unknown,
+  target: CheckTarget,
+  probe: EndpointProbe | null,
+  deps: RunDeps,
+): Promise<X402ListingPrefill | null> {
+  if (absenceOf(probe)) return null;
+  const draft = listingDraftFromPayment(payment, target.url);
+  if (!draft?.body.link || !deps.sql) return draft;
+  try {
+    const existing = await findVisibleListingByLink(deps.sql, draft.body.link);
+    if (!existing) return draft;
+    return {
+      ...draft,
+      existing: {
+        id: existing.id,
+        name: existing.name,
+        href: `https://agent-control.net${listingPagePath(existing.id)}`,
+        line: ALREADY_LISTED_LINE,
+      },
+    };
+  } catch (err) {
+    console.error("[x402-check] listing lookup failed", err instanceof Error ? err.name : "error");
+    return draft;
+  }
 }
 
 function summaryOf(checks: CheckRow[]): string {
@@ -166,7 +220,11 @@ async function exampleRow(
   }
 }
 
-function whySnippet(payment: unknown, requestedUrl: string | null, probe: EndpointProbe | null): CheckRow {
+function whySnippet(
+  payment: unknown,
+  requestedUrl: string | null,
+  probe: EndpointProbe | null,
+): CheckRow {
   const why = absenceOf(probe);
   if (why) return absentCheck("snippet", "Copy-paste snippet", why);
   return checkSnippet(payment, requestedUrl);
@@ -180,6 +238,13 @@ async function localChecks(
 ): Promise<CheckRow[]> {
   const why = absenceOf(probe);
   const reply = checkReplyShape(probe);
+  const header =
+    probe && probe.status === 402
+      ? checkHeaderSize({
+          paymentRequiredBytes: probe.paymentRequiredBytes,
+          responseHeaderBytes: probe.responseHeaderBytes,
+        })
+      : absentCheck("header_size", "Price header size", why ?? "wallet");
   if (why) {
     const targets =
       why === "wallet"
@@ -187,6 +252,7 @@ async function localChecks(
         : absentCheck("payment_targets", "Network, asset, and payTo", why);
     return [
       reply,
+      header,
       absentCheck("resource_https", "resource.url https", why),
       absentCheck("bazaar", "Bazaar extension", why),
       absentCheck("dropped_fields", "Fields Coinbase may drop", why),
@@ -199,6 +265,7 @@ async function localChecks(
   }
   return [
     reply,
+    header,
     checkResourceHttps(payment),
     checkBazaar(payment),
     checkDroppedFields(payment),
@@ -210,7 +277,11 @@ async function localChecks(
   ];
 }
 
-export async function runListingCheck(target: CheckTarget, tier: "free" | "full", deps: RunDeps = {}): Promise<X402Report> {
+export async function runListingCheck(
+  target: CheckTarget,
+  tier: "free" | "full",
+  deps: RunDeps = {},
+): Promise<X402Report> {
   if (!target.url && !target.payTo) {
     throw new SsrfError("Paste an https endpoint or a payTo wallet.");
   }
@@ -227,6 +298,27 @@ export async function runListingCheck(target: CheckTarget, tier: "free" | "full"
     ? { status: probe.status, final_url: probe.finalUrl, content_type: probe.contentType }
     : null;
 
+  if (probe?.headersOverflow) {
+    const checks = [
+      checkHeaderSize({
+        paymentRequiredBytes: probe.paymentRequiredBytes,
+        responseHeaderBytes: probe.responseHeaderBytes,
+      }),
+    ];
+    return {
+      product: "x402_listing_check",
+      tier,
+      input: inputOf(target),
+      checks,
+      ...counts(checks),
+      caveat: X402_CHECK_CAVEAT,
+      summary: summaryOf(checks),
+      validator: X402_CHECK_VALIDATOR_LINE,
+      fetched,
+      listing: null,
+    };
+  }
+
   if (probe && probe.status !== 402) {
     const checks = [checkReplyShape(probe)];
     return {
@@ -239,10 +331,12 @@ export async function runListingCheck(target: CheckTarget, tier: "free" | "full"
       summary: summaryOf(checks),
       validator: X402_CHECK_VALIDATOR_LINE,
       fetched,
+      listing: null,
     };
   }
 
   const free = await localChecks(payment, target, probe, deps);
+  const listing = await listingFromDecoded(payment, target, probe, deps);
 
   if (tier === "free") {
     const checks = free.filter((check) => (FREE_CHECK_IDS as readonly string[]).includes(check.id));
@@ -256,6 +350,7 @@ export async function runListingCheck(target: CheckTarget, tier: "free" | "full"
       summary: summaryOf(checks),
       validator: X402_CHECK_VALIDATOR_LINE,
       fetched,
+      listing,
     };
   }
 
@@ -296,5 +391,6 @@ export async function runListingCheck(target: CheckTarget, tier: "free" | "full"
     summary: summaryOf(checks),
     validator: X402_CHECK_VALIDATOR_LINE,
     fetched,
+    listing,
   };
 }

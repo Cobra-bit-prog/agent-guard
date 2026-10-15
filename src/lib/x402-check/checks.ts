@@ -13,6 +13,10 @@ export type CheckRow = {
   status: CheckStatus;
   detail: string;
   fix?: string;
+  /** Byte length of the PAYMENT-REQUIRED header value. Present on the price-header check. */
+  payment_required_bytes?: number | null;
+  /** Byte length of the response header lines. Present on the price-header check. */
+  response_header_bytes?: number | null;
 };
 
 const V1_ACCEPT_KEYS = ["maxAmountRequired", "outputSchema", "resource", "description", "mimeType"] as const;
@@ -339,6 +343,58 @@ export function checkReplyShape(probe: EndpointProbe | null): CheckRow {
   }
   const where = probe.paymentSource === "header" ? "PAYMENT-REQUIRED header" : "JSON body";
   return row("reply_shape", title, "pass", `HTTP 402, application/json, and the ${where} decoded.`);
+}
+
+/** aiohttp rejects a header line over this. Node fetch rejects a header block over the fail limit. */
+export const HEADER_SIZE_WARN_BYTES = 8_190;
+export const HEADER_SIZE_FAIL_BYTES = 16_384;
+export const HEADER_SIZE_ISSUE = "https://github.com/x402-foundation/x402/issues/3803";
+export const HEADER_SIZE_TITLE = "Price header size";
+
+export type HeaderSizeInput = {
+  paymentRequiredBytes: number | null;
+  responseHeaderBytes: number | null;
+};
+
+function headerSizeDetail(size: HeaderSizeInput, sentence: string): string {
+  const parts: string[] = [];
+  if (size.paymentRequiredBytes != null) parts.push(`PAYMENT-REQUIRED is ${size.paymentRequiredBytes} bytes.`);
+  if (size.responseHeaderBytes != null) parts.push(`Response headers are ${size.responseHeaderBytes} bytes.`);
+  const measured = parts.join(" ");
+  return measured ? `${measured} ${sentence}` : sentence;
+}
+
+/** Warn above 8,190 bytes. Fail above 16,384. Counts are the measured bytes. */
+export function checkHeaderSize(size: HeaderSizeInput): CheckRow {
+  const payment = size.paymentRequiredBytes;
+  const total = size.responseHeaderBytes;
+  const headerFails = payment != null && payment > HEADER_SIZE_FAIL_BYTES;
+  const totalFails = total != null && total > HEADER_SIZE_FAIL_BYTES;
+  const bytes = { payment_required_bytes: payment, response_header_bytes: total };
+  if (headerFails || totalFails) {
+    return {
+      ...row("header_size", HEADER_SIZE_TITLE, "fail", headerSizeDetail(size, `Node fetch buyers can't read it either. ${HEADER_SIZE_ISSUE}`)),
+      ...bytes,
+    };
+  }
+  if (payment != null && payment > HEADER_SIZE_WARN_BYTES) {
+    return {
+      ...row("header_size", HEADER_SIZE_TITLE, "warn", headerSizeDetail(size, `Some Python buyers can't read it. ${HEADER_SIZE_ISSUE}`)),
+      ...bytes,
+    };
+  }
+  if (payment == null) {
+    const totalNote = total == null ? "" : ` Response headers are ${total} bytes.`;
+    return {
+      ...row("header_size", HEADER_SIZE_TITLE, "pass", `No PAYMENT-REQUIRED header. The price was in the body.${totalNote}`),
+      ...bytes,
+    };
+  }
+  const totalNote = total == null ? "" : ` Response headers are ${total} bytes.`;
+  return {
+    ...row("header_size", HEADER_SIZE_TITLE, "pass", `PAYMENT-REQUIRED is ${payment} bytes.${totalNote}`),
+    ...bytes,
+  };
 }
 
 export type MerchantLook = {
@@ -937,6 +993,7 @@ export function checkExample(status: number | null, note: "pass-or-status" | "no
  */
 export const FREE_CHECK_IDS = [
   "reply_shape",
+  "header_size",
   "resource_https",
   "bazaar",
   "dropped_fields",

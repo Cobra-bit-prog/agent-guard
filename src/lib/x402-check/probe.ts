@@ -33,6 +33,8 @@ export function pinLookup(ip: string): LookupFunction {
 export const MAX_REDIRECTS = 2;
 export const MAX_BODY_BYTES = 64 * 1024;
 export const REQUEST_TIMEOUT_MS = 8_000;
+/** Read past Node's 16 KB header cap so a too-big PAYMENT-REQUIRED header can be measured. */
+export const HEADER_READ_MAX = 256 * 1024;
 
 export type LookupFn = (hostname: string) => Promise<string[]>;
 
@@ -41,7 +43,31 @@ export type ProbeHop = {
   headers: { get(name: string): string | null };
   body: Uint8Array;
   truncated?: boolean;
+  /** Byte length of the PAYMENT-REQUIRED header value. Null when that header is absent. */
+  paymentRequiredBytes?: number | null;
+  /** Byte length of the response header field lines (`name: value\\r\\n`). */
+  responseHeaderBytes?: number | null;
+  /** The parser stopped because the header block was larger than HEADER_READ_MAX. */
+  headersOverflow?: boolean;
 };
+
+/** Byte length of the PAYMENT-REQUIRED value, and of every `name: value` line. */
+export function measureRawHeaders(rawHeaders: readonly string[]): {
+  paymentRequiredBytes: number | null;
+  responseHeaderBytes: number;
+} {
+  let responseHeaderBytes = 0;
+  let paymentRequiredBytes: number | null = null;
+  for (let i = 0; i < rawHeaders.length; i += 2) {
+    const name = rawHeaders[i] ?? "";
+    const value = rawHeaders[i + 1] ?? "";
+    responseHeaderBytes += Buffer.byteLength(`${name}: ${value}\r\n`);
+    if (name.toLowerCase() !== "payment-required") continue;
+    const size = Buffer.byteLength(value);
+    paymentRequiredBytes = paymentRequiredBytes == null ? size : Math.max(paymentRequiredBytes, size);
+  }
+  return { paymentRequiredBytes, responseHeaderBytes };
+}
 
 export type ProbeTransport = (input: {
   url: URL;
@@ -65,12 +91,41 @@ export type EndpointProbe = {
   payment: unknown | null;
   paymentSource: "header" | "body" | null;
   decodeError: string | null;
+  /** Byte length of the PAYMENT-REQUIRED value. Null when the header was absent. */
+  paymentRequiredBytes: number | null;
+  /** Byte length of response header lines. Null when the transport did not measure them. */
+  responseHeaderBytes: number | null;
+  headersOverflow: boolean;
 };
 
 export async function defaultLookup(hostname: string): Promise<string[]> {
   if (isIP(hostname)) return [hostname];
   const rows = await dnsLookup(hostname, { all: true, verbatim: true });
   return rows.map((row) => row.address);
+}
+
+function headerErrorCode(err: unknown): string {
+  if (!err || typeof err !== "object" || !("code" in err)) return "";
+  const code = (err as { code?: unknown }).code;
+  return typeof code === "string" ? code : "";
+}
+
+function measuredHop(
+  status: number,
+  headers: NodeJS.Dict<string | string[] | undefined>,
+  rawHeaders: readonly string[],
+  body: Buffer,
+  truncated?: boolean,
+): ProbeHop {
+  const measured = measureRawHeaders(rawHeaders);
+  return {
+    status,
+    headers: headerMap(headers),
+    body,
+    truncated,
+    paymentRequiredBytes: measured.paymentRequiredBytes,
+    responseHeaderBytes: measured.responseHeaderBytes,
+  };
 }
 
 function headerMap(headers: NodeJS.Dict<string | string[] | undefined>): { get(name: string): string | null } {
@@ -132,6 +187,7 @@ export function defaultTransport(input: {
         method: input.method,
         headers,
         timeout: REQUEST_TIMEOUT_MS,
+        maxHeaderSize: HEADER_READ_MAX,
         lookup: pinLookup(input.ip) as LookupFunction,
       },
       (res) => {
@@ -142,12 +198,7 @@ export function defaultTransport(input: {
           if (size > maxBytes) {
             if (overflow === "truncate") {
               req.destroy();
-              finish({
-                status: res.statusCode ?? 0,
-                headers: headerMap(res.headers),
-                body: Buffer.concat(chunks),
-                truncated: true,
-              });
+              finish(measuredHop(res.statusCode ?? 0, res.headers, res.rawHeaders, Buffer.concat(chunks), true));
               return;
             }
             req.destroy(new SsrfError("The reply was too large."));
@@ -156,11 +207,7 @@ export function defaultTransport(input: {
           chunks.push(chunk);
         });
         res.on("end", () => {
-          finish({
-            status: res.statusCode ?? 0,
-            headers: headerMap(res.headers),
-            body: Buffer.concat(chunks),
-          });
+          finish(measuredHop(res.statusCode ?? 0, res.headers, res.rawHeaders, Buffer.concat(chunks)));
         });
       },
     );
@@ -168,6 +215,17 @@ export function defaultTransport(input: {
       req.destroy(new SsrfError("The endpoint did not answer in time."));
     });
     req.on("error", (err) => {
+      if (headerErrorCode(err) === "HPE_HEADER_OVERFLOW") {
+        finish({
+          status: 0,
+          headers: { get: () => null },
+          body: Buffer.alloc(0),
+          paymentRequiredBytes: null,
+          responseHeaderBytes: HEADER_READ_MAX + 1,
+          headersOverflow: true,
+        });
+        return;
+      }
       if (err instanceof SsrfError) fail(err);
       else fail(new SsrfError("The endpoint did not answer."));
     });
@@ -284,6 +342,12 @@ function finishProbe(
   const headerRaw = result.hop.headers.get("payment-required");
   const decoded = decodePayment(headerRaw, bodyText, result.hop.status);
   const paymentRoute = result.hop.status === 402 && decoded.payment ? "payment" : route;
+  const paymentRequiredBytes =
+    result.hop.paymentRequiredBytes !== undefined
+      ? result.hop.paymentRequiredBytes
+      : headerRaw == null
+        ? null
+        : Buffer.byteLength(headerRaw);
   return {
     ok: true,
     status: result.hop.status,
@@ -296,6 +360,9 @@ function finishProbe(
     payment: decoded.payment,
     paymentSource: decoded.source,
     decodeError: decoded.error,
+    paymentRequiredBytes,
+    responseHeaderBytes: result.hop.responseHeaderBytes ?? null,
+    headersOverflow: result.hop.headersOverflow === true,
   };
 }
 

@@ -175,7 +175,10 @@ function isHttpsUrl(value: string): boolean {
 function parseSkills(value: unknown): string[] {
   let parts: string[];
   if (typeof value === "string") {
-    parts = value.split(",").map((part) => part.trim()).filter((part) => part.length > 0);
+    parts = value
+      .split(",")
+      .map((part) => part.trim())
+      .filter((part) => part.length > 0);
   } else if (Array.isArray(value) && value.every((part) => typeof part === "string")) {
     parts = value.map((part) => part.trim()).filter((part) => part.length > 0);
   } else {
@@ -213,7 +216,8 @@ export function parseListing(input: unknown): {
   if (!pitch) throw new ListingError("Pitch is required");
   if (pitch.length > PITCH_MAX) throw new ListingError("Pitch must be 280 characters or less");
   if (!contact) throw new ListingError("Contact is required");
-  if (contact.length > CONTACT_MAX) throw new ListingError("Contact must be 200 characters or less");
+  if (contact.length > CONTACT_MAX)
+    throw new ListingError("Contact must be 200 characters or less");
   if (!isEmail(contact) && !isHttpsUrl(contact)) {
     throw new ListingError("Contact must be an email or an https link");
   }
@@ -234,7 +238,10 @@ const FEATURED_ORDER = `order by case when featured_until > $1 then 0 else 1 end
                 case when featured_until > $1 then featured_until end desc nulls last,
                 created_at desc`;
 
-export async function listVisibleListings(sql: ListingQuery, now: Date = new Date()): Promise<PublicListing[]> {
+export async function listVisibleListings(
+  sql: ListingQuery,
+  now: Date = new Date(),
+): Promise<PublicListing[]> {
   const rows = await selectVisibleRows(sql, now);
   return rows.map((row) => mapListing(row, now));
 }
@@ -272,6 +279,31 @@ async function selectVisibleRows(sql: ListingQuery, now: Date): Promise<ListingR
      limit $1`,
     [DIRECTORY_LIST_LIMIT],
   );
+}
+
+/** Visible listing whose link is this exact https URL, newest first. */
+export async function findVisibleListingByLink(
+  sql: ListingQuery,
+  link: string,
+): Promise<{ id: string; name: string } | null> {
+  const trimmed = link.trim();
+  if (!trimmed) return null;
+  try {
+    const rows = await sql.query<{ id: string; name: string }>(
+      `select id, name
+       from agent_listings
+       where hidden_at is null and link = $1
+       order by created_at desc
+       limit 1`,
+      [trimmed],
+    );
+    const row = rows[0];
+    if (!row?.id || !row.name) return null;
+    return { id: row.id, name: row.name };
+  } catch (err) {
+    if (isUndefinedTable(err)) return null;
+    throw err;
+  }
 }
 
 export async function createListing(

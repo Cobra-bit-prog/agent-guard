@@ -15,6 +15,8 @@ import {
   X402_CHECK_REPORT_PATH,
 } from "@/lib/x402-check/copy";
 import { trackCheckRun, trackReportStart } from "@/lib/site-events";
+import { X402CheckList } from "@/components/x402-check-list";
+import type { X402ListingPrefill } from "@/lib/x402-check/listing-draft";
 
 export const Route = createFileRoute("/x402-check")({
   component: X402CheckPage,
@@ -55,6 +57,7 @@ type FreeBody = {
   not_applicable?: number;
   summary?: string;
   validator?: string;
+  listing?: X402ListingPrefill | null;
 };
 
 type InvoiceBody = {
@@ -88,7 +91,9 @@ const STATUS_LABEL: Record<CheckRow["status"], string> = {
 
 function checkFailed(failed: number | undefined, checks: CheckRow[] | undefined): boolean {
   if ((failed ?? 0) > 0) return true;
-  return (checks ?? []).some((check) => check.status === "fail");
+  return (checks ?? []).some(
+    (check) => check.status === "fail" || (check.id === "header_size" && check.status === "warn"),
+  );
 }
 
 function ShipFailLink({ show }: { show: boolean }) {
@@ -122,7 +127,9 @@ function CheckList({ checks }: { checks: CheckRow[] }) {
           <h3 className="mt-1 text-card font-medium">{check.title}</h3>
           <p className="mt-2 text-body text-muted">{check.detail}</p>
           {check.fix ? (
-            <pre className="mt-3 overflow-x-auto rounded-xl bg-bg p-3 font-mono text-meta text-fg">{check.fix}</pre>
+            <pre className="mt-3 overflow-x-auto rounded-xl bg-bg p-3 font-mono text-meta text-fg">
+              {check.fix}
+            </pre>
           ) : null}
         </li>
       ))}
@@ -155,7 +162,8 @@ function X402CheckPage() {
         body: JSON.stringify(body),
       });
       const payload = (await response.json()) as FreeBody;
-      if (!response.ok || !payload.checks) throw new Error(payload.error || "Could not run this check.");
+      if (!response.ok || !payload.checks)
+        throw new Error(payload.error || "Could not run this check.");
       setFree(payload);
       setCompanyWebsite("");
       trackCheckRun();
@@ -215,11 +223,13 @@ function X402CheckPage() {
   return (
     <SkyShell>
       <main className="mx-auto min-w-0 max-w-3xl overflow-x-hidden px-6 pb-20 pt-8 md:px-10">
-        <p className="text-meta font-medium uppercase tracking-[0.18em] text-coral">x402 listing check</p>
+        <p className="text-meta font-medium uppercase tracking-[0.18em] text-coral">
+          x402 listing check
+        </p>
         <h1 className="mt-3 text-display font-semibold">Why am I not in the Bazaar?</h1>
         <p className="mt-4 max-w-[52ch] text-body text-muted">
-          You settled a real x402 payment and the endpoint still does not show up in Coinbase&apos;s Bazaar.
-          This reads the 402 the way a buyer would and checks the seller-side causes.
+          You settled a real x402 payment and the endpoint still does not show up in Coinbase&apos;s
+          Bazaar. This reads the 402 the way a buyer would and checks the seller-side causes.
         </p>
         <p className="mt-3 max-w-[52ch] text-body text-muted">{X402_CHECK_CAVEAT}</p>
         <p className="mt-3 max-w-[52ch] text-body text-muted">{X402_CHECK_FREE_LINE}</p>
@@ -268,8 +278,18 @@ function X402CheckPage() {
           </section>
         ) : null}
 
+        {free?.listing ? (
+          <X402CheckList
+            key={`${free.listing.endpoint_url ?? ""}:${free.listing.name}:${free.listing.existing?.id ?? ""}`}
+            listing={free.listing}
+          />
+        ) : null}
+
         {free?.checks && !paid ? (
-          <section className="mt-10 rounded-[20px] border border-border bg-surface p-5" aria-labelledby="report-pay">
+          <section
+            className="mt-10 rounded-[20px] border border-border bg-surface p-5"
+            aria-labelledby="report-pay"
+          >
             <h2 id="report-pay" className="text-title font-semibold">
               Full report — ${X402_CHECK_PRICE_USD} USDC
             </h2>

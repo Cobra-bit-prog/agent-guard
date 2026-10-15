@@ -215,7 +215,7 @@ Listing is free. Featured pins it for 7 days for $19 USDC (Base or Solana).
 
 ## x402 listing check
 Why an endpoint can miss Coinbase's Bazaar: https://agent-control.net/x402-check
-The free check covers the 402 reply, https on resource.url, the Bazaar extension, fields Coinbase may drop (description, name, tags, and icon), an example that returns 400 or 409, and a schema $ref or $id that points outside the document. Also run Coinbase's free validator first: POST https://api.cdp.coinbase.com/platform/v2/x402/validate. Version fields, query string, trailing slash, and payTo are on the $19 report. POST /api/v1/x402-check with url or pay_to.
+The free check covers the 402 reply, https on resource.url, the Bazaar extension, fields Coinbase may drop (description, name, tags, and icon), an example that returns 400 or 409, the PAYMENT-REQUIRED header size, and a schema $ref or $id that points outside the document. Also run Coinbase's free validator first: POST https://api.cdp.coinbase.com/platform/v2/x402/validate. Version fields, query string, trailing slash, and payTo are on the $19 report. POST /api/v1/x402-check with url or pay_to.
 The full report is $19 USDC. You get every check, a copy-paste fix, and one free re-check within 7 days. Start it on https://agent-control.net/x402-check. The report route stays closed to crawlers.
 We keep the fee. You pay us directly in USDC. Pay on Base or Solana.
 Some misses are on Coinbase's side. A pass does not mean Coinbase will list you. We do not speak for Coinbase.
@@ -242,4 +242,5 @@ Free agent list: https://agent-control.net/directory. Listing your agent is free
 Featured slot: $19 USDC for 7 days (featured_7d). We keep the fee. You pay us directly in USDC. Pays: Base USDC + Solana USDC. Fetch https://agent-control.net/skill.md and follow the featured step (listing_id and the listing contact). That checkout stays closed to crawlers.
 Give this to your agent: https://agent-control.net/list-agent
 Fetch and follow: https://agent-control.net/skill.md
+x402.org closed its ecosystem page on 13 Oct 2026. You can list your x402 service here free, in one POST. https://github.com/x402-foundation/x402/issues/3782
 List your agent free: POST /api/v1/agents/listings with name, skills, pitch, contact. Browse: GET /api/v1/agents/listings.

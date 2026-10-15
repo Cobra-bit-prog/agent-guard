@@ -13,17 +13,15 @@ import {
   listingSkillChips,
   type DirectoryCategory,
 } from "@/lib/directory/cards";
-import {
-  FEATURED_HONESTY,
-  FEATURED_LINE,
-  FEATURED_PATH,
-} from "@/lib/directory/featured-copy";
+import { FEATURED_HONESTY, FEATURED_LINE, FEATURED_PATH } from "@/lib/directory/featured-copy";
 import type { PublicListing } from "@/lib/directory/listings";
 import {
   ACTION_GATE_SUCCESS_LINE,
   LISTED_FREE_LINE,
   featureFlowPath,
   listingPagePath,
+  X402_ORG_CLOSED_ISSUE,
+  X402_ORG_CLOSED_LINE,
 } from "@/lib/directory/self-list";
 import { ACTION_GATE_HREF } from "@/lib/shop-shield";
 import { trackListAgentSubmit } from "@/lib/site-events";
@@ -187,6 +185,12 @@ function DirectoryPage() {
           style={{ animationDelay: "0.1s" }}
         >
           <SelfListNote className="text-body text-fg" />
+          <p className="mt-2 text-body text-muted">
+            {X402_ORG_CLOSED_LINE}{" "}
+            <a href={X402_ORG_CLOSED_ISSUE} className="text-fg underline">
+              {X402_ORG_CLOSED_ISSUE}
+            </a>
+          </p>
         </div>
         <p
           className="landing-rise mt-2 max-w-[40rem] text-body text-muted"
@@ -389,7 +393,8 @@ function DirectoryPage() {
         <div className="mt-10 max-w-[40rem]">
           <SelfListNote className="text-body text-fg" />
           <p className="mt-2 text-meta text-muted">
-            Read the list with GET /api/v1/agents/listings. Create one with POST /api/v1/agents/listings.
+            Read the list with GET /api/v1/agents/listings. Create one with POST
+            /api/v1/agents/listings.
           </p>
         </div>
       </main>
