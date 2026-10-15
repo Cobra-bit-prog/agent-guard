@@ -109,6 +109,13 @@ export const AGENT_CHECK_ORDERS_MIGRATION = "0039_agent_check_orders.sql";
 export const DIRECTORY_CELO_BUY_MIGRATION = "0040_directory_lacuna_price_celo_buy_providers.sql";
 
 /**
+ * Lacuna's pitch with the topic price text Lacuna sent. Preview builds use the
+ * production DATABASE_URL, so this file is skipped when VERCEL_ENV=preview.
+ * Production, local, and tests apply it with no extra environment variable.
+ */
+export const LACUNA_PITCH_MIGRATION = "0041_lacuna_pitch_topic_price.sql";
+
+/**
  * @param {Record<string, string | undefined>} [env]
  * @returns {boolean}
  */
@@ -185,6 +192,14 @@ export function agentCheckOrdersMigrationHeld(env = process.env) {
  * @returns {boolean}
  */
 export function directoryCeloBuyMigrationHeld(env = process.env) {
+  return env.VERCEL_ENV === "preview";
+}
+
+/**
+ * @param {Record<string, string | undefined>} [env]
+ * @returns {boolean}
+ */
+export function lacunaPitchMigrationHeld(env = process.env) {
   return env.VERCEL_ENV === "preview";
 }
 
@@ -279,6 +294,15 @@ export function directoryCeloBuyHoldNotice(env = process.env) {
 }
 
 /**
+ * @param {Record<string, string | undefined>} [env]
+ * @returns {string | null}
+ */
+export function lacunaPitchHoldNotice(env = process.env) {
+  if (!lacunaPitchMigrationHeld(env)) return null;
+  return `[directory] holding ${LACUNA_PITCH_MIGRATION}: VERCEL_ENV=preview uses the production DATABASE_URL, so this migration is not applied.`;
+}
+
+/**
  * @param {string} name
  * @param {Record<string, string | undefined>} env
  * @returns {boolean}
@@ -294,6 +318,7 @@ function migrationHeldOnPreview(name, env) {
   if (name === X402_CHECK_ORDERS_MIGRATION) return x402CheckOrdersMigrationHeld(env);
   if (name === AGENT_CHECK_ORDERS_MIGRATION) return agentCheckOrdersMigrationHeld(env);
   if (name === DIRECTORY_CELO_BUY_MIGRATION) return directoryCeloBuyMigrationHeld(env);
+  if (name === LACUNA_PITCH_MIGRATION) return lacunaPitchMigrationHeld(env);
   return false;
 }
 
@@ -306,8 +331,9 @@ function migrationHeldOnPreview(name, env) {
  * `0034_seed_agent_listings_wave2.sql`,
  * `0036_agent_listing_listed_by.sql`,
  * `0038_x402_check_orders.sql`,
- * `0039_agent_check_orders.sql`, and
- * `0040_directory_lacuna_price_celo_buy_providers.sql` are omitted on
+ * `0039_agent_check_orders.sql`,
+ * `0040_directory_lacuna_price_celo_buy_providers.sql`, and
+ * `0041_lacuna_pitch_topic_price.sql` are omitted on
  * preview builds only.
  * `0026_hide_exchange_smoke_jobs.sql`,
  * `0028_hide_directory_smoke_listing.sql`,

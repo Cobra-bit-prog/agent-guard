@@ -33,6 +33,9 @@ import {
   DIRECTORY_CELO_BUY_MIGRATION,
   directoryCeloBuyHoldNotice,
   directoryCeloBuyMigrationHeld,
+  LACUNA_PITCH_MIGRATION,
+  lacunaPitchHoldNotice,
+  lacunaPitchMigrationHeld,
   x402CheckOrdersHoldNotice,
   x402CheckOrdersMigrationHeld,
   exchangeJobsHoldNotice,
@@ -555,4 +558,29 @@ test("directory Lacuna price and buy catalog providers migration applies in prod
   assert.match(migrate, /directoryCeloBuyHoldNotice/);
   assert.match(db, /directoryCeloBuyHoldNotice/);
   assert.match(migrate, /0040_directory_lacuna_price_celo_buy_providers\.sql/);
+});
+
+test("Lacuna pitch migration applies in production and is skipped on preview", () => {
+  const name = LACUNA_PITCH_MIGRATION;
+  assert.equal(name, "0041_lacuna_pitch_topic_price.sql");
+  const sql = readFileSync(join(projectRoot(), "migrations", name), "utf8");
+  assert.match(sql, /^update agent_listings\s+set pitch = /m);
+  assert.match(sql, /where id = 'agent_b1d4d13d18ef231566c5a125'/);
+  assert.doesNotMatch(sql, /\b(drop|delete|insert|alter)\b/i);
+
+  assert.equal(lacunaPitchMigrationHeld({}), false);
+  assert.equal(lacunaPitchMigrationHeld({ VERCEL_ENV: "production" }), false);
+  assert.equal(lacunaPitchMigrationHeld({ VERCEL_ENV: "preview" }), true);
+  assert.equal(lacunaPitchHoldNotice({}), null);
+  assert.match(lacunaPitchHoldNotice({ VERCEL_ENV: "preview" }) ?? "", /not applied/);
+  assert.deepEqual(pendingMigrations([name], [], { VERCEL_ENV: "preview" }), []);
+  assert.deepEqual(pendingMigrations([name], [], { VERCEL_ENV: "production" }), [
+    { name, path: name },
+  ]);
+
+  const migrate = readFileSync(join(projectRoot(), "scripts/migrate.mjs"), "utf8");
+  const db = readFileSync(join(projectRoot(), "src/lib/db.ts"), "utf8");
+  assert.match(migrate, /lacunaPitchHoldNotice/);
+  assert.match(db, /lacunaPitchHoldNotice/);
+  assert.match(migrate, /0041_lacuna_pitch_topic_price\.sql/);
 });
