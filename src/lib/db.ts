@@ -18,6 +18,8 @@ import {
   x402CheckOrdersHoldNotice,
   AGENT_CHECK_ORDERS_MIGRATION,
   agentCheckOrdersHoldNotice,
+  DIRECTORY_CELO_BUY_MIGRATION,
+  directoryCeloBuyHoldNotice,
 } from "../../scripts/migration-plan.mjs";
 
 /** Which database backend is active. */
@@ -141,6 +143,10 @@ function logHeldSchemaMigrations(paths: Iterable<string>): void {
   }
   if (names.some((path) => path.endsWith(AGENT_CHECK_ORDERS_MIGRATION))) {
     const notice = agentCheckOrdersHoldNotice();
+    if (notice) console.log(notice);
+  }
+  if (names.some((path) => path.endsWith(DIRECTORY_CELO_BUY_MIGRATION))) {
+    const notice = directoryCeloBuyHoldNotice();
     if (notice) console.log(notice);
   }
 }
