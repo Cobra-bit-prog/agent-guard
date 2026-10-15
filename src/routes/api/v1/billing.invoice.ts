@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { withPaymentAskLog } from "@/lib/payment-ask/route";
 import { CORS, json, originFromRequest } from "@/lib/server/http";
 import {
   createUsdcInvoice,
@@ -15,7 +16,9 @@ export const Route = createFileRoute("/api/v1/billing/invoice")({
   server: {
     handlers: {
       OPTIONS: () => new Response(null, { status: 204, headers: CORS }),
-      POST: async ({ request }) => {
+      POST: withPaymentAskLog(
+        "/api/v1/billing/invoice",
+        async ({ request }) => {
         let body: unknown = {};
         try {
           body = await request.json();
@@ -55,7 +58,9 @@ export const Route = createFileRoute("/api/v1/billing/invoice")({
           const message = err instanceof Error ? err.message : "Could not create invoice.";
           return json({ error: message }, 500);
         }
-      },
+        },
+        { createsCheckout: true },
+      ),
       GET: async ({ request }) => {
         const url = new URL(request.url);
         const id = (url.searchParams.get("id") || url.searchParams.get("reference") || "").trim();
