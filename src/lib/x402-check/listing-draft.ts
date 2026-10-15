@@ -18,7 +18,26 @@ const LINK_MAX = 500;
 const FALLBACK_NAME = "x402 endpoint";
 const FALLBACK_DESCRIPTION = "Paid x402 endpoint.";
 const FALLBACK_SKILL = "x402";
-const KNOWN_USDC = new Set([BASE_USDC.toLowerCase(), USDC_MINT]);
+const USDC_DECIMALS = 6;
+
+/**
+ * Circle USDC contracts with 6 decimals.
+ * EVM addresses are compared case-insensitively. Solana mints stay case-sensitive.
+ */
+const EVM_USDC_ASSETS = new Set(
+  [
+    BASE_USDC, // Base
+    "0x036CbD53842c5426634e7929541eC2318f3dCF7e", // Base Sepolia
+    "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359", // Polygon
+    "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E", // Avalanche
+    "0xcebA9300f2b948710d2653dD7B07f33A8B32118C", // Celo
+  ].map((asset) => asset.toLowerCase()),
+);
+
+const SOLANA_USDC_ASSETS = new Set([
+  USDC_MINT, // Solana
+  "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU", // Solana devnet
+]);
 
 export const ALREADY_LISTED_LINE = "This endpoint is already listed.";
 
@@ -127,6 +146,18 @@ function acceptsOf(payment: Bag): Bag[] {
   return accepts.filter((item): item is Bag => Boolean(bag(item)));
 }
 
+function knownUsdcAsset(asset: string): boolean {
+  if (!asset) return false;
+  if (/^0x/i.test(asset)) return EVM_USDC_ASSETS.has(asset.toLowerCase());
+  return SOLANA_USDC_ASSETS.has(asset);
+}
+
+/** extra.name on an x402 requirement, when the server names the token but omits decimals. */
+function namedUsdc(extra: Bag | null): boolean {
+  const name = text(extra?.name).toLowerCase();
+  return name === "usdc" || name === "usd coin";
+}
+
 function decimalsOf(accept: Bag): number | null {
   const extra = bag(accept.extra);
   const raw = extra?.decimals;
@@ -135,9 +166,9 @@ function decimalsOf(accept: Bag): number | null {
     const parsed = Number(raw);
     if (parsed <= 18) return parsed;
   }
-  const asset = text(accept.asset).toLowerCase();
-  if (KNOWN_USDC.has(asset)) return 6;
-  if (text(extra?.symbol).toUpperCase() === "USDC") return 6;
+  if (knownUsdcAsset(text(accept.asset))) return USDC_DECIMALS;
+  if (namedUsdc(extra)) return USDC_DECIMALS;
+  if (text(extra?.symbol).toUpperCase() === "USDC") return USDC_DECIMALS;
   return null;
 }
 
@@ -158,7 +189,8 @@ function priceOf(accepts: Bag[]): string | null {
     const raw = text(accept.amount) || text(accept.maxAmountRequired);
     if (!raw) continue;
     const decimals = decimalsOf(accept);
-    if (decimals == null) return clip(raw, 40);
+    // An unresolved token must not surface its atomic amount as a dollar price.
+    if (decimals == null) return null;
     return formatTokenAmount(raw, decimals);
   }
   return null;
