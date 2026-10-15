@@ -72,6 +72,17 @@ function payment(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function priced(accept: Record<string, unknown>, description = "Paid endpoint") {
+  return listingDraftFromPayment(
+    {
+      x402Version: 2,
+      resource: { url: URL, description },
+      accepts: [accept],
+    },
+    URL,
+  );
+}
+
 function transportFor(body: unknown, status = 402): ProbeTransport {
   return async () => ({
     status,
@@ -178,6 +189,82 @@ describe("x402 listing prefill", () => {
     assert.ok(draft.skills.length <= 8);
     assert.equal(draft.skills.filter((skill) => skill.toLowerCase() === "usdc").length, 1);
     parseListing(draft.body);
+  });
+
+  it("formats 10000 atomic USDC on Base as 0.01", () => {
+    const draft = priced({
+      scheme: "exact",
+      network: "base",
+      amount: "10000",
+      asset: BASE_USDC,
+      payTo: PAY_BASE,
+    });
+    assert.equal(draft?.price, "0.01");
+    assert.match(draft?.body.pitch ?? "", /\$0\.01 USDC on base/);
+    assert.doesNotMatch(draft?.body.pitch ?? "", /10000/);
+  });
+
+  it("formats Agent Meter's 200000 atomic USDC as 0.2", () => {
+    const draft = priced({
+      scheme: "exact",
+      network: "solana",
+      amount: "200000",
+      asset: USDC_MINT,
+      payTo: PAY_SOL,
+    });
+    assert.equal(draft?.price, "0.2");
+    assert.match(draft?.body.pitch ?? "", /\$0\.2 USDC on solana/);
+    assert.doesNotMatch(draft?.body.pitch ?? "", /200000/);
+  });
+
+  it("leaves price blank when an unknown asset has no decimals", () => {
+    const draft = priced({
+      scheme: "exact",
+      network: "eip155:1",
+      amount: "10000",
+      asset: "0x0000000000000000000000000000000000000001",
+      payTo: PAY_BASE,
+      extra: { name: "Weird Token", symbol: "WEIRD" },
+    });
+    assert.ok(draft);
+    assert.equal(draft.price, null);
+    assert.doesNotMatch(draft.body.pitch, /\$/);
+    assert.doesNotMatch(draft.body.pitch, /10000/);
+    assert.match(draft.body.pitch, /on eip155:1/);
+  });
+
+  it("uses 6 decimals for other known USDC assets and for extra.name", () => {
+    const assets = [
+      "0x036CbD53842c5426634e7929541eC2318f3dCF7e", // Base Sepolia
+      "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU", // Solana devnet
+      "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359", // Polygon
+      "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E", // Avalanche
+      "0xcebA9300f2b948710d2653dD7B07f33A8B32118C", // Celo
+    ];
+    for (const asset of assets) {
+      const draft = priced({
+        scheme: "exact",
+        network: "base",
+        amount: "10000",
+        asset,
+        payTo: PAY_BASE,
+      });
+      assert.equal(draft?.price, "0.01", asset);
+      assert.match(draft?.body.pitch ?? "", /\$0\.01 USDC/);
+    }
+
+    for (const name of ["USDC", "USD Coin"]) {
+      const draft = priced({
+        scheme: "exact",
+        network: "eip155:84532",
+        amount: "10000",
+        asset: "0x1111111111111111111111111111111111111111",
+        payTo: PAY_BASE,
+        extra: { name, version: "2" },
+      });
+      assert.equal(draft?.price, "0.01", name);
+      assert.match(draft?.body.pitch ?? "", /\$0\.01 USDC/);
+    }
   });
 });
 
