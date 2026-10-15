@@ -91,7 +91,9 @@ const STATUS_LABEL: Record<CheckRow["status"], string> = {
 
 function checkFailed(failed: number | undefined, checks: CheckRow[] | undefined): boolean {
   if ((failed ?? 0) > 0) return true;
-  return (checks ?? []).some((check) => check.status === "fail");
+  return (checks ?? []).some(
+    (check) => check.status === "fail" || (check.id === "header_size" && check.status === "warn"),
+  );
 }
 
 function ShipFailLink({ show }: { show: boolean }) {

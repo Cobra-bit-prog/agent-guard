@@ -11,6 +11,7 @@ import {
   checkBazaar,
   checkDroppedFields,
   checkExample,
+  checkHeaderSize,
   checkMerchant,
   checkPresence,
   checkReplyShape,
@@ -237,6 +238,13 @@ async function localChecks(
 ): Promise<CheckRow[]> {
   const why = absenceOf(probe);
   const reply = checkReplyShape(probe);
+  const header =
+    probe && probe.status === 402
+      ? checkHeaderSize({
+          paymentRequiredBytes: probe.paymentRequiredBytes,
+          responseHeaderBytes: probe.responseHeaderBytes,
+        })
+      : absentCheck("header_size", "Price header size", why ?? "wallet");
   if (why) {
     const targets =
       why === "wallet"
@@ -244,6 +252,7 @@ async function localChecks(
         : absentCheck("payment_targets", "Network, asset, and payTo", why);
     return [
       reply,
+      header,
       absentCheck("resource_https", "resource.url https", why),
       absentCheck("bazaar", "Bazaar extension", why),
       absentCheck("dropped_fields", "Fields Coinbase may drop", why),
@@ -256,6 +265,7 @@ async function localChecks(
   }
   return [
     reply,
+    header,
     checkResourceHttps(payment),
     checkBazaar(payment),
     checkDroppedFields(payment),
@@ -287,6 +297,27 @@ export async function runListingCheck(
   const fetched = probe
     ? { status: probe.status, final_url: probe.finalUrl, content_type: probe.contentType }
     : null;
+
+  if (probe?.headersOverflow) {
+    const checks = [
+      checkHeaderSize({
+        paymentRequiredBytes: probe.paymentRequiredBytes,
+        responseHeaderBytes: probe.responseHeaderBytes,
+      }),
+    ];
+    return {
+      product: "x402_listing_check",
+      tier,
+      input: inputOf(target),
+      checks,
+      ...counts(checks),
+      caveat: X402_CHECK_CAVEAT,
+      summary: summaryOf(checks),
+      validator: X402_CHECK_VALIDATOR_LINE,
+      fetched,
+      listing: null,
+    };
+  }
 
   if (probe && probe.status !== 402) {
     const checks = [checkReplyShape(probe)];

@@ -14,6 +14,8 @@ import {
   checkBazaar,
   checkDroppedFields,
   checkExample,
+  checkHeaderSize,
+  HEADER_SIZE_ISSUE,
   checkMerchant,
   checkPresence,
   checkReplyShape,
@@ -37,7 +39,7 @@ import {
 } from "./copy.ts";
 import { runX402ListingCheckTool } from "./mcp.ts";
 import { handleX402CheckRequest, handleX402ReportRequest } from "./http.ts";
-import { orderAddresses, pinLookup, probeEndpoint, type ProbeHop, type ProbeTransport } from "./probe.ts";
+import { measureRawHeaders, orderAddresses, pinLookup, probeEndpoint, type ProbeHop, type ProbeTransport } from "./probe.ts";
 import { runListingCheck, type X402Report } from "./run.ts";
 import { isBlockedIp, parsePublicHttpsUrl, SsrfError } from "./ssrf.ts";
 
@@ -302,6 +304,9 @@ describe("listing checks", () => {
       payment: payment(),
       paymentSource: "header" as const,
       decodeError: null,
+      paymentRequiredBytes: 3,
+      responseHeaderBytes: null,
+      headersOverflow: false,
     };
     assert.match(checkReplyShape(probe).detail, /PAYMENT-REQUIRED/);
     const other = checkReplyShape({ ...probe, status: 200, payment: null, paymentSource: null });
@@ -554,6 +559,144 @@ describe("listing checks", () => {
   });
 });
 
+describe("price header size", () => {
+  it("counts the PAYMENT-REQUIRED value and the header lines", () => {
+    const value = "abc";
+    const measured = measureRawHeaders(["PAYMENT-REQUIRED", value, "Content-Type", "application/json"]);
+    assert.equal(measured.paymentRequiredBytes, 3);
+    assert.equal(
+      measured.responseHeaderBytes,
+      Buffer.byteLength(`PAYMENT-REQUIRED: ${value}\r\n`) + Buffer.byteLength("Content-Type: application/json\r\n"),
+    );
+  });
+
+  it("passes at 8190 bytes and warns above it", () => {
+    const under = checkHeaderSize({ paymentRequiredBytes: 8190, responseHeaderBytes: 9000 });
+    assert.equal(under.status, "pass");
+    assert.equal(under.payment_required_bytes, 8190);
+    assert.equal(under.response_header_bytes, 9000);
+    assert.match(under.detail, /PAYMENT-REQUIRED is 8190 bytes/);
+    assert.doesNotMatch(under.detail, /Python|Node fetch/);
+
+    const warn = checkHeaderSize({ paymentRequiredBytes: 8191, responseHeaderBytes: 9000 });
+    assert.equal(warn.status, "warn");
+    assert.equal(warn.payment_required_bytes, 8191);
+    assert.equal(warn.response_header_bytes, 9000);
+    assert.match(warn.detail, /PAYMENT-REQUIRED is 8191 bytes/);
+    assert.match(warn.detail, /Some Python buyers can't read it/);
+    assert.match(warn.detail, new RegExp(HEADER_SIZE_ISSUE.replaceAll(".", "\\.")));
+  });
+
+  it("fails above 16384 bytes on the price header or the whole header block", () => {
+    const header = checkHeaderSize({ paymentRequiredBytes: 16385, responseHeaderBytes: 17000 });
+    assert.equal(header.status, "fail");
+    assert.equal(header.payment_required_bytes, 16385);
+    assert.equal(header.response_header_bytes, 17000);
+    assert.match(header.detail, /PAYMENT-REQUIRED is 16385 bytes/);
+    assert.match(header.detail, /Node fetch buyers can't read it either/);
+    assert.match(header.detail, new RegExp(HEADER_SIZE_ISSUE.replaceAll(".", "\\.")));
+
+    const total = checkHeaderSize({ paymentRequiredBytes: 100, responseHeaderBytes: 16385 });
+    assert.equal(total.status, "fail");
+    assert.equal(total.payment_required_bytes, 100);
+    assert.equal(total.response_header_bytes, 16385);
+    assert.match(total.detail, /Response headers are 16385 bytes/);
+    assert.match(total.detail, /Node fetch buyers can't read it either/);
+
+    const edge = checkHeaderSize({ paymentRequiredBytes: 16384, responseHeaderBytes: 16384 });
+    assert.equal(edge.status, "warn");
+    assert.equal(edge.payment_required_bytes, 16384);
+  });
+
+  it("puts the byte count on the free check and points a too-big header at Fix", async () => {
+    function sized(bytes: number, total: number): ProbeTransport {
+      return async () => {
+        const value = "a".repeat(bytes);
+        const base = hop(payment());
+        return {
+          status: 402,
+          headers: {
+            get(name: string) {
+              if (name.toLowerCase() === "payment-required") return value;
+              return base.headers.get(name);
+            },
+          },
+          body: base.body,
+          paymentRequiredBytes: bytes,
+          responseHeaderBytes: total,
+        };
+      };
+    }
+
+    const under = await runListingCheck(
+      { url: URL, payTo: null },
+      "free",
+      { lookup: publicLookup, transport: sized(100, 400) },
+    );
+    const underRow = under.checks.find((check) => check.id === "header_size");
+    assert.equal(underRow?.status, "pass");
+    assert.equal(underRow?.payment_required_bytes, 100);
+    assert.equal(underRow?.response_header_bytes, 400);
+    const underResponse = await handleX402CheckRequest(
+      post("/api/v1/x402-check", { url: URL }, "203.0.113.91"),
+      null,
+      { runFree: async () => under },
+      NOW,
+    );
+    const underBody = (await underResponse.json()) as {
+      checks: CheckRow[];
+      next: { ship?: { href: string; fix_usd: number } };
+    };
+    assert.equal(underBody.checks.find((check) => check.id === "header_size")?.payment_required_bytes, 100);
+    assert.equal(underBody.next.ship, undefined);
+
+    const warned = await runListingCheck(
+      { url: URL, payTo: null },
+      "free",
+      { lookup: publicLookup, transport: sized(8191, 9000) },
+    );
+    assert.equal(warned.failed, 0);
+    assert.equal(warned.checks.find((check) => check.id === "header_size")?.status, "warn");
+    const warnResponse = await handleX402CheckRequest(
+      post("/api/v1/x402-check", { url: URL }, "203.0.113.92"),
+      null,
+      { runFree: async () => warned },
+      NOW,
+    );
+    const warnBody = (await warnResponse.json()) as {
+      checks: CheckRow[];
+      failed: number;
+      next: { ship?: { href: string; line: string; fix_usd: number } };
+    };
+    assert.equal(warnBody.failed, 0);
+    assert.equal(warnBody.checks.find((check) => check.id === "header_size")?.payment_required_bytes, 8191);
+    assert.equal(warnBody.next.ship?.href, "/ship");
+    assert.equal(warnBody.next.ship?.line, "Ship to paid");
+    assert.equal(warnBody.next.ship?.fix_usd, 149);
+
+    const failed = await runListingCheck(
+      { url: URL, payTo: null },
+      "free",
+      { lookup: publicLookup, transport: sized(16385, 17000) },
+    );
+    assert.ok(failed.failed >= 1);
+    assert.equal(failed.checks.find((check) => check.id === "header_size")?.status, "fail");
+    const failResponse = await handleX402CheckRequest(
+      post("/api/v1/x402-check", { url: URL }, "203.0.113.93"),
+      null,
+      { runFree: async () => failed },
+      NOW,
+    );
+    const failBody = (await failResponse.json()) as {
+      checks: CheckRow[];
+      next: { ship?: { href: string; fix_usd: number } };
+    };
+    assert.equal(failBody.checks.find((check) => check.id === "header_size")?.payment_required_bytes, 16385);
+    assert.equal(failBody.next.ship?.href, "/ship");
+    assert.equal(failBody.next.ship?.fix_usd, 149);
+  });
+});
+
 describe("free and paid report", () => {
   it("passes a clean 402 on the free checks", async () => {
     const report = await runListingCheck(
@@ -563,14 +706,18 @@ describe("free and paid report", () => {
     );
     assert.deepEqual(
       report.checks.map((check) => check.id),
-      ["reply_shape", "resource_https", "bazaar", "dropped_fields", "example_input", "schema_refs"],
+      ["reply_shape", "header_size", "resource_https", "bazaar", "dropped_fields", "example_input", "schema_refs"],
     );
     assert.equal(report.failed, 0);
     assert.equal(report.checks.every((check) => check.status === "pass"), true);
     assert.equal(report.checks.some((check) => "fix" in check), false);
+    const sized = report.checks.find((check) => check.id === "header_size");
+    assert.equal(sized?.status, "pass");
+    assert.equal(typeof sized?.payment_required_bytes, "number");
+    assert.ok((sized?.payment_required_bytes ?? 0) <= 8190);
     assert.match(report.caveat, /does not mean Coinbase will list you/);
     assert.match(report.validator, /api\.cdp\.coinbase\.com\/platform\/v2\/x402\/validate/);
-    assert.match(report.summary, /6 passed/);
+    assert.match(report.summary, /7 passed/);
     assert.doesNotMatch(report.summary, /fail/i);
     assert.doesNotMatch(`${report.caveat} ${report.validator} ${X402_CHECK_LINE} ${X402_CHECK_HONESTY}`, BANNED);
   });
@@ -757,7 +904,7 @@ describe("free and paid report", () => {
         directory: async () => ({ names: [] }),
       },
     );
-    assert.equal(report.checks.length, 14);
+    assert.equal(report.checks.length, 15);
     const search = report.checks.find((check) => check.id === "search");
     assert.equal(search?.status, "warn");
     const snippet = report.checks.find((check) => check.id === "snippet");

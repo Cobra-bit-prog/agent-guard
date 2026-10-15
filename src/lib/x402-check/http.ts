@@ -392,7 +392,8 @@ export async function handleX402CheckRequest(
           price_usd: X402_CHECK_PRICE_USD,
           days: X402_CHECK_DAYS,
         },
-        ...(report.failed > 0
+        ...(report.failed > 0 ||
+        report.checks.some((check) => check.id === "header_size" && check.status === "warn")
           ? {
               ship: {
                 line: "Ship to paid",
