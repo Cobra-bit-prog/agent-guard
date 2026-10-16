@@ -39,6 +39,9 @@ import {
   PAYMENT_ASKS_MIGRATION,
   paymentAsksHoldNotice,
   paymentAsksMigrationHeld,
+  LACUNA_PITCH_FREE_100_MIGRATION,
+  lacunaPitchFree100HoldNotice,
+  lacunaPitchFree100MigrationHeld,
   x402CheckOrdersHoldNotice,
   x402CheckOrdersMigrationHeld,
   exchangeJobsHoldNotice,
@@ -612,4 +615,29 @@ test("payment asks migration applies in production and is skipped on preview", (
   assert.match(migrate, /paymentAsksHoldNotice/);
   assert.match(db, /paymentAsksHoldNotice/);
   assert.match(migrate, /0042_payment_asks\.sql/);
+});
+
+test("Lacuna first-100-free pitch migration applies in production and is skipped on preview", () => {
+  const name = LACUNA_PITCH_FREE_100_MIGRATION;
+  assert.equal(name, "0043_lacuna_pitch_first_100_free.sql");
+  const sql = readFileSync(join(projectRoot(), "migrations", name), "utf8");
+  assert.match(sql, /^update agent_listings\s+set pitch = /m);
+  assert.match(sql, /where id = 'agent_b1d4d13d18ef231566c5a125'\s+and pitch is distinct from /);
+  assert.doesNotMatch(sql, /\b(drop|delete|insert|alter)\b/i);
+
+  assert.equal(lacunaPitchFree100MigrationHeld({}), false);
+  assert.equal(lacunaPitchFree100MigrationHeld({ VERCEL_ENV: "production" }), false);
+  assert.equal(lacunaPitchFree100MigrationHeld({ VERCEL_ENV: "preview" }), true);
+  assert.equal(lacunaPitchFree100HoldNotice({}), null);
+  assert.match(lacunaPitchFree100HoldNotice({ VERCEL_ENV: "preview" }) ?? "", /not applied/);
+  assert.deepEqual(pendingMigrations([name], [], { VERCEL_ENV: "preview" }), []);
+  assert.deepEqual(pendingMigrations([name], [], { VERCEL_ENV: "production" }), [
+    { name, path: name },
+  ]);
+
+  const migrate = readFileSync(join(projectRoot(), "scripts/migrate.mjs"), "utf8");
+  const db = readFileSync(join(projectRoot(), "src/lib/db.ts"), "utf8");
+  assert.match(migrate, /lacunaPitchFree100HoldNotice/);
+  assert.match(db, /lacunaPitchFree100HoldNotice/);
+  assert.match(migrate, /0043_lacuna_pitch_first_100_free\.sql/);
 });

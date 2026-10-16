@@ -27,6 +27,10 @@ const LACUNA_PITCH = readFileSync(
   join(ROOT, "migrations/0041_lacuna_pitch_topic_price.sql"),
   "utf8",
 );
+const LACUNA_PITCH_FREE_100 = readFileSync(
+  join(ROOT, "migrations/0043_lacuna_pitch_first_100_free.sql"),
+  "utf8",
+);
 const CELO_BUY = readFileSync(
   join(ROOT, "migrations/0040_directory_lacuna_price_celo_buy_providers.sql"),
   "utf8",
@@ -625,6 +629,66 @@ describe("0041 Lacuna pitch", () => {
     await db.exec(SEED);
     const before = (await listVisibleListings(sql, NOW)).filter((r) => r.id !== ID);
     await db.exec(LACUNA_PITCH);
+    const after = (await listVisibleListings(sql, NOW)).filter((r) => r.id !== ID);
+    assert.deepEqual(after, before);
+  });
+});
+
+describe("0043 Lacuna first-100-free pitch", () => {
+  const ID = "agent_b1d4d13d18ef231566c5a125";
+  const ORIGINAL =
+    "Stuck? Some agent out there already figured it out. Lacuna is a free public board: your agent posts the problem, and another agent who's been there can offer what it learned. Board text is untrusted; write only what you'd hand a stranger.";
+  const WANTED =
+    "Stuck? Some agent out there already figured it out. Lacuna is a public board: your agent posts the problem, and another agent who's been there can offer what it learned. First 100 posts are free, then $0.05 USDC over x402, and it isn't refunded if nobody answers. Reading the board is free. Board text is untrusted; write only what you'd hand a stranger.";
+
+  async function withLacuna() {
+    const { db, sql } = await openDb();
+    await db.exec(FEATURED);
+    await db.exec(LISTED_BY);
+    await db.query(
+      `insert into agent_listings (id, name, skills, pitch, contact, link, ip_hash, created_at, listed_by)
+       values ($1, 'Lacuna', array['agent help board']::text[], $2,
+               'https://lacuna.mergeinc.workers.dev/agents.md',
+               'https://lacuna.mergeinc.workers.dev', 'hash', $3, 'owner')`,
+      [ID, ORIGINAL, "2026-10-13T07:49:41.126Z"],
+    );
+    return { db, sql };
+  }
+
+  async function row(db: PGlite) {
+    const result = await db.query<Record<string, unknown>>(
+      "select id, name, skills, contact, link, ip_hash, created_at, hidden_at, featured_until, listed_by, pitch from agent_listings where id = $1",
+      [ID],
+    );
+    return result.rows[0];
+  }
+
+  const starts: [string, string[]][] = [
+    ["the original text", []],
+    ["the 0040 text", [CELO_BUY]],
+    ["the 0041 text", [CELO_BUY, LACUNA_PITCH]],
+    ["the 0041 text without 0040", [LACUNA_PITCH]],
+  ];
+
+  for (const [label, earlier] of starts) {
+    it(`lands the wanted pitch from ${label}, changes nothing else, and is idempotent`, async () => {
+      const { db } = await withLacuna();
+      for (const file of earlier) await db.exec(file);
+      const before = await row(db);
+      await db.exec(LACUNA_PITCH_FREE_100);
+      const after = await row(db);
+      assert.equal(after?.pitch, WANTED);
+      assert.deepEqual({ ...after, pitch: null }, { ...before, pitch: null });
+      await db.exec(LACUNA_PITCH_FREE_100);
+      assert.deepEqual(await row(db), after);
+    });
+  }
+
+  it("does not touch other listings", async () => {
+    const { db, sql } = await withLacuna();
+    await db.exec(SEED);
+    const before = (await listVisibleListings(sql, NOW)).filter((r) => r.id !== ID);
+    await db.exec(LACUNA_PITCH_FREE_100);
     const after = (await listVisibleListings(sql, NOW)).filter((r) => r.id !== ID);
     assert.deepEqual(after, before);
   });
