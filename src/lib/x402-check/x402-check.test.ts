@@ -604,9 +604,15 @@ describe("price header size", () => {
     assert.equal(warn.status, "warn");
     assert.equal(warn.payment_required_bytes, 8191);
     assert.equal(warn.response_header_bytes, 9000);
+    assert.deepEqual(warn.largest_parts, []);
+    assert.equal(warn.body_has_requirements, false);
     assert.match(warn.detail, /PAYMENT-REQUIRED is 8191 bytes/);
     assert.match(warn.detail, /Some Python buyers can't read it/);
+    assert.match(warn.detail, /did not decode/);
+    assert.match(warn.detail, /does not carry the payment requirements/);
     assert.match(warn.detail, new RegExp(HEADER_SIZE_ISSUE.replaceAll(".", "\\.")));
+    assert.equal(under.largest_parts, undefined);
+    assert.equal(under.body_has_requirements, undefined);
   });
 
   it("fails above 16384 bytes on the price header or the whole header block", () => {
@@ -628,6 +634,67 @@ describe("price header size", () => {
     const edge = checkHeaderSize({ paymentRequiredBytes: 16384, responseHeaderBytes: 16384 });
     assert.equal(edge.status, "warn");
     assert.equal(edge.payment_required_bytes, 16384);
+  });
+
+  it("names the three largest pieces and whether the body carries the price", () => {
+    const description = "d".repeat(600);
+    const example = { quote: "e".repeat(1500) };
+    const schema = { type: "object", properties: { holdings: { type: "string", description: "s".repeat(4000) } } };
+    const doc = payment({
+      resource: {
+        url: URL,
+        description,
+        mimeType: "application/json",
+      },
+      extensions: {
+        bazaar: {
+          info: { input: { type: "http", method: "GET" }, output: { type: "json", example } },
+          schema,
+        },
+      },
+    });
+    const total = Buffer.byteLength(JSON.stringify(doc));
+    const schemaBytes = Buffer.byteLength(JSON.stringify(schema));
+    const exampleBytes = Buffer.byteLength(JSON.stringify(example));
+    const descriptionBytes = Buffer.byteLength(JSON.stringify(description));
+
+    const warned = checkHeaderSize({
+      paymentRequiredBytes: 8191,
+      responseHeaderBytes: 9000,
+      payment: doc,
+      bodyHasRequirements: true,
+    });
+    assert.equal(warned.status, "warn");
+    assert.equal(warned.body_has_requirements, true);
+    assert.deepEqual(
+      warned.largest_parts?.map((part) => part.path),
+      ["extensions.bazaar.schema", "extensions.bazaar.info.output.example", "resource.description"],
+    );
+    assert.equal(warned.largest_parts?.[0]?.bytes, schemaBytes);
+    assert.equal(warned.largest_parts?.[1]?.bytes, exampleBytes);
+    assert.equal(warned.largest_parts?.[2]?.bytes, descriptionBytes);
+    assert.equal(warned.largest_parts?.[0]?.share, Math.round((schemaBytes / total) * 10_000) / 10_000);
+    assert.ok((warned.largest_parts?.[0]?.share ?? 0) >= 0.5);
+    assert.ok((warned.largest_parts?.[0]?.bytes ?? 0) > (warned.largest_parts?.[1]?.bytes ?? 0));
+    assert.match(warned.detail, /Most of your price header is the input schema \(\d+%, [\d,]+ bytes\)/);
+    assert.match(warned.detail, /output example \(\d+%, [\d,]+ bytes\)/);
+    assert.match(warned.detail, /description \(\d+%, [\d,]+ bytes\)/);
+    assert.match(warned.detail, /Trimming it gets you under the limit/);
+    assert.match(warned.detail, /402 body also carries the payment requirements/);
+    assert.match(warned.detail, /Some Python buyers can't read it/);
+
+    const hidden = checkHeaderSize({
+      paymentRequiredBytes: 16385,
+      responseHeaderBytes: 17000,
+      payment: doc,
+      bodyHasRequirements: false,
+    });
+    assert.equal(hidden.status, "fail");
+    assert.equal(hidden.body_has_requirements, false);
+    assert.equal(hidden.largest_parts?.[0]?.path, "extensions.bazaar.schema");
+    assert.match(hidden.detail, /Node fetch buyers can't read it either/);
+    assert.match(hidden.detail, /does not carry the payment requirements/);
+    assert.match(hidden.detail, /Trimming it gets you under the limit/);
   });
 
   it("puts the byte count on the free check and points a too-big header at Fix", async () => {
@@ -691,7 +758,12 @@ describe("price header size", () => {
       next: { ship?: { href: string; line: string; fix_usd: number } };
     };
     assert.equal(warnBody.failed, 0);
-    assert.equal(warnBody.checks.find((check) => check.id === "header_size")?.payment_required_bytes, 8191);
+    const warnHeader = warnBody.checks.find((check) => check.id === "header_size");
+    assert.equal(warnHeader?.payment_required_bytes, 8191);
+    assert.deepEqual(warnHeader?.largest_parts, []);
+    assert.equal(warnHeader?.body_has_requirements, true);
+    assert.match(warnHeader?.detail ?? "", /did not decode/);
+    assert.match(warnHeader?.detail ?? "", /body also carries the payment requirements/);
     assert.equal(warnBody.next.ship?.href, "/ship");
     assert.equal(warnBody.next.ship?.line, "Ship to paid");
     assert.equal(warnBody.next.ship?.fix_usd, 149);
@@ -716,6 +788,88 @@ describe("price header size", () => {
     assert.equal(failBody.checks.find((check) => check.id === "header_size")?.payment_required_bytes, 16385);
     assert.equal(failBody.next.ship?.href, "/ship");
     assert.equal(failBody.next.ship?.fix_usd, 149);
+  });
+
+  it("reports the decoded pieces from a real PAYMENT-REQUIRED header and still offers Fix", async () => {
+    const doc = payment({
+      resource: {
+        url: URL,
+        description: "d".repeat(450),
+        mimeType: "application/json",
+      },
+      extensions: {
+        bazaar: {
+          info: {
+            input: { type: "http", method: "GET" },
+            output: { type: "json", example: { quote: "e".repeat(1500) } },
+          },
+          schema: { type: "object", properties: { holdings: { type: "string", description: "s".repeat(7000) } } },
+        },
+      },
+    });
+    const encodedBytes = Buffer.byteLength(encode(doc));
+    assert.ok(encodedBytes > 8190);
+    assert.ok(encodedBytes <= 16384);
+
+    const warned = await runListingCheck(
+      { url: URL, payTo: null },
+      "free",
+      { lookup: publicLookup, transport: transportFor(doc) },
+    );
+    const row = warned.checks.find((check) => check.id === "header_size");
+    assert.equal(warned.failed, 0);
+    assert.equal(row?.status, "warn");
+    assert.equal(row?.body_has_requirements, true);
+    assert.deepEqual(
+      row?.largest_parts?.map((part) => part.path),
+      ["extensions.bazaar.schema", "extensions.bazaar.info.output.example", "resource.description"],
+    );
+    assert.match(row?.detail ?? "", /Most of your price header is the input schema \(\d+%, [\d,]+ bytes\)/);
+    assert.match(row?.detail ?? "", /Trimming it gets you under the limit/);
+
+    const response = await handleX402CheckRequest(
+      post("/api/v1/x402-check", { url: URL }, "203.0.113.94"),
+      null,
+      { runFree: async () => warned },
+      NOW,
+    );
+    const body = (await response.json()) as {
+      checks: CheckRow[];
+      next: { ship?: { href: string; fix_usd: number; keep_usd: number } };
+    };
+    const header = body.checks.find((check) => check.id === "header_size");
+    assert.equal(header?.body_has_requirements, true);
+    assert.equal(header?.largest_parts?.[0]?.path, "extensions.bazaar.schema");
+    assert.equal(typeof header?.largest_parts?.[0]?.share, "number");
+    assert.equal(body.next.ship?.href, "/ship");
+    assert.equal(body.next.ship?.fix_usd, 149);
+    assert.equal(body.next.ship?.keep_usd, 29);
+
+    const hidden = await runListingCheck(
+      { url: URL, payTo: null },
+      "free",
+      {
+        lookup: publicLookup,
+        transport: async () => {
+          const base = hop(doc);
+          return {
+            ...base,
+            body: Buffer.from("Payment required"),
+            headers: {
+              get(name: string) {
+                if (name.toLowerCase() === "content-type") return "text/plain";
+                return base.headers.get(name);
+              },
+            },
+          };
+        },
+      },
+    );
+    const hiddenRow = hidden.checks.find((check) => check.id === "header_size");
+    assert.equal(hiddenRow?.status, "warn");
+    assert.equal(hiddenRow?.body_has_requirements, false);
+    assert.equal(hiddenRow?.largest_parts?.[0]?.path, "extensions.bazaar.schema");
+    assert.match(hiddenRow?.detail ?? "", /does not carry the payment requirements/);
   });
 });
 

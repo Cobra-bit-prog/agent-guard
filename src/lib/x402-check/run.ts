@@ -13,6 +13,7 @@ import {
   checkDroppedFields,
   checkExample,
   checkHeadSafe,
+  bodyHasPaymentRequirements,
   checkHeaderSize,
   checkMerchant,
   checkPresence,
@@ -325,6 +326,15 @@ async function exampleRow(
   }
 }
 
+function headerSizeFromProbe(probe: EndpointProbe): CheckRow {
+  return checkHeaderSize({
+    paymentRequiredBytes: probe.paymentRequiredBytes,
+    responseHeaderBytes: probe.responseHeaderBytes,
+    payment: probe.paymentSource === "header" ? probe.payment : null,
+    bodyHasRequirements: probe.status === 402 && bodyHasPaymentRequirements(probe.bodyText),
+  });
+}
+
 function whySnippet(
   payment: unknown,
   requestedUrl: string | null,
@@ -345,10 +355,7 @@ async function localChecks(
   const reply = checkReplyShape(probe);
   const header =
     probe && probe.status === 402
-      ? checkHeaderSize({
-          paymentRequiredBytes: probe.paymentRequiredBytes,
-          responseHeaderBytes: probe.responseHeaderBytes,
-        })
+      ? headerSizeFromProbe(probe)
       : absentCheck("header_size", "Price header size", why ?? "wallet");
   if (why || !probe) {
     const reason = why ?? "wallet";
@@ -414,12 +421,7 @@ export async function runListingCheck(
     : null;
 
   if (probe?.headersOverflow) {
-    const checks = [
-      checkHeaderSize({
-        paymentRequiredBytes: probe.paymentRequiredBytes,
-        responseHeaderBytes: probe.responseHeaderBytes,
-      }),
-    ];
+    const checks = [headerSizeFromProbe(probe)];
     return {
       product: "x402_listing_check",
       tier,
