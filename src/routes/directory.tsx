@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type MouseEvent } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, notFound } from "@tanstack/react-router";
 import { DirectoryFeatured } from "@/components/directory-featured";
+import { DirectoryNotFound } from "@/components/directory-not-found";
 import { SkyShell } from "@/components/marketing/chrome";
 import { SellEmpty } from "@/components/marketing/sell-empty";
 import { ListingOriginLine } from "@/components/listing-origin";
@@ -13,10 +14,17 @@ import {
   listingSkillChips,
   type DirectoryCategory,
 } from "@/lib/directory/cards";
-import { directoryPageHead } from "@/lib/directory/crawl";
+import { directoryPageHead, notFoundPageHead } from "@/lib/directory/crawl";
 import { FEATURED_HONESTY, FEATURED_LINE, FEATURED_PATH } from "@/lib/directory/featured-copy";
 import type { PublicListing } from "@/lib/directory/listings";
-import { loadDirectoryListings } from "@/lib/directory/load-listings";
+import { loadDirectoryPage } from "@/lib/directory/load-listings";
+import {
+  directoryPagePath,
+  directoryPageSlice,
+  parseDirectoryPage,
+  toCardListing,
+  type CardListing,
+} from "@/lib/directory/page";
 import {
   ACTION_GATE_SUCCESS_LINE,
   LISTED_FREE_LINE,
@@ -30,9 +38,23 @@ import { trackListAgentSubmit } from "@/lib/site-events";
 import { SelfListNote } from "@/components/self-list-note";
 
 export const Route = createFileRoute("/directory")({
-  loader: () => loadDirectoryListings(),
+  validateSearch: (search: Record<string, unknown>): { page?: number } => {
+    const page = parseDirectoryPage(search.page);
+    return page > 1 ? { page } : {};
+  },
+  loaderDeps: ({ search }) => ({ page: search.page ?? 1 }),
+  loader: async ({ deps }) => {
+    const loaded = await loadDirectoryPage({ data: { page: deps.page } });
+    // A page past the end is a 404, so ?page=999 is not a thin indexable copy.
+    if (!loaded.error && loaded.page > loaded.pageCount) throw notFound();
+    return loaded;
+  },
   component: DirectoryPage,
-  head: ({ loaderData }) => directoryPageHead(loaderData?.error ? [] : (loaderData?.listings ?? [])),
+  notFoundComponent: DirectoryNotFound,
+  head: ({ loaderData }) =>
+    !loaderData
+      ? notFoundPageHead()
+      : directoryPageHead(loaderData.error ? [] : loaderData.listings, loaderData),
 });
 
 const EMPTY = "No agents listed yet.";
@@ -53,9 +75,14 @@ function when(iso: string): string {
 
 function DirectoryPage() {
   const loaded = Route.useLoaderData();
-  const [listings, setListings] = useState<PublicListing[] | null>(
+  const page = loaded.page;
+  const [listings, setListings] = useState<CardListing[] | null>(
     loaded.error ? null : loaded.listings,
   );
+  const [total, setTotal] = useState(loaded.total);
+  const [pageCount, setPageCount] = useState(loaded.pageCount);
+  // The full list is fetched only when a filter or ?feature= needs rows off this page.
+  const [allListings, setAllListings] = useState<CardListing[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(loaded.error);
   const [formError, setFormError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -71,13 +98,26 @@ function DirectoryPage() {
   const [category, setCategory] = useState<"All" | DirectoryCategory>("All");
   const featureQueryApplied = useRef(false);
 
-  const reload = useCallback(async () => {
+  const reload = useCallback(async (): Promise<CardListing[]> => {
     const response = await fetch("/api/v1/agents/listings");
     const body = (await response.json()) as { listings?: PublicListing[]; error?: string };
     if (!response.ok) throw new Error(body.error || "Could not load agents");
-    setListings(body.listings ?? []);
+    const all = (body.listings ?? []).map(toCardListing);
+    const slice = directoryPageSlice(all, page);
+    setAllListings(all);
+    setListings(slice.rows);
+    setTotal(slice.total);
+    setPageCount(slice.pageCount);
     setLoadError(null);
-  }, []);
+    return all;
+  }, [page]);
+
+  useEffect(() => {
+    if (category === "All" || allListings) return;
+    void reload().catch(() => {
+      setLoadError("Could not load agents");
+    });
+  }, [category, allListings, reload]);
 
   useEffect(() => {
     if (!listings || featureQueryApplied.current) return;
@@ -85,12 +125,19 @@ function DirectoryPage() {
     if (typeof window === "undefined") return;
     const id = new URLSearchParams(window.location.search).get("feature")?.trim() ?? "";
     if (!FEATURE_QUERY.test(id)) return;
-    const listing = listings.find((row) => row.id === id);
-    if (!listing) return;
-    setFeatureListingId(listing.id);
-    setFeatureContact(listing.contact);
-    document.getElementById("featured")?.scrollIntoView({ behavior: "auto", block: "start" });
-  }, [listings]);
+    const pick = (rows: readonly CardListing[]) => {
+      const listing = rows.find((row) => row.id === id);
+      if (!listing) return false;
+      setFeatureListingId(listing.id);
+      setFeatureContact(listing.contact);
+      document.getElementById("featured")?.scrollIntoView({ behavior: "auto", block: "start" });
+      return true;
+    };
+    if (pick(listings)) return;
+    void reload()
+      .then((all) => pick(all))
+      .catch(() => {});
+  }, [listings, reload]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -120,7 +167,10 @@ function DirectoryPage() {
       try {
         await reload();
       } catch {
-        setListings((current) => [body.listing as PublicListing, ...(current ?? [])]);
+        setListings((current) => [
+          toCardListing(body.listing as PublicListing),
+          ...(current ?? []),
+        ]);
       }
       setName("");
       setSkills("");
@@ -143,10 +193,10 @@ function DirectoryPage() {
           <h1 className="landing-rise text-display font-semibold text-balance text-fg">
             Agent directory
           </h1>
-          {listings && listings.length > 0 ? (
+          {listings && total > 0 ? (
             <p className="directory-count">
-              <strong>{listings.length}</strong>
-              <span>{listings.length === 1 ? "agent listed" : "agents listed"}</span>
+              <strong>{total}</strong>
+              <span>{total === 1 ? "agent listed" : "agents listed"}</span>
             </p>
           ) : null}
         </div>
@@ -250,8 +300,10 @@ function DirectoryPage() {
             <p className="mt-4 text-body text-muted">Loading agents.</p>
           ) : (
             <DirectoryBoard
-              listings={listings}
+              listings={category === "All" ? listings : allListings}
               category={category}
+              page={page}
+              pageCount={pageCount}
               onCategory={setCategory}
               onFeature={(listing) => {
                 setFeatureListingId(listing.id);
@@ -378,16 +430,21 @@ function DirectoryPage() {
 }
 
 function DirectoryBoard({
-  listings,
+  listings: loadedListings,
   category,
+  page,
+  pageCount,
   onCategory,
   onFeature,
 }: {
-  listings: PublicListing[];
+  listings: CardListing[] | null;
   category: "All" | DirectoryCategory;
+  page: number;
+  pageCount: number;
   onCategory: (value: "All" | DirectoryCategory) => void;
-  onFeature: (listing: PublicListing) => void;
+  onFeature: (listing: CardListing) => void;
 }) {
+  const listings = loadedListings ?? [];
   const shown =
     category === "All"
       ? listings
@@ -410,7 +467,9 @@ function DirectoryBoard({
           </FilterChip>
         ))}
       </div>
-      {listings.length === 0 ? (
+      {loadedListings === null ? (
+        <p className="mt-4 text-body text-muted">Loading agents.</p>
+      ) : listings.length === 0 ? (
         <SellEmpty
           title={EMPTY}
           body="List yours free. People reach you at the contact you leave."
@@ -443,6 +502,7 @@ function DirectoryBoard({
               />
             ))}
           </ul>
+          {category === "All" ? <DirectoryPager page={page} pageCount={pageCount} /> : null}
           {shown.length < THIN_LIST ? (
             <SellEmpty
               title="Few agents in this view."
@@ -465,7 +525,29 @@ function shortSkills(skills: readonly string[]): string[] {
   return listingSkillChips(skills).filter((skill) => skill.length <= 24);
 }
 
-function ListingCard({ listing, onFeature }: { listing: PublicListing; onFeature: () => void }) {
+/** Plain links so crawlers can walk every page. Page 1 is /directory. */
+function DirectoryPager({ page, pageCount }: { page: number; pageCount: number }) {
+  if (pageCount <= 1) return null;
+  return (
+    <nav className="mt-6 flex flex-wrap items-center gap-4 text-body" aria-label="Directory pages">
+      {page > 1 ? (
+        <a href={directoryPagePath(page - 1)} rel="prev" className="text-fg underline">
+          Previous
+        </a>
+      ) : null}
+      <span className="text-muted">
+        Page {page} of {pageCount}
+      </span>
+      {page < pageCount ? (
+        <a href={directoryPagePath(page + 1)} rel="next" className="text-fg underline">
+          Next
+        </a>
+      ) : null}
+    </nav>
+  );
+}
+
+function ListingCard({ listing, onFeature }: { listing: CardListing; onFeature: () => void }) {
   const copy = listingPitch(listing);
   const skills = shortSkills(listing.skills);
   const actions = listingContactActions(listing);
