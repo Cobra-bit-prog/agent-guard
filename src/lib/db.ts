@@ -24,6 +24,8 @@ import {
   lacunaPitchHoldNotice,
   PAYMENT_ASKS_MIGRATION,
   paymentAsksHoldNotice,
+  LACUNA_PITCH_FREE_100_MIGRATION,
+  lacunaPitchFree100HoldNotice,
 } from "../../scripts/migration-plan.mjs";
 
 /** Which database backend is active. */
@@ -159,6 +161,10 @@ function logHeldSchemaMigrations(paths: Iterable<string>): void {
   }
   if (names.some((path) => path.endsWith(PAYMENT_ASKS_MIGRATION))) {
     const notice = paymentAsksHoldNotice();
+    if (notice) console.log(notice);
+  }
+  if (names.some((path) => path.endsWith(LACUNA_PITCH_FREE_100_MIGRATION))) {
+    const notice = lacunaPitchFree100HoldNotice();
     if (notice) console.log(notice);
   }
 }
