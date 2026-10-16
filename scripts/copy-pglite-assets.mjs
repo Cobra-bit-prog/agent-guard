@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * Nitro's Vercel output bundles `@electric-sql/pglite` into
- * `.vercel/output/functions/__server.func/_libs/` but does not copy the
- * sibling WASM / data files `new URL("./pglite.data", import.meta.url)` needs.
+ * Nitro's Vercel output bundles `@electric-sql/pglite` into the server
+ * function but does not copy the sibling WASM / data files
+ * `new URL("./pglite.data", import.meta.url)` needs.
  * Local `vite preview` (no DATABASE_URL) boots PGLite and would crash without
  * them. Harmless on Neon deploys — those never instantiate PGLite.
  */
@@ -12,22 +12,30 @@ import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const srcDir = join(root, "node_modules/@electric-sql/pglite/dist");
-const destDir = join(root, ".vercel/output/functions/__server.func/_libs");
+const funcDir = join(root, ".vercel/output/functions/__server.func");
 const files = ["pglite.data", "pglite.wasm", "initdb.wasm"];
 
-if (!existsSync(destDir)) {
+// Older Nitro builds keep PGLite in `_libs`. The current Vercel function is one
+// index.mjs, and `new URL("./pglite.data", import.meta.url)` resolves beside it.
+const destDirs = [join(funcDir, "_libs"), funcDir].filter(
+  (dir) => existsSync(dir) && (dir === funcDir ? existsSync(join(dir, "index.mjs")) : true),
+);
+
+if (destDirs.length === 0) {
   console.log("[pglite-assets] no Vercel function output — skip");
   process.exit(0);
 }
 
-mkdirSync(destDir, { recursive: true });
-for (const name of files) {
-  const from = join(srcDir, name);
-  const to = join(destDir, name);
-  if (!existsSync(from)) {
-    console.warn(`[pglite-assets] missing ${from}`);
-    continue;
+for (const destDir of destDirs) {
+  mkdirSync(destDir, { recursive: true });
+  for (const name of files) {
+    const from = join(srcDir, name);
+    const to = join(destDir, name);
+    if (!existsSync(from)) {
+      console.warn(`[pglite-assets] missing ${from}`);
+      continue;
+    }
+    copyFileSync(from, to);
+    console.log(`[pglite-assets] copied ${name} -> ${destDir}`);
   }
-  copyFileSync(from, to);
-  console.log(`[pglite-assets] copied ${name}`);
 }

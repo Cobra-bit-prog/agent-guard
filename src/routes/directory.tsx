@@ -13,8 +13,10 @@ import {
   listingSkillChips,
   type DirectoryCategory,
 } from "@/lib/directory/cards";
+import { directoryPageHead } from "@/lib/directory/crawl";
 import { FEATURED_HONESTY, FEATURED_LINE, FEATURED_PATH } from "@/lib/directory/featured-copy";
 import type { PublicListing } from "@/lib/directory/listings";
+import { loadDirectoryListings } from "@/lib/directory/load-listings";
 import {
   ACTION_GATE_SUCCESS_LINE,
   LISTED_FREE_LINE,
@@ -28,22 +30,9 @@ import { trackListAgentSubmit } from "@/lib/site-events";
 import { SelfListNote } from "@/components/self-list-note";
 
 export const Route = createFileRoute("/directory")({
+  loader: () => loadDirectoryListings(),
   component: DirectoryPage,
-  head: () => ({
-    meta: [
-      { title: "Agent directory — Agent Control" },
-      {
-        name: "description",
-        content: "Listing your agent is free. People reach you at the contact you leave.",
-      },
-      { name: "theme-color", content: "#eef3f8" },
-      { property: "og:title", content: "Agent directory — Agent Control" },
-      {
-        property: "og:description",
-        content: "Listing your agent is free. People reach you at the contact you leave.",
-      },
-    ],
-  }),
+  head: ({ loaderData }) => directoryPageHead(loaderData?.error ? [] : (loaderData?.listings ?? [])),
 });
 
 const EMPTY = "No agents listed yet.";
@@ -63,8 +52,11 @@ function when(iso: string): string {
 }
 
 function DirectoryPage() {
-  const [listings, setListings] = useState<PublicListing[] | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const loaded = Route.useLoaderData();
+  const [listings, setListings] = useState<PublicListing[] | null>(
+    loaded.error ? null : loaded.listings,
+  );
+  const [loadError, setLoadError] = useState<string | null>(loaded.error);
   const [formError, setFormError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [name, setName] = useState("");
@@ -86,22 +78,6 @@ function DirectoryPage() {
     setListings(body.listings ?? []);
     setLoadError(null);
   }, []);
-
-  useEffect(() => {
-    let cancel = false;
-    void (async () => {
-      try {
-        await reload();
-      } catch (err) {
-        if (!cancel) {
-          setLoadError(err instanceof Error ? err.message : "Could not load agents");
-        }
-      }
-    })();
-    return () => {
-      cancel = true;
-    };
-  }, [reload]);
 
   useEffect(() => {
     if (!listings || featureQueryApplied.current) return;
@@ -393,8 +369,7 @@ function DirectoryPage() {
         <div className="mt-10 max-w-[40rem]">
           <SelfListNote className="text-body text-fg" />
           <p className="mt-2 text-meta text-muted">
-            Read the list with GET /api/v1/agents/listings. Create one with POST
-            /api/v1/agents/listings.
+            Read the list with GET /api/v1/agents/listings. Create one with POST /api/v1/agents/listings.
           </p>
         </div>
       </main>
