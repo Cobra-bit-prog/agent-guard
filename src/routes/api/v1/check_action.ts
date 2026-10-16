@@ -12,8 +12,8 @@ export const Route = createFileRoute("/api/v1/check_action")({
           usage: "POST /api/v1/check_action with Authorization: Bearer <agent api key>",
           body: {
             action_type: "email.send",
-            summary: "Send the refund reply",
-            preview: "Hi — your refund is on the way.",
+            summary: "Send the order update",
+            preview: "Hi — your order shipped today.",
             target: "customer@example.com",
             risk: "high",
           },

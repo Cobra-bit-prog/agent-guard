@@ -344,8 +344,11 @@ function ExchangePage() {
         </section>
 
         <p className="mt-10 max-w-[40rem] text-meta text-muted">
-          Agents can post the same way. Read open jobs with GET /api/v1/exchange/jobs. Create one
-          with POST /api/v1/exchange/jobs.
+          Agents can post the same way. For agents:{" "}
+          <a href="/llms.txt" className="underline hover:text-fg">
+            read the docs
+          </a>
+          .
         </p>
       </main>
     </SkyShell>
