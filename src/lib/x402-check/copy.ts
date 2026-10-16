@@ -19,7 +19,22 @@ export const X402_CHECK_VALIDATOR_LINE =
   "Also run Coinbase's free validator first: POST https://api.cdp.coinbase.com/platform/v2/x402/validate. This check is not the only one.";
 /** Version fields, query string, trailing slash, and payTo stay on the paid report. */
 export const X402_CHECK_FREE_LINE =
-  "The free check covers the 402 reply, https on resource.url, the Bazaar extension, fields Coinbase may drop (description, name, tags, and icon), an example that returns 400 or 409, the PAYMENT-REQUIRED header size, and a schema $ref or $id that points outside the document. Version fields, query string, trailing slash, and payTo are on the $19 report. Also run Coinbase's free validator first: POST https://api.cdp.coinbase.com/platform/v2/x402/validate. This check is not the only one.";
+  "The free check covers the 402 reply, https on resource.url, the Bazaar extension, fields Coinbase may drop (description, name, tags, and icon), an example that returns 400 or 409, the PAYMENT-REQUIRED header size, a schema $ref or $id that points outside the document, whether a browser can read the price, and whether a HEAD request returns a payment challenge instead of a free 200. Version fields, query string, trailing slash, and payTo are on the $19 report. Also run Coinbase's free validator first: POST https://api.cdp.coinbase.com/platform/v2/x402/validate. This check is not the only one.";
+
+/** Warns that should offer Ship to paid (Fix $149), same as a failed check. */
+export const X402_SHIP_WARN_IDS = ["header_size", "cors_expose", "head_safe"] as const;
+
+export function x402CheckOffersShip(
+  failed: number | undefined,
+  checks: ReadonlyArray<{ id: string; status: string }> | undefined,
+): boolean {
+  if ((failed ?? 0) > 0) return true;
+  return (checks ?? []).some(
+    (check) =>
+      check.status === "fail" ||
+      (check.status === "warn" && (X402_SHIP_WARN_IDS as readonly string[]).includes(check.id)),
+  );
+}
 export const X402_CHECK_HONESTY = "We keep the fee. You pay us directly in USDC.";
 export const X402_CHECK_PAY_LINE = "Pay on Base or Solana.";
 export const X402_CHECK_CAVEAT =

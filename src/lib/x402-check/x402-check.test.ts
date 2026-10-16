@@ -12,10 +12,14 @@ import { SOLANA_PAYOUT_ADDRESS, USDC_MINT } from "../solana-pay.ts";
 import type { ListingQuery } from "../directory/listings.ts";
 import {
   checkBazaar,
+  checkCorsExpose,
   checkDroppedFields,
   checkExample,
+  checkHeadSafe,
   checkHeaderSize,
+  CORS_EXPOSE_ISSUE,
   HEADER_SIZE_ISSUE,
+  HEAD_SAFE_ISSUE,
   checkMerchant,
   checkPresence,
   checkReplyShape,
@@ -102,7 +106,20 @@ function encode(value: unknown) {
   return Buffer.from(JSON.stringify(value), "utf8").toString("base64");
 }
 
-function hop(body: unknown, status = 402, contentType = "application/json", location?: string): ProbeHop {
+function hop(
+  body: unknown,
+  status = 402,
+  contentType = "application/json",
+  location?: string,
+  extraHeaders?: Record<string, string> | null,
+): ProbeHop {
+  const extra =
+    extraHeaders === null
+      ? {}
+      : (extraHeaders ?? {
+          "access-control-allow-origin": "*",
+          "access-control-expose-headers": "PAYMENT-REQUIRED",
+        });
   const json = JSON.stringify(body);
   return {
     status,
@@ -112,6 +129,9 @@ function hop(body: unknown, status = 402, contentType = "application/json", loca
         if (key === "content-type") return contentType;
         if (key === "payment-required" && status === 402) return encode(body);
         if (key === "location" && location) return location;
+        for (const [header, value] of Object.entries(extra)) {
+          if (header.toLowerCase() === key) return value;
+        }
         return null;
       },
     },
@@ -307,6 +327,8 @@ describe("listing checks", () => {
       paymentRequiredBytes: 3,
       responseHeaderBytes: null,
       headersOverflow: false,
+      corsAllowOrigin: "*",
+      corsExposeHeaders: "PAYMENT-REQUIRED",
     };
     assert.match(checkReplyShape(probe).detail, /PAYMENT-REQUIRED/);
     const other = checkReplyShape({ ...probe, status: 200, payment: null, paymentSource: null });
@@ -582,9 +604,15 @@ describe("price header size", () => {
     assert.equal(warn.status, "warn");
     assert.equal(warn.payment_required_bytes, 8191);
     assert.equal(warn.response_header_bytes, 9000);
+    assert.deepEqual(warn.largest_parts, []);
+    assert.equal(warn.body_has_requirements, false);
     assert.match(warn.detail, /PAYMENT-REQUIRED is 8191 bytes/);
     assert.match(warn.detail, /Some Python buyers can't read it/);
+    assert.match(warn.detail, /did not decode/);
+    assert.match(warn.detail, /does not carry the payment requirements/);
     assert.match(warn.detail, new RegExp(HEADER_SIZE_ISSUE.replaceAll(".", "\\.")));
+    assert.equal(under.largest_parts, undefined);
+    assert.equal(under.body_has_requirements, undefined);
   });
 
   it("fails above 16384 bytes on the price header or the whole header block", () => {
@@ -606,6 +634,91 @@ describe("price header size", () => {
     const edge = checkHeaderSize({ paymentRequiredBytes: 16384, responseHeaderBytes: 16384 });
     assert.equal(edge.status, "warn");
     assert.equal(edge.payment_required_bytes, 16384);
+  });
+
+  it("names the three largest pieces and whether the body carries the price", () => {
+    const description = "d".repeat(600);
+    const example = { quote: "e".repeat(1500) };
+    const schema = { type: "object", properties: { holdings: { type: "string", description: "s".repeat(4000) } } };
+    const doc = payment({
+      resource: {
+        url: URL,
+        description,
+        mimeType: "application/json",
+      },
+      extensions: {
+        bazaar: {
+          info: { input: { type: "http", method: "GET" }, output: { type: "json", example } },
+          schema,
+        },
+      },
+    });
+    const total = Buffer.byteLength(JSON.stringify(doc));
+    const schemaBytes = Buffer.byteLength(JSON.stringify(schema));
+    const exampleBytes = Buffer.byteLength(JSON.stringify(example));
+    const descriptionBytes = Buffer.byteLength(JSON.stringify(description));
+
+    const warned = checkHeaderSize({
+      paymentRequiredBytes: 8191,
+      responseHeaderBytes: 9000,
+      payment: doc,
+      bodyHasRequirements: true,
+    });
+    assert.equal(warned.status, "warn");
+    assert.equal(warned.body_has_requirements, true);
+    assert.deepEqual(
+      warned.largest_parts?.map((part) => part.path),
+      ["extensions.bazaar.schema", "extensions.bazaar.info.output.example", "resource.description"],
+    );
+    assert.equal(warned.largest_parts?.[0]?.bytes, schemaBytes);
+    assert.equal(warned.largest_parts?.[1]?.bytes, exampleBytes);
+    assert.equal(warned.largest_parts?.[2]?.bytes, descriptionBytes);
+    assert.equal(warned.largest_parts?.[0]?.share, Math.round((schemaBytes / total) * 10_000) / 10_000);
+    assert.ok((warned.largest_parts?.[0]?.share ?? 0) >= 0.5);
+    assert.ok((warned.largest_parts?.[0]?.bytes ?? 0) > (warned.largest_parts?.[1]?.bytes ?? 0));
+    assert.match(warned.detail, /Most of your price header is the input schema \(\d+%, [\d,]+ bytes\)/);
+    assert.match(warned.detail, /output example \(\d+%, [\d,]+ bytes\)/);
+    assert.match(warned.detail, /description \(\d+%, [\d,]+ bytes\)/);
+    assert.match(warned.detail, /Trimming it gets you under the limit/);
+    assert.match(warned.detail, /402 body also carries the payment requirements/);
+    assert.match(warned.detail, /Some Python buyers can't read it/);
+
+    const hidden = checkHeaderSize({
+      paymentRequiredBytes: 16385,
+      responseHeaderBytes: 17000,
+      payment: doc,
+      bodyHasRequirements: false,
+    });
+    assert.equal(hidden.status, "fail");
+    assert.equal(hidden.body_has_requirements, false);
+    assert.equal(hidden.largest_parts?.[0]?.path, "extensions.bazaar.schema");
+    assert.match(hidden.detail, /Node fetch buyers can't read it either/);
+    assert.match(hidden.detail, /does not carry the payment requirements/);
+    assert.match(hidden.detail, /Trimming it gets you under the limit/);
+
+    const inputBody = { positions: "p".repeat(800), note: "cash" };
+    const withBody = payment({
+      resource: { url: URL, description: "short pitch", mimeType: "application/json" },
+      extensions: {
+        bazaar: {
+          info: {
+            input: { type: "http", method: "POST", bodyType: "json", body: inputBody },
+            output: { type: "json", example: { quote: "e".repeat(200) } },
+          },
+          schema: { type: "object", properties: { holdings: { type: "string", description: "s".repeat(2000) } } },
+        },
+      },
+    });
+    const bodyRow = checkHeaderSize({
+      paymentRequiredBytes: 9000,
+      responseHeaderBytes: 9500,
+      payment: withBody,
+      bodyHasRequirements: false,
+    });
+    assert.equal(bodyRow.largest_parts?.[0]?.path, "extensions.bazaar.schema");
+    assert.equal(bodyRow.largest_parts?.[1]?.path, "extensions.bazaar.info.input.body");
+    assert.equal(bodyRow.largest_parts?.[1]?.bytes, Buffer.byteLength(JSON.stringify(inputBody)));
+    assert.match(bodyRow.detail, /input example/);
   });
 
   it("puts the byte count on the free check and points a too-big header at Fix", async () => {
@@ -669,7 +782,12 @@ describe("price header size", () => {
       next: { ship?: { href: string; line: string; fix_usd: number } };
     };
     assert.equal(warnBody.failed, 0);
-    assert.equal(warnBody.checks.find((check) => check.id === "header_size")?.payment_required_bytes, 8191);
+    const warnHeader = warnBody.checks.find((check) => check.id === "header_size");
+    assert.equal(warnHeader?.payment_required_bytes, 8191);
+    assert.deepEqual(warnHeader?.largest_parts, []);
+    assert.equal(warnHeader?.body_has_requirements, true);
+    assert.match(warnHeader?.detail ?? "", /did not decode/);
+    assert.match(warnHeader?.detail ?? "", /body also carries the payment requirements/);
     assert.equal(warnBody.next.ship?.href, "/ship");
     assert.equal(warnBody.next.ship?.line, "Ship to paid");
     assert.equal(warnBody.next.ship?.fix_usd, 149);
@@ -695,6 +813,323 @@ describe("price header size", () => {
     assert.equal(failBody.next.ship?.href, "/ship");
     assert.equal(failBody.next.ship?.fix_usd, 149);
   });
+
+  it("reports the decoded pieces from a real PAYMENT-REQUIRED header and still offers Fix", async () => {
+    const doc = payment({
+      resource: {
+        url: URL,
+        description: "d".repeat(450),
+        mimeType: "application/json",
+      },
+      extensions: {
+        bazaar: {
+          info: {
+            input: { type: "http", method: "GET" },
+            output: { type: "json", example: { quote: "e".repeat(1500) } },
+          },
+          schema: { type: "object", properties: { holdings: { type: "string", description: "s".repeat(7000) } } },
+        },
+      },
+    });
+    const encodedBytes = Buffer.byteLength(encode(doc));
+    assert.ok(encodedBytes > 8190);
+    assert.ok(encodedBytes <= 16384);
+
+    const warned = await runListingCheck(
+      { url: URL, payTo: null },
+      "free",
+      { lookup: publicLookup, transport: transportFor(doc) },
+    );
+    const row = warned.checks.find((check) => check.id === "header_size");
+    assert.equal(warned.failed, 0);
+    assert.equal(row?.status, "warn");
+    assert.equal(row?.body_has_requirements, true);
+    assert.deepEqual(
+      row?.largest_parts?.map((part) => part.path),
+      ["extensions.bazaar.schema", "extensions.bazaar.info.output.example", "resource.description"],
+    );
+    assert.match(row?.detail ?? "", /Most of your price header is the input schema \(\d+%, [\d,]+ bytes\)/);
+    assert.match(row?.detail ?? "", /Trimming it gets you under the limit/);
+
+    const response = await handleX402CheckRequest(
+      post("/api/v1/x402-check", { url: URL }, "203.0.113.94"),
+      null,
+      { runFree: async () => warned },
+      NOW,
+    );
+    const body = (await response.json()) as {
+      checks: CheckRow[];
+      next: { ship?: { href: string; fix_usd: number; keep_usd: number } };
+    };
+    const header = body.checks.find((check) => check.id === "header_size");
+    assert.equal(header?.body_has_requirements, true);
+    assert.equal(header?.largest_parts?.[0]?.path, "extensions.bazaar.schema");
+    assert.equal(typeof header?.largest_parts?.[0]?.share, "number");
+    assert.equal(body.next.ship?.href, "/ship");
+    assert.equal(body.next.ship?.fix_usd, 149);
+    assert.equal(body.next.ship?.keep_usd, 29);
+
+    const hidden = await runListingCheck(
+      { url: URL, payTo: null },
+      "free",
+      {
+        lookup: publicLookup,
+        transport: async () => {
+          const base = hop(doc);
+          return {
+            ...base,
+            body: Buffer.from("Payment required"),
+            headers: {
+              get(name: string) {
+                if (name.toLowerCase() === "content-type") return "text/plain";
+                return base.headers.get(name);
+              },
+            },
+          };
+        },
+      },
+    );
+    const hiddenRow = hidden.checks.find((check) => check.id === "header_size");
+    assert.equal(hiddenRow?.status, "warn");
+    assert.equal(hiddenRow?.body_has_requirements, false);
+    assert.equal(hiddenRow?.largest_parts?.[0]?.path, "extensions.bazaar.schema");
+    assert.match(hiddenRow?.detail ?? "", /does not carry the payment requirements/);
+  });
+});
+
+function unpaid(input: { method: string; body?: string; headers?: Record<string, string> }) {
+  assert.equal(input.body?.includes("payment") ?? false, false);
+  const names = Object.keys(input.headers ?? {}).map((name) => name.toLowerCase());
+  assert.equal(names.includes("payment-signature"), false);
+  assert.equal(names.includes("payment-required"), false);
+  assert.equal(names.includes("x-payment"), false);
+}
+
+describe("browser price header and HEAD", () => {
+  it("passes when PAYMENT-REQUIRED is exposed, including a different case", () => {
+    const row = checkCorsExpose([
+      { allowOrigin: "*", exposeHeaders: "Payment-Required, WWW-Authenticate" },
+    ]);
+    assert.equal(row.id, "cors_expose");
+    assert.equal(row.status, "pass");
+    assert.match(row.detail, /PAYMENT-REQUIRED/);
+    assert.match(row.detail, new RegExp(CORS_EXPOSE_ISSUE.replaceAll(".", "\\.")));
+  });
+
+  it("passes when Access-Control-Expose-Headers is *", () => {
+    const row = checkCorsExpose([{ allowOrigin: "https://shop.example", exposeHeaders: " * " }]);
+    assert.equal(row.status, "pass");
+    assert.match(row.detail, /Access-Control-Expose-Headers is \*/);
+    assert.match(row.detail, new RegExp(CORS_EXPOSE_ISSUE.replaceAll(".", "\\.")));
+  });
+
+  it("warns when allow-origin is set and the price header is not exposed", () => {
+    const row = checkCorsExpose([{ allowOrigin: "*", exposeHeaders: "WWW-Authenticate" }]);
+    assert.equal(row.status, "warn");
+    assert.match(row.detail, /Browser buyers can't see your price/);
+    assert.match(row.detail, new RegExp(CORS_EXPOSE_ISSUE.replaceAll(".", "\\.")));
+    const missing = checkCorsExpose([{ allowOrigin: "https://shop.example", exposeHeaders: null }]);
+    assert.equal(missing.status, "warn");
+  });
+
+  it("is not applicable when the seller sends no CORS headers", () => {
+    const row = checkCorsExpose([{ allowOrigin: null, exposeHeaders: null }]);
+    assert.ok(row.status === "na" || row.status === "unchecked");
+    assert.match(row.detail, /Browser agents won't be able to pay/);
+    assert.match(row.detail, new RegExp(CORS_EXPOSE_ISSUE.replaceAll(".", "\\.")));
+  });
+
+  it("passes HEAD 402 and 405, warns on 200, and leaves a network error unchecked", () => {
+    const challenge = checkHeadSafe({ status: 402 });
+    assert.equal(challenge.status, "pass");
+    assert.match(challenge.detail, /402/);
+    assert.match(challenge.detail, new RegExp(HEAD_SAFE_ISSUE.replaceAll(".", "\\.")));
+
+    const missing = checkHeadSafe({ status: 405 });
+    assert.equal(missing.status, "pass");
+    assert.match(missing.detail, /405/);
+
+    const gone = checkHeadSafe({ status: 404 });
+    assert.equal(gone.status, "pass");
+
+    const free = checkHeadSafe({ status: 200 });
+    assert.equal(free.status, "warn");
+    assert.match(free.detail, /A HEAD request gets a 200 without paying/);
+    assert.match(free.detail, /Some buyer tools may get charged for nothing, or you're giving away the route/);
+    assert.match(free.detail, new RegExp(HEAD_SAFE_ISSUE.replaceAll(".", "\\.")));
+
+    const silent = checkHeadSafe({ status: null });
+    assert.equal(silent.status, "unchecked");
+    assert.match(silent.detail, /did not answer/);
+  });
+
+  it("reads expose from the 402 and does not send another request when it is already there", async () => {
+    const calls: string[] = [];
+    const transport: ProbeTransport = async (input) => {
+      calls.push(input.method);
+      unpaid(input);
+      return hop(payment(), 402, "application/json", undefined, {
+        "access-control-allow-origin": "*",
+        "access-control-expose-headers": "PAYMENT-REQUIRED",
+      });
+    };
+    const report = await runListingCheck({ url: URL, payTo: null }, "free", { lookup: publicLookup, transport });
+    const cors = report.checks.find((check) => check.id === "cors_expose");
+    const head = report.checks.find((check) => check.id === "head_safe");
+    assert.equal(cors?.status, "pass");
+    assert.equal(head?.status, "pass");
+    assert.equal(calls.includes("OPTIONS"), false);
+    assert.equal(calls.filter((method) => method === "HEAD").length, 1);
+    assert.equal(report.checks.some((check) => check.status === "warn"), false);
+  });
+
+  it("reads the price header from an unpaid repeat when the preflight allows an origin", async () => {
+    const calls: string[] = [];
+    const transport: ProbeTransport = async (input) => {
+      calls.push(`${input.method}${input.headers?.origin ? " origin" : ""}`);
+      unpaid(input);
+      if (input.method === "OPTIONS") {
+        return hop({}, 204, "text/plain", undefined, { "access-control-allow-origin": "*" });
+      }
+      if (input.headers?.origin) {
+        return hop(payment(), 402, "application/json", undefined, {
+          "access-control-allow-origin": "*",
+          "access-control-expose-headers": "PAYMENT-REQUIRED",
+        });
+      }
+      if (input.method === "HEAD") return hop({}, 402, "text/plain", undefined, null);
+      return hop(payment(), 402, "application/json", undefined, null);
+    };
+    const report = await runListingCheck({ url: URL, payTo: null }, "free", { lookup: publicLookup, transport });
+    assert.equal(report.checks.find((check) => check.id === "cors_expose")?.status, "pass");
+    assert.equal(calls.filter((call) => call.startsWith("OPTIONS")).length, 1);
+    assert.ok(calls.some((call) => call === "GET origin"));
+  });
+
+  it("sends one unpaid OPTIONS preflight when the 402 has no CORS headers", async () => {
+    const calls: string[] = [];
+    const transport: ProbeTransport = async (input) => {
+      calls.push(input.method);
+      unpaid(input);
+      if (input.method === "OPTIONS") {
+        assert.equal(input.headers?.origin, "https://agent-control.net");
+        assert.equal(input.body, undefined);
+        return hop({ ok: true }, 204, "text/plain", undefined, null);
+      }
+      if (input.method === "HEAD") return hop(payment(), 402, "application/json", undefined, null);
+      return hop(payment(), 402, "application/json", undefined, null);
+    };
+    const report = await runListingCheck({ url: URL, payTo: null }, "free", { lookup: publicLookup, transport });
+    const cors = report.checks.find((check) => check.id === "cors_expose");
+    assert.equal(cors?.status, "na");
+    assert.match(cors?.detail ?? "", /Browser agents won't be able to pay/);
+    assert.equal(calls.filter((method) => method === "OPTIONS").length, 1);
+    assert.equal(calls.filter((method) => method === "HEAD").length, 1);
+  });
+
+  it("warns from allow-origin on the 402 and offers Fix at $149", async () => {
+    const transport: ProbeTransport = async (input) => {
+      unpaid(input);
+      if (input.method === "HEAD") return hop({}, 402, "application/json", undefined, null);
+      return hop(payment(), 402, "application/json", undefined, {
+        "access-control-allow-origin": "*",
+      });
+    };
+    const warned = await runListingCheck({ url: URL, payTo: null }, "free", { lookup: publicLookup, transport });
+    const cors = warned.checks.find((check) => check.id === "cors_expose");
+    assert.equal(cors?.status, "warn");
+    assert.match(cors?.detail ?? "", /Browser buyers can't see your price/);
+    assert.equal(warned.failed, 0);
+    const response = await handleX402CheckRequest(
+      post("/api/v1/x402-check", { url: URL }, "203.0.113.94"),
+      null,
+      { runFree: async () => warned },
+      NOW,
+    );
+    const body = (await response.json()) as {
+      checks: CheckRow[];
+      failed: number;
+      next: { ship?: { href: string; line: string; fix_usd: number; keep_usd: number } };
+    };
+    assert.equal(body.failed, 0);
+    assert.equal(body.checks.find((check) => check.id === "cors_expose")?.status, "warn");
+    assert.equal(body.next.ship?.href, "/ship");
+    assert.equal(body.next.ship?.line, "Ship to paid");
+    assert.equal(body.next.ship?.fix_usd, 149);
+    assert.equal(body.next.ship?.keep_usd, 29);
+  });
+
+  it("warns when HEAD is 200, passes 405, and leaves a dropped HEAD unchecked", async () => {
+    async function runHead(status: number | "error") {
+      const transport: ProbeTransport = async (input) => {
+        unpaid(input);
+        if (input.method === "HEAD") {
+          assert.equal(input.body, undefined);
+          if (status === "error") throw new Error("timed out");
+          return hop({}, status, "text/plain", undefined, null);
+        }
+        return hop(payment(), 402, "application/json", undefined, {
+          "access-control-expose-headers": "PAYMENT-REQUIRED",
+          "access-control-allow-origin": "*",
+        });
+      };
+      return runListingCheck({ url: URL, payTo: null }, "free", { lookup: publicLookup, transport });
+    }
+
+    const warned = await runHead(200);
+    const head = warned.checks.find((check) => check.id === "head_safe");
+    assert.equal(head?.status, "warn");
+    assert.match(head?.detail ?? "", /A HEAD request gets a 200 without paying/);
+    assert.equal(warned.failed, 0);
+    const response = await handleX402CheckRequest(
+      post("/api/v1/x402-check", { url: URL }, "203.0.113.95"),
+      null,
+      { runFree: async () => warned },
+      NOW,
+    );
+    const body = (await response.json()) as {
+      next: { ship?: { href: string; fix_usd: number } };
+    };
+    assert.equal(body.next.ship?.href, "/ship");
+    assert.equal(body.next.ship?.fix_usd, 149);
+
+    const allowed = await runHead(405);
+    assert.equal(allowed.checks.find((check) => check.id === "head_safe")?.status, "pass");
+
+    const dropped = await runHead("error");
+    const missed = dropped.checks.find((check) => check.id === "head_safe");
+    assert.equal(missed?.status, "unchecked");
+    assert.match(missed?.detail ?? "", /did not answer/);
+    assert.equal(dropped.failed, 0);
+  });
+
+  it("skips HEAD when the paid route answered on POST", async () => {
+    const calls: string[] = [];
+    const declared = payment({
+      extensions: {
+        bazaar: {
+          info: { input: { type: "http", method: "POST", body: {} }, output: { type: "json" } },
+          schema: { type: "object" },
+        },
+      },
+    });
+    const transport: ProbeTransport = async (input) => {
+      calls.push(input.method);
+      unpaid(input);
+      if (input.method === "GET") return hop({ missing: true }, 404, "application/json", undefined, null);
+      if (input.method === "HEAD") return hop({}, 200, "text/plain", undefined, null);
+      return hop(declared, 402, "application/json", undefined, {
+        "access-control-allow-origin": "*",
+        "access-control-expose-headers": "PAYMENT-REQUIRED",
+      });
+    };
+    const report = await runListingCheck({ url: URL, payTo: null }, "free", { lookup: publicLookup, transport });
+    const head = report.checks.find((check) => check.id === "head_safe");
+    assert.equal(head?.status, "na");
+    assert.match(head?.detail ?? "", /POST/);
+    assert.match(head?.detail ?? "", new RegExp(HEAD_SAFE_ISSUE.replaceAll(".", "\\.")));
+    assert.equal(calls.includes("HEAD"), false);
+  });
 });
 
 describe("free and paid report", () => {
@@ -706,7 +1141,17 @@ describe("free and paid report", () => {
     );
     assert.deepEqual(
       report.checks.map((check) => check.id),
-      ["reply_shape", "header_size", "resource_https", "bazaar", "dropped_fields", "example_input", "schema_refs"],
+      [
+        "reply_shape",
+        "header_size",
+        "resource_https",
+        "bazaar",
+        "dropped_fields",
+        "example_input",
+        "schema_refs",
+        "cors_expose",
+        "head_safe",
+      ],
     );
     assert.equal(report.failed, 0);
     assert.equal(report.checks.every((check) => check.status === "pass"), true);
@@ -717,7 +1162,7 @@ describe("free and paid report", () => {
     assert.ok((sized?.payment_required_bytes ?? 0) <= 8190);
     assert.match(report.caveat, /does not mean Coinbase will list you/);
     assert.match(report.validator, /api\.cdp\.coinbase\.com\/platform\/v2\/x402\/validate/);
-    assert.match(report.summary, /7 passed/);
+    assert.match(report.summary, /9 passed/);
     assert.doesNotMatch(report.summary, /fail/i);
     assert.doesNotMatch(`${report.caveat} ${report.validator} ${X402_CHECK_LINE} ${X402_CHECK_HONESTY}`, BANNED);
   });
@@ -904,7 +1349,7 @@ describe("free and paid report", () => {
         directory: async () => ({ names: [] }),
       },
     );
-    assert.equal(report.checks.length, 15);
+    assert.equal(report.checks.length, 17);
     const search = report.checks.find((check) => check.id === "search");
     assert.equal(search?.status, "warn");
     const snippet = report.checks.find((check) => check.id === "snippet");

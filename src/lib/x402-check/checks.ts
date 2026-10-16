@@ -7,6 +7,14 @@ export type CheckStatus = "pass" | "fail" | "warn" | "unchecked" | "na";
 /** Why a check has no 402 body to read. Never reported as a fail. */
 export type CheckAbsence = "wallet" | "mcp" | "not_402" | "undecoded";
 
+/** One piece of a decoded PAYMENT-REQUIRED payload, ranked by UTF-8 JSON size. */
+export type HeaderPart = {
+  path: string;
+  bytes: number;
+  /** Fraction of the decoded payload, from 0 to 1. */
+  share: number;
+};
+
 export type CheckRow = {
   id: string;
   title: string;
@@ -17,6 +25,10 @@ export type CheckRow = {
   payment_required_bytes?: number | null;
   /** Byte length of the response header lines. Present on the price-header check. */
   response_header_bytes?: number | null;
+  /** Three biggest pieces of the decoded price header. Present when that check warns or fails. */
+  largest_parts?: HeaderPart[];
+  /** Whether the 402 body itself is a payment-requirements object. Present when the price-header check warns or fails. */
+  body_has_requirements?: boolean;
 };
 
 const V1_ACCEPT_KEYS = ["maxAmountRequired", "outputSchema", "resource", "description", "mimeType"] as const;
@@ -354,7 +366,127 @@ export const HEADER_SIZE_TITLE = "Price header size";
 export type HeaderSizeInput = {
   paymentRequiredBytes: number | null;
   responseHeaderBytes: number | null;
+  /** Decoded PAYMENT-REQUIRED header. Omit when that header did not decode. */
+  payment?: unknown;
+  /** True when the 402 response body itself is a payment-requirements object. */
+  bodyHasRequirements?: boolean;
 };
+
+/** True when a 402 body is payment requirements, not an empty or unrelated payload. */
+export function bodyHasPaymentRequirements(bodyText: string): boolean {
+  const trimmed = bodyText.trim();
+  if (!trimmed) return false;
+  try {
+    const parsed: unknown = JSON.parse(trimmed);
+    const root = bag(parsed);
+    if (!root) return false;
+    return "x402Version" in root || "accepts" in root || "resource" in root;
+  } catch {
+    return false;
+  }
+}
+
+const HEADER_SPLIT_PATHS = new Set([
+  "",
+  "resource",
+  "extensions",
+  "extensions.bazaar",
+  "extensions.bazaar.info",
+  "extensions.bazaar.info.input",
+  "extensions.bazaar.info.output",
+]);
+
+function jsonBytes(value: unknown): number {
+  try {
+    return Buffer.byteLength(JSON.stringify(value) ?? "null", "utf8");
+  } catch {
+    return 0;
+  }
+}
+
+function objectEntries(value: object): Array<[string, unknown]> {
+  if (Array.isArray(value)) return value.map((item, index) => [String(index), item]);
+  return Object.entries(value);
+}
+
+function keepWhole(path: string): boolean {
+  return path.endsWith(".schema") || path.endsWith(".example") || path.endsWith(".description") || path.endsWith("outputSchema");
+}
+
+function shouldSplit(path: string, value: unknown): boolean {
+  if (!value || typeof value !== "object") return false;
+  if (keepWhole(path)) return false;
+  if (!HEADER_SPLIT_PATHS.has(path)) return false;
+  return objectEntries(value).length > 0;
+}
+
+function collectParts(value: unknown, path: string, out: Array<{ path: string; bytes: number }>): void {
+  if (value && typeof value === "object" && shouldSplit(path, value)) {
+    for (const [key, child] of objectEntries(value)) {
+      collectParts(child, path ? `${path}.${key}` : key, out);
+    }
+    return;
+  }
+  if (!path) return;
+  out.push({ path, bytes: jsonBytes(value) });
+}
+
+/** The biggest disjoint pieces of a decoded PAYMENT-REQUIRED object. */
+export function largestPaymentParts(payment: unknown, limit = 3): HeaderPart[] {
+  if (!payment || typeof payment !== "object") return [];
+  const total = jsonBytes(payment);
+  if (total <= 0) return [];
+  const found: Array<{ path: string; bytes: number }> = [];
+  collectParts(payment, "", found);
+  found.sort((left, right) => right.bytes - left.bytes || left.path.localeCompare(right.path));
+  return found.slice(0, limit).map((part) => ({
+    path: part.path,
+    bytes: part.bytes,
+    share: Math.round((part.bytes / total) * 10_000) / 10_000,
+  }));
+}
+
+function partLabel(path: string): string {
+  if (path === "extensions.bazaar.schema" || path.endsWith(".input.schema")) return "input schema";
+  if (path.endsWith(".output.schema") || path.endsWith("outputSchema")) return "output schema";
+  if (path.endsWith(".schema")) return "schema";
+  if (path.includes(".output.") && path.endsWith(".example")) return "output example";
+  if (path.endsWith(".input.body") || path === "extensions.bazaar.info.input") return "input example";
+  if (path.endsWith(".example")) return "example";
+  if (path.endsWith(".description")) return "description";
+  if (path === "accepts") return "accepts list";
+  const tail = path.split(".").slice(-2).join(" ");
+  return tail || path;
+}
+
+function formatCount(bytes: number): string {
+  return bytes.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+function partsSentence(parts: HeaderPart[], hadPayment: boolean): string {
+  if (parts.length === 0) {
+    return hadPayment
+      ? "The decoded price header has no separate pieces to name."
+      : "The price header did not decode, so its largest pieces could not be named.";
+  }
+  const [first, ...rest] = parts;
+  const firstBit = `the ${partLabel(first.path)} (${Math.round(first.share * 100)}%, ${formatCount(first.bytes)} bytes)`;
+  const lead = first.share >= 0.5 ? `Most of your price header is ${firstBit}.` : `The largest piece of your price header is ${firstBit}.`;
+  const next =
+    rest.length === 0
+      ? ""
+      : ` The next largest ${rest.length === 1 ? "is" : "are"} ${rest
+          .map((part) => `the ${partLabel(part.path)} (${Math.round(part.share * 100)}%, ${formatCount(part.bytes)} bytes)`)
+          .join(" and ")}.`;
+  return `${lead}${next} Trimming it gets you under the limit.`;
+}
+
+function bodySentence(has: boolean): string {
+  if (has) {
+    return "The 402 body also carries the payment requirements, so a buyer who cannot read this header can still read the price from the body.";
+  }
+  return "The 402 body does not carry the payment requirements. A buyer who cannot read this header cannot see the price.";
+}
 
 function headerSizeDetail(size: HeaderSizeInput, sentence: string): string {
   const parts: string[] = [];
@@ -364,36 +496,51 @@ function headerSizeDetail(size: HeaderSizeInput, sentence: string): string {
   return measured ? `${measured} ${sentence}` : sentence;
 }
 
+function withHeaderBreakdown(size: HeaderSizeInput, base: CheckRow, counts: Pick<CheckRow, "payment_required_bytes" | "response_header_bytes">): CheckRow {
+  const largest_parts = largestPaymentParts(size.payment);
+  const body_has_requirements = size.bodyHasRequirements === true;
+  const hadPayment = size.payment != null && typeof size.payment === "object";
+  return {
+    ...base,
+    detail: `${base.detail} ${partsSentence(largest_parts, hadPayment)} ${bodySentence(body_has_requirements)}`,
+    ...counts,
+    largest_parts,
+    body_has_requirements,
+  };
+}
+
 /** Warn above 8,190 bytes. Fail above 16,384. Counts are the measured bytes. */
 export function checkHeaderSize(size: HeaderSizeInput): CheckRow {
   const payment = size.paymentRequiredBytes;
   const total = size.responseHeaderBytes;
   const headerFails = payment != null && payment > HEADER_SIZE_FAIL_BYTES;
   const totalFails = total != null && total > HEADER_SIZE_FAIL_BYTES;
-  const bytes = { payment_required_bytes: payment, response_header_bytes: total };
+  const counts = { payment_required_bytes: payment, response_header_bytes: total };
   if (headerFails || totalFails) {
-    return {
-      ...row("header_size", HEADER_SIZE_TITLE, "fail", headerSizeDetail(size, `Node fetch buyers can't read it either. ${HEADER_SIZE_ISSUE}`)),
-      ...bytes,
-    };
+    return withHeaderBreakdown(
+      size,
+      row("header_size", HEADER_SIZE_TITLE, "fail", headerSizeDetail(size, `Node fetch buyers can't read it either. ${HEADER_SIZE_ISSUE}`)),
+      counts,
+    );
   }
   if (payment != null && payment > HEADER_SIZE_WARN_BYTES) {
-    return {
-      ...row("header_size", HEADER_SIZE_TITLE, "warn", headerSizeDetail(size, `Some Python buyers can't read it. ${HEADER_SIZE_ISSUE}`)),
-      ...bytes,
-    };
+    return withHeaderBreakdown(
+      size,
+      row("header_size", HEADER_SIZE_TITLE, "warn", headerSizeDetail(size, `Some Python buyers can't read it. ${HEADER_SIZE_ISSUE}`)),
+      counts,
+    );
   }
   if (payment == null) {
     const totalNote = total == null ? "" : ` Response headers are ${total} bytes.`;
     return {
       ...row("header_size", HEADER_SIZE_TITLE, "pass", `No PAYMENT-REQUIRED header. The price was in the body.${totalNote}`),
-      ...bytes,
+      ...counts,
     };
   }
   const totalNote = total == null ? "" : ` Response headers are ${total} bytes.`;
   return {
     ...row("header_size", HEADER_SIZE_TITLE, "pass", `PAYMENT-REQUIRED is ${payment} bytes.${totalNote}`),
-    ...bytes,
+    ...counts,
   };
 }
 
@@ -987,6 +1134,109 @@ export function checkExample(status: number | null, note: "pass-or-status" | "no
   );
 }
 
+export const CORS_EXPOSE_ISSUE = "https://github.com/x402-foundation/x402/issues/3808";
+export const HEAD_SAFE_ISSUE = "https://github.com/x402-foundation/x402/issues/3810";
+export const CORS_EXPOSE_TITLE = "Browser price header";
+export const HEAD_SAFE_TITLE = "HEAD request";
+
+export type CorsSeen = {
+  allowOrigin: string | null;
+  exposeHeaders: string | null;
+};
+
+function headerTokens(value: string | null | undefined): string[] {
+  if (!value) return [];
+  return value
+    .split(",")
+    .map((part) => part.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+/** True when Access-Control-Expose-Headers lists PAYMENT-REQUIRED or `*`. */
+export function exposesPaymentRequired(value: string | null | undefined): boolean {
+  const tokens = headerTokens(value);
+  return tokens.includes("payment-required") || tokens.includes("*");
+}
+
+/**
+ * Browser buyers can read PAYMENT-REQUIRED only when the seller exposes it.
+ * No CORS headers at all is not a fail: say that a browser agent cannot pay.
+ */
+export function checkCorsExpose(seen: readonly CorsSeen[]): CheckRow {
+  const title = CORS_EXPOSE_TITLE;
+  const exposes = seen.some((row) => exposesPaymentRequired(row.exposeHeaders));
+  const allowsOrigin = seen.some((row) => Boolean(row.allowOrigin?.trim()));
+  const anyCors = seen.some(
+    (row) => Boolean(row.allowOrigin?.trim()) || Boolean(row.exposeHeaders?.trim()),
+  );
+  if (exposes) {
+    const star = seen.some((row) => headerTokens(row.exposeHeaders).includes("*"));
+    const how = star
+      ? "Access-Control-Expose-Headers is *, so a browser can read the price."
+      : "Access-Control-Expose-Headers includes PAYMENT-REQUIRED, so a browser can read the price.";
+    return row("cors_expose", title, "pass", `${how} ${CORS_EXPOSE_ISSUE}`);
+  }
+  if (allowsOrigin) {
+    return row(
+      "cors_expose",
+      title,
+      "warn",
+      `Browser buyers can't see your price. Access-Control-Allow-Origin is set, but Access-Control-Expose-Headers does not include PAYMENT-REQUIRED. ${CORS_EXPOSE_ISSUE}`,
+      "Add PAYMENT-REQUIRED to Access-Control-Expose-Headers.",
+    );
+  }
+  if (anyCors) {
+    return row(
+      "cors_expose",
+      title,
+      "warn",
+      `Browser buyers can't see your price. Access-Control-Expose-Headers does not include PAYMENT-REQUIRED. ${CORS_EXPOSE_ISSUE}`,
+      "Add PAYMENT-REQUIRED to Access-Control-Expose-Headers.",
+    );
+  }
+  return row(
+    "cors_expose",
+    title,
+    "na",
+    `No CORS headers. Browser agents won't be able to pay this endpoint. ${CORS_EXPOSE_ISSUE}`,
+  );
+}
+
+export function checkHeadSafe(input: { status: number | null; skipped?: "post" }): CheckRow {
+  const title = HEAD_SAFE_TITLE;
+  if (input.skipped === "post") {
+    return row(
+      "head_safe",
+      title,
+      "na",
+      `Not applicable. The paid route answered on POST, not GET. A HEAD request does not match that route. ${HEAD_SAFE_ISSUE}`,
+    );
+  }
+  if (input.status == null || input.status <= 0) {
+    return row(
+      "head_safe",
+      title,
+      "unchecked",
+      `Could not check. The HEAD request did not answer. ${HEAD_SAFE_ISSUE}`,
+    );
+  }
+  if (input.status >= 200 && input.status < 300) {
+    const code = input.status === 200 ? "200" : String(input.status);
+    return row(
+      "head_safe",
+      title,
+      "warn",
+      `A HEAD request gets a ${code} without paying. Some buyer tools may get charged for nothing, or you're giving away the route. ${HEAD_SAFE_ISSUE}`,
+      "Answer HEAD with 402, 405, or 404. Do not return 200 for a paid route.",
+    );
+  }
+  const nice =
+    input.status === 402
+      ? "HEAD returned HTTP 402, which is the payment challenge, not a free success."
+      : `HEAD returned HTTP ${input.status}, not a free success.`;
+  return row("head_safe", title, "pass", `${nice} ${HEAD_SAFE_ISSUE}`);
+}
+
 /**
  * Free check. Paid report adds version fields, query string, trailing slash, payTo,
  * merchant list, search, the snippet, directory, and Coinbase's validate call.
@@ -999,4 +1249,6 @@ export const FREE_CHECK_IDS = [
   "dropped_fields",
   "example_input",
   "schema_refs",
+  "cors_expose",
+  "head_safe",
 ] as const;

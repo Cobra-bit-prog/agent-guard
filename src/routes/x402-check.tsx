@@ -13,6 +13,7 @@ import {
   X402_CHECK_PAY_LINE,
   X402_CHECK_PRICE_USD,
   X402_CHECK_REPORT_PATH,
+  x402CheckOffersShip,
 } from "@/lib/x402-check/copy";
 import { trackCheckRun, trackReportStart } from "@/lib/site-events";
 import { X402CheckList } from "@/components/x402-check-list";
@@ -90,10 +91,7 @@ const STATUS_LABEL: Record<CheckRow["status"], string> = {
 };
 
 function checkFailed(failed: number | undefined, checks: CheckRow[] | undefined): boolean {
-  if ((failed ?? 0) > 0) return true;
-  return (checks ?? []).some(
-    (check) => check.status === "fail" || (check.id === "header_size" && check.status === "warn"),
-  );
+  return x402CheckOffersShip(failed, checks);
 }
 
 function ShipFailLink({ show }: { show: boolean }) {
