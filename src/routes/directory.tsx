@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent, type MouseEve
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { DirectoryFeatured } from "@/components/directory-featured";
 import { DirectoryNotFound } from "@/components/directory-not-found";
+import { FeaturedExplainer } from "@/components/featured-explainer";
 import { SkyShell } from "@/components/marketing/chrome";
 import { SellEmpty } from "@/components/marketing/sell-empty";
 import { ListingOriginLine } from "@/components/listing-origin";
@@ -315,6 +316,8 @@ function DirectoryPage() {
             />
           )}
         </section>
+
+        <FeaturedExplainer />
 
         <DirectoryFeatured
           listingId={featureListingId}
