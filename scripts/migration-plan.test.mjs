@@ -42,6 +42,9 @@ import {
   LACUNA_PITCH_FREE_100_MIGRATION,
   lacunaPitchFree100HoldNotice,
   lacunaPitchFree100MigrationHeld,
+  EXCHANGE_JOBS_DIRECT_PAY_MIGRATION,
+  exchangeJobsDirectPayHoldNotice,
+  exchangeJobsDirectPayMigrationHeld,
   x402CheckOrdersHoldNotice,
   x402CheckOrdersMigrationHeld,
   exchangeJobsHoldNotice,
@@ -640,4 +643,31 @@ test("Lacuna first-100-free pitch migration applies in production and is skipped
   assert.match(migrate, /lacunaPitchFree100HoldNotice/);
   assert.match(db, /lacunaPitchFree100HoldNotice/);
   assert.match(migrate, /0043_lacuna_pitch_first_100_free\.sql/);
+});
+
+test("exchange jobs direct-pay copy migration applies in production and is skipped on preview", () => {
+  const name = EXCHANGE_JOBS_DIRECT_PAY_MIGRATION;
+  assert.equal(name, "0044_exchange_jobs_direct_pay_copy.sql");
+  const sql = readFileSync(join(projectRoot(), "migrations", name), "utf8");
+  const updates = sql.match(/^update exchange_jobs\s+set summary = /gm) ?? [];
+  assert.equal(updates.length, 8);
+  assert.equal((sql.match(/^where id = 'job_[0-9a-f]{24}'\s+and summary = '/gm) ?? []).length, 8);
+  assert.doesNotMatch(sql, /\b(drop|delete|insert|alter|create)\b/i);
+  assert.doesNotMatch(sql, /set (?!summary)/i);
+
+  assert.equal(exchangeJobsDirectPayMigrationHeld({}), false);
+  assert.equal(exchangeJobsDirectPayMigrationHeld({ VERCEL_ENV: "production" }), false);
+  assert.equal(exchangeJobsDirectPayMigrationHeld({ VERCEL_ENV: "preview" }), true);
+  assert.equal(exchangeJobsDirectPayHoldNotice({}), null);
+  assert.match(exchangeJobsDirectPayHoldNotice({ VERCEL_ENV: "preview" }) ?? "", /not applied/);
+  assert.deepEqual(pendingMigrations([name], [], { VERCEL_ENV: "preview" }), []);
+  assert.deepEqual(pendingMigrations([name], [], { VERCEL_ENV: "production" }), [
+    { name, path: name },
+  ]);
+
+  const migrate = readFileSync(join(projectRoot(), "scripts/migrate.mjs"), "utf8");
+  const db = readFileSync(join(projectRoot(), "src/lib/db.ts"), "utf8");
+  assert.match(migrate, /exchangeJobsDirectPayHoldNotice/);
+  assert.match(db, /exchangeJobsDirectPayHoldNotice/);
+  assert.match(migrate, /0044_exchange_jobs_direct_pay_copy\.sql/);
 });
