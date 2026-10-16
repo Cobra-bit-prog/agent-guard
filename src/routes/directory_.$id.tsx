@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, notFound } from "@tanstack/react-router";
+import { DirectoryNotFound } from "@/components/directory-not-found";
 import { ListingOriginLine } from "@/components/listing-origin";
 import { SelfListNote } from "@/components/self-list-note";
 import { SkyShell } from "@/components/marketing/chrome";
@@ -9,18 +10,23 @@ import {
   listingPitch,
   listingSkillChips,
 } from "@/lib/directory/cards";
-import { listingPageHead } from "@/lib/directory/crawl";
-import { loadDirectoryListings } from "@/lib/directory/load-listings";
+import { listingPageHead, notFoundPageHead } from "@/lib/directory/crawl";
+import { loadDirectoryListing } from "@/lib/directory/load-listings";
 import { featureFlowPath } from "@/lib/directory/self-list";
 
 export const Route = createFileRoute("/directory_/$id")({
   loader: async ({ params }) => {
-    const loaded = await loadDirectoryListings();
-    const listing = loaded.listings.find((row) => row.id === params.id) ?? null;
-    return { listing: loaded.error ? null : listing, error: loaded.error };
+    const loaded = await loadDirectoryListing({ data: { id: params.id } });
+    // Unknown and hidden ids are a real 404, not a 200 page that says "missing".
+    if (!loaded.error && !loaded.listing) throw notFound();
+    return loaded;
   },
   component: ListingPage,
-  head: ({ loaderData }) => listingPageHead(loaderData?.error ? null : (loaderData?.listing ?? null)),
+  notFoundComponent: DirectoryNotFound,
+  head: ({ loaderData }) =>
+    !loaderData
+      ? notFoundPageHead()
+      : listingPageHead(loaderData.error ? null : loaderData.listing),
 });
 
 function when(iso: string): string {
