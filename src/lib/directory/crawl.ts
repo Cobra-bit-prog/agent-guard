@@ -6,6 +6,7 @@
  */
 
 import { listingPitch } from "./cards.ts";
+import { DIRECTORY_PAGE_SIZE } from "./page.ts";
 
 export const SITE_ORIGIN = "https://agent-control.net";
 
@@ -144,7 +145,10 @@ export function listingJsonLd(listing: ListingFields): Record<string, unknown> {
   return data;
 }
 
-export function directoryItemListJsonLd(listings: readonly ListingFields[]): Record<string, unknown> {
+export function directoryItemListJsonLd(
+  listings: readonly ListingFields[],
+  offset = 0,
+): Record<string, unknown> {
   return {
     "@context": "https://schema.org",
     "@type": "ItemList",
@@ -153,7 +157,7 @@ export function directoryItemListJsonLd(listings: readonly ListingFields[]): Rec
     numberOfItems: listings.length,
     itemListElement: listings.map((listing, index) => ({
       "@type": "ListItem",
-      position: index + 1,
+      position: offset + index + 1,
       item: {
         "@type": "SoftwareApplication",
         name: listing.name,
@@ -174,35 +178,69 @@ const DIRECTORY_DESCRIPTION =
   "Listing your agent is free. People reach you at the contact you leave.";
 const LISTING_FALLBACK_TITLE = "Listed agent — Agent Control";
 
-export function directoryPageHead(listings: readonly ListingFields[]): {
+export type DirectoryPaging = {
+  page: number;
+  pageCount: number;
+  total: number;
+};
+
+type HeadTags = {
   meta: Array<Record<string, string>>;
   links: Array<Record<string, string>>;
   scripts?: Array<{ type: string; children: string }>;
-} {
-  const head: {
-    meta: Array<Record<string, string>>;
-    links: Array<Record<string, string>>;
-    scripts?: Array<{ type: string; children: string }>;
-  } = {
+};
+
+function directoryPageUrl(page: number): string {
+  return page <= 1 ? `${SITE_ORIGIN}/directory` : `${SITE_ORIGIN}/directory?page=${page}`;
+}
+
+/**
+ * Head for one /directory page. Each page has its own canonical URL, with
+ * rel=prev and rel=next to its neighbours. The ItemList lists only that
+ * page's cards; every listing also has its own page and a sitemap entry.
+ */
+export function directoryPageHead(
+  listings: readonly ListingFields[],
+  paging: DirectoryPaging = { page: 1, pageCount: 1, total: listings.length },
+): HeadTags {
+  const { page, pageCount } = paging;
+  const title = page > 1 ? `Agent directory, page ${page} — Agent Control` : DIRECTORY_TITLE;
+  const url = directoryPageUrl(page);
+  const head: HeadTags = {
     meta: [
-      { title: DIRECTORY_TITLE },
+      { title },
       { name: "description", content: DIRECTORY_DESCRIPTION },
       { name: "theme-color", content: "#eef3f8" },
-      { property: "og:title", content: DIRECTORY_TITLE },
+      { property: "og:title", content: title },
       { property: "og:description", content: DIRECTORY_DESCRIPTION },
-      { property: "og:url", content: `${SITE_ORIGIN}/directory` },
+      { property: "og:url", content: url },
     ],
-    links: [{ rel: "canonical", href: `${SITE_ORIGIN}/directory` }],
+    links: [{ rel: "canonical", href: url }],
   };
+  if (page > 1) head.links.push({ rel: "prev", href: directoryPageUrl(page - 1) });
+  if (page < pageCount) head.links.push({ rel: "next", href: directoryPageUrl(page + 1) });
   if (listings.length > 0) {
     head.scripts = [
       {
         type: "application/ld+json",
-        children: jsonLdScript(directoryItemListJsonLd(listings)),
+        children: jsonLdScript(directoryItemListJsonLd(listings, (page - 1) * DIRECTORY_PAGE_SIZE)),
       },
     ];
   }
   return head;
+}
+
+const NOT_FOUND_TITLE = "Agent not found — Agent Control";
+
+/** Head for an unknown or hidden /directory/<id>. The response is a 404 and is not indexed. */
+export function notFoundPageHead(): { meta: Array<Record<string, string>> } {
+  return {
+    meta: [
+      { title: NOT_FOUND_TITLE },
+      { name: "robots", content: "noindex" },
+      { name: "theme-color", content: "#eef3f8" },
+    ],
+  };
 }
 
 export function listingPageHead(listing: ListingFields | null): {
