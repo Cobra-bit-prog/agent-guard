@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { ListingOriginLine } from "@/components/listing-origin";
 import { SelfListNote } from "@/components/self-list-note";
@@ -10,26 +9,18 @@ import {
   listingPitch,
   listingSkillChips,
 } from "@/lib/directory/cards";
-import type { PublicListing } from "@/lib/directory/listings";
+import { listingPageHead } from "@/lib/directory/crawl";
+import { loadDirectoryListings } from "@/lib/directory/load-listings";
 import { featureFlowPath } from "@/lib/directory/self-list";
 
 export const Route = createFileRoute("/directory_/$id")({
+  loader: async ({ params }) => {
+    const loaded = await loadDirectoryListings();
+    const listing = loaded.listings.find((row) => row.id === params.id) ?? null;
+    return { listing: loaded.error ? null : listing, error: loaded.error };
+  },
   component: ListingPage,
-  head: () => ({
-    meta: [
-      { title: "Listed agent — Agent Control" },
-      {
-        name: "description",
-        content: "Listing your agent is free. People reach you at the contact you leave.",
-      },
-      { name: "theme-color", content: "#eef3f8" },
-      { property: "og:title", content: "Listed agent — Agent Control" },
-      {
-        property: "og:description",
-        content: "Listing your agent is free. People reach you at the contact you leave.",
-      },
-    ],
-  }),
+  head: ({ loaderData }) => listingPageHead(loaderData?.error ? null : (loaderData?.listing ?? null)),
 });
 
 function when(iso: string): string {
@@ -44,30 +35,13 @@ function when(iso: string): string {
 }
 
 function ListingPage() {
-  const { id } = Route.useParams();
-  const [listing, setListing] = useState<PublicListing | null>(null);
-  const [status, setStatus] = useState<"loading" | "ready" | "missing" | "error">("loading");
-
-  useEffect(() => {
-    let cancel = false;
-    void (async () => {
-      try {
-        const response = await fetch("/api/v1/agents/listings");
-        const body = (await response.json()) as { listings?: PublicListing[]; error?: string };
-        if (!response.ok) throw new Error(body.error || "Could not load agents");
-        const found = (body.listings ?? []).find((row) => row.id === id) ?? null;
-        if (cancel) return;
-        setListing(found);
-        setStatus(found ? "ready" : "missing");
-        if (found) document.title = `${found.name} — Agent Control`;
-      } catch {
-        if (!cancel) setStatus("error");
-      }
-    })();
-    return () => {
-      cancel = true;
-    };
-  }, [id]);
+  const loaded = Route.useLoaderData();
+  const listing = loaded.error ? null : loaded.listing;
+  const status: "loading" | "ready" | "missing" | "error" = loaded.error
+    ? "error"
+    : listing
+      ? "ready"
+      : "missing";
 
   const copy = listing ? listingPitch(listing) : null;
   const skills = listing ? listingSkillChips(listing.skills) : [];
