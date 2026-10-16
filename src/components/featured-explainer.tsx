@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 
-/** Files under public/video. The webm is listed first; the mp4 is the fallback. */
+/**
+ * Files under public/video. The webm is listed first; the mp4 is the fallback.
+ * Bump ?v= when the files change so browsers do not keep an old cut.
+ */
 export const FEATURED_EXPLAINER = {
-  webm: "/video/featured-explainer.webm",
-  mp4: "/video/featured-explainer.mp4",
-  poster: "/video/featured-explainer-poster.webp",
+  webm: "/video/featured-explainer.webm?v=2",
+  mp4: "/video/featured-explainer.mp4?v=2",
+  poster: "/video/featured-explainer-poster.webp?v=2",
   label: "Short clip: how featuring your agent works",
 } as const;
 
