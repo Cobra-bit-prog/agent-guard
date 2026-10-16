@@ -9,8 +9,10 @@ import {
 import {
   absentCheck,
   checkBazaar,
+  checkCorsExpose,
   checkDroppedFields,
   checkExample,
+  checkHeadSafe,
   checkHeaderSize,
   checkMerchant,
   checkPresence,
@@ -23,18 +25,24 @@ import {
   checkTargets,
   checkV2Fields,
   checkValidate,
+  CORS_EXPOSE_TITLE,
   exampleCallOf,
+  exposesPaymentRequired,
   FREE_CHECK_IDS,
+  HEAD_SAFE_TITLE,
   resourceUrlOf,
   type CheckAbsence,
   type CheckRow,
+  type CorsSeen,
   walletLooksValid,
 } from "./checks.ts";
 import {
+  fetchPublicHttps,
   probeEndpoint,
   probeExchange,
   type EndpointProbe,
   type LookupFn,
+  type ProbeMethod,
   type ProbeTransport,
 } from "./probe.ts";
 import { parsePublicHttpsUrl, SsrfError } from "./ssrf.ts";
@@ -192,6 +200,103 @@ function absenceOf(probe: EndpointProbe | null): CheckAbsence | null {
   return null;
 }
 
+/** Origin sent on the unpaid preflight. Not a buyer's payment. */
+const BROWSER_ORIGIN = "https://agent-control.net";
+const PAYMENT_REQUEST_HEADER = /^(payment-signature|payment-required|x-payment|x-payment-response)$/i;
+
+function unpaidHeaders(headers: Record<string, string> | undefined): Record<string, string> | undefined {
+  if (!headers) return undefined;
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(headers)) {
+    if (PAYMENT_REQUEST_HEADER.test(key)) continue;
+    out[key] = value;
+  }
+  return out;
+}
+
+function corsFromProbe(probe: EndpointProbe): CorsSeen {
+  return { allowOrigin: probe.corsAllowOrigin, exposeHeaders: probe.corsExposeHeaders };
+}
+
+async function readCors(
+  url: string,
+  method: ProbeMethod,
+  headers: Record<string, string> | undefined,
+  body: string | undefined,
+  deps: RunDeps,
+): Promise<CorsSeen | null> {
+  try {
+    const result = await fetchPublicHttps(url, {
+      method,
+      headers: unpaidHeaders(headers),
+      body,
+      lookup: deps.lookup,
+      transport: deps.transport,
+    });
+    return {
+      allowOrigin: result.headers.get("access-control-allow-origin"),
+      exposeHeaders: result.headers.get("access-control-expose-headers"),
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Read CORS from the 402 we already fetched. When that reply has no CORS headers,
+ * one unpaid OPTIONS preflight (and, if that allows an origin, one unpaid repeat
+ * of the same method with Origin) so an origin-gated seller can still expose the price.
+ */
+async function corsRow(probe: EndpointProbe, deps: RunDeps): Promise<CheckRow> {
+  const seen: CorsSeen[] = [corsFromProbe(probe)];
+  const already = seen[0];
+  if (!already || exposesPaymentRequired(already.exposeHeaders) || already.allowOrigin?.trim()) {
+    return checkCorsExpose(seen);
+  }
+  const preflight = await readCors(
+    probe.finalUrl,
+    "OPTIONS",
+    {
+      origin: BROWSER_ORIGIN,
+      "access-control-request-method": probe.method,
+      "access-control-request-headers": "payment-signature",
+    },
+    undefined,
+    deps,
+  );
+  if (preflight) seen.push(preflight);
+  const preflightExposes = preflight ? exposesPaymentRequired(preflight.exposeHeaders) : false;
+  const preflightAllows = Boolean(preflight?.allowOrigin?.trim());
+  if (!preflightExposes && (preflightAllows || preflight == null)) {
+    const replay = await readCors(
+      probe.finalUrl,
+      probe.method,
+      { origin: BROWSER_ORIGIN },
+      probe.method === "POST" ? "{}" : undefined,
+      deps,
+    );
+    if (replay) seen.push(replay);
+  }
+  return checkCorsExpose(seen);
+}
+
+/** One unpaid HEAD. No payment header, no signature. Same timeout and SSRF pin as the probe. */
+async function headRow(probe: EndpointProbe, deps: RunDeps): Promise<CheckRow> {
+  if (probe.method !== "GET") {
+    return checkHeadSafe({ status: null, skipped: "post" });
+  }
+  try {
+    const result = await fetchPublicHttps(probe.finalUrl, {
+      method: "HEAD",
+      lookup: deps.lookup,
+      transport: deps.transport,
+    });
+    return checkHeadSafe({ status: result.status });
+  } catch {
+    return checkHeadSafe({ status: null });
+  }
+}
+
 async function exampleRow(
   payment: unknown,
   target: CheckTarget,
@@ -245,34 +350,44 @@ async function localChecks(
           responseHeaderBytes: probe.responseHeaderBytes,
         })
       : absentCheck("header_size", "Price header size", why ?? "wallet");
-  if (why) {
+  if (why || !probe) {
+    const reason = why ?? "wallet";
     const targets =
-      why === "wallet"
+      reason === "wallet"
         ? checkTargets(payment, target.payTo)
-        : absentCheck("payment_targets", "Network, asset, and payTo", why);
+        : absentCheck("payment_targets", "Network, asset, and payTo", reason);
     return [
       reply,
       header,
-      absentCheck("resource_https", "resource.url https", why),
-      absentCheck("bazaar", "Bazaar extension", why),
-      absentCheck("dropped_fields", "Fields Coinbase may drop", why),
-      absentCheck("example_input", "Example input", why),
-      absentCheck("v2_fields", "x402 version 2 fields", why),
-      absentCheck("resource_url", "Resource URL", why),
-      absentCheck("schema_refs", "Bazaar schema references", why),
+      absentCheck("resource_https", "resource.url https", reason),
+      absentCheck("bazaar", "Bazaar extension", reason),
+      absentCheck("dropped_fields", "Fields Coinbase may drop", reason),
+      absentCheck("example_input", "Example input", reason),
+      absentCheck("v2_fields", "x402 version 2 fields", reason),
+      absentCheck("resource_url", "Resource URL", reason),
+      absentCheck("schema_refs", "Bazaar schema references", reason),
+      absentCheck("cors_expose", CORS_EXPOSE_TITLE, reason),
+      absentCheck("head_safe", HEAD_SAFE_TITLE, reason),
       targets,
     ];
   }
+  const [example, cors, head] = await Promise.all([
+    exampleRow(payment, target, probe, deps),
+    corsRow(probe, deps),
+    headRow(probe, deps),
+  ]);
   return [
     reply,
     header,
     checkResourceHttps(payment),
     checkBazaar(payment),
     checkDroppedFields(payment),
-    await exampleRow(payment, target, probe, deps),
+    example,
     checkV2Fields(payment),
     checkResourceUrl(payment, target.url),
     checkSchemaRefs(payment),
+    cors,
+    head,
     checkTargets(payment, target.payTo),
   ];
 }

@@ -987,6 +987,109 @@ export function checkExample(status: number | null, note: "pass-or-status" | "no
   );
 }
 
+export const CORS_EXPOSE_ISSUE = "https://github.com/x402-foundation/x402/issues/3808";
+export const HEAD_SAFE_ISSUE = "https://github.com/x402-foundation/x402/issues/3810";
+export const CORS_EXPOSE_TITLE = "Browser price header";
+export const HEAD_SAFE_TITLE = "HEAD request";
+
+export type CorsSeen = {
+  allowOrigin: string | null;
+  exposeHeaders: string | null;
+};
+
+function headerTokens(value: string | null | undefined): string[] {
+  if (!value) return [];
+  return value
+    .split(",")
+    .map((part) => part.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+/** True when Access-Control-Expose-Headers lists PAYMENT-REQUIRED or `*`. */
+export function exposesPaymentRequired(value: string | null | undefined): boolean {
+  const tokens = headerTokens(value);
+  return tokens.includes("payment-required") || tokens.includes("*");
+}
+
+/**
+ * Browser buyers can read PAYMENT-REQUIRED only when the seller exposes it.
+ * No CORS headers at all is not a fail: say that a browser agent cannot pay.
+ */
+export function checkCorsExpose(seen: readonly CorsSeen[]): CheckRow {
+  const title = CORS_EXPOSE_TITLE;
+  const exposes = seen.some((row) => exposesPaymentRequired(row.exposeHeaders));
+  const allowsOrigin = seen.some((row) => Boolean(row.allowOrigin?.trim()));
+  const anyCors = seen.some(
+    (row) => Boolean(row.allowOrigin?.trim()) || Boolean(row.exposeHeaders?.trim()),
+  );
+  if (exposes) {
+    const star = seen.some((row) => headerTokens(row.exposeHeaders).includes("*"));
+    const how = star
+      ? "Access-Control-Expose-Headers is *, so a browser can read the price."
+      : "Access-Control-Expose-Headers includes PAYMENT-REQUIRED, so a browser can read the price.";
+    return row("cors_expose", title, "pass", `${how} ${CORS_EXPOSE_ISSUE}`);
+  }
+  if (allowsOrigin) {
+    return row(
+      "cors_expose",
+      title,
+      "warn",
+      `Browser buyers can't see your price. Access-Control-Allow-Origin is set, but Access-Control-Expose-Headers does not include PAYMENT-REQUIRED. ${CORS_EXPOSE_ISSUE}`,
+      "Add PAYMENT-REQUIRED to Access-Control-Expose-Headers.",
+    );
+  }
+  if (anyCors) {
+    return row(
+      "cors_expose",
+      title,
+      "warn",
+      `Browser buyers can't see your price. Access-Control-Expose-Headers does not include PAYMENT-REQUIRED. ${CORS_EXPOSE_ISSUE}`,
+      "Add PAYMENT-REQUIRED to Access-Control-Expose-Headers.",
+    );
+  }
+  return row(
+    "cors_expose",
+    title,
+    "na",
+    `No CORS headers. Browser agents won't be able to pay this endpoint. ${CORS_EXPOSE_ISSUE}`,
+  );
+}
+
+export function checkHeadSafe(input: { status: number | null; skipped?: "post" }): CheckRow {
+  const title = HEAD_SAFE_TITLE;
+  if (input.skipped === "post") {
+    return row(
+      "head_safe",
+      title,
+      "na",
+      `Not applicable. The paid route answered on POST, not GET. A HEAD request does not match that route. ${HEAD_SAFE_ISSUE}`,
+    );
+  }
+  if (input.status == null || input.status <= 0) {
+    return row(
+      "head_safe",
+      title,
+      "unchecked",
+      `Could not check. The HEAD request did not answer. ${HEAD_SAFE_ISSUE}`,
+    );
+  }
+  if (input.status >= 200 && input.status < 300) {
+    const code = input.status === 200 ? "200" : String(input.status);
+    return row(
+      "head_safe",
+      title,
+      "warn",
+      `A HEAD request gets a ${code} without paying. Some buyer tools may get charged for nothing, or you're giving away the route. ${HEAD_SAFE_ISSUE}`,
+      "Answer HEAD with 402, 405, or 404. Do not return 200 for a paid route.",
+    );
+  }
+  const nice =
+    input.status === 402
+      ? "HEAD returned HTTP 402, which is the payment challenge, not a free success."
+      : `HEAD returned HTTP ${input.status}, not a free success.`;
+  return row("head_safe", title, "pass", `${nice} ${HEAD_SAFE_ISSUE}`);
+}
+
 /**
  * Free check. Paid report adds version fields, query string, trailing slash, payTo,
  * merchant list, search, the snippet, directory, and Coinbase's validate call.
@@ -999,4 +1102,6 @@ export const FREE_CHECK_IDS = [
   "dropped_fields",
   "example_input",
   "schema_refs",
+  "cors_expose",
+  "head_safe",
 ] as const;

@@ -69,10 +69,12 @@ export function measureRawHeaders(rawHeaders: readonly string[]): {
   return { paymentRequiredBytes, responseHeaderBytes };
 }
 
+export type ProbeMethod = "GET" | "POST" | "HEAD" | "OPTIONS";
+
 export type ProbeTransport = (input: {
   url: URL;
   ip: string;
-  method: "GET" | "POST" | "HEAD";
+  method: ProbeMethod;
   body?: string;
   headers?: Record<string, string>;
   maxBytes?: number;
@@ -96,6 +98,10 @@ export type EndpointProbe = {
   /** Byte length of response header lines. Null when the transport did not measure them. */
   responseHeaderBytes: number | null;
   headersOverflow: boolean;
+  /** Access-Control-Allow-Origin from the fetched response. Null when absent. */
+  corsAllowOrigin: string | null;
+  /** Access-Control-Expose-Headers from the fetched response. Null when absent. */
+  corsExposeHeaders: string | null;
 };
 
 export async function defaultLookup(hostname: string): Promise<string[]> {
@@ -132,7 +138,10 @@ function headerMap(headers: NodeJS.Dict<string | string[] | undefined>): { get(n
   return {
     get(name: string) {
       const value = headers[name.toLowerCase()];
-      if (Array.isArray(value)) return value[0] ?? null;
+      if (Array.isArray(value)) {
+        const joined = value.map((item) => item.trim()).filter(Boolean).join(", ");
+        return joined || null;
+      }
       return value ?? null;
     },
   };
@@ -141,7 +150,7 @@ function headerMap(headers: NodeJS.Dict<string | string[] | undefined>): { get(n
 export function defaultTransport(input: {
   url: URL;
   ip: string;
-  method: "GET" | "POST" | "HEAD";
+  method: ProbeMethod;
   body?: string;
   headers?: Record<string, string>;
   maxBytes?: number;
@@ -288,7 +297,7 @@ async function pinnedAddresses(url: URL, lookup: LookupFn): Promise<string[]> {
 const REDIRECT = new Set([301, 302, 303, 307, 308]);
 
 type HopRequest = {
-  method: "GET" | "POST" | "HEAD";
+  method: ProbeMethod;
   body?: string;
   headers?: Record<string, string>;
   maxBytes?: number;
@@ -363,7 +372,14 @@ function finishProbe(
     paymentRequiredBytes,
     responseHeaderBytes: result.hop.responseHeaderBytes ?? null,
     headersOverflow: result.hop.headersOverflow === true,
+    corsAllowOrigin: headerText(result.hop.headers.get("access-control-allow-origin")),
+    corsExposeHeaders: headerText(result.hop.headers.get("access-control-expose-headers")),
   };
+}
+
+function headerText(value: string | null): string | null {
+  const text = value?.trim();
+  return text ? text : null;
 }
 
 /** GET the endpoint the way a buyer would. One POST with an empty JSON body if GET is not 402. */
@@ -411,7 +427,7 @@ export type PublicFetchResult = {
 export async function fetchPublicHttps(
   rawUrl: string,
   opts: {
-    method?: "GET" | "HEAD" | "POST";
+    method?: ProbeMethod;
     body?: string;
     headers?: Record<string, string>;
     maxBytes?: number;
