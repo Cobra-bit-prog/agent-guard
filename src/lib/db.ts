@@ -268,12 +268,19 @@ async function createPgliteSql(): Promise<Sql> {
   // double-apply.
   const migrate = async (): Promise<void> => {
     const migrations = migrationSources();
-    logHeldSchemaMigrations(Object.keys(migrations));
     const doneRows = await pg.query<{ name: string }>(
       "select name from _migrations",
     );
     const done = doneRows.rows.map((r) => r.name);
-    for (const { name, path } of pendingMigrations(Object.keys(migrations), done)) {
+    // Preview holds exist so a build that shares the production DATABASE_URL
+    // does not create tables or insert seeds there. This path runs only when
+    // that URL is unset, so the embedded database gets the same files as local.
+    const embeddedEnv = { ...process.env, VERCEL_ENV: "development" };
+    for (const { name, path } of pendingMigrations(
+      Object.keys(migrations),
+      done,
+      embeddedEnv,
+    )) {
       // Apply + record atomically (parity with scripts/migrate.mjs) so a failed
       // statement can't leave a file half-applied but untracked.
       await pg.transaction(async (tx) => {
