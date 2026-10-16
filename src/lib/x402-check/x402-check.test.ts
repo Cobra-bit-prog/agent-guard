@@ -695,6 +695,30 @@ describe("price header size", () => {
     assert.match(hidden.detail, /Node fetch buyers can't read it either/);
     assert.match(hidden.detail, /does not carry the payment requirements/);
     assert.match(hidden.detail, /Trimming it gets you under the limit/);
+
+    const inputBody = { positions: "p".repeat(800), note: "cash" };
+    const withBody = payment({
+      resource: { url: URL, description: "short pitch", mimeType: "application/json" },
+      extensions: {
+        bazaar: {
+          info: {
+            input: { type: "http", method: "POST", bodyType: "json", body: inputBody },
+            output: { type: "json", example: { quote: "e".repeat(200) } },
+          },
+          schema: { type: "object", properties: { holdings: { type: "string", description: "s".repeat(2000) } } },
+        },
+      },
+    });
+    const bodyRow = checkHeaderSize({
+      paymentRequiredBytes: 9000,
+      responseHeaderBytes: 9500,
+      payment: withBody,
+      bodyHasRequirements: false,
+    });
+    assert.equal(bodyRow.largest_parts?.[0]?.path, "extensions.bazaar.schema");
+    assert.equal(bodyRow.largest_parts?.[1]?.path, "extensions.bazaar.info.input.body");
+    assert.equal(bodyRow.largest_parts?.[1]?.bytes, Buffer.byteLength(JSON.stringify(inputBody)));
+    assert.match(bodyRow.detail, /input example/);
   });
 
   it("puts the byte count on the free check and points a too-big header at Fix", async () => {

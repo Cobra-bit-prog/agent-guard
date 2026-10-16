@@ -416,14 +416,8 @@ function keepWhole(path: string): boolean {
 function shouldSplit(path: string, value: unknown): boolean {
   if (!value || typeof value !== "object") return false;
   if (keepWhole(path)) return false;
-  const entries = objectEntries(value);
-  if (entries.length === 0) return false;
-  if (HEADER_SPLIT_PATHS.has(path)) return true;
-  const total = jsonBytes(value);
-  if (total <= 0) return false;
-  let largest = 0;
-  for (const [, child] of entries) largest = Math.max(largest, jsonBytes(child));
-  return largest / total >= 0.55;
+  if (!HEADER_SPLIT_PATHS.has(path)) return false;
+  return objectEntries(value).length > 0;
 }
 
 function collectParts(value: unknown, path: string, out: Array<{ path: string; bytes: number }>): void {
