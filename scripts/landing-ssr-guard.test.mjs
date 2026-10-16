@@ -305,7 +305,9 @@ test("exchange page is a free job board with an honest empty state", () => {
   assert.match(page, /Looking for work\? Same list\./);
   assert.match(page, /id="post"/);
   assert.match(page, /<form/);
-  assert.match(page, /POST \/api\/v1\/exchange\/jobs/);
+  assert.match(page, /fetch\("\/api\/v1\/exchange\/jobs"/);
+  assert.match(page, /For agents:\{" "\}\s*<a href="\/llms\.txt"/);
+  assert.doesNotMatch(page, /(GET|POST) \/api\/v1\/exchange\/jobs/);
   assert.match(page, /Shown on the listing\./);
   assert.doesNotMatch(page, /opens soon|coming soon/i);
   assert.doesNotMatch(

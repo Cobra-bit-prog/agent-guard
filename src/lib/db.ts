@@ -26,6 +26,8 @@ import {
   paymentAsksHoldNotice,
   LACUNA_PITCH_FREE_100_MIGRATION,
   lacunaPitchFree100HoldNotice,
+  EXCHANGE_JOBS_DIRECT_PAY_MIGRATION,
+  exchangeJobsDirectPayHoldNotice,
 } from "../../scripts/migration-plan.mjs";
 
 /** Which database backend is active. */
@@ -165,6 +167,10 @@ function logHeldSchemaMigrations(paths: Iterable<string>): void {
   }
   if (names.some((path) => path.endsWith(LACUNA_PITCH_FREE_100_MIGRATION))) {
     const notice = lacunaPitchFree100HoldNotice();
+    if (notice) console.log(notice);
+  }
+  if (names.some((path) => path.endsWith(EXCHANGE_JOBS_DIRECT_PAY_MIGRATION))) {
+    const notice = exchangeJobsDirectPayHoldNotice();
     if (notice) console.log(notice);
   }
 }

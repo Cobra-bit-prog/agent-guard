@@ -21,8 +21,9 @@
  * `0039_agent_check_orders.sql`,
  * `0040_directory_lacuna_price_celo_buy_providers.sql`,
  * `0041_lacuna_pitch_topic_price.sql`,
- * `0042_payment_asks.sql`, and
- * `0043_lacuna_pitch_first_100_free.sql` are skipped when
+ * `0042_payment_asks.sql`,
+ * `0043_lacuna_pitch_first_100_free.sql`, and
+ * `0044_exchange_jobs_direct_pay_copy.sql` are skipped when
  * VERCEL_ENV=preview because preview builds use the production DATABASE_URL.
  * Production applies them with no extra environment variable. The directory
  * seeds must not insert rows into production from a preview build.
@@ -44,6 +45,7 @@ import {
   lacunaPitchHoldNotice,
   paymentAsksHoldNotice,
   lacunaPitchFree100HoldNotice,
+  exchangeJobsDirectPayHoldNotice,
   pendingMigrations,
   x402CheckOrdersHoldNotice,
 } from "./migration-plan.mjs";
@@ -80,6 +82,7 @@ async function main() {
     lacunaPitchHoldNotice(),
     paymentAsksHoldNotice(),
     lacunaPitchFree100HoldNotice(),
+    exchangeJobsDirectPayHoldNotice(),
   ]) {
     if (heldNotice) console.log(heldNotice);
   }

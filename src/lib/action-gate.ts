@@ -450,7 +450,7 @@ export async function decideActionWith(opts: {
 export const ACTION_GATE_CURL_EMAIL = `curl -s https://agent-control.net/api/v1/check_action \\
   -H "Authorization: Bearer YOUR_AGENT_API_KEY" \\
   -H "Content-Type: application/json" \\
-  -d '{"action_type":"email.send","summary":"Send the refund reply","preview":"Hi — your refund is on the way.","target":"customer@example.com","risk":"high"}'`;
+  -d '{"action_type":"email.send","summary":"Send the order update","preview":"Hi — your order shipped today.","target":"customer@example.com","risk":"high"}'`;
 
 export const ACTION_GATE_CURL_SLACK = `curl -s https://agent-control.net/api/v1/check_action \\
   -H "Authorization: Bearer YOUR_AGENT_API_KEY" \\

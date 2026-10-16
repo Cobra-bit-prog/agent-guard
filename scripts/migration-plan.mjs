@@ -131,6 +131,13 @@ export const PAYMENT_ASKS_MIGRATION = "0042_payment_asks.sql";
 export const LACUNA_PITCH_FREE_100_MIGRATION = "0043_lacuna_pitch_first_100_free.sql";
 
 /**
+ * Direct-pay copy on our own exchange job posts. Preview builds use the
+ * production DATABASE_URL, so this file is skipped when VERCEL_ENV=preview.
+ * Production, local, and tests apply it with no extra environment variable.
+ */
+export const EXCHANGE_JOBS_DIRECT_PAY_MIGRATION = "0044_exchange_jobs_direct_pay_copy.sql";
+
+/**
  * @param {Record<string, string | undefined>} [env]
  * @returns {boolean}
  */
@@ -231,6 +238,14 @@ export function paymentAsksMigrationHeld(env = process.env) {
  * @returns {boolean}
  */
 export function lacunaPitchFree100MigrationHeld(env = process.env) {
+  return env.VERCEL_ENV === "preview";
+}
+
+/**
+ * @param {Record<string, string | undefined>} [env]
+ * @returns {boolean}
+ */
+export function exchangeJobsDirectPayMigrationHeld(env = process.env) {
   return env.VERCEL_ENV === "preview";
 }
 
@@ -352,6 +367,15 @@ export function lacunaPitchFree100HoldNotice(env = process.env) {
 }
 
 /**
+ * @param {Record<string, string | undefined>} [env]
+ * @returns {string | null}
+ */
+export function exchangeJobsDirectPayHoldNotice(env = process.env) {
+  if (!exchangeJobsDirectPayMigrationHeld(env)) return null;
+  return `[exchange] holding ${EXCHANGE_JOBS_DIRECT_PAY_MIGRATION}: VERCEL_ENV=preview uses the production DATABASE_URL, so this migration is not applied.`;
+}
+
+/**
  * @param {string} name
  * @param {Record<string, string | undefined>} env
  * @returns {boolean}
@@ -370,6 +394,7 @@ function migrationHeldOnPreview(name, env) {
   if (name === LACUNA_PITCH_MIGRATION) return lacunaPitchMigrationHeld(env);
   if (name === PAYMENT_ASKS_MIGRATION) return paymentAsksMigrationHeld(env);
   if (name === LACUNA_PITCH_FREE_100_MIGRATION) return lacunaPitchFree100MigrationHeld(env);
+  if (name === EXCHANGE_JOBS_DIRECT_PAY_MIGRATION) return exchangeJobsDirectPayMigrationHeld(env);
   return false;
 }
 
@@ -385,8 +410,9 @@ function migrationHeldOnPreview(name, env) {
  * `0039_agent_check_orders.sql`,
  * `0040_directory_lacuna_price_celo_buy_providers.sql`,
  * `0041_lacuna_pitch_topic_price.sql`,
- * `0042_payment_asks.sql`, and
- * `0043_lacuna_pitch_first_100_free.sql` are omitted on
+ * `0042_payment_asks.sql`,
+ * `0043_lacuna_pitch_first_100_free.sql`, and
+ * `0044_exchange_jobs_direct_pay_copy.sql` are omitted on
  * preview builds only.
  * `0026_hide_exchange_smoke_jobs.sql`,
  * `0028_hide_directory_smoke_listing.sql`,
