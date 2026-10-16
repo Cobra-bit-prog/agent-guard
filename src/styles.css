@@ -1091,8 +1091,9 @@
   border: 1px solid var(--color-border);
   background: #fff;
   padding: 1rem 1rem 0.9rem;
-  content-visibility: auto;
-  contain-intrinsic-size: auto 240px;
+  /* No content-visibility here: a guessed placeholder height made the list
+     grow as cards rendered and shifted the clip, Get featured, and the pager.
+     /directory shows 24 cards a page, so rendering them all is cheap. */
 }
 
 .hire-card.is-featured {

@@ -182,3 +182,20 @@ describe("directory not found", () => {
     assert.doesNotMatch(list, /text-\[\d+px\]/);
   });
 });
+
+describe("directory card layout", () => {
+  it("does not guess card heights, so rendering cards never shifts the clip or Get featured", () => {
+    const css = read("src/styles.css");
+    const start = css.indexOf(".hire-card {");
+    assert.ok(start >= 0);
+    const rule = css.slice(start, css.indexOf("}", start));
+    assert.doesNotMatch(rule, /^\s*content-visibility\s*:/m);
+    assert.doesNotMatch(rule, /^\s*contain-intrinsic-size\s*:/m);
+    assert.doesNotMatch(css, /\.hire-card[^{]*\{[^}]*content-visibility\s*:/);
+  });
+
+  it("uses .hire-card only on /directory, so the homepage is untouched", () => {
+    assert.match(read("src/routes/directory.tsx"), /className=\{`hire-card board-row/);
+    assert.doesNotMatch(read("src/routes/index.tsx"), /hire-card/);
+  });
+});
