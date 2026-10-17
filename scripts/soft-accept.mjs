@@ -91,6 +91,16 @@ export function isSkillMarkdownPath(pathname) {
   return path === "/skill.md" || path === "/agents/skill.md";
 }
 
+/**
+ * Listing badge SVG. Image clients send Accept: image/svg+xml, which is not HTML.
+ * Must reach the badge route instead of a 406.
+ * @param {string | null | undefined} pathname
+ */
+export function isBadgePath(pathname) {
+  const path = String(pathname ?? "");
+  return path.startsWith("/badge/");
+}
+
 /** Public JSON discovery — must not 406 when Accept is application/json. */
 export function isWellKnownMachineJsonPath(pathname) {
   const path = String(pathname ?? "");
@@ -117,6 +127,7 @@ export function shouldSoftReject({ method, pathname, accept }) {
   if (isOauthMachinePath(path)) return false;
   if (isWellKnownMachineJsonPath(path)) return false;
   if (isSkillMarkdownPath(path)) return false;
+  if (isBadgePath(path)) return false;
   if (path === "/__grok" || path.startsWith("/__grok/")) return false;
   return !acceptAllowsHtml(accept);
 }

@@ -1,5 +1,6 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { DirectoryNotFound } from "@/components/directory-not-found";
+import { ListingBadgeShare } from "@/components/listing-badge";
 import { ListingOriginLine } from "@/components/listing-origin";
 import { SelfListNote } from "@/components/self-list-note";
 import { SkyShell } from "@/components/marketing/chrome";
@@ -119,6 +120,7 @@ function ListingPage() {
                 Feature this listing ($19 / 7 days)
               </a>
             </p>
+            <ListingBadgeShare id={listing.id} featured={listing.featured} />
           </article>
         )}
       </main>
