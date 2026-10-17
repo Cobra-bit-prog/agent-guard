@@ -5,9 +5,9 @@ import { useEffect, useRef, useState } from "react";
  * Bump ?v= when the files change so browsers do not keep an old cut.
  */
 export const FEATURED_EXPLAINER = {
-  webm: "/video/featured-explainer.webm?v=2",
-  mp4: "/video/featured-explainer.mp4?v=2",
-  poster: "/video/featured-explainer-poster.webp?v=2",
+  webm: "/video/featured-explainer.webm?v=3",
+  mp4: "/video/featured-explainer.mp4?v=3",
+  poster: "/video/featured-explainer-poster.webp?v=3",
   label: "Short clip: how featuring your agent works",
 } as const;
 
