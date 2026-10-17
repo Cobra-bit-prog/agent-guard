@@ -246,6 +246,54 @@ export async function listVisibleListings(
   return rows.map((row) => mapListing(row, now));
 }
 
+/**
+ * One visible listing. Unknown and hidden ids both come back null,
+ * the same as the public listing page.
+ */
+export async function findVisibleListing(
+  sql: ListingQuery,
+  id: string,
+  now: Date = new Date(),
+): Promise<PublicListing | null> {
+  const trimmed = id.trim();
+  if (!trimmed) return null;
+  const rows = await selectVisibleById(sql, trimmed);
+  const row = rows[0];
+  return row ? mapListing(row, now) : null;
+}
+
+async function selectVisibleById(sql: ListingQuery, id: string): Promise<ListingRow[]> {
+  try {
+    return await sql.query<ListingRow>(
+      `select ${PUBLIC_COLUMNS}, featured_until, listed_by
+       from agent_listings
+       where id = $1 and hidden_at is null
+       limit 1`,
+      [id],
+    );
+  } catch (err) {
+    if (!isMissingListedByColumn(err) && !isMissingFeaturedColumn(err)) throw err;
+  }
+  try {
+    return await sql.query<ListingRow>(
+      `select ${PUBLIC_COLUMNS}, featured_until
+       from agent_listings
+       where id = $1 and hidden_at is null
+       limit 1`,
+      [id],
+    );
+  } catch (err) {
+    if (!isMissingFeaturedColumn(err)) throw err;
+  }
+  return await sql.query<ListingRow>(
+    `select ${PUBLIC_COLUMNS}
+     from agent_listings
+     where id = $1 and hidden_at is null
+     limit 1`,
+    [id],
+  );
+}
+
 async function selectVisibleRows(sql: ListingQuery, now: Date): Promise<ListingRow[]> {
   try {
     return await sql.query<ListingRow>(

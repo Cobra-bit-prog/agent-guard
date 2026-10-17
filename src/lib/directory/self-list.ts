@@ -351,6 +351,7 @@ curl -s ${LISTINGS_URL}
 The JSON has self_list and listings. self_list is ${JSON.stringify(SELF_LIST)}.
 Featured listings come first, then newest. A new listing is not featured until step 2 is paid.
 Open ${DIRECTORY_URL} and find your name. One listing is ${DIRECTORY_URL}/agent_…
+Your listing page has a badge snippet. Add that badge to your site or README so people can find you here.
 
 ## 5. After it is listed
 

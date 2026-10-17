@@ -37,6 +37,7 @@ import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppInboxRouteImport } from './routes/_app/inbox'
 import { Route as AppPoliciesRouteImport } from './routes/_app/policies'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
+import { Route as BadgeChar123idChar125DotsvgRouteImport } from './routes/badge.{$id}[.]svg'
 import { Route as DirectoryIdRouteImport } from './routes/directory_.$id'
 import { Route as HireIndexRouteImport } from './routes/hire.index'
 import { Route as HireThanksRouteImport } from './routes/hire.thanks'
@@ -229,6 +230,12 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AppRoute,
 } as any)
+const BadgeChar123idChar125DotsvgRoute =
+  BadgeChar123idChar125DotsvgRouteImport.update({
+    id: '/badge/{$id}.svg',
+    path: '/badge/{$id}.svg',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const DirectoryIdRoute = DirectoryIdRouteImport.update({
   id: '/directory_/$id',
   path: '/directory/$id',
@@ -520,6 +527,7 @@ export interface FileRoutesByFullPath {
   '/inbox': typeof AppInboxRoute
   '/policies': typeof AppPoliciesRoute
   '/settings': typeof AppSettingsRoute
+  '/badge/{$id}.svg': typeof BadgeChar123idChar125DotsvgRoute
   '/directory/$id': typeof DirectoryIdRoute
   '/hire/thanks': typeof HireThanksRoute
   '/meter/pay': typeof MeterPayRoute
@@ -596,6 +604,7 @@ export interface FileRoutesByTo {
   '/inbox': typeof AppInboxRoute
   '/policies': typeof AppPoliciesRoute
   '/settings': typeof AppSettingsRoute
+  '/badge/{$id}.svg': typeof BadgeChar123idChar125DotsvgRoute
   '/directory/$id': typeof DirectoryIdRoute
   '/hire/thanks': typeof HireThanksRoute
   '/meter/pay': typeof MeterPayRoute
@@ -679,6 +688,7 @@ export interface FileRoutesById {
   '/_app/inbox': typeof AppInboxRoute
   '/_app/policies': typeof AppPoliciesRoute
   '/_app/settings': typeof AppSettingsRoute
+  '/badge/{$id}.svg': typeof BadgeChar123idChar125DotsvgRoute
   '/directory_/$id': typeof DirectoryIdRoute
   '/hire/thanks': typeof HireThanksRoute
   '/meter/pay': typeof MeterPayRoute
@@ -762,6 +772,7 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/policies'
     | '/settings'
+    | '/badge/{$id}.svg'
     | '/directory/$id'
     | '/hire/thanks'
     | '/meter/pay'
@@ -838,6 +849,7 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/policies'
     | '/settings'
+    | '/badge/{$id}.svg'
     | '/directory/$id'
     | '/hire/thanks'
     | '/meter/pay'
@@ -920,6 +932,7 @@ export interface FileRouteTypes {
     | '/_app/inbox'
     | '/_app/policies'
     | '/_app/settings'
+    | '/badge/{$id}.svg'
     | '/directory_/$id'
     | '/hire/thanks'
     | '/meter/pay'
@@ -995,6 +1008,7 @@ export interface RootRouteChildren {
   StampRoute: typeof StampRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
   X402CheckRoute: typeof X402CheckRoute
+  BadgeChar123idChar125DotsvgRoute: typeof BadgeChar123idChar125DotsvgRoute
   DirectoryIdRoute: typeof DirectoryIdRoute
   MeterPayRoute: typeof MeterPayRoute
   OauthAuthorizeRoute: typeof OauthAuthorizeRoute
@@ -1231,6 +1245,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/settings'
       preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/badge/{$id}.svg': {
+      id: '/badge/{$id}.svg'
+      path: '/badge/{$id}.svg'
+      fullPath: '/badge/{$id}.svg'
+      preLoaderRoute: typeof BadgeChar123idChar125DotsvgRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/directory_/$id': {
       id: '/directory_/$id'
@@ -1768,6 +1789,7 @@ const rootRouteChildren: RootRouteChildren = {
   StampRoute: StampRoute,
   VerifyEmailRoute: VerifyEmailRoute,
   X402CheckRoute: X402CheckRoute,
+  BadgeChar123idChar125DotsvgRoute: BadgeChar123idChar125DotsvgRoute,
   DirectoryIdRoute: DirectoryIdRoute,
   MeterPayRoute: MeterPayRoute,
   OauthAuthorizeRoute: OauthAuthorizeRoute,
@@ -1811,13 +1833,10 @@ export const routeTree = rootRouteImport
   ._addFileTypes<FileRouteTypes>()
 
 import type { getRouter } from './router.tsx'
-
 import type { createStart } from '@tanstack/react-start'
-
 declare module '@tanstack/react-start' {
   interface Register {
     ssr: true
-
     router: Awaited<ReturnType<typeof getRouter>>
   }
 }

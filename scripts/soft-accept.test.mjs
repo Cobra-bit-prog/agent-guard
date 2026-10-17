@@ -48,10 +48,7 @@ test("isApiPath covers /api and nested API routes only", () => {
 });
 
 test("shouldSoftReject: browser HTML on / is allowed", () => {
-  assert.equal(
-    shouldSoftReject({ method: "GET", pathname: "/", accept: "text/html" }),
-    false,
-  );
+  assert.equal(shouldSoftReject({ method: "GET", pathname: "/", accept: "text/html" }), false);
 });
 
 test("shouldSoftReject: JSON / Streamable Accept on page routes", () => {
@@ -61,11 +58,7 @@ test("shouldSoftReject: JSON / Streamable Accept on page routes", () => {
       true,
       pathname,
     );
-    assert.equal(
-      shouldSoftReject({ method: "GET", pathname, accept: STREAMABLE }),
-      true,
-      pathname,
-    );
+    assert.equal(shouldSoftReject({ method: "GET", pathname, accept: STREAMABLE }), true, pathname);
     assert.equal(
       shouldSoftReject({ method: "HEAD", pathname, accept: STREAMABLE }),
       true,
@@ -182,6 +175,29 @@ test("shouldSoftReject: POST server-fn traffic is not intercepted", () => {
       accept: "application/json",
     }),
     false,
+  );
+});
+
+test("badge svg is not soft-rejected when Accept is an image type", () => {
+  assert.equal(
+    shouldSoftReject({
+      method: "GET",
+      pathname: "/badge/agent_da333e9b7f67f7f8b362d42a.svg",
+      accept: "image/svg+xml",
+    }),
+    false,
+  );
+  assert.equal(
+    shouldSoftReject({
+      method: "HEAD",
+      pathname: "/badge/agent_da333e9b7f67f7f8b362d42a.svg",
+      accept: "image/*,*/*;q=0.8",
+    }),
+    false,
+  );
+  assert.equal(
+    shouldSoftReject({ method: "GET", pathname: "/docs", accept: "image/svg+xml" }),
+    true,
   );
 });
 
