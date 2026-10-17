@@ -43,9 +43,9 @@ describe("featured explainer clip", () => {
     const webm = tag.indexOf('type="video/webm"');
     const mp4 = tag.indexOf('type="video/mp4"');
     assert.ok(webm > 0 && mp4 > webm);
-    assert.match(COMPONENT, /webm: "\/video\/featured-explainer\.webm\?v=2"/);
-    assert.match(COMPONENT, /mp4: "\/video\/featured-explainer\.mp4\?v=2"/);
-    assert.match(COMPONENT, /poster: "\/video\/featured-explainer-poster\.webp\?v=2"/);
+    assert.match(COMPONENT, /webm: "\/video\/featured-explainer\.webm\?v=3"/);
+    assert.match(COMPONENT, /mp4: "\/video\/featured-explainer\.mp4\?v=3"/);
+    assert.match(COMPONENT, /poster: "\/video\/featured-explainer-poster\.webp\?v=3"/);
   });
 
   it("versions every file URL the same way so browsers drop an old cut", () => {
